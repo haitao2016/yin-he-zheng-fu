@@ -40,7 +40,19 @@ function PlanetPanel.Render(planet, ctx)
     local px = screenW - pw - 12
     local py = UICommon.PANEL_TOP or 48
 
-    local headerH = 36 + 18 + (planet.constructing and 22 or 16) + 16
+    -- 计算产量速率行高度（有已殖民星球+有建筑+有产量时额外占17px）
+    local prodRowH = 0
+    if (planet.colonized or planet.isBase) and #planet.buildings > 0 then
+        for _, b in ipairs(planet.buildings) do
+            if b.currentProd then
+                for _, v in pairs(b.currentProd) do
+                    if v > 0 then prodRowH = 17; break end
+                end
+            end
+            if prodRowH > 0 then break end
+        end
+    end
+    local headerH = 36 + 18 + (planet.constructing and 22 or 16) + 16 + prodRowH
 
     local scrollContentH = 18
         + #BUILD_ORDER * 21
@@ -110,6 +122,49 @@ function PlanetPanel.Render(planet, ctx)
     else
         text(px+14, sy, "建设队列: 空闲", 10, 150,170,200,180)
         sy = sy + 16
+    end
+
+    -- ── 产量速率小条（已殖民/基地才显示）──
+    if (planet.colonized or planet.isBase) and #planet.buildings > 0 then
+        -- 汇总该行星所有建筑的产量
+        local prodSum = {}
+        for _, b in ipairs(planet.buildings) do
+            if b.currentProd then
+                for res, val in pairs(b.currentProd) do
+                    prodSum[res] = (prodSum[res] or 0) + val
+                end
+            end
+        end
+        -- 只显示有产量的资源（minerals/energy/crystal）
+        local RES_DISP = {
+            { key="minerals", label="矿", r=180,g=140,b=90  },
+            { key="energy",   label="能", r=80, g=220,b=255 },
+            { key="crystal",  label="晶", r=200,g=120,b=255 },
+        }
+        local hasAny = false
+        for _, rd in ipairs(RES_DISP) do
+            if (prodSum[rd.key] or 0) > 0 then hasAny = true; break end
+        end
+        if hasAny then
+            local segW = math.floor((pw - 20) / #RES_DISP)
+            for k, rd in ipairs(RES_DISP) do
+                local val = prodSum[rd.key] or 0
+                local sx2 = px + 10 + (k-1) * segW
+                -- 小胶囊背景
+                nvgBeginPath(vg); nvgRoundedRect(vg, sx2, sy, segW - 4, 13, 3)
+                nvgFillColor(vg, nvgRGBA(rd.r, rd.g, rd.b, val > 0 and 25 or 10)); nvgFill(vg)
+                nvgBeginPath(vg); nvgRoundedRect(vg, sx2+0.5, sy+0.5, segW-5, 12, 3)
+                nvgStrokeColor(vg, nvgRGBA(rd.r, rd.g, rd.b, val > 0 and 80 or 30))
+                nvgStrokeWidth(vg, 0.5); nvgStroke(vg)
+                local valStr = val > 0 and string.format("%s+%d/s", rd.label, val) or rd.label.."--"
+                local ta = val > 0 and 230 or 80
+                nvgFontFace(vg, "sans"); nvgFontSize(vg, 8)
+                nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+                nvgFillColor(vg, nvgRGBA(rd.r, rd.g, rd.b, ta))
+                nvgText(vg, sx2 + (segW-4)/2, sy + 6.5, valStr)
+            end
+            sy = sy + 17
+        end
     end
 
     nvgBeginPath(vg); nvgMoveTo(vg, px+8, sy); nvgLineTo(vg, px+pw-8, sy)

@@ -461,6 +461,7 @@ local function onPirateAttack(pirateLevel, baseId, targetName)
         notifyFn    = GameUI.Notify,
         player      = player_,
         rm          = rm_,
+        rs          = rs_,
         spq         = spq_,
         startWave   = pirateLevel,
         onBattleEnd = function(result)
@@ -555,6 +556,7 @@ local function onFleetSiegeBase(fleetId, baseId)
         notifyFn    = GameUI.Notify,
         player      = player_,
         rm          = rm_,
+        rs          = rs_,
         spq         = spq_,
         startWave   = base.level,
         onBattleEnd = function(result)
@@ -639,6 +641,7 @@ end
 -- ============================================================================
 local completedGoals_ = {}   -- 已完成的目标 id 集合
 local totalShipsBuilt_ = 0   -- 累计造船数量
+local resMilestoneTimer_ = 0 -- 资源里程碑检查节流（每 10 秒检查一次）
 
 local function checkStageGoals()
     if not STAGE_GOALS then return end
@@ -971,6 +974,7 @@ local function buildSaveData()
     local galaxyData = GalaxyScene.GetSaveData()
     local saveData = {
         version   = 1,
+        difficulty = difficulty_,                    -- 保存当前难度，继续游戏时恢复
         resources = rm_:serialize().resources,
         research  = rs_:serialize(),
         player    = player_:serialize(),
@@ -1019,6 +1023,13 @@ local function restoreGame(jsonStr)
         return
     end
     print("[Client] 恢复存档 v" .. (data.version or 0))
+
+    -- 恢复难度设置（老存档无此字段则保持 normal）
+    if data.difficulty and DIFFICULTY_CONFIGS[data.difficulty] then
+        difficulty_       = data.difficulty
+        difficultyChosen_ = true
+        print("[Client] 恢复难度: " .. difficulty_)
+    end
 
     -- 先恢复星图（会重建行星 buildings），然后恢复资源（保留存档值）
     GalaxyScene.LoadSaveData({ planets = data.planets, base = data.base }, rm_)
@@ -1516,6 +1527,17 @@ local function handleUpdate(eventType, eventData)
     rm_:update(dt)
     ms_:update(dt)
 
+    -- 资源里程碑成就检查（节流：每 10 秒检查一次）
+    resMilestoneTimer_ = resMilestoneTimer_ + dt
+    if resMilestoneTimer_ >= 10 then
+        resMilestoneTimer_ = 0
+        Achievement.Check("resource_milestone", {
+            metal   = rm_.resources.metal   or 0,
+            esource = rm_.resources.esource or 0,
+            nuclear = rm_.resources.nuclear or 0,
+        })
+    end
+
     -- 自动存档（H3 修复：去掉 serverConn_ 判断，单机模式也会自动存档）
     saveTimer_ = saveTimer_ + dt
     if saveTimer_ >= AUTO_SAVE_INTERVAL then
@@ -1542,6 +1564,11 @@ local function handleUpdate(eventType, eventData)
         Audio.Play(Audio.SFX.BUILD_COMPLETE)
         GalaxyScene.InvalidateFleetColor(activeFleetId_)  -- 储备池变化，主编队颜色可能改变
         GameUI.Notify("舰船建造完成: " .. st.name .. "  → 已进入储备池", "success")
+        -- 成就检查：首次造船、累计造船数、母舰成就
+        Achievement.Check("ship_built", {
+            totalShipsBuilt = totalShipsBuilt_,
+            lastBuiltType   = shipDone.shipType,
+        })
         GameUI.RefreshFleetPanel(fm_, activeFleetId_)
         GameUI.RefreshReservePanel(fm_)
         GameUI.RefreshShipyardPanel()
@@ -1810,6 +1837,39 @@ setupSceneAndUI = function()
         pirateAI = pirateAI_,
         onFleetContactPirateBase = onFleetSiegeBase,
         onFleetMove = function() Audio.Play(Audio.SFX.FLEET_MOVE) end,
+        onGalaxyEvent = function(ev)
+            GameUI.ShowEventPopup(ev, function(choiceIdx)
+                local ch = ev.choices[choiceIdx]
+                if not ch then return end
+                if ch.cost then
+                    for res, val in pairs(ch.cost) do
+                        if (rm_:get(res) or 0) < val then
+                            GameUI.Notify("资源不足，无法选择该选项", "error"); return
+                        end
+                    end
+                    for res, val in pairs(ch.cost) do rm_:add(res, -val) end
+                end
+                local parts = {}
+                if ch.gain then
+                    for res, val in pairs(ch.gain) do
+                        rm_:add(res, val); parts[#parts+1] = res .. "+" .. val
+                    end
+                end
+                if ch.res and ch.amount and ch.amount > 0 then
+                    rm_:add(ch.res, ch.amount); parts[#parts+1] = ch.res .. "+" .. ch.amount
+                end
+                if ch.hpLoss then
+                    local loss = 20
+                    rm_:add("minerals", -math.min(loss, rm_:get("minerals") or 0))
+                    parts[#parts+1] = "矿石-" .. loss .. "(辐射损耗)"
+                end
+                if #parts > 0 then
+                    GameUI.Notify(ev.label .. "：" .. table.concat(parts, "  "), "success")
+                else
+                    GameUI.Notify(ev.label .. "：已处理", "info")
+                end
+            end)
+        end,
     })
     rs_:setPlanetGetter(GalaxyScene.GetAllPlanets)
     GameUI.Init({
@@ -1898,6 +1958,36 @@ setupSceneAndUI = function()
             rm_:add("nuclear", amount)
             GameUI.Notify("购买核能×" .. amount .. "  消耗 ★" .. totalCost, "success")
             GameUI.RefreshResourceBar()
+        end,
+        -- 全部征收：对所有已殖民星球按建筑产量给予一次性奖励（= 60s 产量）
+        onHarvestAllCb = function()
+            local planets = GalaxyScene.GetColonizedPlanets()
+            if not planets or #planets == 0 then
+                GameUI.Notify("没有已殖民的星球", "warn"); return
+            end
+            local gain = { minerals=0, energy=0, crystal=0 }
+            for _, p in ipairs(planets) do
+                if not p.isBase then
+                    for _, b in ipairs(p.buildings) do
+                        if b.currentProd then
+                            for res, val in pairs(b.currentProd) do
+                                if gain[res] then
+                                    gain[res] = gain[res] + val * 60  -- 60s 产量
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            local parts = {}
+            if gain.minerals > 0 then rm_:add("minerals", gain.minerals); parts[#parts+1] = "矿石+" .. gain.minerals end
+            if gain.energy   > 0 then rm_:add("energy",   gain.energy);   parts[#parts+1] = "能量块+" .. gain.energy end
+            if gain.crystal  > 0 then rm_:add("crystal",  gain.crystal);  parts[#parts+1] = "水晶+" .. gain.crystal end
+            if #parts > 0 then
+                GameUI.Notify("全部征收！" .. table.concat(parts, "  "), "success")
+            else
+                GameUI.Notify("当前殖民地暂无产出建筑", "info")
+            end
         end,
         getConquestProgress = function()
             local allPlanets    = GalaxyScene.GetAllPlanets()
@@ -2106,6 +2196,8 @@ softReset = function()
     endGameTriggered_     = false
     piratesKilled_        = 0
     totalResearch_        = 0
+    totalShipsBuilt_      = 0
+    resMilestoneTimer_    = 0
     pirateAttackInfo_     = nil
     pirateWarnPlayed_     = false
     playTime_             = 0

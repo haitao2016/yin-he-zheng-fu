@@ -94,6 +94,9 @@ local onFleetMoveShipCb_  = nil
 local onAssignReserveCb_  = nil
 local onSpeedUpBuildCb_   = nil   -- 星币加速建造
 local onBuyNuclearCb_     = nil   -- 星币购买核能
+local onHarvestAllCb_     = nil   -- 全部征收回调
+local harvestAllCD_       = 0     -- 全部征收剩余冷却（秒）
+local HARVEST_ALL_CD      = 60    -- 全部征收冷却时间（秒）
 local getConquestProgress_ = nil  -- 返回 {colonized, total, piratesKilled, piratesTotal}
 
 -- 海盗预警状态
@@ -132,6 +135,10 @@ local deployed_ = false
 
 -- 展开按钮回调（由 Client.lua 注入）
 local deployCallback_ = nil
+
+-- 星图随机事件弹窗
+-- eventPopup_ = { ev={...}, onChoice=fn } | nil
+local eventPopup_ = nil
 
 -- ============================================================================
 -- 资源数字滚动动画（P3-3）
@@ -234,6 +241,10 @@ function GameUI.UpdateNotifications(dt)
     end
     if slotFlashTimer_ > 0 then
         slotFlashTimer_ = slotFlashTimer_ - dt
+    end
+    -- 全部征收冷却倒计时
+    if harvestAllCD_ > 0 then
+        harvestAllCD_ = math.max(0, harvestAllCD_ - dt)
     end
     -- 结算界面进场动画
     if endGameActive_ and endGameAnimT_ < 1 then
@@ -655,6 +666,38 @@ function GameUI.RenderTopBar()
     text(infoRightX, rowMid - 6, player_.name .. " Lv." .. player_.level, 9,
         160,210,255,210, NVG_ALIGN_RIGHT+NVG_ALIGN_MIDDLE)
     text(infoRightX, rowMid + 6, rtStr, 9, tr, tg, tb, 220, NVG_ALIGN_RIGHT+NVG_ALIGN_MIDDLE)
+
+    -- ── 全部征收按钮（顶栏居中，仅银河视图且已展开时显示）──
+    if deployed_ and onHarvestAllCb_ and currentScene_ == "galaxy" then
+        local btnW, btnH = 72, 20
+        local bx = math.floor(screenW_ / 2 - btnW / 2)
+        local by = math.floor(rowMid - btnH / 2)
+        local onCD  = harvestAllCD_ > 0
+        local bgClr  = onCD and nvgRGBA(20,40,20,160) or nvgRGBA(20,80,40,200)
+        local brdClr = onCD and nvgRGBA(60,90,60,120) or nvgRGBA(60,200,100,200)
+        local lblClr = onCD and nvgRGBA(100,140,100,180) or nvgRGBA(140,255,160,255)
+        nvgBeginPath(vg_); nvgRoundedRect(vg_, bx, by, btnW, btnH, 4)
+        nvgFillColor(vg_, bgClr); nvgFill(vg_)
+        nvgBeginPath(vg_); nvgRoundedRect(vg_, bx+0.5, by+0.5, btnW-1, btnH-1, 4)
+        nvgStrokeColor(vg_, brdClr); nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
+        -- 冷却遮罩（从右往左消退）
+        if onCD then
+            local maskW = math.floor(btnW * harvestAllCD_ / HARVEST_ALL_CD)
+            nvgBeginPath(vg_); nvgRoundedRect(vg_, bx + btnW - maskW, by, maskW, btnH, 4)
+            nvgFillColor(vg_, nvgRGBA(0,0,0,100)); nvgFill(vg_)
+        end
+        local label = onCD and string.format("征收 %ds", math.ceil(harvestAllCD_)) or "全部征收"
+        nvgFontFace(vg_, "sans"); nvgFontSize(vg_, 9)
+        nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg_, lblClr)
+        nvgText(vg_, bx + btnW/2, by + btnH/2, label)
+        if not onCD then
+            addHit(bx, by, btnW, btnH, function()
+                harvestAllCD_ = HARVEST_ALL_CD
+                if onHarvestAllCb_ then onHarvestAllCb_() end
+            end)
+        end
+    end
 
     -- 分隔线
     nvgBeginPath(vg_)
@@ -1725,6 +1768,115 @@ end
 -- ============================================================================
 -- 游戏超时覆盖层
 -- ============================================================================
+-- ============================================================================
+-- 星图随机事件弹窗
+-- ============================================================================
+local function renderEventPopup()
+    if not eventPopup_ then return end
+    local ev       = eventPopup_.ev
+    local onChoice = eventPopup_.onChoice
+    local r, g, b  = ev.color[1], ev.color[2], ev.color[3]
+
+    -- 半透明全屏遮罩
+    nvgBeginPath(vg_)
+    nvgRect(vg_, 0, 0, screenW_, screenH_)
+    nvgFillColor(vg_, nvgRGBA(0, 0, 0, 160))
+    nvgFill(vg_)
+
+    -- 弹窗主体
+    local panW  = math.min(screenW_ - 40, 340)
+    local btnH  = 34
+    local padV  = 14
+    local titleH = 32
+    local descH  = 36
+    local choiceH = #ev.choices * (btnH + 8)
+    local panH  = titleH + padV + descH + padV + choiceH + padV
+    local panX  = screenW_ / 2 - panW / 2
+    local panY  = screenH_ / 2 - panH / 2
+
+    -- 背景
+    nvgBeginPath(vg_)
+    nvgRoundedRect(vg_, panX, panY, panW, panH, 10)
+    nvgFillColor(vg_, nvgRGBA(6, 12, 28, 248))
+    nvgFill(vg_)
+    -- 边框（事件主色）
+    nvgBeginPath(vg_)
+    nvgRoundedRect(vg_, panX + 0.5, panY + 0.5, panW - 1, panH - 1, 10)
+    nvgStrokeColor(vg_, nvgRGBA(r, g, b, 200))
+    nvgStrokeWidth(vg_, 1.5)
+    nvgStroke(vg_)
+    -- 顶部彩色条
+    nvgBeginPath(vg_)
+    nvgRoundedRect(vg_, panX, panY, panW, 4, 10)
+    nvgFillColor(vg_, nvgRGBA(r, g, b, 200))
+    nvgFill(vg_)
+
+    -- 标题行（图标 + 名称）
+    nvgFontFace(vg_, "sans")
+    nvgFontSize(vg_, 15)
+    nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg_, nvgRGBA(r, g, b, 255))
+    nvgText(vg_, screenW_ / 2, panY + 4 + titleH / 2 + 2,
+        ev.icon .. "  " .. ev.label)
+
+    -- 描述文字（可换行裁剪）
+    local descY = panY + titleH + padV
+    nvgFontSize(vg_, 11)
+    nvgFillColor(vg_, nvgRGBA(180, 200, 230, 200))
+    nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_TOP)
+    nvgTextBox(vg_, panX + 16, descY, panW - 32, ev.desc)
+
+    -- 选项按钮
+    local btnY = descY + descH + padV
+    for idx, ch in ipairs(ev.choices) do
+        local isCancel = (ch.cost == nil and ch.gain == nil and ch.res == nil)
+        local bgR = isCancel and nvgRGBA(40, 40, 60, 180) or nvgRGBA(r//4, g//4, b//4, 200)
+        local bdR = isCancel and nvgRGBA(80, 80, 120, 120) or nvgRGBA(r, g, b, 160)
+        local txR = isCancel and nvgRGBA(140, 150, 180, 200) or nvgRGBA(r, g, b, 240)
+
+        local bx = panX + 12
+        local bw = panW - 24
+        -- 按钮背景
+        nvgBeginPath(vg_)
+        nvgRoundedRect(vg_, bx, btnY, bw, btnH, 6)
+        nvgFillColor(vg_, bgR)
+        nvgFill(vg_)
+        nvgBeginPath(vg_)
+        nvgRoundedRect(vg_, bx + 0.5, btnY + 0.5, bw - 1, btnH - 1, 6)
+        nvgStrokeColor(vg_, bdR)
+        nvgStrokeWidth(vg_, 1)
+        nvgStroke(vg_)
+        -- 悬停高亮
+        if cursorX_ >= bx and cursorX_ <= bx + bw
+            and cursorY_ >= btnY and cursorY_ <= btnY + btnH then
+            nvgBeginPath(vg_)
+            nvgRoundedRect(vg_, bx, btnY, bw, btnH, 6)
+            nvgFillColor(vg_, nvgRGBA(255, 255, 255, 18))
+            nvgFill(vg_)
+        end
+        -- 按钮文字
+        nvgFontSize(vg_, 11)
+        nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg_, txR)
+        nvgText(vg_, bx + bw / 2, btnY + btnH / 2, ch.text)
+
+        -- 注册点击区域
+        local captureIdx = idx
+        addHit(bx, btnY, bw, btnH, function()
+            eventPopup_ = nil
+            if onChoice then onChoice(captureIdx) end
+        end)
+        btnY = btnY + btnH + 8
+    end
+end
+
+--- 外部接口：显示事件弹窗
+---@param ev     table   事件数据（来自 GalaxyScene 的随机事件节点）
+---@param onChoice function(choiceIdx) 玩家选择后的回调
+function GameUI.ShowEventPopup(ev, onChoice)
+    eventPopup_ = { ev = ev, onChoice = onChoice }
+end
+
 local function renderTimeoutOverlay()
     if not timeoutActive_ then return end
 
@@ -1883,6 +2035,9 @@ function GameUI.RenderHUD()
     -- 新手教程弹窗（在通知之后渲染，确保最高层级）
     TutorialSystem.Render()
 
+    -- 星图随机事件弹窗（覆盖在教程之后）
+    renderEventPopup()
+
     -- 超时覆盖层
     renderTimeoutOverlay()
     -- 结算覆盖层（最顶层，覆盖超时层）
@@ -1992,6 +2147,7 @@ function GameUI.Init(opts)
     onAssignReserveCb_  = opts.onAssignReserveCb
     onSpeedUpBuildCb_      = opts.onSpeedUpBuildCb
     onBuyNuclearCb_        = opts.onBuyNuclearCb
+    onHarvestAllCb_        = opts.onHarvestAllCb
     getConquestProgress_   = opts.getConquestProgress
     lbOnRequest_           = opts.onShowLeaderboard
     if opts.fm then
@@ -2046,6 +2202,7 @@ function GameUI.Shutdown()
     displayRes_ = {}
     flashRes_   = {}
     ripples_    = {}
+    eventPopup_ = nil
     print("[GameUI] 已关闭")
 end
 

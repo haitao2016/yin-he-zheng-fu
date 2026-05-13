@@ -96,6 +96,61 @@ local asteroids_       = {}
 local touches_         = {}   -- [touchID] = { x, y }（逻辑像素）
 local pinchDist_       = nil  -- 上一帧双指间距
 
+-- 种子飞船前向声明（完整初始化在下方 SEED 区域）
+---@type table
+local seedShip_        = nil
+
+-- ============================================================================
+-- 星图随机事件
+-- ============================================================================
+local galaxyEvents_      = {}   -- 当前地图上存活的事件节点
+local eventSpawnTimer_   = 0    -- 下次生成事件的倒计时
+local EVENT_SPAWN_INTERVAL = 90 -- 每 90 秒生成新事件
+local EVENT_LIFESPAN       = 120 -- 事件节点存活时间（秒）
+local EVENT_MAX_COUNT      = 3   -- 地图上最多同时存在事件数
+local onGalaxyEvent_     = nil  -- 回调：由 Client.lua 注入
+
+local EVENT_TYPES = {
+    MINE = {
+        id      = "MINE",
+        label   = "废弃矿场",
+        icon    = "⛏",
+        color   = {180, 140, 80},
+        desc    = "探测到废弃星际矿场，内含大量原矿残留。",
+        choices = {
+            { text = "派遣探测器采集", res = "minerals", amount = 0 },  -- amount 在生成时随机
+            { text = "放弃，继续探索" },
+        },
+    },
+    MERCHANT = {
+        id      = "MERCHANT",
+        label   = "流浪商人",
+        icon    = "🛸",
+        color   = {80, 200, 255},
+        desc    = "遭遇流浪商船，对方愿意以矿石换取能量块。",
+        choices = {
+            { text = "以矿石×80 换取能量×60",
+              cost = {minerals=80}, gain = {energy=60} },
+            { text = "以晶石×30 换取矿石×100",
+              cost = {crystal=30},  gain = {minerals=100} },
+            { text = "拒绝交易" },
+        },
+    },
+    RIFT = {
+        id      = "RIFT",
+        label   = "时空裂缝",
+        icon    = "✦",
+        color   = {180, 80, 255},
+        desc    = "发现异常时空裂缝，辐射极高但蕴含未知能量。",
+        choices = {
+            { text = "进入裂缝采集能量", gain = {energy=120, crystal=40}, hpLoss = true },
+            { text = "绕道远航（耗时）",  gain = {crystal=20} },
+            { text = "封锁区域，上报基地" },
+        },
+    },
+}
+local EVENT_TYPE_KEYS = {"MINE", "MERCHANT", "RIFT"}
+
 
 
 -- ============================================================================
@@ -311,6 +366,143 @@ local function generateAsteroids()
 end
 
 -- ============================================================================
+-- 星图随机事件：生成 / 更新
+-- ============================================================================
+local function spawnGalaxyEvent()
+    if #galaxyEvents_ >= EVENT_MAX_COUNT then return end
+    -- 在世界坐标随机位置生成（避开基地附近 400 格以内）
+    local tries = 0
+    local wx, wy
+    repeat
+        wx = (math.random() - 0.5) * 3600
+        wy = (math.random() - 0.5) * 3600
+        tries = tries + 1
+        -- 避开基地
+        local bx = seedShip_.x or 0
+        local by = seedShip_.y or 0
+        local d  = math.sqrt((wx-bx)^2 + (wy-by)^2)
+        if d > 400 then break end
+    until tries > 20
+
+    -- 随机选取类型
+    local typeKey = EVENT_TYPE_KEYS[math.random(1, #EVENT_TYPE_KEYS)]
+    local tpl     = EVENT_TYPES[typeKey]
+
+    -- 对 MINE 类型，随机化采集量
+    local choices = {}
+    for i, ch in ipairs(tpl.choices) do
+        local c = {}
+        for k, v in pairs(ch) do c[k] = v end
+        if i == 1 and typeKey == "MINE" then
+            c.amount = 60 + math.random(0, 80)   -- 60~140 矿石
+        end
+        choices[#choices+1] = c
+    end
+
+    galaxyEvents_[#galaxyEvents_+1] = {
+        id       = #galaxyEvents_ + 1 + math.random(1000),
+        typeKey  = typeKey,
+        label    = tpl.label,
+        icon     = tpl.icon,
+        color    = tpl.color,
+        desc     = tpl.desc,
+        choices  = choices,
+        x        = wx,
+        y        = wy,
+        life     = EVENT_LIFESPAN,  -- 剩余存活秒数
+        pulse    = 0,               -- 动画相位
+        claimed  = false,
+    }
+    print(string.format("[GalaxyEvent] 新事件 %s @ (%.0f, %.0f)", typeKey, wx, wy))
+end
+
+local function updateGalaxyEvents(dt)
+    if not seedShip_.colonized then return end  -- 基地未建立前不生成
+    -- 倒计时 → 尝试生成
+    eventSpawnTimer_ = eventSpawnTimer_ - dt
+    if eventSpawnTimer_ <= 0 then
+        eventSpawnTimer_ = EVENT_SPAWN_INTERVAL + math.random(0, 30)
+        spawnGalaxyEvent()
+    end
+    -- 更新脉冲动画 + 到期删除
+    local i = 1
+    while i <= #galaxyEvents_ do
+        local ev = galaxyEvents_[i]
+        ev.pulse = ev.pulse + dt * 2.5
+        if not ev.claimed then
+            ev.life = ev.life - dt
+            if ev.life <= 0 then
+                table.remove(galaxyEvents_, i)
+            else
+                i = i + 1
+            end
+        else
+            -- claimed 后淡出（0.8 秒）再删除
+            ev.fadeTimer = (ev.fadeTimer or 0.8) - dt
+            if ev.fadeTimer <= 0 then
+                table.remove(galaxyEvents_, i)
+            else
+                i = i + 1
+            end
+        end
+    end
+end
+
+--- 渲染所有事件节点（在 Render 中调用）
+local function drawGalaxyEvents()
+    for _, ev in ipairs(galaxyEvents_) do
+        if not ev.claimed then
+            local sx, sy = w2s(ev.x, ev.y)
+            -- 视口裁剪
+            if sx < -40 or sx > screenW_+40 or sy < -40 or sy > screenH_+40 then
+                goto continue_ev
+            end
+            local r   = ev.color[1]
+            local g   = ev.color[2]
+            local b   = ev.color[3]
+            local t   = ev.pulse
+            -- 脉冲光晕
+            local haloR = 18 + math.sin(t) * 5
+            local haloA = math.floor(60 + math.sin(t) * 30)
+            nvgBeginPath(vg_)
+            nvgCircle(vg_, sx, sy, haloR)
+            nvgFillColor(vg_, nvgRGBA(r, g, b, haloA))
+            nvgFill(vg_)
+            -- 核心圆
+            nvgBeginPath(vg_)
+            nvgCircle(vg_, sx, sy, 9)
+            nvgFillColor(vg_, nvgRGBA(r, g, b, 200))
+            nvgFill(vg_)
+            nvgBeginPath(vg_)
+            nvgCircle(vg_, sx, sy, 9)
+            nvgStrokeColor(vg_, nvgRGBA(255, 255, 255, 160))
+            nvgStrokeWidth(vg_, 1)
+            nvgStroke(vg_)
+            -- 图标文字
+            nvgFontFace(vg_, "sans")
+            nvgFontSize(vg_, 11)
+            nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg_, nvgRGBA(255, 255, 255, 230))
+            nvgText(vg_, sx, sy, ev.icon)
+            -- 标签（下方）
+            nvgFontSize(vg_, 9)
+            nvgFillColor(vg_, nvgRGBA(r, g, b, 200))
+            nvgText(vg_, sx, sy + 16, ev.label)
+            -- 生命值警示（< 30s 时变红闪烁）
+            if ev.life < 30 then
+                local blink = math.floor(ev.pulse * 2) % 2 == 0
+                if blink then
+                    nvgFontSize(vg_, 8)
+                    nvgFillColor(vg_, nvgRGBA(255, 80, 80, 200))
+                    nvgText(vg_, sx, sy + 26, string.format("%ds", math.ceil(ev.life)))
+                end
+            end
+            ::continue_ev::
+        end
+    end
+end
+
+-- ============================================================================
 -- 种子飞船（游戏起始阶段）
 -- ============================================================================
 local SEED_SPEED      = 300   -- 世界坐标/秒（未展开时移动速度）
@@ -320,7 +512,7 @@ local SEED_DEPLOY_DUR = 2.5   -- 展开动画时长（秒）
 --   "moving"    - 可移动，未展开
 --   "deploying" - 展开动画播放中（不可操控）
 --   "deployed"  - 展开完毕，位置固定，游戏正式开始
-local seedShip_ = {
+seedShip_ = {
     x = 0, y = 0,        -- 世界坐标（Init 时随机设置）
     state = "moving",
     timer = 0,           -- 展开动画计时器
@@ -1055,6 +1247,21 @@ local function handleClick(mx, my)
         return
     end
 
+    -- 检测随机事件节点点击（基地展开后）
+    if seedShip_.state == "deployed" then
+        for _, ev in ipairs(galaxyEvents_) do
+            if not ev.claimed then
+                local esx, esy = w2s(ev.x, ev.y)
+                if dist2(mx, my, esx, esy) < 22 then
+                    ev.claimed = true
+                    if onGalaxyEvent_ then
+                        onGalaxyEvent_(ev)
+                    end
+                    return
+                end
+            end
+        end
+    end
     -- 优先检测小行星点击（挖矿船指派）
     if tryClickAsteroid(mx, my) then return end
 
@@ -1186,7 +1393,11 @@ function GalaxyScene.Init(opts)
     onFleetContactPirateBase_ = opts.onFleetContactPirateBase
     onFleetMove_              = opts.onFleetMove
     -- 海盗 AI（可选）
-    pirateAI_     = opts.pirateAI
+    pirateAI_        = opts.pirateAI
+    onGalaxyEvent_   = opts.onGalaxyEvent
+    -- 初始化随机事件计时（30~60s 后首次生成）
+    galaxyEvents_    = {}
+    eventSpawnTimer_ = 30 + math.random(0, 30)
     -- 加载所有游戏纹理
     local f = NVG_IMAGE_PREMULTIPLIED
     asteroidImgs_["minerals"] = nvgCreateImage(vg_, "image/asteroid_minerals_20260511190702.png", f)
@@ -1743,6 +1954,8 @@ function GalaxyScene.Update(dt)
     updateFleets(dt)
     -- 海盗 AI 更新
     if pirateAI_ then pirateAI_:update(dt) end
+    -- 随机事件更新
+    updateGalaxyEvents(dt)
     -- 耗尽的小行星定期重生
     for _, a in ipairs(asteroids_) do
         if a.hp <= 0 then
@@ -1820,17 +2033,56 @@ local function drawSeedShip()
                 (ss.state == "deployed")  and 1 or 0
     local pulse = math.abs(math.sin(ss.pulse * 2)) * 0.5 + 0.5  -- 0.5~1.0
 
-    -- 展开状态：基地光圈（deployed 后显示）
+    -- 展开状态：基地光圈（deployed 后显示，颜色/大小随核心等级变化）
     if ss.state == "deployed" then
-        local baseR = (60 + pulse * 8) * zoom_
+        local lv = ss.coreLevel or 1
+        -- 等级越高，光圈越大（Lv1=60, 每级+5, 最大=110）
+        local baseR = (math.min(110, 55 + lv * 5) + pulse * (4 + lv * 0.5)) * zoom_
+        -- 颜色渐变：Lv1-2=绿，Lv3-5=蓝，Lv6-8=紫，Lv9-10=金
+        local cr, cg, cb
+        if lv <= 2 then
+            cr, cg, cb = 0, 200, 120        -- 绿
+        elseif lv <= 5 then
+            local tf = (lv - 2) / 3
+            cr = math.floor(0 + tf * 80)
+            cg = math.floor(200 - tf * 60)
+            cb = math.floor(120 + tf * 135)  -- 蓝
+        elseif lv <= 8 then
+            local tf = (lv - 5) / 3
+            cr = math.floor(80  + tf * 175)
+            cg = math.floor(140 - tf * 90)
+            cb = math.floor(255 - tf * 55)   -- 紫→金
+        else
+            cr, cg, cb = 255, 200, 60       -- 金
+        end
+        -- 外发光
         local glow = nvgRadialGradient(vg_, sx, sy, baseR * 0.3, baseR,
-            nvgRGBA(0, 200, 120, 60), nvgRGBA(0, 200, 120, 0))
+            nvgRGBA(cr, cg, cb, 70), nvgRGBA(cr, cg, cb, 0))
         nvgBeginPath(vg_); nvgCircle(vg_, sx, sy, baseR)
         nvgFillPaint(vg_, glow); nvgFill(vg_)
-
+        -- 外圈线（等级越高线越粗）
         nvgBeginPath(vg_); nvgCircle(vg_, sx, sy, baseR)
-        nvgStrokeColor(vg_, nvgRGBA(0, 220, 130, math.floor(80 + pulse * 60)))
-        nvgStrokeWidth(vg_, 1.5); nvgStroke(vg_)
+        nvgStrokeColor(vg_, nvgRGBA(cr, cg, cb, math.floor(80 + pulse * 70)))
+        nvgStrokeWidth(vg_, math.min(3.0, 1.2 + lv * 0.2)); nvgStroke(vg_)
+        -- 高等级（Lv5+）额外内圈
+        if lv >= 5 then
+            local innerR = baseR * 0.55
+            nvgBeginPath(vg_); nvgCircle(vg_, sx, sy, innerR)
+            nvgStrokeColor(vg_, nvgRGBA(cr, cg, cb, math.floor(50 + pulse * 50)))
+            nvgStrokeWidth(vg_, 0.8); nvgStroke(vg_)
+        end
+        -- Lv8+ 旋转轨道环（模拟防御圈）
+        if lv >= 8 then
+            local orbitR = baseR * 0.75
+            local orbitAngle = ss.pulse * 0.8  -- 缓慢旋转
+            for oi = 0, 2 do
+                local oa = orbitAngle + oi * math.pi * 2 / 3
+                local dotX = sx + math.cos(oa) * orbitR
+                local dotY = sy + math.sin(oa) * orbitR
+                nvgBeginPath(vg_); nvgCircle(vg_, dotX, dotY, 2.5 * zoom_)
+                nvgFillColor(vg_, nvgRGBA(cr, cg, cb, 220)); nvgFill(vg_)
+            end
+        end
     end
 
     -- 展开动画：扩散光环
@@ -1903,7 +2155,14 @@ local function drawSeedShip()
             else nvgLineTo(vg_, math.cos(theta)*r, math.sin(theta)*r) end
         end
         nvgClosePath(vg_)
-        if ss.state == "deployed" then nvgFillColor(vg_, nvgRGBA(0,200,120,240))
+        if ss.state == "deployed" then
+            -- 等级颜色：同光圈配色
+            local lv2 = ss.coreLevel or 1
+            if     lv2 <= 2 then nvgFillColor(vg_, nvgRGBA(0,200,120,240))
+            elseif lv2 <= 5 then nvgFillColor(vg_, nvgRGBA(60,150,255,240))
+            elseif lv2 <= 8 then nvgFillColor(vg_, nvgRGBA(180,80,255,240))
+            else                 nvgFillColor(vg_, nvgRGBA(255,200,60,240))
+            end
         else nvgFillColor(vg_, nvgRGBA(80,160,255, math.floor(shipAlpha))) end
         nvgFill(vg_)
     end
@@ -1921,8 +2180,16 @@ local function drawSeedShip()
     nvgFontSize(vg_, math.max(9, 11 * zoom_))
     nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_TOP)
     if ss.state == "deployed" then
-        nvgFillColor(vg_, nvgRGBA(0, 220, 130, 220))
-        nvgText(vg_, sx, sy + r + 4, "[ 星航基地 ]")
+        local lv3 = ss.coreLevel or 1
+        local lr, lg, lb
+        if     lv3 <= 2 then lr, lg, lb = 0,   220, 130
+        elseif lv3 <= 5 then lr, lg, lb = 80,  180, 255
+        elseif lv3 <= 8 then lr, lg, lb = 200, 120, 255
+        else                 lr, lg, lb = 255, 210, 80
+        end
+        nvgFillColor(vg_, nvgRGBA(lr, lg, lb, 220))
+        nvgText(vg_, sx, sy + r + 4,
+            string.format("[ 星航基地 Lv.%d ]", lv3))
     elseif ss.state == "deploying" then
         nvgFillColor(vg_, nvgRGBA(100, 220, 255, 200))
         nvgText(vg_, sx, sy + r * bodyScale + 4,
@@ -2043,6 +2310,7 @@ function GalaxyScene.Render()
     -- 渲染海盗基地和舰队
     if pirateAI_ then pirateAI_:render(vg_, w2s, zoom_) end
     drawSeedShip()
+    drawGalaxyEvents()
     drawAsteroidSummary()
     drawMinimap()
     -- 海盗进攻预警 HUD（有海盗舰队在途时显示）

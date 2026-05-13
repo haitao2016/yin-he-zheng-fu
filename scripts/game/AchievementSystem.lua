@@ -5,10 +5,10 @@
 local AchievementSystem = {}
 
 -- ─── 成就定义 ─────────────────────────────────────────────────────────────────
--- 每条成就：{ id, name, desc, check(state) → bool }
+-- 每条成就：{ id, name, desc, event, check(state) → bool }
 -- state 由 AchievementSystem.Check(eventName, state) 传入
 local ACHIEVEMENTS = {
-    -- 殖民类
+    -- ── 殖民类 ───────────────────────────────────────────────────────────────
     {
         id    = "first_colony",
         name  = "星际拓荒者",
@@ -23,7 +23,14 @@ local ACHIEVEMENTS = {
         event = "colonize",
         check = function(s) return (s.totalColonized or 0) >= 5 end,
     },
-    -- 战斗类
+    {
+        id    = "colony_10",
+        name  = "星域霸主",
+        desc  = "累计殖民 10 颗星球",
+        event = "colonize",
+        check = function(s) return (s.totalColonized or 0) >= 10 end,
+    },
+    -- ── 战斗类 ───────────────────────────────────────────────────────────────
     {
         id    = "first_kill",
         name  = "初战告捷",
@@ -38,7 +45,36 @@ local ACHIEVEMENTS = {
         event = "pirate_kill",
         check = function(s) return (s.piratesKilled or 0) >= 3 end,
     },
-    -- 科技类
+    {
+        id    = "pirate_destroyer",
+        name  = "海盗终结者",
+        desc  = "累计击败 10 次海盗袭击",
+        event = "pirate_kill",
+        check = function(s) return (s.piratesKilled or 0) >= 10 end,
+    },
+    -- ── 舰队类 ───────────────────────────────────────────────────────────────
+    {
+        id    = "first_ship",
+        name  = "造船初体验",
+        desc  = "建造第一艘舰船",
+        event = "ship_built",
+        check = function(s) return (s.totalShipsBuilt or 0) >= 1 end,
+    },
+    {
+        id    = "fleet_builder",
+        name  = "舰队缔造者",
+        desc  = "累计建造 20 艘舰船",
+        event = "ship_built",
+        check = function(s) return (s.totalShipsBuilt or 0) >= 20 end,
+    },
+    {
+        id    = "carrier_deploy",
+        name  = "巨舰出击",
+        desc  = "建造第一艘母舰（CARRIER）",
+        event = "ship_built",
+        check = function(s) return s.lastBuiltType == "CARRIER" end,
+    },
+    -- ── 科技类 ───────────────────────────────────────────────────────────────
     {
         id    = "first_research",
         name  = "科研先驱",
@@ -46,7 +82,29 @@ local ACHIEVEMENTS = {
         event = "research_complete",
         check = function(s) return (s.totalResearch or 0) >= 1 end,
     },
-    -- 胜利类
+    {
+        id    = "tech_enthusiast",
+        name  = "科技狂热者",
+        desc  = "累计研究 5 项科技",
+        event = "research_complete",
+        check = function(s) return (s.totalResearch or 0) >= 5 end,
+    },
+    {
+        id    = "tech_master",
+        name  = "科技大师",
+        desc  = "累计研究 10 项科技",
+        event = "research_complete",
+        check = function(s) return (s.totalResearch or 0) >= 10 end,
+    },
+    -- ── 资源类 ───────────────────────────────────────────────────────────────
+    {
+        id    = "resource_hoarder",
+        name  = "资源囤积者",
+        desc  = "同时持有金属 5000",
+        event = "resource_milestone",
+        check = function(s) return (s.metal or 0) >= 5000 end,
+    },
+    -- ── 胜利类 ───────────────────────────────────────────────────────────────
     {
         id    = "galactic_conquest",
         name  = "银河征服者",
@@ -54,7 +112,7 @@ local ACHIEVEMENTS = {
         event = "victory",
         check = function(s) return s.victory == true end,
     },
-    -- 速通类
+    -- ── 速通类 ───────────────────────────────────────────────────────────────
     {
         id    = "speed_runner",
         name  = "神速指挥官",
@@ -84,13 +142,13 @@ end
 
 -- ─── 触发检查 ─────────────────────────────────────────────────────────────────
 --- 外部调用：某个事件发生时，传入 eventName 和游戏状态快照 state
----@param eventName string  事件名（colonize / pirate_kill / research_complete / victory）
+---@param eventName string  事件名（colonize/pirate_kill/ship_built/research_complete/resource_milestone/victory）
 ---@param state     table   游戏状态快照
 function AchievementSystem.Check(eventName, state)
     for _, ach in ipairs(ACHIEVEMENTS) do
         if ach.event == eventName and not unlocked_[ach.id] then
-            local ok, err = pcall(ach.check, state)
-            if ok and err then   -- err 在 pcall 成功时就是返回值
+            local ok, result = pcall(ach.check, state)
+            if ok and result then
                 unlocked_[ach.id] = true
                 notifyFn_("🏆 成就解锁: " .. ach.name .. "\n" .. ach.desc, "success")
                 print(string.format("[Achievement] 解锁: %s (%s)", ach.name, ach.id))
@@ -116,6 +174,11 @@ function AchievementSystem.SetUnlocked(list)
     for _, id in ipairs(list or {}) do
         unlocked_[id] = true
     end
+end
+
+--- 返回成就总数（用于展示进度）
+function AchievementSystem.GetTotal()
+    return #ACHIEVEMENTS
 end
 
 return AchievementSystem

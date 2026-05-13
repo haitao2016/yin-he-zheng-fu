@@ -47,7 +47,9 @@ function BasePanel.Render(base, ctx)
     local coreLevel  = base.coreLevel or 1
     local isMaxCore  = coreLevel >= BASE_CORE_MAX_LEVEL
 
-    local headerH = 36 + 18 + 18 + 18 + (base.constructing and 26 or 16) + 16
+    -- +16 = 下一级解锁预览行（未满级时显示）
+    local headerH = 36 + 18 + 16 + 16 + (not isMaxCore and 16 or 0)
+                  + (base.constructing and 26 or 16) + 16
                   + (shipyardMult > 1.01 and 14 or 0)
 
     local scrollContentH = 18
@@ -153,7 +155,25 @@ function BasePanel.Render(base, ctx)
         if not isMaxCore and costStr ~= "" then
             text(px+14, sy+6, "下级费用: " .. costStr, 8, 120, 160, 200, 160)
         end
-        sy = sy + 18
+        sy = sy + 16
+
+        -- 下一级解锁模块预览
+        if not isMaxCore then
+            local nextLv = coreLevel + 1
+            local unlockList = BASE_CORE_UNLOCK_PREVIEW and BASE_CORE_UNLOCK_PREVIEW[nextLv] or {}
+            if #unlockList > 0 then
+                local names = {}
+                for _, k in ipairs(unlockList) do
+                    names[#names+1] = (BASE_MODULES[k] and BASE_MODULES[k].name) or k
+                end
+                text(px+14, sy+6, "Lv."..nextLv.." 解锁: " .. table.concat(names, " · "),
+                    8, 100, 220, 160, 180)
+            else
+                text(px+14, sy+6, "Lv."..nextLv.." 无新模块（槽位+1）",
+                    8, 100, 140, 160, 130)
+            end
+            sy = sy + 16
+        end
     end
 
     -- 队列进度
