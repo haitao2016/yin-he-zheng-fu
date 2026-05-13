@@ -2,7 +2,8 @@
 -- game/BattleScene.lua  -- 战术战斗场景
 -- ============================================================================
 
-local Audio = require("game.AudioManager")
+local Audio    = require("game.AudioManager")
+local UICommon = require("game.ui.UICommon")
 
 local BattleScene = {}
 
@@ -73,6 +74,13 @@ local shakeStrength_ = 0   -- 震动强度（像素）
 local shakeOffX_     = 0   -- 当前帧震动偏移 X
 local shakeOffY_     = 0   -- 当前帧震动偏移 Y
 
+-- 烟花粒子系统（波次胜利特效）
+local fwParticles_   = {}  -- {x,y,vx,vy,life,maxLife,r,g,b,tail}
+local fwLaunchTimer_ = 0   -- 下次发射烟花的倒计时
+
+-- INTERCEPTOR 引擎音效节流
+local interceptorEngineTimer_ = 0   -- 距离下次允许播放的冷却（秒）
+
 -- ============================================================================
 -- 舰船工厂
 -- ============================================================================
@@ -102,6 +110,7 @@ local function makeShip(stype, x, y, team)
         aoeRadius = cfg.aoeRadius or 0,  -- 溅射半径，0 表示单体攻击
         target    = nil,
         attackTarget = nil,
+        hitFlash  = 0,   -- 受击闪白强度（1.0=刚受击，0=正常）
     }
 end
 
@@ -223,8 +232,8 @@ function BattleScene.Init(opts)
     shipImages_["MINER"]         = nvgCreateImage(vg_, "image/ship_miner_20260511185819.png",         imageFlags)
     shipImages_["ENGINEER"]      = nvgCreateImage(vg_, "image/ship_engineer_20260512071656.png",      imageFlags)
     shipImages_["EXPLORER"]      = nvgCreateImage(vg_, "image/ship_explorer_20260512071647.png",      imageFlags)
-    shipImages_["CARRIER"]       = nvgCreateImage(vg_, "image/ship_carrier_20260513035503.png",       imageFlags)
-    shipImages_["INTERCEPTOR"]   = nvgCreateImage(vg_, "image/ship_interceptor_20260513035504.png",   imageFlags)
+    shipImages_["CARRIER"]       = nvgCreateImage(vg_, "image/ship_carrier_20260513074052.png",       imageFlags)
+    shipImages_["INTERCEPTOR"]   = nvgCreateImage(vg_, "image/ship_interceptor_20260513074045.png",   imageFlags)
     print("[BattleScene] 舰船纹理加载完成")
 
     BattleScene.Reset()
@@ -232,9 +241,7 @@ function BattleScene.Init(opts)
 end
 
 function BattleScene.Reset()
-    local dpr = graphics:GetDPR()
-    screenW_ = graphics:GetWidth()  / dpr
-    screenH_ = graphics:GetHeight() / dpr
+    screenW_, screenH_ = UICommon.getVirtualSize()
 
     -- 基础玩家舰队
     local midY = (screenH_ + 88) / 2   -- 战场中线（排除顶部标题区）
@@ -261,7 +268,10 @@ function BattleScene.Reset()
     shakeStrength_   = 0
     shakeOffX_       = 0
     shakeOffY_       = 0
-    moveTarget_      = nil
+    fwParticles_            = {}
+    fwLaunchTimer_          = 0
+    interceptorEngineTimer_ = 0
+    moveTarget_             = nil
     moveTargetTimer_ = 0
     state_           = "fighting"
     stateTimer_      = 0
@@ -283,9 +293,7 @@ function BattleScene.StartNextWave()
     waveNum_ = waveNum_ + 1
     -- 保留存活玩家舰船
     local survivors = playerFleet_
-    local dpr = graphics:GetDPR()
-    screenW_ = graphics:GetWidth()  / dpr
-    screenH_ = graphics:GetHeight() / dpr
+    screenW_, screenH_ = UICommon.getVirtualSize()
     playerFleet_ = survivors
     -- 加入排队新舰
     for _, ps in ipairs(pendingShips_) do
@@ -332,9 +340,7 @@ end
 -- ============================================================================
 function BattleScene.Update(dt)
     shootSfxTimer_ = math.max(0, shootSfxTimer_ - dt)
-    local dpr = graphics:GetDPR()
-    screenW_ = graphics:GetWidth()  / dpr
-    screenH_ = graphics:GetHeight() / dpr
+    screenW_, screenH_ = UICommon.getVirtualSize()
 
     -- === 主动技能计时 ===
     if state_ == "fighting" then
@@ -388,6 +394,46 @@ function BattleScene.Update(dt)
         if waveGapTimer_ >= WAVE_GAP then
             BattleScene.StartNextWave()
         end
+        -- 烟花粒子：周期性发射
+        fwLaunchTimer_ = fwLaunchTimer_ - dt
+        if fwLaunchTimer_ <= 0 then
+            fwLaunchTimer_ = 0.22 + math.random() * 0.18
+            -- 随机颜色
+            local hue = math.random()
+            local r = math.floor(128 + 127 * math.abs(math.sin(hue * math.pi * 2)))
+            local g = math.floor(128 + 127 * math.abs(math.sin((hue + 0.33) * math.pi * 2)))
+            local b = math.floor(128 + 127 * math.abs(math.sin((hue + 0.66) * math.pi * 2)))
+            local cx = screenW_ * (0.15 + math.random() * 0.7)
+            local cy = screenH_ * (0.1 + math.random() * 0.4)
+            -- 爆炸碎片（18 粒）
+            for _ = 1, 18 do
+                local angle = math.random() * math.pi * 2
+                local spd   = 55 + math.random() * 95
+                fwParticles_[#fwParticles_+1] = {
+                    x = cx, y = cy,
+                    vx = math.cos(angle) * spd,
+                    vy = math.sin(angle) * spd - 40,   -- 轻微上飘偏向
+                    life = 0.7 + math.random() * 0.5,
+                    maxLife = 1.2,
+                    r = r, g = g, b = b,
+                }
+            end
+        end
+        -- 更新烟花粒子
+        local i = 1
+        while i <= #fwParticles_ do
+            local p = fwParticles_[i]
+            p.x    = p.x + p.vx * dt
+            p.y    = p.y + p.vy * dt
+            p.vy   = p.vy + 60 * dt   -- 重力
+            p.life = p.life - dt
+            if p.life <= 0 then
+                fwParticles_[i] = fwParticles_[#fwParticles_]
+                fwParticles_[#fwParticles_] = nil
+            else
+                i = i + 1
+            end
+        end
         return
     end
 
@@ -421,6 +467,7 @@ function BattleScene.Update(dt)
                     local actualDmg = math.floor(ship.dmg * focusMult)
                     -- 主目标伤害
                     nearest.health = nearest.health - actualDmg
+                    nearest.hitFlash = 1.0
                     -- 战列舰 AOE：对主目标周围所有敌舰造成 50% 溅射伤害
                     if ship.aoeRadius > 0 then
                         local aoeDmg = math.floor(actualDmg * 0.5)
@@ -446,8 +493,14 @@ function BattleScene.Update(dt)
                         isBig = (ship.stype == "BATTLECRUISER")
                     }
                     if shootSfxTimer_ <= 0 then
-                        local sfx = (ship.stype == "BATTLECRUISER" or ship.stype == "DESTROYER")
-                            and Audio.SFX.SHOOT_MISSILE or Audio.SFX.SHOOT_LASER
+                        local sfx
+                        if ship.stype == "CARRIER" then
+                            sfx = Audio.SFX.CARRIER_ATTACK
+                        elseif ship.stype == "BATTLECRUISER" or ship.stype == "DESTROYER" then
+                            sfx = Audio.SFX.SHOOT_MISSILE
+                        else
+                            sfx = Audio.SFX.SHOOT_LASER
+                        end
                         Audio.Play(sfx, 0.5)
                         shootSfxTimer_ = 0.12
                     end
@@ -490,6 +543,7 @@ function BattleScene.Update(dt)
                         es.lastShot = 0
                         -- 主目标伤害
                         target.health = target.health - es.dmg
+                        target.hitFlash = 1.0
                         -- 敌方战列舰 AOE
                         if es.aoeRadius > 0 then
                             local aoeDmg = math.floor(es.dmg * 0.5)
@@ -690,6 +744,37 @@ function BattleScene.Update(dt)
         end
     end
 
+    -- === 衰减受击闪白 ===
+    local flashDecay = dt * 8   -- 0.125 秒内衰减到 0
+    for _, s in ipairs(playerFleet_) do
+        if s.hitFlash > 0 then s.hitFlash = math.max(0, s.hitFlash - flashDecay) end
+    end
+    for _, s in ipairs(enemyFleet_) do
+        if s.hitFlash > 0 then s.hitFlash = math.max(0, s.hitFlash - flashDecay) end
+    end
+
+    -- === INTERCEPTOR 引擎音效（节流 0.6s，有拦截舰高速移动时触发）===
+    interceptorEngineTimer_ = math.max(0, interceptorEngineTimer_ - dt)
+    if interceptorEngineTimer_ <= 0 then
+        local hasMoving = false
+        for _, s in ipairs(playerFleet_) do
+            if s.stype == "INTERCEPTOR" and s.target and (s.vx ~= 0 or s.vy ~= 0) then
+                hasMoving = true; break
+            end
+        end
+        if not hasMoving then
+            for _, s in ipairs(enemyFleet_) do
+                if s.stype == "INTERCEPTOR" and (s.vx ~= 0 or s.vy ~= 0) then
+                    hasMoving = true; break
+                end
+            end
+        end
+        if hasMoving then
+            Audio.Play(Audio.SFX.INTERCEPTOR_ENGINE)
+            interceptorEngineTimer_ = 0.6   -- 0.6s 冷却，避免连续叠放
+        end
+    end
+
     -- === 更新屏幕震动 ===
     if shakeTimer_ > 0 then
         shakeTimer_ = shakeTimer_ - dt
@@ -834,6 +919,17 @@ local function drawShip(ship)
         nvgFillColor(vg_, nvgRGBA(c[1],c[2],c[3], 230))
         nvgFill(vg_)
     end
+
+    -- 受击闪白叠加（transform 空间内，与舰船同步）
+    if ship.hitFlash and ship.hitFlash > 0 then
+        local flashAlpha = math.floor(ship.hitFlash * 200)
+        local half = 18 * scale + 2
+        nvgBeginPath(vg_)
+        nvgRect(vg_, -half, -half, half*2, half*2)
+        nvgFillColor(vg_, nvgRGBA(255, 255, 255, flashAlpha))
+        nvgFill(vg_)
+    end
+
     nvgRestore(vg_)
 
     -- 舰船类型标签（血条上方）
@@ -1079,6 +1175,20 @@ local function drawSkillBar()
     skillBtn2_ = { x=bx2, y=by, w=btnW, h=btnH }
 end
 
+--- 渲染烟花粒子（波次胜利特效，在 StateOverlay 之前渲染）
+local function drawFireworks()
+    if #fwParticles_ == 0 then return end
+    for _, p in ipairs(fwParticles_) do
+        local frac  = p.life / p.maxLife
+        local alpha = math.floor(frac * 220)
+        local sz    = math.max(0.8, 3.5 * frac)
+        nvgBeginPath(vg_)
+        nvgCircle(vg_, p.x, p.y, sz)
+        nvgFillColor(vg_, nvgRGBA(p.r, p.g, p.b, alpha))
+        nvgFill(vg_)
+    end
+end
+
 local function drawStateOverlay()
     if state_ == "fighting" then return end
 
@@ -1276,6 +1386,7 @@ function BattleScene.Render()
 
     drawWaveHUD()                      -- 波次信息 HUD（最上层，不随震动）
     drawSkillBar()                     -- 底部技能栏
+    drawFireworks()                    -- 烟花粒子（胜利特效，在 overlay 下方）
     drawStateOverlay()
 end
 

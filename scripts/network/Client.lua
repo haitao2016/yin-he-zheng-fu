@@ -1,8 +1,7 @@
 -- ============================================================================
 -- network/Client.lua  -- 银河征服 客户端
--- 包含完整游戏逻辑 + 多人网络接入
 -- ============================================================================
-local Shared      = require("network.Shared")
+
 local Sys         = require("game.Systems")
 local GalaxyScene = require("game.GalaxyScene")
 local PirateAI    = require("game.PirateAI")
@@ -10,6 +9,7 @@ local PirateAI    = require("game.PirateAI")
 local GameUI      = require("game.GameUI")
 local Audio       = require("game.AudioManager")
 local Achievement = require("game.AchievementSystem")
+local UICommon    = require("game.ui.UICommon")
 
 local Client = {}
 
@@ -19,6 +19,7 @@ local Client = {}
 local vg_           = nil
 local screenW_      = 800
 local screenH_      = 600
+local uiScale_      = 1.0   -- nvgScale 缩放比，由 getScreenSize() 每帧更新
 
 -- ============================================================================
 -- 游戏时间限制
@@ -120,8 +121,9 @@ local function getDpr()
 end
 
 local function getScreenSize()
-    local dpr = getDpr()
-    return graphics:GetWidth() / dpr, graphics:GetHeight() / dpr
+    local w, h = UICommon.getVirtualSize()   -- 同时更新 UICommon.uiScale
+    uiScale_ = UICommon.uiScale
+    return w, h
 end
 
 -- ============================================================================
@@ -1083,27 +1085,6 @@ local function restoreGame(jsonStr)
     GameUI.Notify("存档已恢复", "success")
 end
 
--- 收到服务器的存档应答
-local function handleSaveAck(eventType, eventData)
-    saveInProgress_ = false
-    local ok  = eventData["Ok"]:GetBool()
-    local msg = eventData["Msg"]:GetString()
-    if not ok then
-        print("[Client] 存档失败: " .. msg)
-    end
-end
-
--- 收到服务器返回的存档数据
-local function handleLoadData(eventType, eventData)
-    local ok      = eventData["Ok"]:GetBool()
-    local jsonStr = eventData["Data"]:GetString()
-    if ok then
-        restoreGame(jsonStr)
-    else
-        print("[Client] 读档请求失败，使用初始状态")
-    end
-end
-
 -- ============================================================================
 -- 网络连接就绪后初始化
 -- ============================================================================
@@ -1275,12 +1256,10 @@ local function onMainMenuSelect(key)
         mainMenuActive_ = false
         print("[Client] 主菜单：选择新游戏")
     elseif key == "continue" and hasSave_ then
-        -- 继续游戏：直接选择上次难度（默认 normal）并读档
+        -- 继续游戏：跳过难度选择，难度由存档恢复（restoreGame 内写入 difficulty_）
         mainMenuActive_ = false
-        print("[Client] 主菜单：选择继续游戏")
-        -- 继续游戏直接跳过难度选择，使用默认难度（存档会恢复实际进度）
-        difficulty_       = "normal"
         difficultyChosen_ = true
+        print("[Client] 主菜单：选择继续游戏")
         setupSceneAndUI()
         onGameReady()
         GameUI.Notify("欢迎回来，指挥官！", "info")
@@ -1418,13 +1397,19 @@ end
 -- NanoVGRender 主渲染
 -- ============================================================================
 local function handleNanoVGRender(eventType, eventData)
-    local dpr = getDpr()
-    screenW_, screenH_ = getScreenSize()
-    nvgBeginFrame(vg_, screenW_, screenH_, dpr)
+    local dpr  = getDpr()
+    local logW = graphics:GetWidth()  / dpr
+    local logH = graphics:GetHeight() / dpr
+    screenW_, screenH_ = getScreenSize()   -- 虚拟坐标，同时更新 uiScale_
+
+    nvgBeginFrame(vg_, logW, logH, dpr)   -- 逻辑分辨率（帧缓冲对齐）
+    nvgSave(vg_)
+    nvgScale(vg_, uiScale_, uiScale_)     -- 虚拟坐标系（所有绘制在此空间内）
 
     -- 主菜单（最高优先级）
     if mainMenuActive_ then
         renderMainMenu(screenW_, screenH_)
+        nvgRestore(vg_)
         nvgEndFrame(vg_)
         return
     end
@@ -1432,6 +1417,7 @@ local function handleNanoVGRender(eventType, eventData)
     -- 难度选择界面（游戏正式开始前全屏覆盖）
     if not difficultyChosen_ then
         renderDifficultyScreen(screenW_, screenH_)
+        nvgRestore(vg_)
         nvgEndFrame(vg_)
         return
     end
@@ -1448,6 +1434,7 @@ local function handleNanoVGRender(eventType, eventData)
     GameUI.RenderHUD()
     GameUI.RenderNotifications()
 
+    nvgRestore(vg_)
     nvgEndFrame(vg_)
 end
 
@@ -1675,8 +1662,8 @@ local function handleMouseButtonDown(eventType, eventData)
     local btn = eventData["Button"]:GetInt()
     if btn ~= MOUSEB_LEFT then return end
     local dpr = getDpr()
-    local mx  = eventData["X"]:GetInt() / dpr
-    local my  = eventData["Y"]:GetInt() / dpr
+    local mx  = eventData["X"]:GetInt() / dpr / uiScale_
+    local my  = eventData["Y"]:GetInt() / dpr / uiScale_
     if currentScene_ == "galaxy" then GalaxyScene.OnMouseDown(mx, my) end
 end
 
@@ -1684,8 +1671,8 @@ local function handleMouseButtonUp(eventType, eventData)
     local btn = eventData["Button"]:GetInt()
     if btn ~= MOUSEB_LEFT then return end
     local dpr = getDpr()
-    local mx  = eventData["X"]:GetInt() / dpr
-    local my  = eventData["Y"]:GetInt() / dpr
+    local mx  = eventData["X"]:GetInt() / dpr / uiScale_
+    local my  = eventData["Y"]:GetInt() / dpr / uiScale_
     -- 主菜单点击
     if mainMenuActive_ then
         local hit = getMainMenuHit(mx, my, screenW_, screenH_)
@@ -1704,8 +1691,8 @@ end
 
 local function handleMouseMove(eventType, eventData)
     local dpr = getDpr()
-    local mx  = eventData["X"]:GetInt() / dpr
-    local my  = eventData["Y"]:GetInt() / dpr
+    local mx  = eventData["X"]:GetInt() / dpr / uiScale_
+    local my  = eventData["Y"]:GetInt() / dpr / uiScale_
     -- 主菜单悬停
     if mainMenuActive_ then
         mainMenuHover_ = getMainMenuHit(mx, my, screenW_, screenH_)
@@ -1725,8 +1712,8 @@ local function handleMouseWheel(eventType, eventData)
     local dpr   = getDpr()
     local wheel = eventData["Wheel"]:GetInt()
     local pos   = input:GetMousePosition()
-    local mx    = pos.x / dpr
-    local my    = pos.y / dpr
+    local mx    = pos.x / dpr / uiScale_
+    local my    = pos.y / dpr / uiScale_
     if GameUI.OnScroll(mx, my, wheel) then return end
     GalaxyScene.OnMouseWheel(mx, my, wheel)
 end
@@ -2129,6 +2116,7 @@ setupSceneAndUI = function()
     Achievement.Init({
         notifyFn = GameUI.Notify,
         unlocked = savedAchievements_,   -- nil = 全新游戏；非 nil = 再来一局时恢复
+        onAudio  = function() Audio.Play(Audio.SFX.ACHIEVEMENT_UNLOCK) end,
         onUnlock = function(id, list)
             -- 成就解锁时同步到云端（忽略网络错误，不影响游戏流程）
             local cjson = require("cjson")
@@ -2224,8 +2212,8 @@ function Client.Start()
 
     -- 初始化 NanoVG 渲染上下文（整个生命周期只创建一次）
     vg_      = nvgCreate(1)
-    screenW_ = graphics:GetWidth()  / graphics:GetDPR()
-    screenH_ = graphics:GetHeight() / graphics:GetDPR()
+    screenW_, screenH_ = UICommon.getVirtualSize()
+    uiScale_ = UICommon.uiScale
 
     -- 初始化音频（需要 Scene 节点挂载 SoundSource）
     scene_   = Scene()
@@ -2252,24 +2240,24 @@ function Client.Start()
     -- 触摸事件（移动端双指缩放 + 单指拖拽）
     SubscribeToEvent("TouchBegin", function(_, ed)
         local tid = ed["TouchID"]:GetInt()
-        local tx  = ed["X"]:GetInt()
-        local ty  = ed["Y"]:GetInt()
+        local tx  = ed["X"]:GetInt() / uiScale_   -- 预除 uiScale，模块内再 /dpr = 虚拟坐标
+        local ty  = ed["Y"]:GetInt() / uiScale_
         if GameUI.OnTouchBegin(tid, tx, ty) then return end
         if currentScene_ ~= "galaxy" then return end
         GalaxyScene.OnTouchBegin(tid, tx, ty)
     end)
     SubscribeToEvent("TouchMove", function(_, ed)
         local tid = ed["TouchID"]:GetInt()
-        local tx  = ed["X"]:GetInt()
-        local ty  = ed["Y"]:GetInt()
+        local tx  = ed["X"]:GetInt() / uiScale_
+        local ty  = ed["Y"]:GetInt() / uiScale_
         if GameUI.OnTouchMove(tid, tx, ty) then return end
         if currentScene_ ~= "galaxy" then return end
         GalaxyScene.OnTouchMove(tid, tx, ty)
     end)
     SubscribeToEvent("TouchEnd", function(_, ed)
         local tid = ed["TouchID"]:GetInt()
-        local tx  = ed["X"]:GetInt()
-        local ty  = ed["Y"]:GetInt()
+        local tx  = ed["X"]:GetInt() / uiScale_
+        local ty  = ed["Y"]:GetInt() / uiScale_
         if GameUI.OnTouchEnd(tid, tx, ty) then return end
         if currentScene_ ~= "galaxy" then return end
         GalaxyScene.OnTouchEnd(tid, tx, ty)

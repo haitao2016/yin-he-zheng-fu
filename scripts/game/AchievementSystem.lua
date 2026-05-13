@@ -126,12 +126,14 @@ local ACHIEVEMENTS = {
 local unlocked_   = {}   -- Set: { [id] = true }
 local notifyFn_   = nil  -- function(msg, type) 通知回调
 local onUnlockFn_ = nil  -- function(id, list) 解锁回调（用于云端同步）
+local audioFn_    = nil  -- function() 成就解锁音效回调
 
 -- ─── 初始化 ──────────────────────────────────────────────────────────────────
----@param opts { notifyFn:function, onUnlock:function|nil, unlocked:table|nil }
+---@param opts { notifyFn:function, onUnlock:function|nil, onAudio:function|nil, unlocked:table|nil }
 function AchievementSystem.Init(opts)
     notifyFn_   = opts.notifyFn  or function() end
     onUnlockFn_ = opts.onUnlock  or function() end
+    audioFn_    = opts.onAudio   or nil
     unlocked_ = {}
     if opts.unlocked then
         for _, id in ipairs(opts.unlocked) do
@@ -151,6 +153,7 @@ function AchievementSystem.Check(eventName, state)
             if ok and result then
                 unlocked_[ach.id] = true
                 notifyFn_("🏆 成就解锁: " .. ach.name .. "\n" .. ach.desc, "success")
+                if audioFn_ then audioFn_() end   -- 成就解锁 fanfare
                 print(string.format("[Achievement] 解锁: %s (%s)", ach.name, ach.id))
                 -- 触发云端同步回调（传入 id 和当前完整列表，由外部决定如何上传）
                 local list = AchievementSystem.GetUnlocked()
