@@ -1,0 +1,6 @@
+.build/
+dist/
+.tmp/
+node_modules/
+logs/build/
+logs/submit/
