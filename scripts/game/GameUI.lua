@@ -243,12 +243,15 @@ function GameUI.UpdateNotifications(dt)
     NotifyPanel.SetGameTime(gameTime_)
     -- 教程动画更新
     TutorialSystem.Update(dt)
-    -- 涟漪动画更新
+    -- 涟漪动画更新（swap-remove O(1)，避免 table.remove 的 O(n) 移位）
+    local n = #ripples_
     local i = 1
-    while i <= #ripples_ do
+    while i <= n do
         ripples_[i].timer = ripples_[i].timer - dt
         if ripples_[i].timer <= 0 then
-            table.remove(ripples_, i)
+            ripples_[i] = ripples_[n]
+            ripples_[n] = nil
+            n = n - 1
         else
             i = i + 1
         end

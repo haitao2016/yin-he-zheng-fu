@@ -144,6 +144,7 @@ local currentStep_  = nil        -- 当前步骤对象
 local stepQueue_    = {}         -- 待显示步骤队列
 local stepIdx_      = 0          -- 当前队列索引
 local animT_        = 0          -- 入场动画计时（0→1）
+local skipHover_    = false      -- 跳过按钮悬停状态
 local ANIM_DUR      = 0.22       -- 秒
 
 -- 已完成步骤集合（用于防止重复显示）
@@ -389,14 +390,37 @@ function TutorialSystem.Render()
     local btnX = px + PW - btnW - 16
     local btnY = py + PH - btnH - 14
 
-    -- 跳过按钮（左侧）
-    local skipW, skipH = 70, 20
-    local skipX = px + 16
-    local skipY = py + PH - skipH - 18
-    nvgFontSize(vg, 9)
-    nvgFillColor(vg, nvgRGBA(100, 120, 160, math.floor(150 * ease)))
-    nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
-    nvgText(vg, skipX, skipY + skipH / 2, "跳过教程")
+    -- 跳过按钮（左侧，加背景使其更醒目）
+    local skipW, skipH = 80, 26
+    local skipX = px + 14
+    local skipY = py + PH - skipH - 14
+    local skipAlpha = math.floor(220 * ease)
+    -- 根据鼠标位置计算跳过按钮悬停状态
+    local isSkipHover = false
+    if UICommon.cursorX and UICommon.cursorY then
+        isSkipHover = UICommon.cursorX >= skipX and UICommon.cursorX <= skipX + skipW
+                   and UICommon.cursorY >= skipY and UICommon.cursorY <= skipY + skipH
+    end
+    skipHover_ = isSkipHover
+
+    -- 按钮背景
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, skipX, skipY, skipW, skipH, 5)
+    nvgFillColor(vg, nvgRGBA(40, 50, 80, math.floor((isSkipHover and 180 or 110) * ease)))
+    nvgFill(vg)
+
+    -- 按钮边框
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, skipX, skipY, skipW, skipH, 5)
+    nvgStrokeColor(vg, nvgRGBA(100, 130, 200, math.floor((isSkipHover and 200 or 130) * ease)))
+    nvgStrokeWidth(vg, 1.0)
+    nvgStroke(vg)
+
+    -- 按钮文字
+    nvgFontSize(vg, 12)
+    nvgFillColor(vg, nvgRGBA(160, 180, 230, skipAlpha))
+    nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+    nvgText(vg, skipX + skipW / 2, skipY + skipH / 2, "跳过教程")
 
     -- 整个面板区域拦截，防止点击穿透到星图（必须最先注册，优先级最低）
     addHit(px, py, PW, PH, function() end)

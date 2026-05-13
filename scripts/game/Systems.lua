@@ -113,19 +113,22 @@ TECHS = {
     SHIELD_REINFORCE = { name="护盾强化",   desc="基地护盾+300，防御+20%",    cost={nuclear=150, metal=400},             time=45, prereqs={"SOLAR_EFFICIENCY"},                    bonus={shieldBonus=300, defenseBonus=0.2} },
     RAPID_REFINE     = { name="快速精炼",   desc="精炼速率×1.5（原矿→精炼）", cost={nuclear=120, esource=200},           time=40, prereqs={"DEEP_MINING"},                         bonus={globalRefineMult=1.5} },
     COLONY_BIOTECH   = { name="殖民生物技术", desc="殖民星球人口增长速率+40%", cost={esource=150, nuclear=80},            time=35, prereqs={"CRYSTAL_PROCESS"},                     bonus={colonyPopMult=1.4} },
+    NANO_REPAIR      = { name="纳米修复",   desc="所有战舰最大耐久+20%",      cost={metal=200,   esource=100},           time=30, prereqs={"HULL_ALLOY"},                          bonus={shipHealthMult=1.20} },
 
     -- Tier 3（需要 2 项 Tier2 前置）
     WARP_DRIVE       = { name="曲速引擎",   desc="舰队移动速度+50%",          cost={nuclear=300, esource=500},           time=60, prereqs={"SHIELD_REINFORCE","RAPID_REFINE"},     bonus={fleetSpeedMult=1.5} },
     ADVANCED_WEAPONS = { name="高级武器系统", desc="所有战舰攻击力+30%",      cost={metal=500,   nuclear=200},           time=55, prereqs={"HULL_ALLOY","RAPID_REFINE"},           bonus={shipDmgMult=1.3} },
+    DEFENSE_MATRIX   = { name="防御矩阵",   desc="基地护盾+400，防御+30%",    cost={nuclear=200, metal=500},             time=50, prereqs={"SHIELD_REINFORCE","NANO_REPAIR"},      bonus={shieldBonus=400, defenseBonus=0.3} },
 
     -- Tier 4（顶层科技，需要 Tier3 前置）
     QUANTUM_CORE     = { name="量子核心",   desc="基地核心升级费用-20%，科研速度+50%", cost={nuclear=600, esource=800, metal=1000}, time=90, prereqs={"WARP_DRIVE","ADVANCED_WEAPONS"}, bonus={coreUpgradeCostMult=0.8, researchSpeedMult=1.5} },
+    PHASE_DRIVE      = { name="相位驱动",   desc="精炼速率×1.4，舰队速度+40%", cost={nuclear=500, esource=600, metal=800}, time=80, prereqs={"WARP_DRIVE","NANO_REPAIR"},          bonus={globalRefineMult=1.4, fleetSpeedMult=1.4} },
 }
 TECH_ORDER = {
-    "DEEP_MINING","SOLAR_EFFICIENCY","CRYSTAL_PROCESS","HULL_ALLOY",    -- Tier 1
-    "SHIELD_REINFORCE","RAPID_REFINE","COLONY_BIOTECH",                  -- Tier 2
-    "WARP_DRIVE","ADVANCED_WEAPONS",                                     -- Tier 3
-    "QUANTUM_CORE",                                                      -- Tier 4
+    "DEEP_MINING","SOLAR_EFFICIENCY","CRYSTAL_PROCESS","HULL_ALLOY",          -- Tier 1
+    "SHIELD_REINFORCE","RAPID_REFINE","COLONY_BIOTECH","NANO_REPAIR",          -- Tier 2
+    "WARP_DRIVE","ADVANCED_WEAPONS","DEFENSE_MATRIX",                          -- Tier 3
+    "QUANTUM_CORE","PHASE_DRIVE",                                              -- Tier 4
 }
 
 RANKS = {"见习指挥官","资深舰长","舰队少将","星系统治者","银河霸主"}
@@ -145,19 +148,25 @@ SHIP_TYPES = {
     DESTROYER     = { name="驱逐舰", speed=60,  health=400,  maxHealth=400,  range=300,  dmg=18, color={40,100,220},  buildTime=55 },
     BATTLECRUISER = { name="战列舰", speed=35,  health=1200, maxHealth=1200, range=380,  dmg=45, color={160,80,255},  buildTime=120,
                       aoeRadius=60, shotRate=0.5 },  -- 超重型主力舰：超高血量/伤害，低速，溅射攻击
-    ENGINEER  = { name="工程舰", speed=40,  health=80,  maxHealth=80,  range=0,    dmg=0,  color={255,200,80},  buildTime=18,
-                  mineRate={minerals=8, energy=4} },
-    EXPLORER  = { name="探索舰", speed=120, health=100, maxHealth=100, range=0,    dmg=0,  color={120,255,160}, buildTime=22,
-                  isExplorer=true },  -- 专用于殖民行星
+    ENGINEER     = { name="工程舰", speed=40,  health=80,  maxHealth=80,  range=0,    dmg=0,  color={255,200,80},  buildTime=18,
+                     mineRate={minerals=8, energy=4} },
+    EXPLORER     = { name="探索舰", speed=120, health=100, maxHealth=100, range=0,    dmg=0,  color={120,255,160}, buildTime=22,
+                     isExplorer=true },  -- 专用于殖民行星
+    CARRIER      = { name="母舰",   speed=18,  health=3000, maxHealth=3000, range=320, dmg=60, color={200,150,255}, buildTime=180,
+                     aoeRadius=80, shotRate=0.3 },  -- 巨型战舰：超强血量，范围溅射
+    INTERCEPTOR  = { name="拦截舰", speed=240, health=80,   maxHealth=80,   range=180, dmg=14, color={255,220,80},  buildTime=20,
+                     shotRate=1.5 },  -- 高速拦截：极快速度+高射速，玻璃炮
 }
-SHIP_QUEUE_ORDER = {"ENGINEER","EXPLORER","SCOUT","FRIGATE","DESTROYER","BATTLECRUISER"}
+SHIP_QUEUE_ORDER = {"ENGINEER","EXPLORER","SCOUT","INTERCEPTOR","FRIGATE","DESTROYER","BATTLECRUISER","CARRIER"}
 SHIP_COSTS = {
     SCOUT         = { metal=100,  esource=50  },
     FRIGATE       = { metal=250,  esource=100 },
     DESTROYER     = { metal=600,  esource=300 },
-    BATTLECRUISER = { metal=1800, esource=800, nuclear=200 },  -- 需要核能，体现高端定位
+    BATTLECRUISER = { metal=1800, esource=800,  nuclear=200 },  -- 需要核能，体现高端定位
     ENGINEER      = { metal=180,  esource=80  },
     EXPLORER      = { metal=300,  esource=120 },
+    CARRIER       = { metal=2500, esource=1000, nuclear=400 },  -- 顶级战舰，资源密集
+    INTERCEPTOR   = { metal=120,  esource=60  },                -- 廉价快速消耗品
 }
 
 -- ============================================================================

@@ -11,6 +11,10 @@ local FLEET_SHIP_COLORS = {
     FRIGATE       = {80,160,255},
     DESTROYER     = {40,100,220},
     BATTLECRUISER = {160,80,255},
+    CARRIER       = {200,150,255},
+    INTERCEPTOR   = {255,220,80},
+    ENGINEER      = {255,200,80},
+    EXPLORER      = {120,255,160},
 }
 
 -- 面板私有状态

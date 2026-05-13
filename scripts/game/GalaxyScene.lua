@@ -23,6 +23,15 @@ local PLANET_COLORS = {
     {58,123,213},{238,156,167},{186,104,200},{77,182,172},
     {129,199,132},{255,241,118},{255,138,101},{160,100,200},
 }
+-- 按星球类型分配特征颜色，使视觉上可区分星球类型
+local PLANET_TYPE_COLORS = {
+    Terran        = {70,  160, 85 },   -- 绿色 = 宜居陆地
+    Desert        = {200, 145, 55 },   -- 橙褐 = 荒漠
+    Oceanic       = {40,  110, 210},   -- 深蓝 = 海洋
+    Volcanic      = {185, 55,  40 },   -- 暗红 = 火山
+    Barren        = {125, 115, 105},   -- 灰褐 = 荒芜
+    ["Gas Giant"] = {155, 95,  210},   -- 紫色 = 气态巨星
+}
 local PLANET_TYPES  = {"Terran","Desert","Oceanic","Volcanic","Barren","Gas Giant"}
 local SYSTEM_PREFIXES = {"Alpha","Beta","Gamma","Delta","Epsilon","Zeta","Eta","Theta",
     "Iota","Kappa","Lambda","Mu","Nova","Psi","Omega"}
@@ -155,7 +164,14 @@ local function generateStarSystems()
         }
         local pCount = 2 + math.random(0, 5)
         for pi = 1, pCount do
-            local pc = PLANET_COLORS[math.random(1,#PLANET_COLORS)]
+            local ptype = randItem(PLANET_TYPES)
+            -- 优先使用类型特征色，带随机微调（±15）使同类行星间有细微差异
+            local baseColor = PLANET_TYPE_COLORS[ptype] or PLANET_COLORS[math.random(1,#PLANET_COLORS)]
+            local pc = {
+                math.max(0, math.min(255, baseColor[1] + math.random(-15, 15))),
+                math.max(0, math.min(255, baseColor[2] + math.random(-15, 15))),
+                math.max(0, math.min(255, baseColor[3] + math.random(-15, 15))),
+            }
             sys.planets[pi] = {
                 id=pi, system=sys,
                 name      = name:sub(1,6) .. "-" .. string.char(96+pi),
@@ -167,7 +183,7 @@ local function generateStarSystems()
                 -- 预计算径向渐变高光/阴影颜色，避免每帧 math.min/max
                 colorHL = { math.min(255,pc[1]+80), math.min(255,pc[2]+80), math.min(255,pc[3]+80) },
                 colorSH = { math.max(0,pc[1]-40),   math.max(0,pc[2]-40),   math.max(0,pc[3]-40)  },
-                ptype       = randItem(PLANET_TYPES),
+                ptype       = ptype,
                 colonized   = false,
                 owner       = nil,
                 buildings   = {},

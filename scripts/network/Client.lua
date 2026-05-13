@@ -77,6 +77,12 @@ local totalResearch_    = 0       -- 累计完成科技数（成就用）
 -- 成就跨局持久化（softReset 时保存，setupSceneAndUI 时恢复）
 local savedAchievements_ = nil   ---@type string[]|nil
 
+-- 主菜单
+local mainMenuActive_   = true    -- true=显示主菜单
+local hasSave_          = false   -- 是否有本地存档
+local mainMenuHover_    = nil     -- 当前悬停按钮 "new"|"continue"|nil
+local skipSaveLoad_     = false   -- true=新游戏（跳过读档）
+
 -- 难度选择
 local difficultyChosen_ = false   -- false=正在显示难度选择屏幕
 local difficulty_       = "normal"
@@ -1091,7 +1097,13 @@ end
 -- 网络连接就绪后初始化
 -- ============================================================================
 onGameReady = function()
-    -- 从本地文件加载存档
+    -- 新游戏流程：跳过读档
+    if skipSaveLoad_ then
+        skipSaveLoad_ = false
+        print("[Client] 新游戏：跳过存档加载")
+        return
+    end
+    -- 继续游戏：从本地文件加载存档
     if fileSystem:FileExists("galaxy_save.json") then
         local file = File("galaxy_save.json", FILE_READ)
         if file:IsOpen() then
@@ -1102,6 +1114,166 @@ onGameReady = function()
         end
     end
     print("[Client] 无本地存档，新游戏开始")
+end
+
+-- ============================================================================
+-- 主菜单屏幕
+-- ============================================================================
+
+--- 返回主菜单按钮布局 { key, x, y, w, h, label, enabled }
+local function getMainMenuBtnLayout(sw, sh)
+    local btnW, btnH = 240, 56
+    local cx = sw / 2 - btnW / 2
+    local baseY = sh * 0.52
+    return {
+        { key="new",      x=cx, y=baseY,        w=btnW, h=btnH, label="新  游  戏", enabled=true },
+        { key="continue", x=cx, y=baseY + 72,   w=btnW, h=btnH, label="继 续 游 戏", enabled=hasSave_ },
+    }
+end
+
+--- 命中检测：返回命中按钮 key 或 nil
+local function getMainMenuHit(mx, my, sw, sh)
+    local btns = getMainMenuBtnLayout(sw, sh)
+    for _, btn in ipairs(btns) do
+        if btn.enabled and mx >= btn.x and mx <= btn.x + btn.w
+            and my >= btn.y and my <= btn.y + btn.h then
+            return btn.key
+        end
+    end
+    return nil
+end
+
+--- 绘制主菜单全屏 UI
+local function renderMainMenu(sw, sh)
+    -- 深空渐变背景
+    local bg = nvgLinearGradient(vg_, 0, 0, 0, sh,
+        nvgRGBA(4, 8, 24, 255), nvgRGBA(8, 18, 48, 255))
+    nvgBeginPath(vg_)
+    nvgRect(vg_, 0, 0, sw, sh)
+    nvgFillPaint(vg_, bg)
+    nvgFill(vg_)
+
+    -- 装饰星点
+    math.randomseed(42)
+    for _ = 1, 80 do
+        local sx = math.random() * sw
+        local sy = math.random() * sh * 0.85
+        local sr = math.random() * 1.4 + 0.3
+        local sa = math.random(120, 220)
+        nvgBeginPath(vg_)
+        nvgCircle(vg_, sx, sy, sr)
+        nvgFillColor(vg_, nvgRGBA(200, 210, 255, sa))
+        nvgFill(vg_)
+    end
+
+    -- 游戏 Logo 大标题
+    nvgFontFace(vg_, "sans")
+    nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+
+    -- 阴影层
+    nvgFontSize(vg_, 52)
+    nvgFillColor(vg_, nvgRGBA(30, 60, 160, 120))
+    nvgText(vg_, sw / 2 + 3, sh * 0.24 + 3, "银河征服")
+
+    -- 主标题
+    nvgFontSize(vg_, 52)
+    local titleGrad = nvgLinearGradient(vg_, sw/2 - 120, sh*0.19, sw/2 + 120, sh*0.29,
+        nvgRGBA(160, 200, 255, 255), nvgRGBA(80, 140, 255, 255))
+    nvgBeginPath(vg_)
+    nvgRect(vg_, sw/2 - 130, sh*0.18, 260, 80)
+    nvgFillPaint(vg_, titleGrad)
+    nvgFill(vg_)
+    -- NanoVG 文本叠加（无法直接用渐变填充文字，用白色描边代替视觉效果）
+    nvgFontSize(vg_, 52)
+    nvgFillColor(vg_, nvgRGBA(200, 220, 255, 255))
+    nvgText(vg_, sw / 2, sh * 0.24, "银河征服")
+
+    -- 副标题
+    nvgFontSize(vg_, 15)
+    nvgFillColor(vg_, nvgRGBA(120, 150, 210, 200))
+    nvgText(vg_, sw / 2, sh * 0.34, "GALACTIC CONQUEST")
+
+    -- 分隔线
+    nvgBeginPath(vg_)
+    nvgMoveTo(vg_, sw * 0.30, sh * 0.40)
+    nvgLineTo(vg_, sw * 0.70, sh * 0.40)
+    nvgStrokeColor(vg_, nvgRGBA(60, 90, 180, 100))
+    nvgStrokeWidth(vg_, 1)
+    nvgStroke(vg_)
+
+    -- 按钮
+    local btns = getMainMenuBtnLayout(sw, sh)
+    for _, btn in ipairs(btns) do
+        local isHover   = (mainMenuHover_ == btn.key)
+        local isEnabled = btn.enabled
+        local baseAlpha = isEnabled and 255 or 80
+
+        -- 按钮背景
+        nvgBeginPath(vg_)
+        nvgRoundedRect(vg_, btn.x, btn.y, btn.w, btn.h, 10)
+        if isEnabled then
+            local btnBg = nvgLinearGradient(vg_, btn.x, btn.y, btn.x, btn.y + btn.h,
+                nvgRGBA(40, 80, 180, isHover and 160 or 90),
+                nvgRGBA(20, 50, 140, isHover and 200 or 120))
+            nvgFillPaint(vg_, btnBg)
+        else
+            nvgFillColor(vg_, nvgRGBA(30, 40, 60, 60))
+        end
+        nvgFill(vg_)
+
+        -- 按钮边框
+        nvgBeginPath(vg_)
+        nvgRoundedRect(vg_, btn.x, btn.y, btn.w, btn.h, 10)
+        nvgStrokeColor(vg_, nvgRGBA(80, 130, 255, isHover and 240 or (isEnabled and 160 or 50)))
+        nvgStrokeWidth(vg_, isHover and 2.0 or 1.2)
+        nvgStroke(vg_)
+
+        -- 悬停光晕
+        if isHover and isEnabled then
+            nvgBeginPath(vg_)
+            nvgRoundedRect(vg_, btn.x - 3, btn.y - 3, btn.w + 6, btn.h + 6, 13)
+            nvgStrokeColor(vg_, nvgRGBA(100, 160, 255, 60))
+            nvgStrokeWidth(vg_, 5)
+            nvgStroke(vg_)
+        end
+
+        -- 按钮文字
+        nvgFontSize(vg_, 20)
+        nvgFillColor(vg_, nvgRGBA(200, 220, 255, baseAlpha))
+        nvgText(vg_, btn.x + btn.w / 2, btn.y + btn.h / 2, btn.label)
+    end
+
+    -- 无存档时的提示
+    if not hasSave_ then
+        nvgFontSize(vg_, 11)
+        nvgFillColor(vg_, nvgRGBA(100, 110, 150, 150))
+        nvgText(vg_, sw / 2, sh * 0.52 + 72 + 72, "（暂无存档）")
+    end
+
+    -- 底部版权
+    nvgFontSize(vg_, 11)
+    nvgFillColor(vg_, nvgRGBA(70, 90, 130, 150))
+    nvgText(vg_, sw / 2, sh * 0.94, "银河征服 · 点击开始你的星际征途")
+end
+
+--- 玩家在主菜单点击按钮
+local function onMainMenuSelect(key)
+    if key == "new" then
+        -- 新游戏：跳过读档，直接进入难度选择
+        skipSaveLoad_   = true
+        mainMenuActive_ = false
+        print("[Client] 主菜单：选择新游戏")
+    elseif key == "continue" and hasSave_ then
+        -- 继续游戏：直接选择上次难度（默认 normal）并读档
+        mainMenuActive_ = false
+        print("[Client] 主菜单：选择继续游戏")
+        -- 继续游戏直接跳过难度选择，使用默认难度（存档会恢复实际进度）
+        difficulty_       = "normal"
+        difficultyChosen_ = true
+        setupSceneAndUI()
+        onGameReady()
+        GameUI.Notify("欢迎回来，指挥官！", "info")
+    end
 end
 
 -- ============================================================================
@@ -1238,6 +1410,13 @@ local function handleNanoVGRender(eventType, eventData)
     local dpr = getDpr()
     screenW_, screenH_ = getScreenSize()
     nvgBeginFrame(vg_, screenW_, screenH_, dpr)
+
+    -- 主菜单（最高优先级）
+    if mainMenuActive_ then
+        renderMainMenu(screenW_, screenH_)
+        nvgEndFrame(vg_)
+        return
+    end
 
     -- 难度选择界面（游戏正式开始前全屏覆盖）
     if not difficultyChosen_ then
@@ -1464,6 +1643,7 @@ end
 -- 输入处理
 -- ============================================================================
 local function handleMouseButtonDown(eventType, eventData)
+    if mainMenuActive_ then return end
     if not difficultyChosen_ then return end
     local btn = eventData["Button"]:GetInt()
     if btn ~= MOUSEB_LEFT then return end
@@ -1479,6 +1659,12 @@ local function handleMouseButtonUp(eventType, eventData)
     local dpr = getDpr()
     local mx  = eventData["X"]:GetInt() / dpr
     local my  = eventData["Y"]:GetInt() / dpr
+    -- 主菜单点击
+    if mainMenuActive_ then
+        local hit = getMainMenuHit(mx, my, screenW_, screenH_)
+        if hit then onMainMenuSelect(hit) end
+        return
+    end
     -- 难度选择屏幕点击
     if not difficultyChosen_ then
         local hit = getDifficultyHit(mx, my, screenW_, screenH_)
@@ -1493,6 +1679,11 @@ local function handleMouseMove(eventType, eventData)
     local dpr = getDpr()
     local mx  = eventData["X"]:GetInt() / dpr
     local my  = eventData["Y"]:GetInt() / dpr
+    -- 主菜单悬停
+    if mainMenuActive_ then
+        mainMenuHover_ = getMainMenuHit(mx, my, screenW_, screenH_)
+        return
+    end
     -- 难度选择屏幕悬停
     if not difficultyChosen_ then
         diffHoverBtn_ = getDifficultyHit(mx, my, screenW_, screenH_)
@@ -1848,6 +2039,19 @@ setupSceneAndUI = function()
     Achievement.Init({
         notifyFn = GameUI.Notify,
         unlocked = savedAchievements_,   -- nil = 全新游戏；非 nil = 再来一局时恢复
+        onUnlock = function(id, list)
+            -- 成就解锁时同步到云端（忽略网络错误，不影响游戏流程）
+            local cjson = require("cjson")
+            local ok, jsonStr = pcall(cjson.encode, list)
+            if not ok then return end
+            clientCloud:SetString("galaxy_achievements", jsonStr, function(success)
+                if success then
+                    print("[Achievement] 云端同步成功: " .. id)
+                else
+                    print("[Achievement] 云端同步失败（已忽略）: " .. id)
+                end
+            end)
+        end,
     })
     savedAchievements_ = nil   -- 消费后清空，避免影响后续流程
 
@@ -1911,10 +2115,13 @@ softReset = function()
     saveTimer_            = 0
     saveInProgress_       = false
 
-    -- 5. 返回难度选择界面（等待玩家重新选择后，onDifficultySelect 再调用 setupSceneAndUI）
+    -- 5. 返回主菜单（刷新存档状态，让玩家重新选择）
     difficultyChosen_ = false
     diffHoverBtn_     = nil
-    print("[Client] softReset: 完成")
+    mainMenuActive_   = true
+    mainMenuHover_    = nil
+    hasSave_          = fileSystem:FileExists("galaxy_save.json")
+    print("[Client] softReset: 完成，返回主菜单")
 end
 
 -- ============================================================================
@@ -1932,7 +2139,11 @@ function Client.Start()
     scene_   = Scene()
     Audio.Init(scene_)
 
-    -- 创建 NanoVG 字体（难度屏幕和游戏 UI 共用）
+    -- 检测本地存档（决定主菜单是否显示"继续游戏"）
+    hasSave_ = fileSystem:FileExists("galaxy_save.json")
+    print("[Client] 存档状态: " .. (hasSave_ and "有存档" or "无存档"))
+
+    -- 创建 NanoVG 字体（主菜单/难度屏幕/游戏 UI 共用）
     nvgCreateFont(vg_, "sans", "Fonts/MiSans-Regular.ttf")
 
     -- 订阅引擎事件（只注册一次，softReset 不重复注册）

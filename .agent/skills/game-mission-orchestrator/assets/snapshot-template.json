@@ -1,0 +1,35 @@
+{
+  "mission": "",
+  "genre": "",
+  "created_at": "",
+  "updated_at": "",
+  "current_phase": "P0-Foundation",
+  "phases": [
+    {
+      "id": "P0-Foundation",
+      "status": "in_progress",
+      "milestones": [
+        {
+          "name": "脚手架搭建",
+          "status": "pending",
+          "complexity": "S",
+          "depends_on": [],
+          "completion_criteria": "项目使用正确脚手架初始化，Start() 函数存在"
+        },
+        {
+          "name": "场景与相机初始化",
+          "status": "pending",
+          "complexity": "S",
+          "depends_on": ["脚手架搭建"],
+          "completion_criteria": "Preview 中能看到初始场景"
+        }
+      ],
+      "quality_gate": {
+        "passed": false,
+        "issues": []
+      }
+    }
+  ],
+  "files": [],
+  "notes": ""
+}
