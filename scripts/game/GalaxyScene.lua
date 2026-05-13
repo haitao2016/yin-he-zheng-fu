@@ -3,6 +3,7 @@
 -- ============================================================================
 
 require "game.Systems"   -- 加载全局常量 SHIP_TYPES, SHIP_COSTS 等
+local UICommon    = require("game.ui.UICommon")
 local GalaxyScene = {}
 
 -- PirateAI 引用（由 Init 注入）
@@ -1410,9 +1411,7 @@ function GalaxyScene.Init(opts)
     generateAsteroids()
     -- 生成海盗基地（世界半径 2000）
     if pirateAI_ then pirateAI_:generateBases(2000) end
-    local dpr = graphics:GetDPR()
-    screenW_  = graphics:GetWidth()  / dpr
-    screenH_  = graphics:GetHeight() / dpr
+    screenW_, screenH_ = UICommon.getVirtualSize()
 
     -- 种子飞船：随机落点（世界坐标 ±1500 范围）
     seedShip_.x       = (math.random() - 0.5) * 3000
@@ -1944,9 +1943,7 @@ local function updateSeedShip(dt)
 end
 
 function GalaxyScene.Update(dt)
-    local dpr = graphics:GetDPR()
-    screenW_ = graphics:GetWidth()  / dpr
-    screenH_ = graphics:GetHeight() / dpr
+    screenW_, screenH_ = UICommon.getVirtualSize()
     deepSpaceAnimT_ = deepSpaceAnimT_ + dt
     updateSeedShip(dt)
     updatePlanets(dt)

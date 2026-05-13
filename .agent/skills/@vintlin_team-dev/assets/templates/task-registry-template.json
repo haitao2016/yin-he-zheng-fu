@@ -1,0 +1,33 @@
+{
+  "projectName": "",
+  "createdAt": "",
+  "tasks": [
+    {
+      "taskId": "T001",
+      "phase": "PLAN",
+      "label": "",
+      "description": "",
+      "status": "queued",
+      "priority": 1,
+      "dependencies": [],
+      "targetFiles": [],
+      "acceptanceCriteria": [],
+      "reviewResult": null,
+      "reviewRounds": 0,
+      "fixupCount": 0,
+      "timestamps": {
+        "queued": "",
+        "started": null,
+        "completed": null
+      }
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "queued": 1,
+    "running": 0,
+    "done": 0,
+    "failed": 0,
+    "skipped": 0
+  }
+}

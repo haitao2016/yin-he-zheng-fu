@@ -82,6 +82,17 @@ local fwLaunchTimer_ = 0   -- 下次发射烟花的倒计时
 local interceptorEngineTimer_ = 0   -- 距离下次允许播放的冷却（秒）
 
 -- ============================================================================
+-- 战斗统计（每场战斗累计，通过 BattleScene.GetStats() 导出）
+-- ============================================================================
+local battleStats_ = {
+    dmgDealt     = 0,   -- 我方造成总伤害
+    dmgTaken     = 0,   -- 我方承受总伤害
+    enemiesKilled= 0,   -- 击落敌舰数量
+    wavesCleared = 0,   -- 通关波次数
+    bestSurvivor = nil, -- 存活最久的舰型（最大 survivedWaves 的舰型）
+}
+
+-- ============================================================================
 -- 舰船工厂
 -- ============================================================================
 local function makeShip(stype, x, y, team)
@@ -271,6 +282,12 @@ function BattleScene.Reset()
     fwParticles_            = {}
     fwLaunchTimer_          = 0
     interceptorEngineTimer_ = 0
+    -- 战斗统计清零（仅在完全重置时清零，波次间累计）
+    battleStats_.dmgDealt      = 0
+    battleStats_.dmgTaken      = 0
+    battleStats_.enemiesKilled = 0
+    battleStats_.wavesCleared  = 0
+    battleStats_.bestSurvivor  = nil
     moveTarget_             = nil
     moveTargetTimer_ = 0
     state_           = "fighting"
@@ -468,6 +485,7 @@ function BattleScene.Update(dt)
                     -- 主目标伤害
                     nearest.health = nearest.health - actualDmg
                     nearest.hitFlash = 1.0
+                    battleStats_.dmgDealt = battleStats_.dmgDealt + actualDmg
                     -- 战列舰 AOE：对主目标周围所有敌舰造成 50% 溅射伤害
                     if ship.aoeRadius > 0 then
                         local aoeDmg = math.floor(actualDmg * 0.5)
@@ -477,6 +495,7 @@ function BattleScene.Update(dt)
                                 local sy = splash.y - nearest.y
                                 if sx*sx + sy*sy <= ship.aoeRadius * ship.aoeRadius then
                                     splash.health = splash.health - aoeDmg
+                                    battleStats_.dmgDealt = battleStats_.dmgDealt + aoeDmg
                                     floatTexts_[#floatTexts_+1] = {
                                         x=splash.x + math.random(-4,4), y=splash.y - 14,
                                         text="-"..aoeDmg, life=0.7, maxLife=0.7,
@@ -544,6 +563,7 @@ function BattleScene.Update(dt)
                         -- 主目标伤害
                         target.health = target.health - es.dmg
                         target.hitFlash = 1.0
+                        battleStats_.dmgTaken = battleStats_.dmgTaken + es.dmg
                         -- 敌方战列舰 AOE
                         if es.aoeRadius > 0 then
                             local aoeDmg = math.floor(es.dmg * 0.5)
@@ -553,6 +573,7 @@ function BattleScene.Update(dt)
                                     local sy = splash.y - target.y
                                     if sx*sx + sy*sy <= es.aoeRadius * es.aoeRadius then
                                         splash.health = splash.health - aoeDmg
+                                        battleStats_.dmgTaken = battleStats_.dmgTaken + aoeDmg
                                         floatTexts_[#floatTexts_+1] = {
                                             x=splash.x + math.random(-4,4), y=splash.y - 14,
                                             text="-"..aoeDmg, life=0.7, maxLife=0.7,
@@ -652,6 +673,7 @@ function BattleScene.Update(dt)
                 and Audio.SFX.EXPLOSION_BIG or Audio.SFX.EXPLOSION_SMALL
             Audio.Play(sfx, 0.7)
             spawnExplosion(ship)
+            battleStats_.enemiesKilled = battleStats_.enemiesKilled + 1
             table.remove(enemyFleet_, i)
         end
     end
@@ -798,6 +820,15 @@ function BattleScene.Update(dt)
         state_ = "win"
         stateTimer_ = 0
         waveGapTimer_ = 0
+        battleStats_.wavesCleared = battleStats_.wavesCleared + 1
+        -- 记录存活最久舰型（以 maxHealth 作代理指标）
+        if #playerFleet_ > 0 then
+            local best = playerFleet_[1]
+            for _, s in ipairs(playerFleet_) do
+                if s.health > best.health then best = s end
+            end
+            battleStats_.bestSurvivor = best.stype
+        end
         -- 波次胜利资源奖励（随波次递增）
         local mReward = 150 + waveNum_ * 80   -- 调优：基础 100→150，每波系数 50→80
         local eReward = 80  + waveNum_ * 40   -- 新增：能源奖励（减少精炼瓶颈）
@@ -1397,6 +1428,15 @@ function BattleScene.GetState()       return state_ end
 function BattleScene.GetWave()        return waveNum_ end
 function BattleScene.GetPlayerCount() return #playerFleet_ end
 function BattleScene.GetEnemyCount()  return #enemyFleet_ end
+function BattleScene.GetStats()
+    return {
+        dmgDealt      = battleStats_.dmgDealt,
+        dmgTaken      = battleStats_.dmgTaken,
+        enemiesKilled = battleStats_.enemiesKilled,
+        wavesCleared  = battleStats_.wavesCleared,
+        bestSurvivor  = battleStats_.bestSurvivor,
+    }
+end
 
 -- ============================================================================
 -- 输入（由 main.lua 调用）

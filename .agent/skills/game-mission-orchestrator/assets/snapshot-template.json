@@ -1,12 +1,15 @@
 {
   "mission": "",
   "genre": "",
+  "overview": "",
   "created_at": "",
   "updated_at": "",
   "current_phase": "P0-Foundation",
+  "plan_doc": "scripts/.mission/PLAN.md",
   "phases": [
     {
       "id": "P0-Foundation",
+      "name": "基础搭建",
       "status": "in_progress",
       "milestones": [
         {
@@ -31,5 +34,12 @@
     }
   ],
   "files": [],
+  "risks": [],
+  "changelog": [
+    {
+      "date": "",
+      "action": "初始计划制定"
+    }
+  ],
   "notes": ""
 }

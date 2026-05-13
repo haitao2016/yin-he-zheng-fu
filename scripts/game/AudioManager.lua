@@ -67,6 +67,11 @@ local SFX = {
     NOTIFY_ERROR     = "audio/sfx/notify_error.ogg",
     -- 胜利
     VICTORY          = "audio/sfx/victory_sfx.ogg",
+    -- 新舰种专属
+    CARRIER_ATTACK   = "audio/sfx/carrier_attack.ogg",
+    INTERCEPTOR_ENGINE = "audio/sfx/interceptor_engine.ogg",
+    -- 成就
+    ACHIEVEMENT_UNLOCK = "audio/sfx/achievement_unlock.ogg",
 }
 AudioManager.SFX = SFX
 

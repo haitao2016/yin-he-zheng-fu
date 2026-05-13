@@ -68,6 +68,24 @@ UICommon.techPanelH = 0
 UICommon.vg            = nil
 UICommon.screenW       = 800
 UICommon.screenH       = 600
+
+-- UI 全局缩放比（由 getVirtualSize 每帧更新）
+-- 设计基准高度 390px（20:9 手机横屏逻辑分辨率）
+-- 范围 0.65（小屏手机）→ 1.5（PC / 平板，上限防止面板过大）
+UICommon.uiScale       = 1.0
+UICommon.REF_H         = 390
+
+--- 计算虚拟屏幕尺寸（代替各模块直接调用 graphics:GetWidth/Height/DPR）
+--- 同时更新 UICommon.uiScale，供 nvgScale 使用
+---@return number virtualW, number virtualH
+function UICommon.getVirtualSize()
+    local dpr   = graphics:GetDPR()
+    local logW  = graphics:GetWidth()  / dpr
+    local logH  = graphics:GetHeight() / dpr
+    local scale = math.max(0.65, math.min(1.5, logH / UICommon.REF_H))
+    UICommon.uiScale = scale
+    return math.floor(logW / scale), math.floor(logH / scale)
+end
 UICommon.cursorX       = 0
 UICommon.cursorY       = 0
 

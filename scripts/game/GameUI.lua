@@ -463,9 +463,7 @@ local PANEL_TOP = 48    -- 所有面板的顶部起始 y（TopBar 下方留 4px 
 -- ============================================================================
 function GameUI.RenderTopBar()
     if not rm_ or not player_ then return end
-    local dpr = graphics:GetDPR()
-    screenW_ = graphics:GetWidth()  / dpr
-    screenH_ = graphics:GetHeight() / dpr
+    screenW_, screenH_ = UICommon.getVirtualSize()
 
     -- 每帧开始清空可点击/滚动区域（TopBar 是每帧第一个渲染的 UI）
     hitAreas_    = {}
@@ -774,8 +772,7 @@ end
 -- 2. 场景标题（资源栏下方）
 -- ============================================================================
 function GameUI.RenderSceneTitle()
-    local dpr = graphics:GetDPR()
-    screenW_ = graphics:GetWidth() / dpr
+    screenW_, screenH_ = UICommon.getVirtualSize()
     local cy = TOPBAR_H + 8
     nvgFontFace(vg_, "sans"); nvgFontSize(vg_, 10)
     nvgTextAlign(vg_, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
@@ -1285,7 +1282,7 @@ local function renderEndGameOverlay()
     nvgFill(vg_)
 
     -- 面板尺寸
-    local dw, dh = 480, 340
+    local dw, dh = 480, 450
     local dx = (screenW_ - dw) / 2
     -- 从屏幕下方滑入
     local dy = (screenH_ - dh) / 2 + (1 - ease) * screenH_ * 0.3
@@ -1360,6 +1357,49 @@ local function renderEndGameOverlay()
     nvgBeginPath(vg_)
     nvgMoveTo(vg_, lx1, sy + 4); nvgLineTo(vg_, lx2, sy + 4)
     nvgStrokeColor(vg_, nvgRGBA(60, 80, 140, math.floor(80 * ease)))
+    nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
+    sy = sy + 14
+
+    -- 战斗详情分区标题
+    nvgFontSize(vg_, 10)
+    nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg_, nvgRGBA(100, 130, 200, math.floor(160 * ease)))
+    nvgText(vg_, screenW_ / 2, sy + 7, "— 战斗详情 —")
+    sy = sy + 18
+
+    -- 舰型名称映射
+    local shipNames = {
+        SCOUT="侦察舰", FRIGATE="护卫舰", DESTROYER="驱逐舰",
+        BATTLECRUISER="战列舰", CARRIER="航母", INTERCEPTOR="拦截机",
+        MINER="采矿舰", ENGINEER="工程舰", EXPLORER="探索舰",
+    }
+    local function fmtNum(n)
+        if n >= 10000 then return string.format("%.1fw", n/10000) end
+        return tostring(math.floor(n or 0))
+    end
+    local survivor = stats.bestSurvivor and (shipNames[stats.bestSurvivor] or stats.bestSurvivor) or "—"
+    local battleRows = {
+        { label="伤害输出", value=fmtNum(stats.dmgDealt or 0),      color={80,220,120} },
+        { label="受到伤害", value=fmtNum(stats.dmgTaken or 0),      color={220,100,80} },
+        { label="击落敌舰", value=(stats.enemiesKilled or 0).." 艘", color={200,180,80} },
+        { label="通关波次", value=(stats.wavesCleared  or 0).." 波", color={120,180,255} },
+        { label="存活旗舰", value=survivor,                          color={180,140,255} },
+    }
+    for _, row in ipairs(battleRows) do
+        nvgFontSize(vg_, 11)
+        nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg_, nvgRGBA(100, 130, 180, math.floor(160 * ease)))
+        nvgText(vg_, dx + 60, sy + 7, row.label)
+        nvgTextAlign(vg_, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg_, nvgRGBA(row.color[1], row.color[2], row.color[3], math.floor(230 * ease)))
+        nvgText(vg_, dx + dw - 60, sy + 7, row.value)
+        sy = sy + 20
+    end
+
+    -- 分割线3
+    nvgBeginPath(vg_)
+    nvgMoveTo(vg_, lx1, sy + 4); nvgLineTo(vg_, lx2, sy + 4)
+    nvgStrokeColor(vg_, nvgRGBA(60, 80, 140, math.floor(60 * ease)))
     nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
     sy = sy + 14
 
@@ -1971,13 +2011,12 @@ end
 -- 主渲染入口（每帧从 main.lua 调用）
 -- ============================================================================
 function GameUI.RenderHUD()
-    local dpr = graphics:GetDPR()
-    screenW_ = graphics:GetWidth()  / dpr
-    screenH_ = graphics:GetHeight() / dpr
+    screenW_, screenH_ = UICommon.getVirtualSize()
     -- 更新鼠标位置（用于按钮悬停判断）
     local mpos = input:GetMousePosition()
-    cursorX_ = mpos.x / dpr
-    cursorY_ = mpos.y / dpr
+    local dpr  = graphics:GetDPR()
+    cursorX_ = mpos.x / dpr / UICommon.uiScale
+    cursorY_ = mpos.y / dpr / UICommon.uiScale
     -- 每帧同步至 UICommon（教程弹窗在 deployed_ 前也需要读取）
     UICommon.screenW = screenW_
     UICommon.screenH = screenH_

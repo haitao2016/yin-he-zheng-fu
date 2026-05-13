@@ -1,165 +1,154 @@
 # 银河征服 - 开发计划
 
-> 最后更新：2026-05-13（V1.1 全量完成后更新）
+> 最后更新：2026-05-13（V1.2 计划制定）
 
 ---
 
-## ✅ 已完成（V1.0 & V1.1）
+## 已完成（V1.0 → V1.1 全量）
 
-### V1.0 核心功能
-- P1-1 战斗结算界面（胜利/失败弹窗 + 数据展示）
-- P1-2 存档与读档（本地 File API + 云端 serverCloud）
-- P1-3 主菜单（Logo + 新游戏/继续游戏 + 难度选择）
-- P3-1 音效完善（攻击/建造/科技/通知/胜败 BGM 全覆盖）
-
-### V1.1 深度扩展
-- P2-1 难度平衡（easy/hard 初始资源、进攻间隔、动态威胁参数）
-- P2-2 科技树扩展（NANO_REPAIR / DEFENSE_MATRIX / PHASE_DRIVE，共 13 科技）
-- P2-3 星球视觉特化（PLANET_TYPE_COLORS，6 种星球类型色系）
-- P2-4 新舰种（CARRIER 母舰 AOE / INTERCEPTOR 拦截舰高速，完整 8 舰种）
-- P3-2 成就云端同步（解锁时回调 clientCloud:SetString）
-- P3-3 UI 微交互（资源数字滚动动画 + 按钮点击涟漪效果）
-- P3-4 新手引导优化（跳过按钮样式升级至带背景/边框的真实按钮）
-- P3-5 性能优化（涟漪 swap-remove O(1) 替代 table.remove O(n)）
-- Bug Fix：设置按钮热区修复
+| 版本 | 内容 |
+|------|------|
+| V1.0 | 核心玩法（资源/建筑/科技/舰队/海盗AI/存档/结算） |
+| V1.1 | 难度平衡 · 科技树扩展(13项) · 新舰种(CARRIER/INTERCEPTOR) · 成就云端同步 · UI微交互 |
+| V1.1补丁 | 新舰种贴图 · 难度存档修复 · 成就扩充7→15 · 星球管理优化 · 波次预报 · 战斗技能按钮 · 星图随机事件 · 基地升级系统 · 受击闪白+烟花粒子 · 音效补全(CARRIER/INTERCEPTOR/成就fanfare) |
 
 ---
 
-## 🐛 已知 Bug（待修复）
-
-| 优先级 | 描述 | 文件 | 修复思路 |
-|--------|------|------|---------|
-| 🔴 高 | CARRIER/INTERCEPTOR 战斗中显示为三角形（未加载贴图） | `BattleScene.lua:135` | 生成对应舰船图片并加入 shipImages_ 加载 |
-| 🔴 高 | CARRIER/INTERCEPTOR 从未出现在敌方波次中（buildEnemyWave 未引用） | `BattleScene.lua:93` | 高波次（wave≥10）加入 CARRIER；INTERCEPTOR 作为群攻型敌方 |
-| 🟡 中 | 继续游戏难度固定为 normal（存档中未保存难度） | `Client.lua:1271` | 存档写入 difficulty_；读档时恢复，跳过难度选择直接使用 |
-
----
-
-## 🔲 V1.2 开发计划（新版）
-
-### B1 - Bug 修复（必须最先完成）
-
-**B1-1 新舰种贴图与战斗集成**
-- 生成 CARRIER（母舰）和 INTERCEPTOR（拦截舰）舰船贴图（AI 生图）
-- `BattleScene.lua`：在 `BattleScene.Init` 中加载两张新贴图
-- `BattleScene.lua`：在 `buildEnemyWave` 中：wave≥7 引入 INTERCEPTOR 群；wave≥10 引入 CARRIER
-- `BattleScene.lua`：在 renderShip 的 scale 表里加入 CARRIER(2.5) / INTERCEPTOR(0.8) 的尺寸配置
-- 预期效果：新舰种在战斗中正常显示并参与战斗
-
-**B1-2 难度存档修复**
-- `Client.lua`：存档 JSON 中写入 `difficulty` 字段
-- `Client.lua`：读档时恢复 `difficulty_` 并直接设 `difficultyChosen_=true`，跳过难度选择
-- 预期效果：继续游戏保持原局难度，而非强制 normal
-
----
-
-### P1 - 内容扩充（高优先级）
-
-**P1-1 成就扩充**
-- 当前仅 7 个成就，增加到 15 个
-- 新增类型：
-  - `fleet_builder`：建造 20 艘舰船
-  - `tech_master`：研究全部科技
-  - `resource_hoarder`：同时持有 5000 金属
-  - `wave_survivor`：在单次战斗中存活 10 波
-  - `colony_10`：殖民 10 颗星球
-  - `pirate_destroyer`：击败 10 次海盗袭击
-  - `no_damage_win`：基地 HP 满血胜利（高难度成就）
-  - `carrier_deploy`：建造并使用第一艘母舰
-- 文件：`AchievementSystem.lua`
-
-**P1-2 战斗场景增强**
-- 新增技能按钮（战斗中可用主动技能）：
-  - 「全体集火」：全舰队攻击同一目标 5 秒（冷却 30s）
-  - 「紧急修复」：所有舰船回复 20% HP（冷却 60s，需 NANO_REPAIR 科技）
-- CARRIER 的特殊能力：定期在周围召唤 2 艘 SCOUT 无人机
-- 文件：`BattleScene.lua`
-
-**P1-3 星球管理优化**
-- PlanetPanel 增加「全部征收」快捷按钮（一键收取所有星球资源）
-- 星球列表增加筛选/排序（按类型/按产量）
-- 显示当前全局资源生产速率（顶栏 +X/s 提示）
-- 文件：`GameUI.lua`、`PlanetPanel.lua`、`TopBar.lua`
-
----
-
-### P2 - 体验深化（中优先级）
-
-**P2-1 波次预报系统**
-- 战斗前 10 秒显示下一波组成（「即将到来：3 驱逐舰 + 1 战列舰」）
-- 顶栏显示当前波次进度（Wave N / ∞）和下一波倒计时
-- 文件：`BattleScene.lua`、`GameUI.lua`
-
-**P2-2 星图探索事件**
-- 随机星系事件（概率触发，类似随机卡牌事件）：
-  - 「废弃矿场」：派 EXPLORER 可获得随机资源包
-  - 「中立商人」：花费金属购买科技加速（减少 30% 研究时间）
-  - 「时空裂缝」：舰队穿越可瞬移到任意星球（随机正负效果）
-- 事件节点显示在星图上（闪烁标记）
-- 文件：`GalaxyScene.lua`、`Client.lua`
-
-**P2-3 基地升级系统**
-- 当前主基地只有耐久，增加升级路线：
-  - Lv2：+2 资源槽位、防御炮台（基地自动抵挡伤害）
-  - Lv3：+1 舰队编队上限、研究速度 +20%
-- BasePanel 增加「基地升级」入口
-- 文件：`BasePanel.lua`、`Client.lua`
-
----
-
-### P3 - 体验打磨（低优先级）
-
-**P3-1 多人在线大厅**
-- 当前 Server.lua 仅广播玩家列表，无实际多人互动
-- 增加多人合作模式：两玩家共享同一星图，可互相支援舰队
-- 需要 Server.lua 增加事件转发（玩家 A 的舰队支援事件广播给 B）
-- 文件：`Server.lua`、`Client.lua`、`network/Shared.lua`
-
-**P3-2 视觉升级**
-- 战斗场景添加背景星空（NanoVG 绘制动态星点，视差滚动）
-- 舰船受击时短暂闪白（hit flash 效果）
-- 波次胜利时烟花粒子特效
-- 文件：`BattleScene.lua`
-
-**P3-3 音效补全**
-- 目前缺少：
-  - CARRIER 特殊攻击音效（重低音）
-  - INTERCEPTOR 高速移动音效（引擎声）
-  - 成就解锁专属音效（fanfare）
-  - 波次预报倒计时「滴答」声
-- 文件：`AudioManager.lua`、`BattleScene.lua`
-
----
-
-## 📊 技术债务
+## 已知技术债务
 
 | 文件 | 行数 | 建议 |
 |------|------|------|
-| `GalaxyScene.lua` | 2562 行 | 考虑拆分为 `GalaxyRender.lua`（渲染）+ `GalaxyLogic.lua`（逻辑） |
-| `Client.lua` | 2196 行 | 考虑拆分 `GameLogic.lua`（胜负/存档/成就）+ `InputHandler.lua` |
-| `GameUI.lua` | 2159 行 | 结算层、排行榜层可独立为 `ui/EndGamePanel.lua`、`ui/LeaderboardPanel.lua` |
-
-> 当前无性能瓶颈，拆分优先级低，可在下一次大功能开发前进行。
+| `GalaxyScene.lua` | 2827 行 | 可拆分 GalaxyRender + GalaxyLogic |
+| `GameUI.lua` | 2312 行 | EndGamePanel / LeaderboardPanel 可独立 |
+| `Client.lua` | 2276 行 | GameLogic / InputHandler 可独立 |
 
 ---
 
-## 📁 项目结构（当前）
+## V1.2 开发计划
+
+### P1 系列：留存补强（高优先级）
+
+#### P1-1：成就查看面板
+- **问题**：15个成就只靠Toast通知，玩家不知道还有哪些目标可追
+- **方案**：结算界面新增「成就」Tab，展示全部15条成就；已解锁高亮+图标，未解锁灰化+进度提示
+- **文件**：`GameUI.lua`（新增 `drawAchievementPanel()`）、`Client.lua`（注入已解锁集合）
+- **规模**：中（约150行）
+
+#### P1-2：无尽征服模式
+- **问题**：消灭所有海盗基地后游戏结束，复玩性不足
+- **方案**：胜利后弹出「继续征服」选项；海盗基地自动重生（等级+1），每轮击败计入「征服积分」上传排行榜，基地被摧毁才最终结算
+- **文件**：`Client.lua`（胜利分支扩展）、`PirateAI.lua`（无尽重生逻辑）、`GameUI.lua`（无尽模式HUD）
+- **规模**：中（约200行）
+
+#### P1-3：详细战斗结算统计
+- **问题**：结算只有殖民数/击杀数，缺乏成就感
+- **方案**：BattleScene每局统计「总伤害输出 / 受到伤害 / 击落敌舰数 / 最长存活舰型」；胜利/失败界面增加「本次战斗」分栏
+- **文件**：`BattleScene.lua`（新增统计字段）、`GameUI.lua`（结算扩展）
+- **规模**：小（约80行）
+
+---
+
+### P2 系列：玩法扩展（中优先级）
+
+#### P2-1：EXPLORER舰探索任务系统
+- **问题**：EXPLORER舰有完整定义和建造队列，但在星图上无专属功能
+- **方案**：含EXPLORER的编队可「派遣探索」到深空，3~8秒后返回随机奖励（资源/科技碎片/星图情报）；使用现有galaxyEvents框架扩展
+- **文件**：`GalaxyScene.lua`（探索任务逻辑）、`Client.lua`（奖励分发）、`GameUI.lua`（任务状态显示）
+- **规模**：中（约180行）
+
+#### P2-2：Boss波次系统
+- **问题**：战斗波次缺乏节奏感和高峰挑战
+- **方案**：每5波触发Boss波，出现「旗舰级」Boss（超高血量+护盾特效）；击败后掉落稀有资源奖励（核能/水晶）
+- **文件**：`BattleScene.lua`（Boss波判断+特殊敌舰生成）、`Systems.lua`（Boss奖励配置）
+- **规模**：中（约150行）
+
+#### P2-3：星图事件扩展（3→8种）
+- **问题**：当前仅3种事件（矿场/商人/裂缝），长期游玩缺乏新鲜感
+- **方案**：新增5种事件：
+  - `DERELICT`：废弃飞船 → 修复获得1艘随机舰
+  - `BEACON`：信标 → 揭示最近海盗基地位置
+  - `PLAGUE`：瘟疫星球 → 目标星球资源减产30秒
+  - `REFUGEE`：难民 → 殖民下一颗星球无需资源
+  - `WORMHOLE`：虫洞 → 编队瞬移到任意星球
+- **文件**：`GalaxyScene.lua`（EVENT_TYPES扩展）、`Client.lua`（事件处理回调）
+- **规模**：中（约200行）
+
+---
+
+### P3 系列：体验打磨（低优先级）
+
+#### P3-1：战斗技能扩展（3→6种）
+- **方案**：新增「防护罩」（减伤3秒）、「超载打击」（单体5倍暴击）、「召唤援军」（临时增援2艘INTERCEPTOR）
+- **文件**：`BattleScene.lua`、`Client.lua`（技能解锁条件）
+- **规模**：中（约120行）
+
+#### P3-2：星球视觉差异化
+- **方案**：殖民星球根据主建筑显示专属图标（工厂⚙/科研🔬/军事⚔）；建筑等级越高光晕越强
+- **文件**：`GalaxyScene.lua`（`drawPlanet()` 扩展）
+- **规模**：小（约60行）
+
+#### P3-3：成就通知合并
+- **问题**：快速解锁多成就时Toast堆叠遮挡
+- **方案**：同帧多成就解锁合并为「N项成就已解锁！」摘要，点击展开详情
+- **文件**：`AchievementSystem.lua`、`GameUI.lua`
+- **规模**：小（约50行）
+
+---
+
+## 优先级矩阵
+
+```
+高价值
+ │  P1-1成就面板 ●     P1-2无尽模式 ●
+ │                      P2-1探索任务 ●
+ │  P1-3战斗统计 ●     P2-2Boss波次 ●
+ │  P3-2星球视觉 ●     P2-3事件扩展 ●
+ │                 P3-1技能扩展 ●
+ │                          P3-3成就合并 ●
+低价值
+  小工作量 ─────────────────────── 大工作量
+```
+
+---
+
+## 推荐执行顺序
+
+```
+第一批（核心留存）
+  P1-3  详细战斗统计    低风险，填充结算空白
+  P1-1  成就查看面板    利用现有数据，补完游戏循环
+  P2-2  Boss波次系统    提升战斗深度与爽感
+
+第二批（玩法扩展）
+  P1-2  无尽征服模式    核心留存，依赖结算系统完善后实施
+  P2-1  EXPLORER探索    激活现有舰型价值
+  P2-3  星图事件扩展    星图长期游玩深度
+
+第三批（打磨润色）
+  P3-1  技能扩展
+  P3-2  星球视觉
+  P3-3  成就通知合并
+```
+
+---
+
+## 项目结构（当前）
 
 ```
 scripts/
 ├── main.lua
 ├── network/
-│   ├── Client.lua           # 客户端主逻辑（2196 行）
+│   ├── Client.lua           # 客户端主逻辑（2276 行）
 │   ├── Server.lua           # 服务端（255 行）
 │   └── Shared.lua           # 共享常量
 └── game/
-    ├── GalaxyScene.lua      # 银河地图（2562 行）
-    ├── BattleScene.lua      # 战斗场景（867 行）
-    ├── GameUI.lua           # UI 主模块（2159 行）
+    ├── GalaxyScene.lua      # 银河地图（2827 行）
+    ├── BattleScene.lua      # 战斗场景（1476 行）
+    ├── GameUI.lua           # UI 主模块（2312 行）
     ├── PirateAI.lua         # 海盗 AI（511 行）
     ├── Systems.lua          # 游戏系统（1234 行）
-    ├── AudioManager.lua     # 音频
-    ├── AchievementSystem.lua# 成就（121 行）
+    ├── AudioManager.lua     # 音频（196 行）
+    ├── AchievementSystem.lua# 成就（187 行）
     └── ui/
         ├── UICommon.lua
         ├── TopBar.lua
@@ -169,20 +158,4 @@ scripts/
         ├── PlanetPanel.lua
         ├── NotifyPanel.lua
         └── TutorialSystem.lua
-```
-
----
-
-## 🗓️ 推荐执行顺序
-
-```
-1. B1-1（新舰种贴图 + 战斗集成）  ← 修复已上线但不可用的功能
-2. B1-2（难度存档修复）            ← 影响游戏体验的存档 bug
-3. P1-1（成就扩充）                ← 无代码风险，内容填充
-4. P1-3（星球管理优化）            ← 提升日常操作效率
-5. P2-1（波次预报）                ← 提升战斗可读性
-6. P1-2（战斗技能）                ← 需要较多 BattleScene 改动
-7. P2-2（星图探索事件）            ← 新系统，需设计验证后再开发
-8. P2-3（基地升级）                ← 涉及存档兼容，需谨慎
-9. P3-x（视觉/音效/多人）         ← 最后润色
 ```
