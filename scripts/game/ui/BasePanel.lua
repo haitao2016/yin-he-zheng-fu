@@ -34,11 +34,16 @@ function BasePanel.Render(base, ctx)
 
     local onBuild        = ctx.onBuild
     local onCoreUpgrade  = ctx.onCoreUpgrade
-    local onSpeedUpBuild = ctx.onSpeedUpBuild
+    local onSpeedUpBuild    = ctx.onSpeedUpBuild
+    local onSpeedUpBuildAd  = ctx.onSpeedUpBuildAd  -- 广告免费完成（星币不足时）
     local slotFlashTimer = ctx.slotFlashTimer or 0
     local progressBar    = ctx.progressBar
     local shipyardMult   = ctx.shipyardMult or 1.0
     local SLOT_FLASH_DURATION = ctx.slotFlashDuration or 0.6
+    -- P1-2 WARP_GATE_PRIME
+    local hasWarpGate    = ctx.hasWarpGate or false
+    local warpCooldown   = ctx.warpCooldown or 0
+    local onWarpFleet    = ctx.onWarpFleet
 
     local pw = 275
     local px = screenW - pw - 12
@@ -51,8 +56,16 @@ function BasePanel.Render(base, ctx)
     local headerH = 36 + 18 + 16 + 16 + (not isMaxCore and 16 or 0)
                   + (base.constructing and 26 or 16) + 16
                   + (shipyardMult > 1.01 and 14 or 0)
+                  + (hasWarpGate and 26 or 0)  -- P1-2 WARP_GATE_PRIME 瞬移按钮行
 
-    local scrollContentH = 18
+    -- P2-2: 槽位可视化格子行数（5列）
+    local maxSlots      = BaseModuleSlots(coreLevel)
+    local SLOT_COLS     = 5
+    local slotRows      = math.ceil(maxSlots / SLOT_COLS)
+    local SLOT_GRID_H   = slotRows * 24 + 8 + 14  -- 格子 + 标题
+
+    local scrollContentH = SLOT_GRID_H
+        + 18
         + #BASE_MODULE_ORDER * 28
         + 12 + 17
         + math.max(1, #base.buildings) * 20
@@ -192,18 +205,31 @@ function BasePanel.Render(base, ctx)
             progressBar(px+10, sy, barW, 14, pct,
                 tag .. ": " .. modName .. " " .. math.floor(pct*100) .. "%", 80, 200, 255)
         end
-        -- 加速按钮（M6 修复：1★/10秒，上限50★）
-        if onSpeedUpBuild then
+        -- 加速按钮（星币足够→金色购买；不足且有广告→绿色免费）
+        if onSpeedUpBuild or onSpeedUpBuildAd then
             local remaining = job.remaining or 0
             local speedCost = math.max(5, math.min(50, math.ceil(remaining / 10)))
+            local rmRef     = UICommon.rm
+            local canAfford = rmRef and (rmRef.resources.credits or 0) >= speedCost
             local sbx = px + pw - 46
-            panel(sbx, sy, 40, 14, 4, {160, 130, 20, 80}, {220, 190, 40, 210})
-            text(sbx+20, sy+7, "★" .. speedCost, 9, 255, 230, 80, 255,
-                NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-            local capturedBase = base
-            addHit(sbx, sy, 40, 14, function()
-                if onSpeedUpBuild then onSpeedUpBuild(capturedBase) end
-            end)
+            if onSpeedUpBuild and canAfford then
+                panel(sbx, sy, 40, 14, 4, {160, 130, 20, 80}, {220, 190, 40, 210})
+                text(sbx+20, sy+7, "★" .. speedCost, 9, 255, 230, 80, 255,
+                    NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+                local capturedBase = base
+                addHit(sbx, sy, 40, 14, function()
+                    if onSpeedUpBuild then onSpeedUpBuild(capturedBase) end
+                end)
+            elseif onSpeedUpBuildAd and not canAfford then
+                -- 星币不足时显示"看广告免费完成"
+                panel(sbx, sy, 40, 14, 3, {0, 80, 45, 100}, {0, 190, 100, 220})
+                text(sbx+20, sy+7, "🎬", 10, 80, 255, 160, 255,
+                    NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+                local capturedBase = base
+                addHit(sbx, sy, 40, 14, function()
+                    if onSpeedUpBuildAd then onSpeedUpBuildAd(capturedBase) end
+                end)
+            end
         end
         sy = sy + 26
     else
@@ -216,6 +242,33 @@ function BasePanel.Render(base, ctx)
         text(px+pw/2, sy, "造船速度: x" .. string.format("%.2f", shipyardMult), 9, 100, 230, 160, 220,
             NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
         sy = sy + 14
+    end
+
+    -- P1-2 WARP_GATE_PRIME 瞬移按钮行
+    if hasWarpGate then
+        local btnW, btnH = pw - 24, 20
+        local btnX, btnY = px + 12, sy + 3
+        local onCD       = warpCooldown > 0
+        local btnLabel   = onCD
+            and string.format("主曲速门冷却中 (%.0fs)", warpCooldown)
+            or  "⚡ 舰队瞬移至此星球"
+        local br, bg, bb = onCD and 80 or 60, onCD and 80 or 180, onCD and 100 or 255
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, btnX, btnY, btnW, btnH, 4)
+        nvgFillColor(vg, nvgRGBA(br, bg, bb, onCD and 60 or 120))
+        nvgFill(vg)
+        nvgStrokeColor(vg, nvgRGBA(br, bg, bb, 200))
+        nvgStrokeWidth(vg, 1)
+        nvgStroke(vg)
+        text(px + pw/2, btnY + btnH/2, btnLabel, 9,
+            onCD and 140 or 120, onCD and 140 or 220, onCD and 160 or 255,
+            onCD and 160 or 240, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        if not onCD and onWarpFleet then
+            addHit(btnX, btnY, btnW, btnH, function()
+                onWarpFleet(base)
+            end)
+        end
+        sy = sy + 26
     end
 
     nvgBeginPath(vg); nvgMoveTo(vg, px+8, sy); nvgLineTo(vg, px+pw-8, sy)
@@ -237,7 +290,99 @@ function BasePanel.Render(base, ctx)
         return s + h > clipY1 and s < clipY2
     end
 
+    -- P2-2: 模块简称表（槽位格子显示用）
+    local MODULE_ABBR = {
+        COMMAND_CENTER  = "指挥", ENERGY_CORE    = "能核", MINERAL_SILO   = "仓储",
+        MATERIAL_DEPOT  = "材库", REFINERY       = "精炼", DEFENSE_CANNON = "炮台",
+        HANGAR          = "机库", WARP_GATE      = "曲速", SOLAR_ARRAY    = "太阳",
+        RESEARCH_CENTER = "科研", SHIPYARD       = "造船", BASE_SHIELD    = "护盾",
+        BUILD_CENTER    = "探索", EXCHANGE_CENTER= "互换",
+    }
+
     local vy = clipY1 + 6
+
+    -- P2-2: 槽位可视化（所有已建+空槽格子一览）
+    do
+        local CELL_GAP  = 4
+        local CELL_W    = math.floor((pw - 16 - (SLOT_COLS - 1) * CELL_GAP) / SLOT_COLS)
+        local CELL_H    = 22
+
+        -- 标题行
+        if isVis(vy, 12) then
+            text(px+14, vy2sy(vy)+6, "模块槽位总览  " .. #base.buildings .. "/" .. maxSlots,
+                9, 100, 200, 255, 180)
+        end
+        vy = vy + 14
+
+        for slotIdx = 1, maxSlots do
+            local col = (slotIdx - 1) % SLOT_COLS
+            local row = math.floor((slotIdx - 1) / SLOT_COLS)
+            local cx  = px + 8 + col * (CELL_W + CELL_GAP)
+            local cy  = vy2sy(vy + row * (CELL_H + CELL_GAP))
+
+            if cy + CELL_H > clipY1 - 4 and cy < clipY1 + scrollAreaH + 4 then
+                local bldg = base.buildings[slotIdx]  -- 已安装（按安装顺序）
+                if bldg then
+                    -- 已安装槽：蓝色实心
+                    nvgBeginPath(vg); nvgRoundedRect(vg, cx, cy, CELL_W, CELL_H, 4)
+                    nvgFillColor(vg, clr(20, 60, 140, 200)); nvgFill(vg)
+                    nvgBeginPath(vg); nvgRoundedRect(vg, cx, cy, CELL_W, CELL_H, 4)
+                    nvgStrokeColor(vg, clr(60, 140, 255, 180)); nvgStrokeWidth(vg, 1); nvgStroke(vg)
+                    -- 简称 + 等级
+                    local abbr = MODULE_ABBR[bldg.key] or bldg.name:sub(1, 2)
+                    text(cx + CELL_W/2, cy + 8,  abbr,           8, 160, 220, 255, 255, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+                    text(cx + CELL_W/2, cy + 17, "Lv"..bldg.level, 7, 100, 180, 255, 180, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+                else
+                    -- 空槽：灰色虚线边框 + "+" 号
+                    nvgBeginPath(vg); nvgRoundedRect(vg, cx+0.5, cy+0.5, CELL_W-1, CELL_H-1, 4)
+                    -- 虚线效果：短边框段
+                    nvgStrokeColor(vg, clr(80, 100, 140, 120))
+                    nvgStrokeWidth(vg, 1)
+                    nvgStroke(vg)
+                    text(cx + CELL_W/2, cy + CELL_H/2, "+", 13, 100, 140, 200, 160, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+
+                    -- 点击空槽：高亮第一个可建造的模块（设为 pending）
+                    if cy >= clipY1 and cy + CELL_H <= clipY1 + scrollAreaH then
+                        addHit(cx, cy, CELL_W, CELL_H, function()
+                            for _, k in ipairs(BASE_MODULE_ORDER) do
+                                local alreadyBuilt = false
+                                for _, b in ipairs(base.buildings) do
+                                    if b.key == k then alreadyBuilt = true; break end
+                                end
+                                local reqLv = BASE_MODULE_UNLOCK_LEVEL[k] or 1
+                                if not alreadyBuilt and coreLevel >= reqLv then
+                                    local ok2 = bbs and bbs:canBuild(k, base) or false
+                                    if ok2 then
+                                        baseBuildPending_ = k
+                                        return
+                                    end
+                                end
+                            end
+                            -- 资源不足时也选第一个未建且已解锁的
+                            for _, k in ipairs(BASE_MODULE_ORDER) do
+                                local alreadyBuilt = false
+                                for _, b in ipairs(base.buildings) do
+                                    if b.key == k then alreadyBuilt = true; break end
+                                end
+                                local reqLv = BASE_MODULE_UNLOCK_LEVEL[k] or 1
+                                if not alreadyBuilt and coreLevel >= reqLv then
+                                    baseBuildPending_ = k; return
+                                end
+                            end
+                        end)
+                    end
+                end
+            end
+        end
+        vy = vy + slotRows * (CELL_H + CELL_GAP) + 4
+    end
+
+    -- 分隔线
+    if isVis(vy, 2) then
+        nvgBeginPath(vg); nvgMoveTo(vg, px+8, vy2sy(vy)); nvgLineTo(vg, px+pw-8, vy2sy(vy))
+        nvgStrokeColor(vg, clr(60, 100, 180, 80)); nvgStrokeWidth(vg, 1); nvgStroke(vg)
+    end
+    vy = vy + 6
 
     if isVis(vy, 14) then
         text(px+14, vy2sy(vy)+7, "模块建造:", 10, 100, 200, 255, 200)
@@ -381,6 +526,20 @@ function BasePanel.Render(base, ctx)
                     text(px+24, sy2+19, modDef.desc, 7, 100, 160, 140, 150)
                 end
                 local canUp    = bbs and bbs:canUpgrade(bldIdx, base)
+                -- P1-3: 升级收益预览（desc 行右侧，仅可升级时显示）
+                if canUp and modDef then
+                    local nextLv = b.level + 1
+                    local lvLabel = "Lv." .. b.level .. "→" .. nextLv
+                    -- 从 desc 中提取首个带 /级 的收益片段，如 "+50/级"→"+50"、"×2/级"→"×2"
+                    local benefitNum = modDef.desc and (
+                        modDef.desc:match("([×%+%-%d%.x]+)/级") or
+                        modDef.desc:match("([×%+%-%d%.x]+)/每级")
+                    )
+                    local hint = benefitNum and (lvLabel .. " " .. benefitNum) or lvLabel
+                    text(px+pw-92, sy2+19, "↑ " .. hint, 7,
+                        80, 220, 140, 180,
+                        NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
+                end
                 local cost     = bbs and bbs:getUpgradeCost(b.key, b.level) or {}
                 local costStr2 = rm and rm:fmtCost(cost) or ""
                 local capturedIdx = bldIdx

@@ -5,7 +5,7 @@
     "id": "1259204981"
   },
   "entry": "main.lua",
-  "version": "1.0.18",
+  "version": "1.0.29",
   "taptap_publish": {
     "title": "银河征服",
     "description": "一款星际题材的多人在线策略游戏，率领舰队征服河系，与玩家联盟对战，争夺宇宙霸权。",
@@ -34,17 +34,17 @@
       "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/SCREENSHOT_2026-05-13T03-36-49_03.png"
     ],
     "promotional_image_url": "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/PROMO_2026-05-13T03-36-49_01.jpg",
-    "cover_horizontal": "./.project/game_material/COVER_HORIZONTAL_2026-05-13T03-43-24_01.png",
-    "cover_horizontal_url": "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/COVER_HORIZONTAL_2026-05-13T03-43-24_01.png",
+    "cover_horizontal": "./game_material/COVER_HORIZONTAL_2026-05-17T02-39-23_01.png",
+    "cover_horizontal_url": "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/COVER_HORIZONTAL_2026-05-17T02-39-23_01.png",
     "cover_vertical": "./.project/game_material/COVER_VERTICAL_2026-05-13T03-43-24_01.png",
     "cover_vertical_url": "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/COVER_VERTICAL_2026-05-13T03-43-24_01.png"
   },
   "test_qrcode": {
-    "url": "https://tapcode-sce.spark.xd.com/qrcode/p_98r1_1778643771907.png",
-    "generated_at": "2026-05-13T03:42:52.060Z"
+    "url": "https://tapcode-sce.spark.xd.com/qrcode/p_98r1_1778985681745.png",
+    "generated_at": "2026-05-17T02:41:21.878Z"
   },
   "metadata": {
-    "updated_at": "2026-05-13T03:46:17.969Z",
+    "updated_at": "2026-05-17T02:41:21.878Z",
     "promo_dependent_hash": "0e9089b51e4f256f8e6f323339e02af9"
   }
 }

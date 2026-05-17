@@ -1,2 +1,14 @@
 .build/
 dist/
+.tmp/
+logs/build/
+logs/lua_lsp.pid
+logs/lua_diagnostics.log
+logs/lua_errors.log
+engine-docs/
+examples/
+templates/
+urhox-libs/
+schemas/
+lua-tools/
+.emmylua/

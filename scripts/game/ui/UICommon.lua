@@ -105,6 +105,7 @@ UICommon.player        = nil
 ---@type table   FleetManager
 UICommon.fm            = nil
 UICommon.spq           = nil
+UICommon.pirateAI      = nil   -- P1-3: 海盗 AI 引用（供情报面板查询）
 UICommon.resIcons      = {}
 
 -- ============================================================================

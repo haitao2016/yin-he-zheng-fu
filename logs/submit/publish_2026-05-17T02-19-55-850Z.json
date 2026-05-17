@@ -1,0 +1,269 @@
+{
+  "startTime": "2026-05-17T02:19:55.850Z",
+  "endTime": "2026-05-17T02:20:17.737Z",
+  "duration": "21887ms",
+  "result": {
+    "success": true
+  },
+  "steps": [
+    {
+      "time": "2026-05-17T02:19:56.620Z",
+      "stage": "upload_to_cdn",
+      "data": {
+        "status": "start"
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:09.939Z",
+      "stage": "upload_to_cdn",
+      "data": {
+        "status": "done"
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:09.939Z",
+      "stage": "network_config",
+      "data": {
+        "env": "production"
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:09.944Z",
+      "stage": "load_config",
+      "data": {
+        "projectId": "p_98r1",
+        "configPath": "/userspaces/3a9b9207-8782-4e78-9f41-e55b233f4547/workspace/.project/project.json",
+        "taptap_publish": {
+          "title": "银河征服",
+          "description": "一款星际题材的多人在线策略游戏，率领舰队征服河系，与玩家联盟对战，争夺宇宙霸权。",
+          "category": "strategy",
+          "screen_orientation": "landscape",
+          "collection_type": "sce",
+          "trial_note": "首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。",
+          "app_platforms": "1,2",
+          "gameplay_demo_video_source": "https://tapcode-sce.spark.xd.com/videos/p_98r1/1778643343868-rec_607c1c44-99ca-4e54-b731-e29299149e75.mp4",
+          "developer_id": 385689,
+          "app_id": 855678,
+          "miniapp_id": "tapmcdfygkujpyog0s"
+        },
+        "assets": {
+          "icon": "./game_material/ICON_2026-05-13T03-36-49_01.png",
+          "screenshots": [
+            "./game_material/SCREENSHOT_2026-05-13T03-36-49_01.png",
+            "./game_material/SCREENSHOT_2026-05-13T03-36-49_02.jpg",
+            "./game_material/SCREENSHOT_2026-05-13T03-36-49_03.png"
+          ],
+          "promotional_image": "./game_material/PROMO_2026-05-13T03-36-49_01.jpg",
+          "icon_url": "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/ICON_2026-05-13T03-36-49_01.png",
+          "screenshot_urls": [
+            "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/SCREENSHOT_2026-05-13T03-36-49_01.png",
+            "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/SCREENSHOT_2026-05-13T03-36-49_02.jpg",
+            "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/SCREENSHOT_2026-05-13T03-36-49_03.png"
+          ],
+          "promotional_image_url": "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/PROMO_2026-05-13T03-36-49_01.jpg",
+          "cover_horizontal": "./game_material/COVER_HORIZONTAL_v5_460x215.png",
+          "cover_horizontal_url": "https://tapcode-sce.spark.xd.com/assets/game_material/p_98r1/COVER_HORIZONTAL_v5_460x215.png",
+          "cover_vertical": "./.project/game_material/COVER_VERTICAL_2026-05-13T03-43-24_01.png",
+          "cover_vertical_url": "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/COVER_VERTICAL_2026-05-13T03-43-24_01.png"
+        }
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:10.247Z",
+      "stage": "update_game",
+      "data": {
+        "app_id": 855678,
+        "developer_id": 385689
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:10.298Z",
+      "stage": "upload_assets",
+      "data": {
+        "status": "start",
+        "assets": {
+          "icon": "./game_material/ICON_2026-05-13T03-36-49_01.png",
+          "screenshots": [
+            "./game_material/SCREENSHOT_2026-05-13T03-36-49_01.png",
+            "./game_material/SCREENSHOT_2026-05-13T03-36-49_02.jpg",
+            "./game_material/SCREENSHOT_2026-05-13T03-36-49_03.png"
+          ],
+          "promotional_image": "./game_material/PROMO_2026-05-13T03-36-49_01.jpg",
+          "icon_url": "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/ICON_2026-05-13T03-36-49_01.png",
+          "screenshot_urls": [
+            "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/SCREENSHOT_2026-05-13T03-36-49_01.png",
+            "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/SCREENSHOT_2026-05-13T03-36-49_02.jpg",
+            "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/SCREENSHOT_2026-05-13T03-36-49_03.png"
+          ],
+          "promotional_image_url": "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/PROMO_2026-05-13T03-36-49_01.jpg",
+          "cover_horizontal": "./game_material/COVER_HORIZONTAL_v5_460x215.png",
+          "cover_horizontal_url": "https://tapcode-sce.spark.xd.com/assets/game_material/p_98r1/COVER_HORIZONTAL_v5_460x215.png",
+          "cover_vertical": "./.project/game_material/COVER_VERTICAL_2026-05-13T03-43-24_01.png",
+          "cover_vertical_url": "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/COVER_VERTICAL_2026-05-13T03-43-24_01.png"
+        }
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:13.407Z",
+      "stage": "upload_cover_horizontal",
+      "data": {
+        "path": "./game_material/COVER_HORIZONTAL_v5_460x215.png",
+        "resolvedPath": "/userspaces/3a9b9207-8782-4e78-9f41-e55b233f4547/workspace/game_material/COVER_HORIZONTAL_v5_460x215.png"
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:13.408Z",
+      "stage": "upload_cover_horizontal",
+      "data": {
+        "fileSize": 187001
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:13.906Z",
+      "stage": "upload_cover_horizontal",
+      "data": {
+        "response": {
+          "result": true,
+          "image_url": "https://img-tc.tapimg.com/market/images/FmnYApdpjtoSwjnNrK7yffTwnZqE.png"
+        }
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:13.907Z",
+      "stage": "upload_cover_vertical",
+      "data": {
+        "path": "./.project/game_material/COVER_VERTICAL_2026-05-13T03-43-24_01.png",
+        "resolvedPath": "/userspaces/3a9b9207-8782-4e78-9f41-e55b233f4547/workspace/.project/game_material/COVER_VERTICAL_2026-05-13T03-43-24_01.png"
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:13.919Z",
+      "stage": "upload_cover_vertical",
+      "data": {
+        "fileSize": 1473141
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:14.462Z",
+      "stage": "upload_cover_vertical",
+      "data": {
+        "response": {
+          "result": true,
+          "image_url": "https://img-tc.tapimg.com/market/images/FkdEtC1LOO4fA_HIJ-TjLMSgarOj.png"
+        }
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:14.462Z",
+      "stage": "upload_assets",
+      "data": {
+        "status": "done",
+        "uploadedAssets": {
+          "iconUrl": "https://img-tc.tapimg.com/market/images/Fo0wmHEgp_16KuD0CULcGIQx58PI.png",
+          "screenshotUrls": [
+            "https://img-tc.tapimg.com/market/images/Fpf4tXZxckQu9yufas76Bg8ahpJZ.png",
+            "https://img-tc.tapimg.com/market/images/Fk2ycd5h9GsoKbHmGiQn63QeqYoh.jpg",
+            "https://img-tc.tapimg.com/market/images/FgiZQKuj63WHmTdiU-ixjL-tVEzz.png"
+          ],
+          "bannerUrl": "https://img-tc.tapimg.com/market/images/FlyK47WHsLhXcncSnWxMZZrs6tnW.jpg",
+          "coverUrl": "https://img-tc.tapimg.com/market/images/FmnYApdpjtoSwjnNrK7yffTwnZqE.png",
+          "coverVerticalUrl": "https://img-tc.tapimg.com/market/images/FkdEtC1LOO4fA_HIJ-TjLMSgarOj.png"
+        }
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:14.463Z",
+      "stage": "resolve_gameplay_demo_video",
+      "data": {
+        "source": "https://tapcode-sce.spark.xd.com/videos/p_98r1/1778643343868-rec_607c1c44-99ca-4e54-b731-e29299149e75.mp4",
+        "sourceType": "remote",
+        "appId": 855678,
+        "developerId": 385689
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:14.466Z",
+      "stage": "resolve_gameplay_demo_video_cache_lookup",
+      "data": {
+        "cacheEntry": {
+          "source": "https://tapcode-sce.spark.xd.com/videos/p_98r1/1778643343868-rec_607c1c44-99ca-4e54-b731-e29299149e75.mp4",
+          "source_type": "remote",
+          "video_id": 5656146,
+          "sha256": "d97051733657aa1c52d6b6f433ff06d4af7314dd6f1ea13f970bdd8c57796097",
+          "etag": "\"136122D1C0BFDE312D8CD96B740B2600\"",
+          "last_modified": "Wed, 13 May 2026 03:35:44 GMT",
+          "content_length": 2570492
+        }
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:15.458Z",
+      "stage": "submit_spark_request",
+      "data": {
+        "app_id": 855678,
+        "developer_id": 385689,
+        "map_version": "27",
+        "sce_project_id": "p_98r1",
+        "category": "strategy",
+        "collection_type": "strategy",
+        "description": "一款星际题材的多人在线策略游戏，率领舰队征服河系，与玩家联盟对战，争夺宇宙霸权。",
+        "screen_orientation": 2,
+        "title": "银河征服",
+        "icon": "https://img-tc.tapimg.com/market/images/Fo0wmHEgp_16KuD0CULcGIQx58PI.png",
+        "screenshots": [
+          "https://img-tc.tapimg.com/market/images/Fpf4tXZxckQu9yufas76Bg8ahpJZ.png",
+          "https://img-tc.tapimg.com/market/images/Fk2ycd5h9GsoKbHmGiQn63QeqYoh.jpg",
+          "https://img-tc.tapimg.com/market/images/FgiZQKuj63WHmTdiU-ixjL-tVEzz.png"
+        ],
+        "banner": "https://img-tc.tapimg.com/market/images/FlyK47WHsLhXcncSnWxMZZrs6tnW.jpg",
+        "trial_note": "首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。",
+        "app_platforms": "1,2",
+        "cover": "https://img-tc.tapimg.com/market/images/FmnYApdpjtoSwjnNrK7yffTwnZqE.png",
+        "cover_vertical": "https://img-tc.tapimg.com/market/images/FkdEtC1LOO4fA_HIJ-TjLMSgarOj.png",
+        "gameplay_demo_video_id": 5656146,
+        "publish_intl": false
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:17.271Z",
+      "stage": "submit_spark_response",
+      "data": {
+        "app_id": 855678,
+        "app_title": "银河征服",
+        "category": "strategy",
+        "category_label": "策略",
+        "display_app_title": "策略游戏精选"
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:17.271Z",
+      "stage": "update_project_app_id",
+      "data": {
+        "stage": "start",
+        "project_id": "p_98r1",
+        "app_id": 855678
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:17.737Z",
+      "stage": "update_project_app_id",
+      "data": {
+        "stage": "success",
+        "project_id": "p_98r1",
+        "app_id": 855678
+      }
+    },
+    {
+      "time": "2026-05-17T02:20:17.737Z",
+      "stage": "publish_result",
+      "data": {
+        "action": "updated",
+        "status": "pending_review",
+        "game_id": 855678,
+        "message": "成功更新游戏 \"银河征服\"",
+        "developer_id": 385689,
+        "config_file_path": "/userspaces/3a9b9207-8782-4e78-9f41-e55b233f4547/workspace/.project/project.json"
+      }
+    }
+  ]
+}

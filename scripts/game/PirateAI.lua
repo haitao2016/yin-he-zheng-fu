@@ -60,10 +60,16 @@ end
 -- ============================================================================
 
 ---@param worldRange number  世界半径（约 2000）
-function PirateAI:generateBases(worldRange)
+function PirateAI:generateBases(worldRange, opts)
     self.bases = {}
-    -- 两个基地对称分布在星图边缘，角度错开 180°
-    local baseAngles = { math.pi * 0.25, math.pi * 1.25 }
+    -- P2-2: BIPOLAR 模式下海盗基地集中在中线（x≈0，上/下方）
+    local baseAngles
+    if opts and opts.bipolar then
+        baseAngles = { math.pi * 0.5, math.pi * 1.5 }   -- 正上 / 正下
+    else
+        -- 两个基地对称分布在星图边缘，角度错开 180°
+        baseAngles = { math.pi * 0.25, math.pi * 1.25 }
+    end
     for i, angle in ipairs(baseAngles) do
         local dist = worldRange * 0.65 + math.random() * worldRange * 0.25
         self.bases[i] = {
@@ -92,6 +98,17 @@ function PirateAI:update(dt)
     for _, base in ipairs(self.bases) do
         if not base.active then goto continueBases end
         base.pulse = base.pulse + dt
+
+        -- 情报计时器递减
+        if base.intelTimer and base.intelTimer > 0 then
+            base.intelTimer = base.intelTimer - dt
+            if base.intelTimer <= 0 then
+                base.intelTimer = 0
+                if self.notifyFn then
+                    self.notifyFn(string.format("海盗基地 #%d 情报已失效", base.id), "warn")
+                end
+            end
+        end
 
         -- 攻击倒计时（M2 修复：levelFactor 最低值 0.4→0.6，高级海盗不再超密）
         base.attackTimer = base.attackTimer - dt
@@ -242,9 +259,13 @@ function PirateAI:launchAttack(base)
     if not nearest then nearest = weights[#weights].target end  -- 保险兜底
 
     -- 派出海盗舰队
+    local ox = base.x + (math.random() - 0.5) * 60
+    local oy = base.y + (math.random() - 0.5) * 60
     local fl = {
-        x          = base.x + (math.random() - 0.5) * 60,
-        y          = base.y + (math.random() - 0.5) * 60,
+        x          = ox,
+        y          = oy,
+        originX    = ox,   -- P2-1: 保存出发地（用于绘制已行驶路段）
+        originY    = oy,
         targetX    = nearest.x,
         targetY    = nearest.y,
         targetName = nearest.name or "未知区域",
@@ -309,6 +330,81 @@ function PirateAI:strengthenBase(baseId)
 end
 
 -- ============================================================================
+-- 情报系统：侦察任务完成后揭露海盗基地情报
+-- ============================================================================
+
+--- 对威胁最高的海盗基地启动情报（由探索任务回调）
+--- duration: 情报持续时间（秒），默认 120
+--- 同时延缓该基地下次进攻 30 秒（给玩家准备时间）
+--- 返回情报摘要字符串（用于通知文本）
+function PirateAI:RevealMostThreateningBase(duration)
+    duration = duration or 120
+    -- 找最近要进攻的基地（攻击倒计时最短且活跃）
+    local target = nil
+    for _, base in ipairs(self.bases) do
+        if base.active then
+            if not target or base.attackTimer < target.attackTimer then
+                target = base
+            end
+        end
+    end
+    if not target then return "未探测到海盗活动" end
+
+    target.intelTimer = duration
+    -- 延缓进攻（+30 秒缓冲，惩罚效果）
+    target.attackTimer = target.attackTimer + 30
+    print(string.format("[PirateAI] 情报揭露基地#%d Lv%d，进攻延迟+30s，情报有效%ds",
+        target.id, target.level, duration))
+    return string.format("基地#%d Lv%d  进攻倒计时: %ds  HP:%d/%d",
+        target.id, target.level, math.ceil(target.attackTimer), target.hp, target.maxHp)
+end
+
+-- ============================================================================
+-- P1-3: 情报查询 —— 返回当前有效情报数据（供 GameUI 渲染情报面板）
+-- ============================================================================
+
+-- 按等级预测舰型编组（±20% 误差在 GameUI 侧呈现）
+local FLEET_COMPOSITION = {
+    [1] = "护卫舰×3",
+    [2] = "护卫舰×2  驱逐舰×1",
+    [3] = "护卫舰×1  驱逐舰×2",
+    [4] = "驱逐舰×3  巡洋舰×1",
+    [5] = "驱逐舰×2  巡洋舰×2",
+}
+
+--- 返回所有有效情报条目（intelTimer > 0 的基地）
+--- 每条条目：{ id, level, attackTimer, intelTimer, hp, maxHp, x, y, composition }
+function PirateAI:GetActiveIntel()
+    local result = {}
+    for _, base in ipairs(self.bases) do
+        if base.active and base.intelTimer and base.intelTimer > 0 then
+            -- P1-3: 攻击时间加入 ±20% 随机误差（每条情报固定，避免每帧跳变）
+            if not base.intelErrorFactor then
+                base.intelErrorFactor = 0.8 + math.random() * 0.4   -- [0.8, 1.2]
+            end
+            local estimatedAttack = math.ceil(base.attackTimer * base.intelErrorFactor)
+            local lvl = math.min(base.level, 5)
+            result[#result + 1] = {
+                id              = base.id,
+                level           = base.level,
+                attackTimer     = base.attackTimer,
+                estimatedAttack = estimatedAttack,
+                intelTimer      = base.intelTimer,
+                hp              = base.hp,
+                maxHp           = base.maxHp,
+                x               = base.x,
+                y               = base.y,
+                composition     = FLEET_COMPOSITION[lvl] or ("等级" .. base.level .. "编队"),
+            }
+        else
+            -- 情报失效后清除误差因子（下次揭露重新随机）
+            base.intelErrorFactor = nil
+        end
+    end
+    return result
+end
+
+-- ============================================================================
 -- 渲染（由 GalaxyScene 在 Render() 中调用）
 -- ============================================================================
 
@@ -367,16 +463,36 @@ function PirateAI:render(vg, w2s, zoom)
             nvgFillColor(vg, nvgRGBA(220, 50, 50, 220)); nvgFill(vg)
         end
 
-        -- 标签（等级 + 进攻倒计时）
+        -- 情报光环（有效情报时显示青色扫描环）
+        local hasIntel = base.intelTimer and base.intelTimer > 0
+        if hasIntel then
+            local scanR = r * 2.0 + math.abs(math.sin(base.pulse * 3)) * r * 0.5
+            nvgBeginPath(vg); nvgCircle(vg, sx, sy, scanR)
+            nvgStrokeColor(vg, nvgRGBA(60, 240, 220, math.floor(120 * (base.intelTimer / 120))))
+            nvgStrokeWidth(vg, 1.5); nvgStroke(vg)
+        end
+
+        -- 标签（有情报时显示完整信息，无情报时隐藏进攻倒计时）
         if zoom > 0.5 then
             nvgFontFace(vg, "sans")
             nvgFontSize(vg, math.max(8, 10 * zoom))
             nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_TOP)
-            nvgFillColor(vg, nvgRGBA(255, 120, 80, 220))
-            local atStr = base.attackTimer > 0
-                and string.format("海盗基地Lv%d  进攻: %ds", base.level, math.ceil(base.attackTimer))
-                or  string.format("海盗基地Lv%d  出击中!", base.level)
-            nvgText(vg, sx, sy + r + 10, atStr)
+            local labelY = sy + r + 10
+            if hasIntel then
+                -- 有情报：显示倒计时、HP、情报剩余时间
+                local atStr = base.attackTimer > 0
+                    and string.format("⚡基地Lv%d  进攻: %ds", base.level, math.ceil(base.attackTimer))
+                    or  string.format("⚡基地Lv%d  出击中!", base.level)
+                nvgFillColor(vg, nvgRGBA(80, 240, 220, 230))
+                nvgText(vg, sx, labelY, atStr)
+                nvgFontSize(vg, math.max(7, 9 * zoom))
+                nvgFillColor(vg, nvgRGBA(60, 200, 180, 180))
+                nvgText(vg, sx, labelY + 12, string.format("HP:%d/%d  情报:%ds", base.hp, base.maxHp, math.ceil(base.intelTimer)))
+            else
+                -- 无情报：只显示等级，不透露倒计时
+                nvgFillColor(vg, nvgRGBA(255, 120, 80, 200))
+                nvgText(vg, sx, labelY, string.format("海盗基地Lv%d", base.level))
+            end
         end
 
         ::nextBase::
@@ -388,12 +504,93 @@ function PirateAI:render(vg, w2s, zoom)
         local pulse  = math.abs(math.sin(fl.pulse * 2.5)) * 0.4 + 0.6
         local r      = (8 + (fl.pirateLevel - 1) * 1) * zoom
 
-        -- 航迹线
+        -- P2-1: 增强航迹线——已行驶路段（灰色虚线）+ 剩余路段（彩色动态虚线箭头）+ 目标警告圈
         local tx, ty = w2s(fl.targetX, fl.targetY)
+        -- 颜色随海盗等级加深：Lv1=橙黄, Lv4=深红
+        local lvRatio = math.min(1.0, (fl.pirateLevel - 1) / 3)
+        local pathR = math.floor(255)
+        local pathG = math.floor(160 - lvRatio * 120)  -- 160→40
+        local pathB = math.floor(40  - lvRatio * 40)   -- 40→0
+
+        -- ① 已行驶路段：出发地 → 当前位置（灰色半透明虚线）
+        if fl.originX then
+            local ox2, oy2 = w2s(fl.originX, fl.originY)
+            local dx2, dy2 = sx - ox2, sy - oy2
+            local segLen2 = math.sqrt(dx2*dx2 + dy2*dy2)
+            if segLen2 > 2 then
+                local dashL2, gapL2 = 8, 6
+                local steps2 = math.floor(segLen2 / (dashL2 + gapL2))
+                local ux2, uy2 = dx2/segLen2, dy2/segLen2
+                nvgBeginPath(vg)
+                for s = 0, steps2 - 1 do
+                    local t0 = s * (dashL2 + gapL2)
+                    local t1 = math.min(t0 + dashL2, segLen2)
+                    nvgMoveTo(vg, ox2 + ux2*t0, oy2 + uy2*t0)
+                    nvgLineTo(vg, ox2 + ux2*t1, oy2 + uy2*t1)
+                end
+                nvgStrokeColor(vg, nvgRGBA(160, 160, 160, 55))
+                nvgStrokeWidth(vg, 1.0 * zoom); nvgStroke(vg)
+            end
+        end
+
+        -- ② 剩余路段：当前位置 → 目标（动态流动虚线，由 fl.pulse 驱动）
+        local rdx, rdy = tx - sx, ty - sy
+        local rLen = math.sqrt(rdx*rdx + rdy*rdy)
+        if rLen > 2 then
+            local dashL, gapL = 10, 7
+            local period = dashL + gapL
+            local flowOffset = (fl.pulse * 40) % period   -- 每秒流动 40px
+            local rux, ruy = rdx/rLen, rdy/rLen
+            nvgBeginPath(vg)
+            local startD = flowOffset - period
+            while startD < rLen do
+                local d0 = math.max(0, startD)
+                local d1 = math.min(rLen, startD + dashL)
+                if d1 > d0 then
+                    nvgMoveTo(vg, sx + rux*d0, sy + ruy*d0)
+                    nvgLineTo(vg, sx + rux*d1, sy + ruy*d1)
+                end
+                startD = startD + period
+            end
+            nvgStrokeColor(vg, nvgRGBA(pathR, pathG, pathB, 170))
+            nvgStrokeWidth(vg, 1.5 * zoom); nvgStroke(vg)
+
+            -- ② 箭头头部（目标方向）
+            local arrowDist = math.max(0, rLen - 12 * zoom)
+            local ax = sx + rux * arrowDist
+            local ay = sy + ruy * arrowDist
+            local perpX, perpY = -ruy, rux
+            local arrowSize = 5 * zoom
+            nvgBeginPath(vg)
+            nvgMoveTo(vg, tx, ty)
+            nvgLineTo(vg, ax + perpX*arrowSize, ay + perpY*arrowSize)
+            nvgLineTo(vg, ax - perpX*arrowSize, ay - perpY*arrowSize)
+            nvgClosePath(vg)
+            nvgFillColor(vg, nvgRGBA(pathR, pathG, pathB, 200))
+            nvgFill(vg)
+        end
+
+        -- ③ 目标位置警告圈（双圈脉冲动画）
+        local warnPulse = math.abs(math.sin(fl.pulse * 3.0))
+        local warnR1 = (14 + warnPulse * 8) * zoom
+        local warnR2 = (22 + warnPulse * 6) * zoom
+        -- 外圈（浅色，快速脉冲）
         nvgBeginPath(vg)
-        nvgMoveTo(vg, sx, sy); nvgLineTo(vg, tx, ty)
-        nvgStrokeColor(vg, nvgRGBA(255, 80, 40, 50))
-        nvgStrokeWidth(vg, 1); nvgStroke(vg)
+        nvgCircle(vg, tx, ty, warnR2)
+        nvgStrokeColor(vg, nvgRGBA(pathR, pathG, pathB, math.floor(60 * (1 - warnPulse))))
+        nvgStrokeWidth(vg, 1.0 * zoom); nvgStroke(vg)
+        -- 内圈（深色，持续显示）
+        nvgBeginPath(vg)
+        nvgCircle(vg, tx, ty, warnR1)
+        nvgStrokeColor(vg, nvgRGBA(pathR, pathG, pathB, math.floor(100 + warnPulse * 80)))
+        nvgStrokeWidth(vg, 1.2 * zoom); nvgStroke(vg)
+        -- 十字准星
+        local crossSize = 5 * zoom
+        nvgBeginPath(vg)
+        nvgMoveTo(vg, tx - crossSize, ty); nvgLineTo(vg, tx + crossSize, ty)
+        nvgMoveTo(vg, tx, ty - crossSize); nvgLineTo(vg, tx, ty + crossSize)
+        nvgStrokeColor(vg, nvgRGBA(pathR, pathG, pathB, math.floor(120 + warnPulse * 100)))
+        nvgStrokeWidth(vg, 1.0 * zoom); nvgStroke(vg)
 
         -- 引擎尾焰
         local tailX = sx - math.cos(fl.angle) * r * 1.6
@@ -476,6 +673,7 @@ function PirateAI:serialize()
             id = b.id, x = b.x, y = b.y,
             hp = b.hp, maxHp = b.maxHp, level = b.level,
             attackTimer = b.attackTimer, active = b.active,
+            intelTimer = b.intelTimer or 0,
         }
     end
     -- M7: 保存全局恢复计时器，避免读档后计时器归零
@@ -497,6 +695,7 @@ function PirateAI:deserialize(data)
             base.level       = bd.level       or 1
             base.attackTimer = bd.attackTimer or PIRATE_ATTACK_INTERVAL
             base.active      = (bd.active ~= false)
+            base.intelTimer  = bd.intelTimer  or 0
         end
     end
     -- M7: 恢复全局恢复计时器

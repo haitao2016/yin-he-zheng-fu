@@ -48,10 +48,10 @@ metadata:
 | 场景 | 路由到 |
 |------|--------|
 | 一次性批量生成大量素材（无迭代需求） | `auto-game-assets` |
-| 从游戏概念出发生成完整素材集 | `game-cog` |
+| 从游戏概念出发生成完整素材集 | `auto-game-assets`（批量生成） |
 | 需要跨模态资产管线编排 | `ai-asset-pipeline` |
 | 单张图像一次生成即可，无需迭代 | 直接调用 `generate_image` |
-| 查找/下载免费素材 | `game-assets-finder` |
+| 查找引擎内置资源 | `search_game_resource` 工具 |
 
 ---
 
@@ -206,6 +206,7 @@ prompt: "添加[新元素]" 或 "去掉[目标元素]"
 | 3 | 是否需要透明背景 | prompt 含"透明"则设 `transparent: true` |
 | 4 | aspect_ratio 选择 | 参照分辨率策略表 |
 | 5 | 是否有参考图 | 有则使用 `reference_images` 参数 |
+| 6 | `model` 参数 | **不要设置**，除非用户明确指定使用某个模型 |
 
 ### 编辑图像前
 
@@ -279,7 +280,7 @@ assets/
 
 | 场景 | 本 Skill 的角色 | 协作 Skill |
 |------|----------------|-----------|
-| 从概念到素材集 | 对 game-cog 生成的单张图做迭代打磨 | `game-cog`（概念生成） |
+| 从概念到素材集 | 对初次生成的单张图做迭代打磨 | `auto-game-assets`（批量生成） |
 | 批量素材生产 | 打磨代表作后，auto-game-assets 批量复制风格 | `auto-game-assets`（批量生成） |
 | 资产管线 | 作为 pipeline 中"图像打磨"环节 | `ai-asset-pipeline`（管线编排） |
 | 像素风素材 | 先用本 skill 迭代确认风格，再交 pixel-art 批量 | `@game_pixel-art-generator`（像素画） |
@@ -288,7 +289,7 @@ assets/
 
 **典型组合流程**：
 ```
-game-cog（概念 → 素材方向）
+auto-game-assets（概念 → 素材方向）
     ↓
 iterative-image-craft（单张迭代打磨 → 确认风格）
     ↓

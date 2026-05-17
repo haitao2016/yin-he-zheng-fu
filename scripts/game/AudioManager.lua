@@ -164,6 +164,20 @@ function AudioManager.SetMute(mute)
     audio:SetMasterGain("Effect", mute and 0.0 or sfxVolume_)
 end
 
+-- ─── P3-3: BGM 音调（pitch）控制 ────────────────────────────────────────────
+--- 设置当前播放中 BGM 的音调（1.0=正常，1.05=升5%）
+--- SoundSource.frequency 属性以倍率控制播放速度（≈音调），默认 1.0
+function AudioManager.SetBGMPitch(pitch)
+    if bgmSource_     then bgmSource_.frequency     = pitch end
+    if bgmFadeSource_ then bgmFadeSource_.frequency = pitch end
+end
+
+--- 恢复 BGM 音调为正常值
+function AudioManager.ResetBGMPitch()
+    if bgmSource_     then bgmSource_.frequency     = 1.0 end
+    if bgmFadeSource_ then bgmFadeSource_.frequency = 1.0 end
+end
+
 -- ─── 暂停 / 恢复 ──────────────────────────────────────────────────────────────
 function AudioManager.PauseAll()
     audio:PauseSoundType("Music")

@@ -1,415 +1,405 @@
-# ReactiveUI API
+# ReactiveUI API Reference
 
-UrhoX UI 响应式状态管理框架 —— 数据驱动的局部 UI 更新，告别整树重建。
+## Table of Contents
 
-## 目录
-
-- [快速上手](#快速上手)
-- [核心概念](#核心概念)
-- [API 参考](#api-参考)
-  - [构造函数](#构造函数)
-  - [数据读写](#数据读写)
-  - [watch / unwatch](#watch--unwatch)
-  - [computed](#computed)
-  - [effect](#effect)
-  - [batch](#batch)
-  - [bind / unbind](#bind--unbind)
-  - [bindList](#bindlist)
-  - [列表操作](#列表操作)
-  - [调试工具](#调试工具)
-- [设计原则](#设计原则)
-- [注意事项](#注意事项)
+1. [Constructor](#constructor)
+2. [Data Read/Write](#data-readwrite)
+3. [watch / unwatch](#watch--unwatch)
+4. [bind / unbind](#bind--unbind)
+5. [computed](#computed)
+6. [effect](#effect)
+7. [batch](#batch)
+8. [silent / refresh / get / set / keys / has](#silent--refresh--get--set--keys--has)
+9. [bindList](#bindlist)
+10. [List Operations](#list-operations)
+11. [Debug Tools](#debug-tools)
 
 ---
 
-## 快速上手
+## Constructor
+
+### `ReactiveUI.new(initialData?)`
+
+Create a reactive Store instance.
 
 ```lua
-local UI = require "urhox-libs/UI"
 local ReactiveUI = require "ReactiveUI"
+local store = ReactiveUI.new({ score = 0, hp = 100, items = {} })
+```
 
--- 1. 创建 Store
-local store = ReactiveUI.new({ score = 0, hp = 100 })
+- **initialData** `table?` - Initial key-value pairs, shallow-copied into store
+- **Returns** `table` - Store instance (proxy via metatable)
 
--- 2. 创建 UI（只执行一次）
-local label = UI.Label { text = "Score: 0" }
+---
 
--- 3. 绑定数据到 UI
-store:bind(label, "text", "score", function(v)
+## Data Read/Write
+
+Store uses metatable to proxy reads and writes:
+
+```lua
+-- Read
+local v = store.score          -- __index -> returns data[key] or computed[key].value
+                                -- If inside effect context, auto-records dependency
+
+-- Write
+store.score = 100              -- __newindex -> updates data[key] -> notifies watchers/bindings/computed
+                                -- Skips notification if value unchanged (and not table)
+                                -- Throws error if key is computed
+```
+
+---
+
+## watch / unwatch
+
+### `store:watch(key, fn)` -> `watcherId`
+### `store:watch(keys, fn)` -> `watcherIds`
+
+Watch one or more keys for changes.
+
+```lua
+-- Single key
+local id = store:watch("score", function(newVal, oldVal, key)
+    print(key, "changed from", oldVal, "to", newVal)
+end)
+
+-- Multiple keys (same callback, called on any key change)
+local ids = store:watch({"score", "hp"}, function(newVal, oldVal, key)
+    print(key, "changed")
+end)
+```
+
+**Parameters**:
+- **key/keys** `string | string[]` - Key(s) to watch
+- **fn** `function(newVal, oldVal, key)` - Change callback
+
+**Returns**: `integer | integer[]` - Watcher ID(s) for unwatch
+
+### `store:unwatch(id)` / `store:unwatch(ids)`
+
+Remove watcher(s).
+
+```lua
+store:unwatch(id)
+store:unwatch(ids)  -- batch remove
+```
+
+---
+
+## bind / unbind
+
+### `store:bind(widget, prop, key, transform?)` -> `bindId`
+### `store:bind(widget, prop, keys, transform?)` -> `bindId`
+
+Bind Store key(s) to a Widget property. Auto-updates `widget[prop]` on data change.
+
+```lua
+-- Single-key binding
+local id = store:bind(label, "text", "score", function(v)
     return "Score: " .. v
 end)
 
--- 4. 修改数据 → UI 自动更新
-store.score = 999  -- label.text 自动变为 "Score: 999"
-```
-
----
-
-## 核心概念
-
-```
-┌─────────────────────────────────────────────────┐
-│                  ReactiveUI                     │
-│                                                 │
-│  store.score = 100                              │
-│       │                                         │
-│       ▼                                         │
-│  ┌─────────┐    ┌───────────┐    ┌───────────┐  │
-│  │  data   │───▶│ watchers  │───▶│  widget   │  │
-│  │ (原始值) │    │ (监听回调) │    │ (UI 控件) │  │
-│  └─────────┘    └───────────┘    └───────────┘  │
-│       │                                         │
-│       ▼                                         │
-│  ┌──────────┐                                   │
-│  │ computed │  派生值自动级联更新                  │
-│  │ (派生值)  │                                   │
-│  └──────────┘                                   │
-└─────────────────────────────────────────────────┘
-```
-
-| 概念 | 说明 |
-|------|------|
-| **Store** | 响应式数据容器，通过 `store.key` 读写，写入自动触发通知 |
-| **Watcher** | 数据变化的监听回调，收到 `(newVal, oldVal, key)` |
-| **Computed** | 依赖其他字段自动计算的派生值，依赖变化时级联更新 |
-| **Effect** | 自动追踪依赖的副作用函数，依赖变化时重新执行 |
-| **Bind** | 将 Store 字段绑定到 Widget 属性，数据变化时自动赋值 |
-| **BindList** | 将数组字段绑定到容器，增删改排序时精确操作对应 DOM 节点 |
-| **Batch** | 批量修改多个字段，合并通知，避免中间状态触发多次更新 |
-
----
-
-## API 参考
-
-### 构造函数
-
-#### `ReactiveUI.new(initialData)`
-
-创建一个新的响应式 Store 实例。
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `initialData` | `table?` | 初始数据，浅拷贝到 Store 内部 |
-
-**返回值**: `ReactiveUI` 实例（metatable 代理对象）
-
-```lua
-local store = ReactiveUI.new({
-    score    = 0,
-    hp       = 100,
-    maxHp    = 100,
-    name     = "Player",
-    items    = {},
-})
-```
-
----
-
-### 数据读写
-
-Store 通过 metatable 代理实现透明读写，像普通 table 一样使用。
-
-#### 读取: `store.key`
-
-```lua
-local score = store.score      -- 读取普通字段
-local pct   = store.hpPercent  -- 读取 computed 字段（同样语法）
-```
-
-**优先级**: 方法 > computed > data
-
-#### 写入: `store.key = value`
-
-```lua
-store.score = 100  -- 写入并自动通知所有 watcher / binding
-store.hp = 80      -- 同上
-```
-
-**行为**:
-- 值类型（number/string/boolean）：新旧值相同时**跳过通知**
-- table 类型：**始终触发通知**（因为浅比较无法检测内部变化）
-- 写入 computed 字段会抛出错误
-
-#### `store:get(key)`
-
-显式读取，等价于 `store.key`。
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `key` | `string` | 字段名 |
-
-**返回值**: 字段当前值（computed 返回计算结果）
-
-#### `store:set(key, value)`
-
-显式写入，等价于 `store.key = value`。
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `key` | `string` | 字段名 |
-| `value` | `any` | 新值 |
-
-#### `store:silent(key, value)`
-
-静默写入，**不触发任何通知**。适用于初始化或批量导入数据不想触发 UI 更新的场景。
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `key` | `string` | 字段名 |
-| `value` | `any` | 新值 |
-
-```lua
--- 从存档恢复大量数据，不触发 UI 更新
-store:silent("score", savedData.score)
-store:silent("hp", savedData.hp)
--- 最后手动触发一次整体刷新
-store:refresh()  -- 通知所有字段的 watcher 和 binding
-```
-
-#### `store:refresh(keyOrKeys?)`
-
-手动触发指定字段（或全部字段）的通知。常用于 `silent` 批量写入后的一次性刷新。
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `keyOrKeys` | `string \| string[] \| nil` | 省略则刷新所有字段；传入字符串或数组则只刷新指定字段 |
-
-```lua
-store:refresh("score")           -- 刷新单个字段
-store:refresh({ "score", "hp" }) -- 刷新多个字段
-store:refresh()                  -- 刷新所有字段
-```
-
----
-
-### watch / unwatch
-
-#### `store:watch(keyOrKeys, fn)`
-
-监听一个或多个字段的变化。
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `keyOrKeys` | `string \| string[]` | 监听的字段名，单个字符串或字符串数组 |
-| `fn` | `function` | 回调 `fn(newVal, oldVal, key)` |
-
-**返回值**: `integer | integer[]` —— watcher ID（用于 `unwatch`）
-
-```lua
--- 监听单个字段
-local id = store:watch("hp", function(newVal, oldVal, key)
-    print(key .. ": " .. oldVal .. " → " .. newVal)
+-- Multi-key binding
+local id = store:bind(label, "text", {"hp", "maxHp"}, function(hp, maxHp)
+    return string.format("HP: %d/%d", hp, maxHp)
 end)
 
--- 监听多个字段
-local ids = store:watch({"hp", "score"}, function(newVal, oldVal, key)
-    print(key .. " changed to " .. tostring(newVal))
-end)
--- 注意：传入数组会为每个字段各注册一个 watcher，返回对应的 ID 数组。
+-- No transform (direct assignment)
+store:bind(progressBar, "value", "hp")
 ```
 
-#### `store:unwatch(idOrIds)`
+**Parameters**:
+- **widget** `table` - UI Widget instance
+- **prop** `string` - Widget property name (e.g. "text", "value", "visible")
+- **key/keys** `string | string[]` - Data key(s)
+- **transform** `function?` - Value transform. Single-key: `fn(value)` -> result; Multi-key: `fn(v1, v2, ...)` -> result
 
-移除 watcher。
+**Returns**: `integer` - Bind ID
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `idOrIds` | `integer \| integer[]` | `watch` 返回的 ID |
+**Behavior**:
+1. Executes immediately once (initializes Widget state)
+2. Auto-hooks Widget's `Destroy` method for auto-unbind on Widget destroy
+3. On data change: `widget[prop] = transform(newVal)` or `widget[prop] = newVal`
+
+### `store:unbind(bindId)`
+
+Remove specific binding.
+
+### `store:unbindWidget(widget)`
+
+Remove all bindings on a widget.
+
+### `store:unbindAll()`
+
+Remove all bindings, watchers, and listBindings. **Must call on page/scene destroy**.
+
+Also destroys all Widgets held by listBindings to prevent memory leaks.
 
 ---
 
-### computed
+## computed
 
-#### `store:computed(name, deps, fn)`
+### `store:computed(name, deps, fn)` -> `initialValue`
 
-定义一个派生值。依赖字段变化时自动重新计算，并通知该 computed 自身的 watcher。
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `name` | `string` | 派生值的字段名 |
-| `deps` | `string[]` | 依赖的字段名列表（可依赖 data 或其他 computed） |
-| `fn` | `function` | 计算函数，参数按 deps 顺序传入 |
-
-**返回值**: 初始计算结果
+Define a read-only derived value. Auto-recalculates when any dep changes.
 
 ```lua
-store:computed("hpPercent", { "hp", "maxHp" }, function(hp, maxHp)
-    return math.floor(hp / maxHp * 100)
+-- Basic
+store:computed("stageName", { "stage" }, function(stage)
+    return STAGES[stage] or "Unknown"
 end)
 
-store:computed("hpColor", { "hpPercent" }, function(pct)
-    if pct < 30 then return { 220, 50, 50, 255 }
-    elseif pct < 60 then return { 220, 160, 40, 255 }
-    else return { 60, 180, 80, 255 } end
+-- Multi-dependency
+store:computed("dps", { "clickPower", "autoProduction" }, function(click, auto)
+    return click + auto
+end)
+
+-- Chained computed (topologically sorted)
+store:computed("stageRemaining", { "totalMatter", "stage" }, function(total, stage)
+    local nextReq = STAGE_REQS[stage + 1]
+    return nextReq and math.max(0, nextReq - total) or -1
 end)
 ```
 
-**级联**: computed A 依赖 computed B → B 变化时 A 自动更新（拓扑排序）。
-**只读**: 对 computed 字段赋值会抛出错误。
+**Parameters**:
+- **name** `string` - Computed key name (readable and bindable like normal keys)
+- **deps** `string[]` - Dependency keys (can include normal keys and other computed keys)
+- **fn** `function(...)` - Compute function, params in deps order
 
-#### `store:removeComputed(name)`
+**Notes**:
+- Computed keys are **read-only**; assignment throws error
+- Uses Kahn topological sort for correct chained computed update order
 
-移除一个已定义的 computed 字段及其所有 watcher。
+### `store:removeComputed(name)`
+
+Remove a computed and its watchers.
 
 ---
 
-### effect
+## effect
 
-#### `store:effect(fn)`
+### `store:effect(fn)` -> `dispose`
 
-创建一个自动追踪依赖的副作用函数。`fn(store)` 执行期间读取的字段自动成为依赖。
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `fn` | `function(store)` | 副作用函数，参数为 store 自身 |
-
-**返回值**: `function` —— dispose 函数，调用后 effect 停止响应
+Create an auto-tracking side effect. Keys accessed during fn execution become dependencies.
 
 ```lua
 local dispose = store:effect(function(s)
-    print("Score is now: " .. s.score)
+    -- accessing s.score and s.level auto-tracks them
+    if s.score > 1000 and s.level < 10 then
+        print("Achievement unlocked\!")
+    end
 end)
-store.score = 100  -- 输出: Score is now: 100
-dispose()          -- 停止响应
+
+-- Stop responding
+dispose()
 ```
 
-**与 watch 的区别**:
+**Parameters**:
+- **fn** `function(store)` - Side effect function, receives store as argument
 
-| 特性 | `watch` | `effect` |
-|------|---------|----------|
-| 依赖声明 | 手动指定 key | **自动追踪** |
-| 回调参数 | `(newVal, oldVal, key)` | `(store)` |
-| 动态依赖 | 不支持 | **支持** |
-| 典型用途 | 响应单个字段变化 | 复杂副作用、多字段联合判断 |
+**Returns**: `function` - Dispose function; calling it stops the effect
 
-**配合 bindList 使用**:
-
-```lua
-local effectDisposers = {}
-store:bindList(container, "cards", {
-    key = function(item) return item.id end,
-    render = function(item, i)
-        local widget = createCardWidget(item)
-        effectDisposers[widget] = store:effect(function(s)
-            local canAfford = s.gold >= item.cost
-            widget:SetStyle({ borderColor = canAfford and GREEN or GRAY })
-        end)
-        return widget
-    end,
-    remove = function(widget)
-        local dispose = effectDisposers[widget]
-        if dispose then dispose(); effectDisposers[widget] = nil end
-    end,
-})
-```
+**Behavior**:
+1. Executes immediately once
+2. Re-collects dependencies on each re-execution (dynamic deps)
+3. Built-in infinite recursion guard (modifying dep key inside effect won't immediately re-trigger self)
+4. Safe tracking stack cleanup on error
 
 ---
 
-### batch
+## batch
 
-#### `store:batch(fn)`
+### `store:batch(fn)`
 
-批量修改多个字段，合并通知。
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `fn` | `function` | 包含多次写入的函数 |
+Batch update: all assignments inside fn only notify once at the end.
 
 ```lua
 store:batch(function()
-    store.score = 100
-    store.combo = 5
-    store.hp = 80
+    store.score = store.score + 100
+    store.hp = store.hp - 10
+    store.stage = 3
 end)
--- 只在结束时通知一次（而非 3 次）
+-- All watchers/bindings notified only once after batch ends
 ```
+
+**Note**: batch is nestable (inner batch is part of outer batch).
 
 ---
 
-### bind / unbind
+## silent / refresh / get / set / keys / has
 
-#### `store:bind(widget, prop, keyOrKeys, transform?)`
+### `store:silent(key, value)`
 
-将 Store 字段绑定到 Widget 属性。字段变化时自动执行 `widget[prop] = value`。
+Write data **without triggering** any notifications. Use for initialization or batch-prepare then manual refresh.
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `widget` | `Widget` | UI 控件实例 |
-| `prop` | `string` | 要更新的属性名 |
-| `keyOrKeys` | `string \| string[]` | 绑定的数据字段 |
-| `transform` | `function?` | 可选转换函数 |
+### `store:refresh(keyOrKeys?)`
 
-**返回值**: `integer` —— binding ID
+Force trigger notification (even if value unchanged).
 
 ```lua
-store:bind(label, "text", "score", function(v) return "Score: " .. v end)
-store:bind(hpLabel, "text", { "hp", "maxHp" }, function(hp, max) return hp .. "/" .. max end)
-store:bind(comboLabel, "visible", "combo", function(v) return v > 0 end)
+store:refresh("score")              -- Refresh single key
+store:refresh({"score", "hp"})      -- Refresh multiple keys
+store:refresh()                     -- Refresh all keys
 ```
 
-**行为**: 调用时立即执行一次赋值（初始同步）；Widget 被 `Destroy()` 时自动解绑。
+### `store:get(key)` -> `value`
 
-#### `store:unbind(bindId)` / `store:unbindWidget(widget)` / `store:unbindAll()`
+Equivalent to `store.key`, correctly triggers effect dependency tracking.
 
-分别移除单个绑定、Widget 所有绑定、全部绑定+watcher+列表绑定。
+### `store:set(key, value)`
 
----
+Equivalent to `store[key] = value`.
 
-### bindList
+### `store:keys()` -> `string[]`
 
-#### `store:bindList(container, key, opts)`
+Returns an array of all data key names (excludes computed keys).
 
-将数组字段绑定到容器 Widget。
+```lua
+local store = ReactiveUI.new({ score = 0, hp = 100, name = "Player" })
+local allKeys = store:keys()  -- { "score", "hp", "name" }
+```
 
-**opts 字段**:
+**Note**: Order is not guaranteed (Lua table iteration order).
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `key` | `function(item) -> any` | 是 | 返回 item 唯一标识 |
-| `render` | `function(item, index) -> Widget` | 是 | 创建新 Widget |
-| `update` | `function(widget, item, index)` | 否 | 复用更新 |
-| `remove` | `function(widget)` | 否 | 销毁前清理回调 |
+### `store:has(key)` -> `boolean`
 
----
+Check if a key exists in the store (checks both data keys and computed keys).
 
-### 列表操作
+```lua
+store:computed("dps", { "score" }, function(s) return s * 2 end)
 
-| 方法 | 说明 |
-|------|------|
-| `store:listAppend(key, item)` | 末尾追加 |
-| `store:listInsert(key, index, item)` | 指定位置插入 |
-| `store:listRemove(key, predicateOrIndex)` | 按索引或条件移除 |
-| `store:listUpdate(key, predicate, patch)` | 更新匹配项 |
-| `store:listReplace(key, newItems)` | 整体替换（key-based diff） |
-| `store:listSort(key, comparator)` | 排序 |
-| `store:listClear(key)` | 清空 |
+store:has("score")    -- true  (data key)
+store:has("dps")      -- true  (computed key)
+store:has("unknown")  -- false
+```
 
 ---
 
-### 调试工具
+## bindList
 
-| 方法 | 说明 |
-|------|------|
-| `store:dump()` | 导出全部数据为 table |
-| `store:getBindingCount()` | 活跃 bind 数量 |
-| `store:getWatcherCount(key?)` | watcher 数量 |
+### `store:bindList(container, key, opts)` -> `listBinding`
+
+Bind a Store array key to a container Widget for auto CRUD list UI.
+
+```lua
+store:bindList(container, "items", {
+    key = function(item) return item.id end,
+    render = function(item, index) return UI.Label { text = item.name } end,
+    update = function(widget, item, index) widget:SetText(item.name) end,  -- optional
+    remove = function(widget) end,  -- optional
+})
+```
+
+**opts fields**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `key` | `fn(item) -> string` | YES | Returns unique identifier for diff |
+| `render` | `fn(item, index) -> widget` | YES | Creates new Widget |
+| `update` | `fn(widget, item, index)` | NO | In-place update existing Widget; improves perf by avoiding rebuild |
+| `remove` | `fn(widget)` | NO | Pre-removal cleanup callback |
 
 ---
 
-## 设计原则
+## List Operations
 
-1. **零侵入** — 不修改 UI 库代码，通过 `widget[prop] = value` 赋值
-2. **闭包隔离** — 内部状态封闭在 `ReactiveUI.new()` 闭包中
-3. **自动清理** — Widget 销毁时自动解绑
-4. **精确更新** — bind 只更新属性，bindList 精确操作节点，batch 合并通知
+All list operations auto-sync UI (via bindList-bound containers).
+
+### `store:listAppend(key, item)`
+
+Append item to end of list.
+
+### `store:listInsert(key, index, item)`
+
+Insert item at specified position.
+
+### `store:listRemove(key, predicateOrIndex)`
+
+Remove an item. Parameter can be index (number) or predicate function.
+
+```lua
+store:listRemove("items", 3)                                          -- by index
+store:listRemove("items", function(item) return item.id == "x" end)   -- by condition
+```
+
+### `store:listRemoveAll(key, predicate)` -> `number`
+
+Remove **all** items matching predicate. Iterates from back to front for safe index handling.
+
+```lua
+-- Remove all consumed potions
+local count = store:listRemoveAll("inventory",
+    function(item) return item.count <= 0 end
+)
+print(count .. " items removed")
+```
+
+**Parameters**:
+- **key** `string` - List key
+- **predicate** `function(item) -> boolean` - Match condition
+
+**Returns**: `number` - Count of removed items
+
+**Note**: More efficient than calling `listRemove` in a loop — triggers only one notification.
+
+### `store:listUpdate(key, predicate, patch)`
+
+Update first matching item, merging patch fields onto item.
+
+```lua
+store:listUpdate("items",
+    function(item) return item.id == "sword" end,
+    { count = 5, enhanced = true }
+)
+```
+
+### `store:listUpdateAll(key, predicate, patch)` -> `number`
+
+Update **all** items matching predicate, merging patch fields onto each matched item.
+
+```lua
+-- Mark all common items as "reviewed"
+local count = store:listUpdateAll("inventory",
+    function(item) return item.rarity == "common" end,
+    { reviewed = true }
+)
+print(count .. " items updated")
+```
+
+**Parameters**:
+- **key** `string` - List key
+- **predicate** `function(item) -> boolean` - Match condition
+- **patch** `table` - Key-value pairs to merge onto matched items
+
+**Returns**: `number` - Count of updated items
+
+**Note**: Each matching item triggers its `updateFn` (if bindList has one). Only one change notification at the end.
+
+### `store:listReplace(key, newItems)`
+
+Full list replacement with auto-diff:
+- **Fast path**: Key set and order unchanged + updateFn provided -> in-place update, no layout tree teardown
+- **Slow path**: Additions/removals or order change -> `ClearChildren()` first, then destroy orphaned widgets and rebuild layout tree (optimized: no redundant per-widget `RemoveChild`)
+
+### `store:listSort(key, comparator)`
+
+In-place sort list and sync UI.
+
+### `store:listClear(key)`
+
+Clear list.
 
 ---
 
-## 注意事项
+## Debug Tools
 
-1. **table 类型始终触发通知**（浅比较无法检测内部变化）
-2. **computed 只读**，赋值会抛错
-3. **列表必须用专用方法**（`listAppend` 等），直接 `table.insert` 不会更新 UI
-4. **effect 的 dispose 必须管理**，否则内存泄漏
-5. **bindList 的 key 必须唯一**
-6. **batch 中错误**：已修改数据保留，通知仍触发，错误向上传播
+### `store:dump()` -> `table`
+
+Returns snapshot of all data and computed values (shallow copy).
+
+### `store:getBindingCount()` -> `number`
+
+Returns number of active bindings.
+
+### `store:getWatcherCount(key?)` -> `number`
+
+Returns watcher count for specified key or globally.

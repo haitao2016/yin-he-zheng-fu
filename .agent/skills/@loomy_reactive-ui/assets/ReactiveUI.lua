@@ -306,6 +306,23 @@ function ReactiveUI.new(initialData)
         store[key] = value
     end
 
+    --- 返回所有数据 key（不含 computed）
+    ---@return string[]
+    function methods.keys(self)
+        local result = {}
+        for k in pairs(data) do
+            result[#result + 1] = k
+        end
+        return result
+    end
+
+    --- 检查 key 是否存在（data 或 computed）
+    ---@param key string
+    ---@return boolean
+    function methods.has(self, key)
+        return data[key] ~= nil or (computed[key] ~= nil)
+    end
+
     -- ═══════════════════════════════════════════════════════════
     -- computed
     -- ═══════════════════════════════════════════════════════════
@@ -694,6 +711,51 @@ function ReactiveUI.new(initialData)
         notifyKey(key, items, items)
     end
 
+    --- 批量删除所有匹配项
+    ---@param key string
+    ---@param predicate fun(item: table): boolean
+    ---@return integer removedCount
+    function methods.listRemoveAll(self, key, predicate)
+        local items = data[key]
+        if not items then return 0 end
+
+        -- 从后往前收集所有匹配索引，避免删除时索引偏移
+        local toRemove = {}
+        for i = #items, 1, -1 do
+            if predicate(items[i]) then
+                toRemove[#toRemove + 1] = i
+            end
+        end
+
+        if #toRemove == 0 then return 0 end
+
+        local lb = listBindings[key]
+        for _, idx in ipairs(toRemove) do
+            local removedItem = items[idx]
+            table.remove(items, idx)
+
+            if lb then
+                local k = lb.keyFn(removedItem)
+                local w = lb.itemWidgets[k]
+                if w then
+                    if lb.removeFn then lb.removeFn(w) end
+                    lb.container:RemoveChild(w)
+                    w:Destroy()
+                    lb.itemWidgets[k] = nil
+                end
+                for i = #lb.itemOrder, 1, -1 do
+                    if lb.itemOrder[i] == k then
+                        table.remove(lb.itemOrder, i)
+                        break
+                    end
+                end
+            end
+        end
+
+        notifyKey(key, items, items)
+        return #toRemove
+    end
+
     function methods.listUpdate(self, key, predicate, patch)
         local items = data[key]
         if not items then return end
@@ -728,6 +790,48 @@ function ReactiveUI.new(initialData)
         notifyKey(key, items, items)
     end
 
+    --- 批量更新所有匹配项
+    ---@param key string
+    ---@param predicate fun(item: table): boolean
+    ---@param patch table
+    ---@return integer updatedCount
+    function methods.listUpdateAll(self, key, predicate, patch)
+        local items = data[key]
+        if not items then return 0 end
+
+        local lb = listBindings[key]
+        local count = 0
+
+        for i, item in ipairs(items) do
+            if predicate(item) then
+                for pk, pv in pairs(patch) do
+                    item[pk] = pv
+                end
+                count = count + 1
+
+                if lb then
+                    local k = lb.keyFn(item)
+                    local w = lb.itemWidgets[k]
+                    if w and lb.updateFn then
+                        lb.updateFn(w, item, i)
+                    elseif w then
+                        if lb.removeFn then lb.removeFn(w) end
+                        local newW = lb.renderFn(item, i)
+                        lb.itemWidgets[k] = newW
+                        lb.container:InsertChild(newW, i)
+                        lb.container:RemoveChild(w)
+                        w:Destroy()
+                    end
+                end
+            end
+        end
+
+        if count > 0 then
+            notifyKey(key, items, items)
+        end
+        return count
+    end
+
     function methods.listReplace(self, key, newItems)
         local old = data[key]
         data[key] = newItems
@@ -746,16 +850,41 @@ function ReactiveUI.new(initialData)
             newKeyOrder[#newKeyOrder + 1] = k
         end
 
+        -- 快速路径：key 集合和顺序完全一致时，只做就地更新，不拆解布局树
+        local orderUnchanged = #newKeyOrder == #(lb.itemOrder or {})
+        if orderUnchanged then
+            for i, k in ipairs(newKeyOrder) do
+                if (lb.itemOrder or {})[i] ~= k then
+                    orderUnchanged = false
+                    break
+                end
+            end
+        end
+
+        if orderUnchanged and lb.updateFn then
+            -- 顺序不变，就地更新每个 widget 的数据
+            for i, k in ipairs(newKeyOrder) do
+                local info = newKeySet[k]
+                local existingW = lb.itemWidgets[k]
+                if existingW then
+                    lb.updateFn(existingW, info.item, i)
+                end
+            end
+            notifyKey(key, newItems, old)
+            return
+        end
+
+        -- 慢速路径：有增删或顺序变化，需要重建布局树
+        -- 先清空容器（一次性移除所有子节点），再销毁被删除的 Widget
+        lb.container:ClearChildren()
+
         for k, w in pairs(lb.itemWidgets) do
             if not newKeySet[k] then
                 if lb.removeFn then lb.removeFn(w) end
-                lb.container:RemoveChild(w)
                 w:Destroy()
                 lb.itemWidgets[k] = nil
             end
         end
-
-        lb.container:ClearChildren()
 
         for i, k in ipairs(newKeyOrder) do
             local info = newKeySet[k]

@@ -32,9 +32,14 @@ function PlanetPanel.Render(planet, ctx)
     local panel    = UICommon.panel
     local text     = UICommon.text
     local clr      = UICommon.clr
-    local onBuild        = ctx.onBuild
-    local onSpeedUpBuild = ctx.onSpeedUpBuild
-    local progressBar    = ctx.progressBar
+    local onBuild           = ctx.onBuild
+    local onSpeedUpBuild    = ctx.onSpeedUpBuild
+    local onSpeedUpBuildAd  = ctx.onSpeedUpBuildAd  -- 广告免费完成（星币不足时）
+    local progressBar       = ctx.progressBar
+    local onTogglePriority  = ctx.onTogglePriority  -- P2-1: 优先标记回调
+    local isPriority        = ctx.isPriority        -- P2-1: 当前是否已标记
+    local onCancelQueued    = ctx.onCancelQueued    -- P1-3: 取消排队任务回调 function(qIdx)
+    local prodHistory       = ctx.prodHistory       -- P3-2: 产量历史 {minerals={}, energy={}, crystal={}}
 
     local pw = 275
     local px = screenW - pw - 12
@@ -52,7 +57,130 @@ function PlanetPanel.Render(planet, ctx)
             if prodRowH > 0 then break end
         end
     end
-    local headerH = 36 + 18 + (planet.constructing and 22 or 16) + 16 + prodRowH
+    -- 特产标签行高度（已殖民非基地且有对应特产时额外14px）
+    local bonusRowH = 0
+    local ptBonus = nil
+    if planet.colonized and not planet.isBase and planet.ptype then
+        ptBonus = PLANET_TYPE_BONUS and PLANET_TYPE_BONUS[planet.ptype]
+        if ptBonus then bonusRowH = 14 end
+    end
+
+    -- P3-3: 殖民建议指数（未殖民行星才计算）
+    local colonyScore = 0        -- 0~100
+    local colonyStars = 0        -- 1~5
+    local colonyLabel = ""
+    local colonyTips  = {}       -- 加成/减分条目
+    local colonyAdvRowH = 0      -- 额外占用高度
+    if not planet.colonized and not planet.isBase then
+        -- === 评分算法 ===
+        -- 1. 行星类型加成（最高35分）
+        local typeScore = 0
+        local typeLabel = ""
+        local tb = PLANET_TYPE_BONUS and PLANET_TYPE_BONUS[planet.ptype]
+        if tb then
+            -- 各加成类型的吸引力权重
+            if tb.esourceMult then
+                typeScore = math.floor((tb.esourceMult - 1) * 70)  -- Gas Giant 1.6→42 → cap35
+                typeLabel = "⚡ " .. tb.label
+            elseif tb.nuclearMult then
+                typeScore = math.floor((tb.nuclearMult - 1) * 80)  -- Volcanic 1.4→32
+                typeLabel = "☢ " .. tb.label
+            elseif tb.crystalMult then
+                typeScore = math.floor((tb.crystalMult - 1) * 60)  -- Oceanic 1.5→30
+                typeLabel = "💎 " .. tb.label
+            elseif tb.mineralMult then
+                typeScore = math.floor((tb.mineralMult - 1) * 60)  -- Terran/Desert 1.3→18
+                typeLabel = "⛏ " .. tb.label
+            elseif tb.buildCostMult then
+                typeScore = math.floor((1 - tb.buildCostMult) * 80)  -- Barren 0.85→12
+                typeLabel = "🔧 " .. tb.label
+            end
+        else
+            typeLabel = "无特产加成"
+        end
+        typeScore = math.min(35, typeScore)
+        colonyTips[#colonyTips+1] = {
+            label = "星球类型",
+            val   = typeScore,
+            maxV  = 35,
+            desc  = typeLabel ~= "" and typeLabel or "—",
+            r=100, g=180, b=255,
+        }
+
+        -- 2. 行星大小（建筑槽位，最高30分）
+        -- size范围 5~18，标准化到 0~30
+        local sizeScore = math.floor(math.max(0, planet.size - 5) / 13 * 30)
+        sizeScore = math.min(30, sizeScore)
+        local slotEst = math.floor(sizeScore / 3) + 1  -- 粗略槽位预估
+        colonyTips[#colonyTips+1] = {
+            label = "星球大小",
+            val   = sizeScore,
+            maxV  = 30,
+            desc  = string.format("%.1f  预估≈%d槽", planet.size, slotEst),
+            r=80, g=220, b=120,
+        }
+
+        -- 3. 位置（深空行星资源加倍但防御难度高，+15；普通位置+20）
+        local locScore = planet.deepSpace and 15 or 20
+        local locDesc  = planet.deepSpace and "深空区域（高风险高回报）" or "常规星系"
+        colonyTips[#colonyTips+1] = {
+            label = "位置",
+            val   = locScore,
+            maxV  = 20,
+            desc  = locDesc,
+            r=255, g=200, b=80,
+        }
+
+        -- 4. 资源倍增（深空resMultiplier加成，最高15分）
+        local multScore = 0
+        local multDesc  = "无倍增"
+        if planet.resMultiplier and planet.resMultiplier > 1.0 then
+            multScore = math.floor((planet.resMultiplier - 1.0) * 30)
+            multScore = math.min(15, multScore)
+            multDesc  = string.format("资源×%.1f", planet.resMultiplier)
+        end
+        colonyTips[#colonyTips+1] = {
+            label = "资源倍率",
+            val   = multScore,
+            maxV  = 15,
+            desc  = multDesc,
+            r=200, g=130, b=255,
+        }
+
+        colonyScore = math.min(100, typeScore + sizeScore + locScore + multScore)
+
+        -- 转换为星级
+        if     colonyScore >= 85 then colonyStars = 5
+        elseif colonyScore >= 68 then colonyStars = 4
+        elseif colonyScore >= 50 then colonyStars = 3
+        elseif colonyScore >= 32 then colonyStars = 2
+        else                          colonyStars = 1
+        end
+
+        -- 文字标签
+        local COLONY_LABELS = {"不推荐","一般","较好","推荐","强烈推荐"}
+        colonyLabel = COLONY_LABELS[colonyStars]
+
+        -- 占用额外头部高度：1行标题+1行进度条+4行 tips = 约 60px
+        colonyAdvRowH = 64
+    end
+
+    -- P1-3: 计算队列额外高度（每项 18px）
+    local queueLen = (planet.buildQueue and #planet.buildQueue) or 0
+    local queueH   = planet.constructing and (queueLen * 18) or 0
+
+    -- P3-2: 产量趋势图高度（已殖民/基地且有 >=2 个历史点才显示）
+    local chartRowH = 0
+    if (planet.colonized or planet.isBase) and prodHistory then
+        for _, res in ipairs({"minerals","energy","crystal"}) do
+            if prodHistory[res] and #prodHistory[res] >= 2 then
+                chartRowH = 58  -- 标题14 + 图表38 + 间距6
+                break
+            end
+        end
+    end
+
+    local headerH = 36 + 18 + (planet.constructing and 22 or 16) + queueH + 16 + prodRowH + bonusRowH + colonyAdvRowH + chartRowH
 
     local scrollContentH = 18
         + #BUILD_ORDER * 21
@@ -92,9 +220,131 @@ function PlanetPanel.Render(planet, ctx)
     elseif planet.colonized then
         text(px+14, sy, "● 已探索", 11, 50,220,100,255)
         sy = sy + 18
+        -- 特产标签（黄色高亮，仅已殖民非基地行星）
+        if ptBonus and ptBonus.label then
+            text(px+14, sy, "★ 特产: " .. ptBonus.label, 10, 255,210,80,255)
+            sy = sy + 14
+        end
     else
         text(px+14, sy, "○ 未探索  (派遣探索舰探索)", 11, 200,160,60,220)
+        -- P2-1: 优先标记切换按钮（右侧小按钮）
+        if onTogglePriority then
+            local marked  = isPriority == true
+            local btnW, btnH = 50, 14
+            local bx = px + pw - btnW - 8
+            local by = sy - 7
+            panel(bx, by, btnW, btnH, 3,
+                marked and {180, 100, 10, 80} or {60, 60, 80, 60},
+                marked and {255, 160, 30, 200} or {120, 120, 150, 160})
+            text(bx + btnW/2, by + btnH/2,
+                marked and "◆取消" or "◆标记",
+                8,
+                marked and 255 or 180,
+                marked and 200 or 180,
+                marked and 60  or 200,
+                240,
+                NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            local capturedPlanet = planet
+            addHit(bx, by, btnW, btnH, function()
+                if onTogglePriority then onTogglePriority(capturedPlanet) end
+            end)
+        end
         sy = sy + 18
+
+        -- P3-3: 殖民建议指数卡片
+        if colonyAdvRowH > 0 then
+            -- 卡片背景
+            local cardX, cardW, cardH = px + 8, pw - 16, colonyAdvRowH - 4
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, cardX, sy, cardW, cardH, 5)
+            -- 星级颜色渐变背景
+            local starColors = {
+                [1]={60,40,40},   [2]={50,50,40},  [3]={30,55,45},
+                [4]={30,50,70},   [5]={50,40,90},
+            }
+            local sc = starColors[colonyStars] or starColors[3]
+            nvgFillColor(vg, nvgRGBA(sc[1], sc[2], sc[3], 180))
+            nvgFill(vg)
+            -- 卡片边框（星级着色）
+            local borderColors = {
+                [1]={160,60,60},   [2]={200,180,60},  [3]={60,200,120},
+                [4]={60,160,255},  [5]={200,100,255},
+            }
+            local bc2 = borderColors[colonyStars] or {100,140,200}
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, cardX+0.5, sy+0.5, cardW-1, cardH-1, 5)
+            nvgStrokeColor(vg, nvgRGBA(bc2[1], bc2[2], bc2[3], 160))
+            nvgStrokeWidth(vg, 1)
+            nvgStroke(vg)
+
+            -- 标题行：「殖民建议」 + 星级 + 标签
+            local starStr = string.rep("★", colonyStars) .. string.rep("☆", 5 - colonyStars)
+            nvgFontFace(vg, "sans")
+            nvgFontSize(vg, 9)
+            nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg, nvgRGBA(160, 200, 255, 220))
+            nvgText(vg, cardX + 7, sy + 8, "殖民建议")
+            -- 星级（金黄色）
+            nvgFillColor(vg, nvgRGBA(bc2[1], bc2[2], bc2[3], 240))
+            nvgText(vg, cardX + 52, sy + 8, starStr)
+            -- 标签（右对齐）
+            nvgFontSize(vg, 8.5)
+            nvgTextAlign(vg, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg, nvgRGBA(bc2[1], bc2[2], bc2[3], 210))
+            nvgText(vg, cardX + cardW - 7, sy + 8, colonyLabel)
+
+            -- 总分进度条
+            local barY   = sy + 18
+            local barX   = cardX + 7
+            local barW2  = cardW - 14
+            local barH2  = 7
+            local fillW  = math.floor(barW2 * colonyScore / 100)
+            -- 底槽
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, barX, barY, barW2, barH2, 3)
+            nvgFillColor(vg, nvgRGBA(20, 20, 40, 160))
+            nvgFill(vg)
+            -- 填充（渐变：低分红→中分黄→高分蓝紫）
+            if fillW > 0 then
+                local grad = nvgLinearGradient(vg, barX, barY, barX + barW2, barY,
+                    nvgRGBA(200, 60, 60, 220), nvgRGBA(bc2[1], bc2[2], bc2[3], 240))
+                nvgBeginPath(vg)
+                nvgRoundedRect(vg, barX, barY, fillW, barH2, 3)
+                nvgFillPaint(vg, grad)
+                nvgFill(vg)
+            end
+            -- 分数文字
+            nvgFontSize(vg, 8)
+            nvgTextAlign(vg, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg, nvgRGBA(200, 220, 255, 200))
+            nvgText(vg, cardX + cardW - 7, barY + barH2/2, colonyScore .. "/100")
+
+            -- 4个评分维度（两列布局）
+            local tipY = barY + barH2 + 5
+            local colW = (cardW - 14) / 2
+            for i, tip in ipairs(colonyTips) do
+                local col  = (i - 1) % 2
+                local row  = math.floor((i - 1) / 2)
+                local tx   = cardX + 7 + col * colW
+                local ty   = tipY + row * 14
+                -- 小标签背景
+                nvgBeginPath(vg)
+                nvgRoundedRect(vg, tx, ty, colW - 4, 11, 2)
+                nvgFillColor(vg, nvgRGBA(tip.r, tip.g, tip.b, 18))
+                nvgFill(vg)
+                -- 标签名
+                nvgFontSize(vg, 7.5)
+                nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+                nvgFillColor(vg, nvgRGBA(tip.r, tip.g, tip.b, 180))
+                nvgText(vg, tx + 3, ty + 5.5, tip.label .. ":")
+                -- 分值（右）
+                nvgTextAlign(vg, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
+                nvgFillColor(vg, nvgRGBA(tip.r, tip.g, tip.b, 220))
+                nvgText(vg, tx + colW - 7, ty + 5.5, "+" .. tip.val)
+            end
+
+            sy = sy + colonyAdvRowH
+        end
     end
 
     if planet.constructing then
@@ -104,21 +354,67 @@ function PlanetPanel.Render(planet, ctx)
         local barW = onSpeedUpBuild and (pw - 58) or (pw - 20)
         progressBar(px+10, sy, barW, 12, pct,
             tag..": "..BUILDINGS[job.key].name.." "..math.floor(pct*100).."%", 68,180,255)
-        -- 加速按钮
-        if onSpeedUpBuild then
+        -- 加速按钮（星币足够→金色购买；不足且有广告→绿色免费）
+        if onSpeedUpBuild or onSpeedUpBuildAd then
             local remaining = job.remaining or 0
             -- M6 修复：1★/10秒，上限50★，避免后期费用失控
             local speedCost = math.max(5, math.min(50, math.ceil(remaining / 10)))
+            local rmRef     = UICommon.rm
+            local canAfford = rmRef and (rmRef.resources.credits or 0) >= speedCost
             local sbx = px + pw - 46
-            panel(sbx, sy, 40, 12, 4, {160,130,20,80}, {220,190,40,210})
-            text(sbx+20, sy+6, "★"..speedCost, 8, 255,230,80,255,
-                NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
-            local capturedPlanet = planet
-            addHit(sbx, sy, 40, 12, function()
-                if onSpeedUpBuild then onSpeedUpBuild(capturedPlanet) end
-            end)
+            if onSpeedUpBuild and canAfford then
+                panel(sbx, sy, 40, 12, 4, {160,130,20,80}, {220,190,40,210})
+                text(sbx+20, sy+6, "★"..speedCost, 8, 255,230,80,255,
+                    NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+                local capturedPlanet = planet
+                addHit(sbx, sy, 40, 12, function()
+                    if onSpeedUpBuild then onSpeedUpBuild(capturedPlanet) end
+                end)
+            elseif onSpeedUpBuildAd and not canAfford then
+                -- 星币不足时显示"看广告免费完成"
+                panel(sbx, sy, 40, 12, 3, {0,80,45,100}, {0,190,100,220})
+                text(sbx+20, sy+6, "🎬", 9, 80,255,160,255,
+                    NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+                local capturedPlanet = planet
+                addHit(sbx, sy, 40, 12, function()
+                    if onSpeedUpBuildAd then onSpeedUpBuildAd(capturedPlanet) end
+                end)
+            end
         end
         sy = sy + 22
+
+        -- P1-3: 渲染排队任务列表
+        if planet.buildQueue and #planet.buildQueue > 0 then
+            for qi, qjob in ipairs(planet.buildQueue) do
+                -- 排队条背景
+                nvgBeginPath(vg)
+                nvgRoundedRect(vg, px+10, sy, pw-20, 15, 3)
+                nvgFillColor(vg, nvgRGBA(30, 60, 100, 160))
+                nvgFill(vg)
+                nvgStrokeColor(vg, nvgRGBA(80,130,220,100))
+                nvgStrokeWidth(vg, 0.5); nvgStroke(vg)
+                -- 序号 + 任务名（通过 bs:getBuildingName 获取）
+                local bname = bs and bs:getBuildingName(qjob.key) or qjob.key
+                local tag2 = qjob.isUpgrade and "升 " or "建 "
+                text(px+16, sy+7.5, qi..". "..tag2..bname, 9, 160,200,255,220,
+                    NVG_ALIGN_LEFT+NVG_ALIGN_MIDDLE)
+                -- 取消按钮（右侧 ×）
+                if onCancelQueued then
+                    local cbx = px + pw - 22
+                    nvgBeginPath(vg)
+                    nvgRoundedRect(vg, cbx, sy+1, 14, 13, 3)
+                    nvgFillColor(vg, nvgRGBA(180,60,60,160)); nvgFill(vg)
+                    text(cbx+7, sy+7.5, "×", 9, 255,160,160,255,
+                        NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+                    local capturedQi = qi
+                    local capturedPlanet = planet
+                    addHit(cbx, sy+1, 14, 13, function()
+                        if onCancelQueued then onCancelQueued(capturedQi, capturedPlanet) end
+                    end)
+                end
+                sy = sy + 18
+            end
+        end
     else
         text(px+14, sy, "建设队列: 空闲", 10, 150,170,200,180)
         sy = sy + 16
@@ -165,6 +461,93 @@ function PlanetPanel.Render(planet, ctx)
             end
             sy = sy + 17
         end
+    end
+
+    -- P3-2: 产量趋势折线图
+    if chartRowH > 0 and prodHistory then
+        -- 标题
+        nvgFontFace(vg, "sans"); nvgFontSize(vg, 9)
+        nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, nvgRGBA(100, 180, 255, 160))
+        nvgText(vg, px + 12, sy + 7, "产量趋势")
+        -- 图例（右侧）
+        local legendItems = {
+            { label="矿", r=180,g=140,b=90 },
+            { label="能", r=80, g=220,b=255 },
+            { label="晶", r=200,g=120,b=255 },
+        }
+        local lx0 = px + pw - 12
+        for i = #legendItems, 1, -1 do
+            local li = legendItems[i]
+            nvgFontSize(vg, 8)
+            nvgTextAlign(vg, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg, nvgRGBA(li.r, li.g, li.b, 200))
+            nvgText(vg, lx0, sy + 7, li.label)
+            lx0 = lx0 - 18
+        end
+        sy = sy + 14
+
+        -- 图表背景
+        local cw = pw - 24
+        local ch = 38
+        local cx = px + 12
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, cx, sy, cw, ch, 3)
+        nvgFillColor(vg, nvgRGBA(5, 10, 25, 160)); nvgFill(vg)
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, cx+0.5, sy+0.5, cw-1, ch-1, 3)
+        nvgStrokeColor(vg, nvgRGBA(60, 100, 200, 60))
+        nvgStrokeWidth(vg, 0.5); nvgStroke(vg)
+        -- 水平参考线（中线 + 顶线）
+        for _, frac in ipairs({0.25, 0.5, 0.75}) do
+            local ry = sy + ch - frac * ch
+            nvgBeginPath(vg)
+            nvgMoveTo(vg, cx+3, ry); nvgLineTo(vg, cx+cw-3, ry)
+            nvgStrokeColor(vg, nvgRGBA(60, 100, 200, 30))
+            nvgStrokeWidth(vg, 0.5); nvgStroke(vg)
+        end
+
+        -- 求全局最大值（三条线共用 Y 轴比例，便于直观对比）
+        local yMax = 1
+        local RES_LINES = {
+            { key="minerals", r=180,g=140,b=90 },
+            { key="energy",   r=80, g=220,b=255 },
+            { key="crystal",  r=200,g=120,b=255 },
+        }
+        for _, rl in ipairs(RES_LINES) do
+            local hist = prodHistory[rl.key] or {}
+            for _, v in ipairs(hist) do
+                if v > yMax then yMax = v end
+            end
+        end
+
+        local pad = 4
+        for _, rl in ipairs(RES_LINES) do
+            local hist = prodHistory[rl.key] or {}
+            local n = #hist
+            if n >= 2 then
+                nvgBeginPath(vg)
+                for i = 1, n do
+                    local xi = cx + pad + (i-1)/(n-1) * (cw - pad*2)
+                    local norm = math.min(1.0, hist[i] / yMax)
+                    local yi = sy + ch - pad - norm * (ch - pad*2)
+                    yi = math.max(sy + pad, math.min(sy + ch - pad, yi))
+                    if i == 1 then nvgMoveTo(vg, xi, yi)
+                    else nvgLineTo(vg, xi, yi) end
+                end
+                nvgStrokeColor(vg, nvgRGBA(rl.r, rl.g, rl.b, 200))
+                nvgStrokeWidth(vg, 1.5); nvgStroke(vg)
+                -- 最新数据点圆点标记
+                local lxi = cx + pad + (n-1)/(n-1) * (cw - pad*2)
+                local normL = math.min(1.0, hist[n] / yMax)
+                local lyi = sy + ch - pad - normL * (ch - pad*2)
+                lyi = math.max(sy + pad, math.min(sy + ch - pad, lyi))
+                nvgBeginPath(vg)
+                nvgCircle(vg, lxi, lyi, 2.5)
+                nvgFillColor(vg, nvgRGBA(rl.r, rl.g, rl.b, 255)); nvgFill(vg)
+            end
+        end
+        sy = sy + ch + 6
     end
 
     nvgBeginPath(vg); nvgMoveTo(vg, px+8, sy); nvgLineTo(vg, px+pw-8, sy)

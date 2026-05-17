@@ -3,7 +3,8 @@
 -- ============================================================================
 
 require "game.Systems"   -- 加载全局常量 SHIP_TYPES, SHIP_COSTS 等
-local UICommon    = require("game.ui.UICommon")
+local UICommon       = require("game.ui.UICommon")
+local GalaxyEvents   = require("game.GalaxyEvents")
 local GalaxyScene = {}
 
 -- PirateAI 引用（由 Init 注入）
@@ -57,6 +58,13 @@ local imgBaseStation_  = -1  -- 基地站纹理句柄
 
 local starSystems_      = {}
 local deepSpaceSystems_ = {}  -- 深空星系（曲速闸门解锁后可访问）
+
+-- P2-2: 随机星图变体 —— NORMAL / DENSE / SPARSE / BIPOLAR
+-- DENSE:   星系×1.4, 分布×0.7, 资源丰富
+-- SPARSE:  星系×0.7, 分布×1.5, 探索强度高
+-- BIPOLAR: 星系分两簇(左/右), 中间稀少, 海盗基地集中中线
+local MAP_VARIANT_POOL = { "NORMAL","NORMAL","DENSE","SPARSE","BIPOLAR" }
+local mapVariant_      = "NORMAL"  -- 由 Init 随机赋值
 local allPlanets_       = {}  -- 缓存所有行星的平铺列表，generateStarSystems 时填充
 local deepSpaceAnimT_   = 0   -- 深空脉冲动画计时器
 local bgStars_         = {}
@@ -83,6 +91,30 @@ local rm_              = nil   -- ResourceManager 引用（挖矿产出）
 local fm_              = nil   -- FleetManager 引用（由 Client.lua 注入）
 local fleetColorCache_    = {}   -- [fleetId] = {r,g,b}，编队组成变化时失效
 local colonizedPlanets_   = {}   -- 已殖民行星列表缓存，殖民事件时追加
+local priorityPlanetIds_  = {}   -- P2-1: 殖民优先标记集合 {[planetId]=true}
+local garrisonedFleets_   = {}   -- P2-1: 驻守关系 {[fleetId]=planet}
+local colonyRipples_      = {}   -- P3-1: 殖民涟漪动画列表 [{wx,wy,t,dur}]
+
+-- ============================================================================
+-- P3-1: 快捷信号通信系统
+-- ============================================================================
+local QUICK_SIGNALS = {
+    { icon="⚔️",  text="集火攻击！",   color={255,80,80}   },
+    { icon="🛡️",  text="注意防守！",   color={80,160,255}  },
+    { icon="🔍",  text="侦察行动！",   color={180,255,100} },
+    { icon="🚀",  text="全速前进！",   color={255,200,50}  },
+    { icon="💠",  text="集结此处！",   color={140,80,255}  },
+    { icon="🏭",  text="建设优先！",   color={80,220,180}  },
+    { icon="⚡",  text="紧急情况！",   color={255,160,40}  },
+    { icon="✅",  text="行动完毕！",   color={80,255,120}  },
+}
+local SIGNAL_CD       = 15.0    -- 同类信号 CD（秒）
+local signalOpen_     = false   -- 信号面板是否展开
+local signalCooldowns_ = {}     -- [signalIndex] = 剩余 CD 秒数
+local signalBanners_  = {}      -- 当前活跃横幅列表 [{text, alpha, timer, color}]
+local BANNER_DUR      = 5.0     -- 横幅显示时长（秒）
+local BANNER_FADE     = 1.0     -- 淡出时长（秒）
+local routeAnimT_         = 0    -- 星际航线动画计时器（流光偏移）
 -- ============================================================================
 -- 编队地图对象（每个非空编队在地图上有坐标和移动状态）
 -- ============================================================================
@@ -101,60 +133,8 @@ local pinchDist_       = nil  -- 上一帧双指间距
 ---@type table
 local seedShip_        = nil
 
--- ============================================================================
--- 星图随机事件
--- ============================================================================
-local galaxyEvents_      = {}   -- 当前地图上存活的事件节点
-local eventSpawnTimer_   = 0    -- 下次生成事件的倒计时
-local EVENT_SPAWN_INTERVAL = 90 -- 每 90 秒生成新事件
-local EVENT_LIFESPAN       = 120 -- 事件节点存活时间（秒）
-local EVENT_MAX_COUNT      = 3   -- 地图上最多同时存在事件数
-local onGalaxyEvent_     = nil  -- 回调：由 Client.lua 注入
+local onGalaxyEvent_   = nil  -- 回调：由 Client.lua 注入，事件节点被点击时触发
 
-local EVENT_TYPES = {
-    MINE = {
-        id      = "MINE",
-        label   = "废弃矿场",
-        icon    = "⛏",
-        color   = {180, 140, 80},
-        desc    = "探测到废弃星际矿场，内含大量原矿残留。",
-        choices = {
-            { text = "派遣探测器采集", res = "minerals", amount = 0 },  -- amount 在生成时随机
-            { text = "放弃，继续探索" },
-        },
-    },
-    MERCHANT = {
-        id      = "MERCHANT",
-        label   = "流浪商人",
-        icon    = "🛸",
-        color   = {80, 200, 255},
-        desc    = "遭遇流浪商船，对方愿意以矿石换取能量块。",
-        choices = {
-            { text = "以矿石×80 换取能量×60",
-              cost = {minerals=80}, gain = {energy=60} },
-            { text = "以晶石×30 换取矿石×100",
-              cost = {crystal=30},  gain = {minerals=100} },
-            { text = "拒绝交易" },
-        },
-    },
-    RIFT = {
-        id      = "RIFT",
-        label   = "时空裂缝",
-        icon    = "✦",
-        color   = {180, 80, 255},
-        desc    = "发现异常时空裂缝，辐射极高但蕴含未知能量。",
-        choices = {
-            { text = "进入裂缝采集能量", gain = {energy=120, crystal=40}, hpLoss = true },
-            { text = "绕道远航（耗时）",  gain = {crystal=20} },
-            { text = "封锁区域，上报基地" },
-        },
-    },
-}
-local EVENT_TYPE_KEYS = {"MINE", "MERCHANT", "RIFT"}
-
-
-
--- ============================================================================
 -- 工具
 -- ============================================================================
 local function dist2(x1,y1,x2,y2)
@@ -205,16 +185,45 @@ end
 
 local function generateStarSystems()
     starSystems_ = {}
-    for i = 1, 50 do
+
+    -- P2-2: 按变体设定基础参数
+    local numStars, spread, resBonus
+    if mapVariant_ == "DENSE" then
+        numStars = 70       -- 星系数 × 1.4
+        spread   = 2800     -- 分布半径 × 0.7（4000 × 0.7 = 2800）
+        resBonus = 1.3      -- 资源产出加成
+    elseif mapVariant_ == "SPARSE" then
+        numStars = 35       -- 星系数 × 0.7
+        spread   = 6000     -- 分布半径 × 1.5（4000 × 1.5 = 6000）
+        resBonus = 1.0
+    else                    -- NORMAL / BIPOLAR 共用基础参数
+        numStars = 50
+        spread   = 4000
+        resBonus = 1.0
+    end
+
+    for i = 1, numStars do
         local stype = randItem(STAR_TYPES)
         local name  = SYSTEM_PREFIXES[math.random(1,#SYSTEM_PREFIXES)] .. " "
                     .. SYSTEM_SUFFIXES[math.random(1,#SYSTEM_SUFFIXES)]
                     .. "-" .. i
-        local x     = (math.random() - 0.5) * 4000
-        local y     = (math.random() - 0.5) * 4000
+
+        -- P2-2: BIPOLAR 模式——星系分布在左右两簇，中间 ±600 范围稀少
+        local x, y
+        if mapVariant_ == "BIPOLAR" then
+            local side = (math.random() < 0.5) and -1 or 1
+            -- 左/右簇：x 中心在 ±1200，散布 ±800；y 分布全范围
+            x = side * (1000 + math.random() * 800) + (math.random() - 0.5) * 400
+            y = (math.random() - 0.5) * 4000
+        else
+            x = (math.random() - 0.5) * spread
+            y = (math.random() - 0.5) * spread
+        end
+
         local sys   = {
             id=i, name=name, type=stype, x=x, y=y,
             radius = 12 + math.random() * 8,
+            resBonus = resBonus,  -- P2-2: 资源加成倍率
             color  = STAR_COLORS[stype],
             planets= {},
         }
@@ -366,144 +375,6 @@ local function generateAsteroids()
     math.randomseed(os.time())
 end
 
--- ============================================================================
--- 星图随机事件：生成 / 更新
--- ============================================================================
-local function spawnGalaxyEvent()
-    if #galaxyEvents_ >= EVENT_MAX_COUNT then return end
-    -- 在世界坐标随机位置生成（避开基地附近 400 格以内）
-    local tries = 0
-    local wx, wy
-    repeat
-        wx = (math.random() - 0.5) * 3600
-        wy = (math.random() - 0.5) * 3600
-        tries = tries + 1
-        -- 避开基地
-        local bx = seedShip_.x or 0
-        local by = seedShip_.y or 0
-        local d  = math.sqrt((wx-bx)^2 + (wy-by)^2)
-        if d > 400 then break end
-    until tries > 20
-
-    -- 随机选取类型
-    local typeKey = EVENT_TYPE_KEYS[math.random(1, #EVENT_TYPE_KEYS)]
-    local tpl     = EVENT_TYPES[typeKey]
-
-    -- 对 MINE 类型，随机化采集量
-    local choices = {}
-    for i, ch in ipairs(tpl.choices) do
-        local c = {}
-        for k, v in pairs(ch) do c[k] = v end
-        if i == 1 and typeKey == "MINE" then
-            c.amount = 60 + math.random(0, 80)   -- 60~140 矿石
-        end
-        choices[#choices+1] = c
-    end
-
-    galaxyEvents_[#galaxyEvents_+1] = {
-        id       = #galaxyEvents_ + 1 + math.random(1000),
-        typeKey  = typeKey,
-        label    = tpl.label,
-        icon     = tpl.icon,
-        color    = tpl.color,
-        desc     = tpl.desc,
-        choices  = choices,
-        x        = wx,
-        y        = wy,
-        life     = EVENT_LIFESPAN,  -- 剩余存活秒数
-        pulse    = 0,               -- 动画相位
-        claimed  = false,
-    }
-    print(string.format("[GalaxyEvent] 新事件 %s @ (%.0f, %.0f)", typeKey, wx, wy))
-end
-
-local function updateGalaxyEvents(dt)
-    if not seedShip_.colonized then return end  -- 基地未建立前不生成
-    -- 倒计时 → 尝试生成
-    eventSpawnTimer_ = eventSpawnTimer_ - dt
-    if eventSpawnTimer_ <= 0 then
-        eventSpawnTimer_ = EVENT_SPAWN_INTERVAL + math.random(0, 30)
-        spawnGalaxyEvent()
-    end
-    -- 更新脉冲动画 + 到期删除
-    local i = 1
-    while i <= #galaxyEvents_ do
-        local ev = galaxyEvents_[i]
-        ev.pulse = ev.pulse + dt * 2.5
-        if not ev.claimed then
-            ev.life = ev.life - dt
-            if ev.life <= 0 then
-                table.remove(galaxyEvents_, i)
-            else
-                i = i + 1
-            end
-        else
-            -- claimed 后淡出（0.8 秒）再删除
-            ev.fadeTimer = (ev.fadeTimer or 0.8) - dt
-            if ev.fadeTimer <= 0 then
-                table.remove(galaxyEvents_, i)
-            else
-                i = i + 1
-            end
-        end
-    end
-end
-
---- 渲染所有事件节点（在 Render 中调用）
-local function drawGalaxyEvents()
-    for _, ev in ipairs(galaxyEvents_) do
-        if not ev.claimed then
-            local sx, sy = w2s(ev.x, ev.y)
-            -- 视口裁剪
-            if sx < -40 or sx > screenW_+40 or sy < -40 or sy > screenH_+40 then
-                goto continue_ev
-            end
-            local r   = ev.color[1]
-            local g   = ev.color[2]
-            local b   = ev.color[3]
-            local t   = ev.pulse
-            -- 脉冲光晕
-            local haloR = 18 + math.sin(t) * 5
-            local haloA = math.floor(60 + math.sin(t) * 30)
-            nvgBeginPath(vg_)
-            nvgCircle(vg_, sx, sy, haloR)
-            nvgFillColor(vg_, nvgRGBA(r, g, b, haloA))
-            nvgFill(vg_)
-            -- 核心圆
-            nvgBeginPath(vg_)
-            nvgCircle(vg_, sx, sy, 9)
-            nvgFillColor(vg_, nvgRGBA(r, g, b, 200))
-            nvgFill(vg_)
-            nvgBeginPath(vg_)
-            nvgCircle(vg_, sx, sy, 9)
-            nvgStrokeColor(vg_, nvgRGBA(255, 255, 255, 160))
-            nvgStrokeWidth(vg_, 1)
-            nvgStroke(vg_)
-            -- 图标文字
-            nvgFontFace(vg_, "sans")
-            nvgFontSize(vg_, 11)
-            nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-            nvgFillColor(vg_, nvgRGBA(255, 255, 255, 230))
-            nvgText(vg_, sx, sy, ev.icon)
-            -- 标签（下方）
-            nvgFontSize(vg_, 9)
-            nvgFillColor(vg_, nvgRGBA(r, g, b, 200))
-            nvgText(vg_, sx, sy + 16, ev.label)
-            -- 生命值警示（< 30s 时变红闪烁）
-            if ev.life < 30 then
-                local blink = math.floor(ev.pulse * 2) % 2 == 0
-                if blink then
-                    nvgFontSize(vg_, 8)
-                    nvgFillColor(vg_, nvgRGBA(255, 80, 80, 200))
-                    nvgText(vg_, sx, sy + 26, string.format("%ds", math.ceil(ev.life)))
-                end
-            end
-            ::continue_ev::
-        end
-    end
-end
-
--- ============================================================================
 -- 种子飞船（游戏起始阶段）
 -- ============================================================================
 local SEED_SPEED      = 300   -- 世界坐标/秒（未展开时移动速度）
@@ -611,6 +482,143 @@ local function drawOrbitRing(sx, sy, radius)
     nvgStroke(vg_)
 end
 
+-- 基于 seed 的轻量伪随机（LCG），不影响全局 math.random 状态
+local function seededRand(seed, n)
+    local s = (seed * 1664525 + 1013904223) % (2^32)
+    return (s % n) + 1
+end
+local function seededRandF(seed)   -- [0,1)
+    return ((seed * 1664525 + 1013904223) % (2^32)) / (2^32)
+end
+
+-- 根据行星类型绘制表面细节纹理
+local function drawPlanetDetails(px, py, ps, ptype, seed)
+    if ps < 4 then return end  -- 太小时跳过细节
+
+    -- NanoVG scissor 裁剪到星球圆内
+    nvgSave(vg_)
+    nvgIntersectScissor(vg_, px - ps, py - ps, ps * 2, ps * 2)
+
+    if ptype == "Gas Giant" then
+        -- 气态巨星：3 条水平带状云纹
+        local bands = {
+            { y = -0.3, w = 0.5, a = 55 },
+            { y =  0.1, w = 0.35, a = 45 },
+            { y =  0.45, w = 0.2, a = 35 },
+        }
+        for _, b in ipairs(bands) do
+            local bx = px
+            local by = py + ps * b.y
+            local bw  = ps * 1.8
+            local bh  = ps * b.w
+            nvgBeginPath(vg_)
+            nvgEllipse(vg_, bx, by, bw * 0.5, bh * 0.5)
+            nvgFillColor(vg_, nvgRGBA(255, 200, 255, b.a))
+            nvgFill(vg_)
+        end
+
+    elseif ptype == "Terran" then
+        -- 宜居星球：2-3 个大陆斑块
+        local s = seed % 31 + 1
+        local cnt = 2 + (seededRand(s, 2) - 1)  -- 2 or 3
+        for i = 1, cnt do
+            local ang = seededRandF(s * i * 7) * math.pi * 2
+            local r   = ps * (0.3 + seededRandF(s * i * 13) * 0.25)
+            local ex  = px + math.cos(ang) * ps * 0.3
+            local ey  = py + math.sin(ang) * ps * 0.3
+            nvgBeginPath(vg_)
+            nvgEllipse(vg_, ex, ey, r * 0.9, r * 0.65)
+            nvgFillColor(vg_, nvgRGBA(60, 200, 80, 80 + i * 12))
+            nvgFill(vg_)
+        end
+
+    elseif ptype == "Desert" then
+        -- 荒漠星球：3 条横向浅色弧纹（沙丘）
+        for i = 1, 3 do
+            local yOff = ps * (-0.4 + (i-1) * 0.4)
+            nvgBeginPath(vg_)
+            nvgMoveTo(vg_, px - ps * 0.8, py + yOff)
+            nvgBezierTo(vg_,
+                px - ps * 0.2, py + yOff - ps * 0.1,
+                px + ps * 0.2, py + yOff + ps * 0.08,
+                px + ps * 0.8, py + yOff)
+            nvgStrokeColor(vg_, nvgRGBA(255, 235, 160, 70 + i * 15))
+            nvgStrokeWidth(vg_, math.max(0.8, ps * 0.06))
+            nvgStroke(vg_)
+        end
+
+    elseif ptype == "Oceanic" then
+        -- 海洋星球：弧形高光（水面反光）
+        nvgBeginPath(vg_)
+        nvgArc(vg_, px - ps*0.2, py - ps*0.3, ps*0.5,
+            math.pi * 1.1, math.pi * 1.7, NVG_CCW)
+        nvgStrokeColor(vg_, nvgRGBA(180, 230, 255, 80))
+        nvgStrokeWidth(vg_, math.max(1, ps * 0.12))
+        nvgStroke(vg_)
+        -- 小亮点
+        nvgBeginPath(vg_)
+        nvgCircle(vg_, px + ps*0.2, py + ps*0.25, ps*0.12)
+        nvgFillColor(vg_, nvgRGBA(200, 240, 255, 60))
+        nvgFill(vg_)
+
+    elseif ptype == "Volcanic" then
+        -- 火山星球：3 条亮红裂纹
+        local s = seed % 17 + 1
+        for i = 1, 3 do
+            local startAng = seededRandF(s * i) * math.pi * 2
+            local len = ps * (0.4 + seededRandF(s * i * 3) * 0.4)
+            nvgBeginPath(vg_)
+            nvgMoveTo(vg_, px + math.cos(startAng) * ps * 0.1,
+                           py + math.sin(startAng) * ps * 0.1)
+            nvgLineTo(vg_, px + math.cos(startAng) * len,
+                           py + math.sin(startAng) * len)
+            nvgStrokeColor(vg_, nvgRGBA(255, 120, 30, 100 + i * 20))
+            nvgStrokeWidth(vg_, math.max(0.8, ps * 0.05))
+            nvgStroke(vg_)
+        end
+
+    elseif ptype == "Barren" then
+        -- 荒芜星球：3 个陨石坑（暗色小圆）
+        local s = seed % 23 + 1
+        for i = 1, 3 do
+            local ang = seededRandF(s * i * 5) * math.pi * 2
+            local dist = ps * (0.15 + seededRandF(s * i * 11) * 0.45)
+            local cr  = ps * (0.06 + seededRandF(s * i * 7) * 0.08)
+            local cx  = px + math.cos(ang) * dist
+            local cy  = py + math.sin(ang) * dist
+            nvgBeginPath(vg_)
+            nvgCircle(vg_, cx, cy, cr)
+            nvgFillColor(vg_, nvgRGBA(40, 40, 40, 90))
+            nvgFill(vg_)
+            nvgBeginPath(vg_)
+            nvgCircle(vg_, cx, cy, cr)
+            nvgStrokeColor(vg_, nvgRGBA(90, 80, 70, 70))
+            nvgStrokeWidth(vg_, math.max(0.5, cr * 0.3))
+            nvgStroke(vg_)
+        end
+    end
+
+    nvgRestore(vg_)
+
+    -- Gas Giant 行星环（在 scissor 外绘制，允许超出圆形）
+    if ptype == "Gas Giant" then
+        local ringColor1 = nvgRGBA(200, 170, 255, 50)
+        local ringColor2 = nvgRGBA(180, 150, 230, 35)
+        nvgSave(vg_)
+        nvgBeginPath(vg_)
+        nvgEllipse(vg_, px, py, ps * 1.85, ps * 0.35)
+        nvgStrokeColor(vg_, ringColor1)
+        nvgStrokeWidth(vg_, math.max(1.5, ps * 0.22))
+        nvgStroke(vg_)
+        nvgBeginPath(vg_)
+        nvgEllipse(vg_, px, py, ps * 2.2, ps * 0.42)
+        nvgStrokeColor(vg_, ringColor2)
+        nvgStrokeWidth(vg_, math.max(1, ps * 0.14))
+        nvgStroke(vg_)
+        nvgRestore(vg_)
+    end
+end
+
 local function drawPlanet(sys, planet, sx, sy)
     local px = sx + math.cos(planet.angle) * planet.orbitRadius * zoom_
     local py = sy + math.sin(planet.angle) * planet.orbitRadius * zoom_
@@ -652,12 +660,129 @@ local function drawPlanet(sys, planet, sx, sy)
     nvgFillPaint(vg_, grad)
     nvgFill(vg_)
 
+    -- 类型特化表面细节
+    drawPlanetDetails(px, py, ps, planet.ptype, planet.id * 31 + (sys.id or 0) * 7)
+
     -- 殖民旗帜指示点
     if planet.colonized then
         nvgBeginPath(vg_)
         nvgCircle(vg_, px, py - ps - 5 * zoom_, 3 * zoom_)
         nvgFillColor(vg_, nvgRGBA(50, 255, 100, 220))
         nvgFill(vg_)
+    end
+
+    -- P2-1: 驻守编队旗帜图标（殖民星球右侧显示彩色旗帜 + 编队编号）
+    for fid, gp in pairs(garrisonedFleets_) do
+        if gp == planet then
+            local fx  = px + ps + 4 * zoom_
+            local fy  = py - ps * 0.5
+            local fh  = 8 * zoom_
+            local fw  = 5 * zoom_
+            local pulse = 0.7 + 0.3 * math.sin(routeAnimT_ * 3.0 + fid)
+            -- 旗杆
+            nvgBeginPath(vg_)
+            nvgMoveTo(vg_, fx, fy)
+            nvgLineTo(vg_, fx, fy + fh * 1.5)
+            nvgStrokeColor(vg_, nvgRGBA(200, 220, 255, 200))
+            nvgStrokeWidth(vg_, 1.0 * zoom_)
+            nvgStroke(vg_)
+            -- 旗面（蓝色三角旗）
+            local r, g, b = 60, 140, 255
+            if fm_ and fm_.fleets and fm_.fleets[fid] then
+                local fc = fleetColorCache_[fid]
+                if fc then r, g, b = fc[1], fc[2], fc[3] end
+            end
+            nvgBeginPath(vg_)
+            nvgMoveTo(vg_, fx, fy)
+            nvgLineTo(vg_, fx + fw, fy + fh * 0.4)
+            nvgLineTo(vg_, fx, fy + fh * 0.8)
+            nvgClosePath(vg_)
+            nvgFillColor(vg_, nvgRGBA(r, g, b, math.floor(pulse * 220)))
+            nvgFill(vg_)
+            -- 编队编号
+            nvgFontFace(vg_, "sans")
+            nvgFontSize(vg_, math.max(7, 7 * zoom_))
+            nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg_, nvgRGBA(255, 255, 255, 220))
+            nvgText(vg_, fx + fw * 0.5, fy + fh * 0.4, tostring(fid))
+            break  -- 每星球只显示第一支驻守编队旗帜
+        end
+    end
+
+    -- P3-2: 星球地貌动画（殖民后表面渐变着色）
+    if planet.colonized and planet.colonizeTime then
+        local elapsed = routeAnimT_ - planet.colonizeTime
+        local SWEEP_DUR = 3.5   -- 扫描动画持续秒数
+
+        if elapsed < SWEEP_DUR then
+            -- 阶段1：绿色扫描弧线从上方顺时针扫过球面（地貌成型动画）
+            local progress  = elapsed / SWEEP_DUR            -- 0 → 1
+            local sweepAng  = progress * math.pi * 2         -- 扫过的弧度
+            local alpha     = math.floor(180 * math.min(1, progress * 3))
+
+            -- 绿色填充扇形（已扫过的区域）
+            nvgSave(vg_)
+            nvgScissor(vg_, px - ps, py - ps, ps * 2, ps * 2)
+            nvgBeginPath(vg_)
+            nvgCircle(vg_, px, py, ps)
+            nvgFillColor(vg_, nvgRGBA(30, 200, 80, math.floor(alpha * 0.35)))
+            nvgFill(vg_)
+            nvgRestore(vg_)
+
+            -- 扫描前锋：明亮弧线
+            local frontAng = -math.pi / 2 + sweepAng
+            nvgBeginPath(vg_)
+            nvgArc(vg_, px, py, ps + 1, frontAng - 0.4, frontAng + 0.15, NVG_CW)
+            nvgStrokeColor(vg_, nvgRGBA(80, 255, 140, math.floor(alpha * 0.9)))
+            nvgStrokeWidth(vg_, 2.0 * zoom_)
+            nvgStroke(vg_)
+
+            -- 扫描尾迹：渐隐弧线
+            nvgBeginPath(vg_)
+            nvgArc(vg_, px, py, ps + 0.5, frontAng - 1.2, frontAng - 0.4, NVG_CW)
+            nvgStrokeColor(vg_, nvgRGBA(40, 200, 100, math.floor(alpha * 0.4)))
+            nvgStrokeWidth(vg_, 1.2 * zoom_)
+            nvgStroke(vg_)
+        else
+            -- 阶段2：殖民完成，持续绿色微光呼吸（地貌稳定）
+            local shimmer = 0.4 + 0.6 * math.abs(math.sin(routeAnimT_ * 0.8 + planet.id * 1.3))
+            local sAlpha  = math.floor(shimmer * 28)
+            -- 绿色径向叠加层（浅色，不遮盖星球本体）
+            local tGrad = nvgRadialGradient(vg_, px - ps * 0.2, py - ps * 0.2, 0, ps,
+                nvgRGBA(40, 220, 100, sAlpha),
+                nvgRGBA(20, 140, 60, math.floor(sAlpha * 0.3)))
+            nvgBeginPath(vg_)
+            nvgCircle(vg_, px, py, ps)
+            nvgFillPaint(vg_, tGrad)
+            nvgFill(vg_)
+        end
+    end
+
+    -- P2-1: 殖民优先标记（橙色脉冲光晕 + 右上角图标）
+    if priorityPlanetIds_[planet.id] and not planet.colonized then
+        local pulse = 0.55 + 0.45 * math.sin(routeAnimT_ * 3.0)
+        local glowA = math.floor(pulse * 80)
+        local glow2 = nvgRadialGradient(vg_, px, py, ps, ps * 3.2,
+            nvgRGBA(255, 160, 30, glowA), nvgRGBA(255, 160, 30, 0))
+        nvgBeginPath(vg_)
+        nvgCircle(vg_, px, py, ps * 3.2)
+        nvgFillPaint(vg_, glow2)
+        nvgFill(vg_)
+        -- 右上角小菱形图标
+        local mx2 = px + ps * 0.75
+        local my2 = py - ps * 0.75
+        local ir   = 3.5 * zoom_
+        nvgBeginPath(vg_)
+        nvgMoveTo(vg_, mx2,      my2 - ir)
+        nvgLineTo(vg_, mx2 + ir, my2)
+        nvgLineTo(vg_, mx2,      my2 + ir)
+        nvgLineTo(vg_, mx2 - ir, my2)
+        nvgClosePath(vg_)
+        nvgFillColor(vg_, nvgRGBA(255, 170, 40, math.floor(pulse * 230 + 25)))
+        nvgFill(vg_)
+        nvgStrokeColor(vg_, nvgRGBA(255, 220, 100, 200))
+        nvgStrokeWidth(vg_, 1.0)
+        nvgStroke(vg_)
     end
 
     -- 缩放足够大时显示行星名
@@ -726,6 +851,138 @@ local function drawStarSystem(sys)
     nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_TOP)
     nvgFillColor(vg_, nvgRGBA(200, 200, 220, 140))
     nvgText(vg_, sx, sy + sr + 4, sys.name)
+end
+
+-- ============================================================================
+-- 星际航线网络（贸易/补给航线可视化）
+-- ============================================================================
+--- 在已殖民星球与基地之间绘制流动虚线航线
+local function drawTradeRoutes()
+    -- 至少需要 1 颗已殖民星球，且基地已部署
+    if not seedShip_ or seedShip_.state ~= "deployed" then return end
+    if #colonizedPlanets_ == 0 then return end
+
+    -- 收集有效节点（屏幕坐标已缓存）
+    local nodes = {}  -- {sx, sy, label}
+
+    -- 基地节点
+    local bsx, bsy = w2s(seedShip_.x, seedShip_.y)
+    nodes[1] = { sx = bsx, sy = bsy, isBase = true }
+
+    for _, p in ipairs(colonizedPlanets_) do
+        if p._sx and p._sy then
+            nodes[#nodes + 1] = { sx = p._sx, sy = p._sy, planet = p }
+        end
+    end
+
+    if #nodes < 2 then return end
+
+    -- 虚线参数
+    local DASH_LEN   = 10 * zoom_  -- 虚线实线段长度
+    local GAP_LEN    = 6  * zoom_  -- 虚线间隔长度
+    local UNIT_LEN   = DASH_LEN + GAP_LEN
+    local FLOW_SPEED = 18  -- 流光速度（像素/秒）
+    local offset     = (routeAnimT_ * FLOW_SPEED) % UNIT_LEN
+
+    -- 绘制基地→每颗殖民星球的主干航线
+    for i = 2, #nodes do
+        local n = nodes[i]
+        local dx = n.sx - bsx
+        local dy = n.sy - bsy
+        local len = math.sqrt(dx * dx + dy * dy)
+        if len < 2 then goto continue_route end
+
+        local ux = dx / len
+        local uy = dy / len
+
+        -- 计算颜色（殖民星球用其轨道颜色，基础蓝绿色）
+        local p = n.planet
+        local cr, cg, cb = 60, 200, 255
+        if p and p.colorHL then
+            cr = math.floor(p.colorHL[1] * 0.6 + 60 * 0.4)
+            cg = math.floor(p.colorHL[2] * 0.6 + 200 * 0.4)
+            cb = math.floor(p.colorHL[3] * 0.6 + 255 * 0.4)
+        end
+
+        -- 底层淡光迹线（始终可见的半透明细线）
+        nvgBeginPath(vg_)
+        nvgMoveTo(vg_, bsx, bsy)
+        nvgLineTo(vg_, n.sx, n.sy)
+        nvgStrokeColor(vg_, nvgRGBA(cr, cg, cb, 18))
+        nvgStrokeWidth(vg_, math.max(0.5, 1.5 * zoom_))
+        nvgStroke(vg_)
+
+        -- 流动虚线
+        local pos = -offset  -- 从起点前方开始（形成流入基地方向效果）
+        local lineW = math.max(0.8, 1.8 * zoom_)
+        while pos < len do
+            local dashStart = math.max(0, pos)
+            local dashEnd   = math.min(len, pos + DASH_LEN)
+            if dashEnd > dashStart then
+                local alpha = 120 + math.floor(60 * math.abs(math.sin(
+                    routeAnimT_ * 1.5 + (pos / len) * math.pi)))
+                nvgBeginPath(vg_)
+                nvgMoveTo(vg_, bsx + ux * dashStart, bsy + uy * dashStart)
+                nvgLineTo(vg_, bsx + ux * dashEnd,   bsy + uy * dashEnd)
+                nvgStrokeColor(vg_, nvgRGBA(cr, cg, cb, alpha))
+                nvgStrokeWidth(vg_, lineW)
+                nvgStroke(vg_)
+            end
+            pos = pos + UNIT_LEN
+        end
+
+        -- 端点小菱形标记（距星球中心 ps+6 处）
+        local ps   = (p and p.size or 5) * zoom_
+        local markDist = ps + 6 * zoom_
+        if markDist < len then
+            local mx = n.sx - ux * markDist
+            local my = n.sy - uy * markDist
+            local ms = math.max(2, 3 * zoom_)
+            local pulse = 0.7 + 0.3 * math.abs(math.sin(routeAnimT_ * 2.2 + i * 0.8))
+            nvgBeginPath(vg_)
+            nvgMoveTo(vg_, mx,      my - ms * pulse)
+            nvgLineTo(vg_, mx + ms * pulse, my)
+            nvgLineTo(vg_, mx,      my + ms * pulse)
+            nvgLineTo(vg_, mx - ms * pulse, my)
+            nvgClosePath(vg_)
+            nvgFillColor(vg_, nvgRGBA(cr, cg, cb, math.floor(180 * pulse)))
+            nvgFill(vg_)
+        end
+
+        ::continue_route::
+    end
+
+    -- 殖民星球之间的次级横向航线（仅当 ≥ 2 颗殖民星球）
+    if #nodes >= 3 then
+        for i = 2, #nodes - 1 do
+            local a = nodes[i]
+            local b = nodes[i + 1]
+            if not (a._sx == nil) and not (b._sx == nil) then
+                local dx = b.sx - a.sx
+                local dy = b.sy - a.sy
+                local len = math.sqrt(dx * dx + dy * dy)
+                if len > 5 then
+                    local ux2 = dx / len
+                    local uy2 = dy / len
+                    -- 次级航线：更细、更淡、橙黄色调
+                    local pos = -offset * 0.7
+                    while pos < len do
+                        local dashStart = math.max(0, pos)
+                        local dashEnd   = math.min(len, pos + DASH_LEN * 0.8)
+                        if dashEnd > dashStart then
+                            nvgBeginPath(vg_)
+                            nvgMoveTo(vg_, a.sx + ux2 * dashStart, a.sy + uy2 * dashStart)
+                            nvgLineTo(vg_, a.sx + ux2 * dashEnd,   a.sy + uy2 * dashEnd)
+                            nvgStrokeColor(vg_, nvgRGBA(255, 200, 80, 55))
+                            nvgStrokeWidth(vg_, math.max(0.5, 1.0 * zoom_))
+                            nvgStroke(vg_)
+                        end
+                        pos = pos + UNIT_LEN
+                    end
+                end
+            end
+        end
+    end
 end
 
 --- 渲染深空星系（曲速闸门未解锁时显示锁定状态，解锁后显示蓝紫色高亮）
@@ -1119,6 +1376,19 @@ local function drawMinimap()
     nvgFillColor(vg_, nvgRGBA(130, 150, 200, 150))
     nvgText(vg_, mx + MINIMAP_W - 3, my + MINIMAP_H - 2,
         string.format("x%.1f | 滚轮缩放", zoom_))
+
+    -- P2-2: 小地图右上角显示星图变体标签
+    local VARIANT_SHORT = {
+        NORMAL  = { s="标准", r=160, g=180, b=255 },
+        DENSE   = { s="密集", r=80,  g=220, b=120 },
+        SPARSE  = { s="稀疏", r=255, g=200, b=80  },
+        BIPOLAR = { s="双极", r=255, g=100, b=100 },
+    }
+    local vs = VARIANT_SHORT[mapVariant_] or VARIANT_SHORT.NORMAL
+    nvgFontSize(vg_, 8)
+    nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_TOP)
+    nvgFillColor(vg_, nvgRGBA(vs.r, vs.g, vs.b, 200))
+    nvgText(vg_, mx + 4, my + 3, "【" .. vs.s .. "】")
 end
 
 -- drawTitleBar 已移至 GameUI.RenderSceneTitle，此处删除避免重叠
@@ -1184,8 +1454,9 @@ end
 --- 返回升级数据（level, rank, rewards）供调用方处理奖励通知
 function GalaxyScene.Colonize(planet)
     if not planet or planet.colonized then return end
-    planet.colonized = true
-    planet.owner     = "player"
+    planet.colonized     = true
+    planet.owner         = "player"
+    planet.colonizeTime  = routeAnimT_   -- P3-2: 记录殖民时刻，驱动地貌动画
     colonizedPlanets_[#colonizedPlanets_+1] = planet   -- 维护殖民缓存
     local leveled, newLevel, newRank, rewards
     if player_ then
@@ -1195,6 +1466,12 @@ function GalaxyScene.Colonize(planet)
     if bs_ then
         bs_:build("MINE", planet)
     end
+    -- P3-1: 触发殖民涟漪动画（保存行星引用，渲染时用 _sx/_sy）
+    colonyRipples_[#colonyRipples_+1] = {
+        planet = planet,
+        t      = 0,
+        dur    = 2.8,
+    }
     print("[Galaxy] 殖民: " .. planet.name)
     return leveled, newLevel, newRank, rewards
 end
@@ -1241,6 +1518,57 @@ local function tryClickAsteroid(mx, my)
 end
 
 local function handleClick(mx, my)
+    -- P3-1: 信号按钮点击检测（仅基地展开后）
+    if seedShip_.state == "deployed" then
+        local BW  = 44              -- 按钮宽高
+        local PAD = 8               -- 按钮与屏幕右边缘/底部的间距
+        local btnX = screenW_ - BW - PAD
+        local btnY = screenH_ - BW - PAD - 50   -- 避开小地图
+
+        -- 点击 📡 主按钮：切换面板展开/收起
+        if mx >= btnX and mx <= btnX+BW and my >= btnY and my <= btnY+BW then
+            signalOpen_ = not signalOpen_
+            return
+        end
+
+        -- 面板展开时：检测各信号条目点击
+        if signalOpen_ then
+            local ITEM_H  = 40
+            local PANEL_W = 180
+            local panelX  = screenW_ - PANEL_W - PAD
+            local panelY  = btnY - #QUICK_SIGNALS * ITEM_H - 8
+
+            if mx >= panelX and mx <= panelX + PANEL_W
+               and my >= panelY and my <= btnY - 8 then
+                local idx = math.floor((my - panelY) / ITEM_H) + 1
+                if idx >= 1 and idx <= #QUICK_SIGNALS then
+                    local sig = QUICK_SIGNALS[idx]
+                    local cd  = signalCooldowns_[idx]
+                    if not cd or cd <= 0 then
+                        -- 发送信号：添加横幅 + 设置 CD
+                        signalCooldowns_[idx] = SIGNAL_CD
+                        local Client = require("network.Client")
+                        local playerName = Client.GetPlayerName and Client.GetPlayerName() or "指挥官"
+                        signalBanners_[#signalBanners_+1] = {
+                            text  = playerName .. "：" .. sig.icon .. " " .. sig.text,
+                            alpha = 255,
+                            timer = 0,
+                            color = sig.color,
+                        }
+                        if notifyFn_ then
+                            notifyFn_("信号已发送：" .. sig.text, "info")
+                        end
+                    end
+                    signalOpen_ = false  -- 选择后收起面板
+                end
+                return
+            end
+
+            -- 点击面板外：收起面板
+            signalOpen_ = false
+        end
+    end
+
     -- 种子飞船未展开时：点击地图空白处设置移动目标
     if seedShip_.state == "moving" then
         local wx, wy = s2w(mx, my)
@@ -1250,7 +1578,7 @@ local function handleClick(mx, my)
 
     -- 检测随机事件节点点击（基地展开后）
     if seedShip_.state == "deployed" then
-        for _, ev in ipairs(galaxyEvents_) do
+        for _, ev in ipairs(GalaxyEvents.GetList()) do
             if not ev.claimed then
                 local esx, esy = w2s(ev.x, ev.y)
                 if dist2(mx, my, esx, esy) < 22 then
@@ -1396,9 +1724,11 @@ function GalaxyScene.Init(opts)
     -- 海盗 AI（可选）
     pirateAI_        = opts.pirateAI
     onGalaxyEvent_   = opts.onGalaxyEvent
-    -- 初始化随机事件计时（30~60s 后首次生成）
-    galaxyEvents_    = {}
-    eventSpawnTimer_ = 30 + math.random(0, 30)
+    -- P2-2: 随机决定星图变体（权重见 MAP_VARIANT_POOL）
+    mapVariant_ = MAP_VARIANT_POOL[math.random(1, #MAP_VARIANT_POOL)]
+
+    -- 初始化随机事件系统（30~60s 后首次生成）
+    GalaxyEvents.Reset()
     -- 加载所有游戏纹理
     local f = NVG_IMAGE_PREMULTIPLIED
     asteroidImgs_["minerals"] = nvgCreateImage(vg_, "image/asteroid_minerals_20260511190702.png", f)
@@ -1409,8 +1739,10 @@ function GalaxyScene.Init(opts)
     generateBgStars()
     generateStarSystems()
     generateAsteroids()
-    -- 生成海盗基地（世界半径 2000）
-    if pirateAI_ then pirateAI_:generateBases(2000) end
+    -- 生成海盗基地（世界半径 2000；BIPOLAR 模式集中到中线）
+    if pirateAI_ then
+        pirateAI_:generateBases(2000, mapVariant_ == "BIPOLAR" and { bipolar=true } or nil)
+    end
     screenW_, screenH_ = UICommon.getVirtualSize()
 
     -- 种子飞船：随机落点（世界坐标 ±1500 范围）
@@ -1431,7 +1763,20 @@ function GalaxyScene.Init(opts)
     fleetObjs_       = {}
     selectedFleetId_ = nil
 
-    print("[GalaxyScene] 初始化完成, 恒星系数: " .. #starSystems_
+    -- P2-2: 开局通知星图变体
+    local VARIANT_LABELS = {
+        NORMAL  = { text="星图类型：标准星域",   color="info"    },
+        DENSE   = { text="星图类型：密集星团 — 星系富集，资源丰厚", color="success" },
+        SPARSE  = { text="星图类型：稀疏星野 — 星系稀疏，探索漫长", color="warn"    },
+        BIPOLAR = { text="星图类型：双极星域 — 两簇对立，中线险峻", color="danger"  },
+    }
+    local vl = VARIANT_LABELS[mapVariant_] or VARIANT_LABELS.NORMAL
+    if notifyFn_ then
+        notifyFn_(vl.text, vl.color)
+    end
+
+    print("[GalaxyScene] 初始化完成, 星图变体: " .. mapVariant_
+        .. ", 恒星系数: " .. #starSystems_
         .. ", 小行星: " .. #asteroids_
         .. string.format(", 种子飞船落点(%.0f, %.0f)", seedShip_.x, seedShip_.y))
 end
@@ -1450,6 +1795,58 @@ end
 
 function GalaxyScene.GetSelected()
     return selectedPlanet_
+end
+
+--- P2-2: 获取当前星图变体字符串（"NORMAL"/"DENSE"/"SPARSE"/"BIPOLAR"）
+function GalaxyScene.GetMapVariant()
+    return mapVariant_
+end
+
+-- P2-1: 殖民优先标记 API
+function GalaxyScene.TogglePriority(planet)
+    if not planet or planet.colonized or planet.isBase then return end
+    local id = planet.id
+    if priorityPlanetIds_[id] then
+        priorityPlanetIds_[id] = nil
+    else
+        priorityPlanetIds_[id] = true
+    end
+end
+
+function GalaxyScene.IsPriority(planet)
+    if not planet then return false end
+    return priorityPlanetIds_[planet.id] == true
+end
+
+function GalaxyScene.GetPriorityPlanetCount()
+    local n = 0
+    for _ in pairs(priorityPlanetIds_) do n = n + 1 end
+    return n
+end
+
+--- P1-2 WARP_GATE_PRIME: 将所有玩家编队瞬移至目标星球坐标
+---@param targetPlanet table  星球对象（需有 x, y 字段）
+---@return boolean  是否成功（有编队且坐标有效）
+function GalaxyScene.WarpFleetToPlanet(targetPlanet)
+    if not targetPlanet or not targetPlanet.x or not targetPlanet.y then
+        return false
+    end
+    local wx, wy = targetPlanet.x, targetPlanet.y
+    local count  = 0
+    for fleetId, obj in pairs(fleetObjs_) do
+        -- 仅瞬移玩家编队（非海盗）
+        if fm_ and fm_.fleets[fleetId] then
+            local spread = count * 18
+            local ang    = (count * 2.4)  -- 按黄金角散布，避免重叠
+            obj.x       = wx + math.cos(ang) * spread
+            obj.y       = wy + math.sin(ang) * spread
+            obj.targetX = nil
+            obj.targetY = nil
+            count = count + 1
+        end
+    end
+    print("[GalaxyScene] WARP_GATE_PRIME: " .. count .. " 支编队瞬移至 " .. (targetPlanet.name or "?"))
+    return count > 0
 end
 
 local function drawAsteroids()
@@ -1945,6 +2342,43 @@ end
 function GalaxyScene.Update(dt)
     screenW_, screenH_ = UICommon.getVirtualSize()
     deepSpaceAnimT_ = deepSpaceAnimT_ + dt
+    routeAnimT_     = routeAnimT_ + dt
+    -- P3-1: 推进殖民涟漪动画并清理结束项
+    if #colonyRipples_ > 0 then
+        local alive = {}
+        for _, r in ipairs(colonyRipples_) do
+            r.t = r.t + dt
+            if r.t < r.dur then
+                alive[#alive+1] = r
+            end
+        end
+        colonyRipples_ = alive
+    end
+    -- P3-1: 更新信号 CD
+    for i, cd in pairs(signalCooldowns_) do
+        signalCooldowns_[i] = cd - dt
+        if signalCooldowns_[i] <= 0 then
+            signalCooldowns_[i] = nil
+        end
+    end
+    -- P3-1: 更新横幅动画（淡出并清理过期横幅）
+    if #signalBanners_ > 0 then
+        local alive = {}
+        for _, b in ipairs(signalBanners_) do
+            b.timer = b.timer + dt
+            if b.timer < BANNER_DUR then
+                -- 淡出：最后 BANNER_FADE 秒渐隐
+                local fadeStart = BANNER_DUR - BANNER_FADE
+                if b.timer > fadeStart then
+                    b.alpha = math.floor(255 * (1 - (b.timer - fadeStart) / BANNER_FADE))
+                else
+                    b.alpha = 255
+                end
+                alive[#alive+1] = b
+            end
+        end
+        signalBanners_ = alive
+    end
     updateSeedShip(dt)
     updatePlanets(dt)
     updateHover()
@@ -1952,7 +2386,7 @@ function GalaxyScene.Update(dt)
     -- 海盗 AI 更新
     if pirateAI_ then pirateAI_:update(dt) end
     -- 随机事件更新
-    updateGalaxyEvents(dt)
+    GalaxyEvents.Update(dt, seedShip_.colonized, seedShip_.x, seedShip_.y)
     -- 耗尽的小行星定期重生
     for _, a in ipairs(asteroids_) do
         if a.hp <= 0 then
@@ -2292,9 +2726,264 @@ local function drawAsteroidSummary()
     end
 end
 
+-- P2-2: 海盗威胁热力叠层（在星系渲染前绘制，低于所有前景元素）
+local function drawPirateThreatHeatmap()
+    if not pirateAI_ then return end
+    for _, base in ipairs(pirateAI_.bases) do
+        if not base.active then goto continue end
+        local bsx, bsy = w2s(base.x, base.y)
+        -- 视锥粗裁
+        local maxR = (200 + base.level * 60) * zoom_
+        if bsx < -maxR or bsx > screenW_ + maxR
+        or bsy < -maxR or bsy > screenH_ + maxR then
+            goto continue
+        end
+        -- 脉冲动画：attackTimer 快到期时加强
+        local urgency = 0
+        if base.attackTimer and base.attackTimer < 20 then
+            urgency = (1 - base.attackTimer / 20) * 0.5
+        end
+        local baseAlpha  = math.min(90, 30 + base.level * 12) + math.floor(urgency * 60)
+        local innerR     = (50 + base.level * 20) * zoom_
+        local outerR     = (160 + base.level * 55) * zoom_
+        -- 外层大光晕（威胁扩散圈）
+        local grad = nvgRadialGradient(vg_, bsx, bsy, innerR, outerR,
+            nvgRGBA(220, 60, 30, baseAlpha),
+            nvgRGBA(220, 60, 30, 0))
+        nvgBeginPath(vg_)
+        nvgCircle(vg_, bsx, bsy, outerR)
+        nvgFillPaint(vg_, grad)
+        nvgFill(vg_)
+        -- 内层核心辉光（等级越高越亮）
+        local coreAlpha = math.min(120, 50 + base.level * 15) + math.floor(urgency * 40)
+        local coreGrad = nvgRadialGradient(vg_, bsx, bsy, 0, innerR,
+            nvgRGBA(255, 100, 20, coreAlpha),
+            nvgRGBA(220, 60, 30, 0))
+        nvgBeginPath(vg_)
+        nvgCircle(vg_, bsx, bsy, innerR)
+        nvgFillPaint(vg_, coreGrad)
+        nvgFill(vg_)
+        -- 等级文字标注（缩放足够大时显示）
+        if zoom_ >= 0.7 then
+            nvgFontFace(vg_, "sans")
+            nvgFontSize(vg_, math.max(9, 10 * zoom_))
+            nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_BOTTOM)
+            nvgFillColor(vg_, nvgRGBA(255, 130, 60, 180))
+            nvgText(vg_, bsx, bsy - innerR - 4 * zoom_,
+                "海盗 Lv." .. base.level)
+        end
+        ::continue::
+    end
+end
+
+-- P3-1: 绘制殖民涟漪动画（3圈同心扩散波 + 中心闪光）
+local function drawColonyRipples()
+    if #colonyRipples_ == 0 then return end
+    for _, r in ipairs(colonyRipples_) do
+        local planet = r.planet
+        local cx = planet._sx
+        local cy = planet._sy
+        if not cx then goto nextRipple end
+        local prog   = r.t / r.dur          -- 0→1 整体进度
+        local baseR  = planet.size * zoom_  -- 行星半径（屏幕像素）
+
+        -- 3 圈扩散波，各自相位错开 0.33
+        for wave = 0, 2 do
+            local phase = prog + wave * 0.33
+            if phase > 1 then phase = phase - 1 end
+            -- 仅绘制 phase 在 0~0.85 内（超出则已消失）
+            if phase < 0.85 then
+                local eased = 1 - (1 - phase / 0.85) ^ 2  -- ease-out 扩散
+                local alpha = math.floor((1 - phase / 0.85) * 180)
+                local r1 = baseR + eased * baseR * 5.0
+                local r2 = r1 + 3 * zoom_
+                -- 绿色扩散环
+                local grad = nvgRadialGradient(vg_, cx, cy, r1, r2,
+                    nvgRGBA(60, 255, 120, alpha),
+                    nvgRGBA(60, 255, 120, 0))
+                nvgBeginPath(vg_)
+                nvgCircle(vg_, cx, cy, r2)
+                nvgFillPaint(vg_, grad)
+                nvgFill(vg_)
+            end
+        end
+
+        -- 中心闪光：仅前 0.35 秒（prog < 0.35/dur 标准化后）
+        local flashDur  = 0.35 / r.dur
+        if prog < flashDur then
+            local fp    = prog / flashDur
+            local fa    = math.floor((1 - fp) ^ 1.5 * 220)
+            local fr    = baseR * (1 + fp * 1.8)
+            local fGrad = nvgRadialGradient(vg_, cx, cy, 0, fr,
+                nvgRGBA(180, 255, 200, fa),
+                nvgRGBA(60, 255, 120, 0))
+            nvgBeginPath(vg_)
+            nvgCircle(vg_, cx, cy, fr)
+            nvgFillPaint(vg_, fGrad)
+            nvgFill(vg_)
+        end
+        ::nextRipple::
+    end
+end
+
+-- P3-1: 绘制快捷信号按钮（右下角 📡 浮动按钮 + 弹出面板）
+local function drawSignalButton()
+    if seedShip_.state ~= "deployed" then return end
+
+    local BW     = 44
+    local PAD    = 8
+    local btnX   = screenW_ - BW - PAD
+    local btnY   = screenH_ - BW - PAD - 50   -- 小地图上方
+
+    -- 主按钮背景
+    local bgAlpha = signalOpen_ and 220 or 180
+    local btnGrad = nvgLinearGradient(vg_, btnX, btnY, btnX+BW, btnY+BW,
+        nvgRGBA(40, 120, 200, bgAlpha), nvgRGBA(20, 70, 150, bgAlpha))
+    nvgBeginPath(vg_)
+    nvgRoundedRect(vg_, btnX, btnY, BW, BW, 10)
+    nvgFillPaint(vg_, btnGrad)
+    nvgFill(vg_)
+    -- 按钮边框
+    nvgStrokeColor(vg_, nvgRGBA(80, 180, 255, signalOpen_ and 255 or 160))
+    nvgStrokeWidth(vg_, 1.5)
+    nvgBeginPath(vg_)
+    nvgRoundedRect(vg_, btnX, btnY, BW, BW, 10)
+    nvgStroke(vg_)
+    -- 图标
+    nvgFontFace(vg_, "sans")
+    nvgFontSize(vg_, 22)
+    nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg_, nvgRGBA(255, 255, 255, 230))
+    nvgText(vg_, btnX + BW*0.5, btnY + BW*0.5, "📡")
+
+    -- 展开面板
+    if not signalOpen_ then return end
+
+    local ITEM_H  = 40
+    local PANEL_W = 180
+    local panelX  = screenW_ - PANEL_W - PAD
+    local panelY  = btnY - #QUICK_SIGNALS * ITEM_H - 8
+
+    -- 面板背景
+    local panelGrad = nvgLinearGradient(vg_, panelX, panelY, panelX, panelY + #QUICK_SIGNALS*ITEM_H,
+        nvgRGBA(15, 40, 80, 230), nvgRGBA(8, 25, 55, 235))
+    nvgBeginPath(vg_)
+    nvgRoundedRect(vg_, panelX, panelY, PANEL_W, #QUICK_SIGNALS * ITEM_H, 8)
+    nvgFillPaint(vg_, panelGrad)
+    nvgFill(vg_)
+    nvgStrokeColor(vg_, nvgRGBA(60, 140, 220, 180))
+    nvgStrokeWidth(vg_, 1)
+    nvgBeginPath(vg_)
+    nvgRoundedRect(vg_, panelX, panelY, PANEL_W, #QUICK_SIGNALS * ITEM_H, 8)
+    nvgStroke(vg_)
+
+    -- 各信号条目
+    for i, sig in ipairs(QUICK_SIGNALS) do
+        local iy  = panelY + (i - 1) * ITEM_H
+        local cd  = signalCooldowns_[i]
+        local onCD = cd and cd > 0
+
+        -- 悬浮高亮
+        if mouseX_ >= panelX and mouseX_ <= panelX + PANEL_W
+           and mouseY_ >= iy and mouseY_ <= iy + ITEM_H then
+            nvgBeginPath(vg_)
+            nvgRect(vg_, panelX, iy, PANEL_W, ITEM_H)
+            nvgFillColor(vg_, nvgRGBA(80, 160, 255, onCD and 30 or 60))
+            nvgFill(vg_)
+        end
+
+        -- 分割线
+        if i > 1 then
+            nvgBeginPath(vg_)
+            nvgMoveTo(vg_, panelX + 8, iy)
+            nvgLineTo(vg_, panelX + PANEL_W - 8, iy)
+            nvgStrokeColor(vg_, nvgRGBA(80, 140, 200, 60))
+            nvgStrokeWidth(vg_, 0.5)
+            nvgStroke(vg_)
+        end
+
+        -- 信号图标
+        nvgFontSize(vg_, 18)
+        nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg_, nvgRGBA(255, 255, 255, onCD and 100 or 220))
+        nvgText(vg_, panelX + 10, iy + ITEM_H * 0.5, sig.icon)
+
+        -- 信号文字
+        nvgFontSize(vg_, 13)
+        local tc = sig.color
+        nvgFillColor(vg_, nvgRGBA(tc[1], tc[2], tc[3], onCD and 100 or 220))
+        nvgText(vg_, panelX + 36, iy + ITEM_H * 0.5, sig.text)
+
+        -- CD 进度条 + 倒计时
+        if onCD then
+            local cdProg = 1 - cd / SIGNAL_CD
+            -- 进度条轨道
+            nvgBeginPath(vg_)
+            nvgRect(vg_, panelX + PANEL_W - 52, iy + ITEM_H*0.5 - 3, 44, 6)
+            nvgFillColor(vg_, nvgRGBA(40, 60, 100, 180))
+            nvgFill(vg_)
+            -- 进度条填充
+            nvgBeginPath(vg_)
+            nvgRect(vg_, panelX + PANEL_W - 52, iy + ITEM_H*0.5 - 3, 44 * cdProg, 6)
+            nvgFillColor(vg_, nvgRGBA(tc[1], tc[2], tc[3], 200))
+            nvgFill(vg_)
+            -- 倒计时文字
+            nvgFontSize(vg_, 11)
+            nvgTextAlign(vg_, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg_, nvgRGBA(180, 220, 255, 160))
+            nvgText(vg_, panelX + PANEL_W - 6, iy + ITEM_H*0.5 + 8,
+                string.format("%.0fs", cd))
+        end
+    end
+end
+
+-- P3-1: 绘制信号横幅（屏幕顶部中央滚动提示）
+local function drawSignalBanners()
+    if #signalBanners_ == 0 then return end
+
+    local BANNER_H = 36
+    local BANNER_W = math.min(400, screenW_ - 40)
+    local bx       = (screenW_ - BANNER_W) * 0.5
+    -- 多条横幅垂直叠加（最新在最上）
+    for i = #signalBanners_, 1, -1 do
+        local b   = signalBanners_[i]
+        local idx = #signalBanners_ - i   -- 从上往下的第几条
+        local by  = 58 + idx * (BANNER_H + 6)  -- topbar 下方开始
+
+        local alpha = b.alpha
+
+        -- 横幅背景
+        local c = b.color
+        nvgBeginPath(vg_)
+        nvgRoundedRect(vg_, bx, by, BANNER_W, BANNER_H, 6)
+        nvgFillColor(vg_, nvgRGBA(c[1], c[2], c[3], math.floor(alpha * 0.25)))
+        nvgFill(vg_)
+        -- 边框
+        nvgStrokeColor(vg_, nvgRGBA(c[1], c[2], c[3], math.floor(alpha * 0.7)))
+        nvgStrokeWidth(vg_, 1.5)
+        nvgBeginPath(vg_)
+        nvgRoundedRect(vg_, bx, by, BANNER_W, BANNER_H, 6)
+        nvgStroke(vg_)
+        -- 左侧彩色竖条
+        nvgBeginPath(vg_)
+        nvgRoundedRect(vg_, bx, by, 4, BANNER_H, 6)
+        nvgFillColor(vg_, nvgRGBA(c[1], c[2], c[3], alpha))
+        nvgFill(vg_)
+
+        -- 横幅文字
+        nvgFontFace(vg_, "sans")
+        nvgFontSize(vg_, 14)
+        nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg_, nvgRGBA(220, 240, 255, alpha))
+        nvgText(vg_, bx + BANNER_W * 0.5, by + BANNER_H * 0.5, b.text)
+    end
+end
+
 function GalaxyScene.Render()
     if #bgStars_ == 0 then return end  -- Init 尚未完成，跳过渲染
     drawBackground()
+    -- P2-2: 热力叠层（在所有前景前，紧跟背景后）
+    drawPirateThreatHeatmap()
     drawAsteroids()
     -- 深空星系（渲染在普通星系之前，避免遮挡普通行星）
     for _, sys in ipairs(deepSpaceSystems_) do
@@ -2303,11 +2992,15 @@ function GalaxyScene.Render()
     for _, sys in ipairs(starSystems_) do
         drawStarSystem(sys)
     end
+    -- 星际航线网络（在星球渲染后、编队渲染前，确保 _sx/_sy 已缓存）
+    if zoom_ >= 0.6 then drawTradeRoutes() end
+    -- P3-1: 殖民涟漪（_sx/_sy 已由 drawStarSystem 缓存，叠在星球之上）
+    drawColonyRipples()
     drawFleets()
     -- 渲染海盗基地和舰队
     if pirateAI_ then pirateAI_:render(vg_, w2s, zoom_) end
     drawSeedShip()
-    drawGalaxyEvents()
+    GalaxyEvents.Draw({ vg = vg_, screenW = screenW_, screenH = screenH_, w2s = w2s })
     drawAsteroidSummary()
     drawMinimap()
     -- 海盗进攻预警 HUD（有海盗舰队在途时显示）
@@ -2317,6 +3010,9 @@ function GalaxyScene.Render()
     -- Tooltip 最后画（浮于所有内容之上）
     drawTooltip(hoveredPlanet_)
     drawAsteroidTooltip(hoveredAsteroid_)
+    -- P3-1: 信号系统（浮于 Tooltip 外的最顶层）
+    drawSignalBanners()
+    drawSignalButton()
 end
 
 -- ============================================================================
@@ -2666,7 +3362,13 @@ function GalaxyScene.GetSaveData()
             angle   = obj.angle or 0,
         }
     end
-    return { planets = planets, base = base, deepPlanets = deepPlanets, fleets = fleets }
+    -- P2-1: 优先标记列表
+    local priorityIds = {}
+    for id, _ in pairs(priorityPlanetIds_) do
+        priorityIds[#priorityIds + 1] = id
+    end
+    return { planets = planets, base = base, deepPlanets = deepPlanets, fleets = fleets,
+             priorityIds = priorityIds }
 end
 
 --- 从存档恢复星图数据，并重建资源产出速率
@@ -2808,9 +3510,81 @@ function GalaxyScene.LoadSaveData(data, rm)
             obj.angle   = fd.angle or obj.angle
         end
     end
+
+    -- P2-1: 恢复优先标记
+    priorityPlanetIds_ = {}
+    if data.priorityIds then
+        for _, id in ipairs(data.priorityIds) do
+            priorityPlanetIds_[id] = true
+        end
+    end
 end
 
 --- 释放纹理句柄（softReset 前调用，避免重复 Init 泄漏图片）
+--- P3-1: 外部触发显示信号横幅（供 Client.lua 接收到其他玩家信号时调用）
+function GalaxyScene.ShowSignalBanner(senderName, sigIcon, sigText, sigColor)
+    signalBanners_[#signalBanners_+1] = {
+        text  = (senderName or "指挥官") .. "：" .. (sigIcon or "") .. " " .. (sigText or ""),
+        alpha = 255,
+        timer = 0,
+        color = sigColor or {80, 180, 255},
+    }
+end
+
+-- ============================================================================
+-- P2-1: 舰队驻守星球系统 API
+-- ============================================================================
+
+--- 将指定编队驻守到目标星球
+---@param fleetId number 编队ID
+---@param planet table 目标星球（必须已殖民）
+---@return boolean, string
+function GalaxyScene.GarrisonFleet(fleetId, planet)
+    if not planet or not planet.colonized then
+        return false, "目标星球尚未殖民"
+    end
+    -- 解除旧驻守（同一编队只能驻守一处）
+    garrisonedFleets_[fleetId] = planet
+    return true, ""
+end
+
+--- 召回驻守编队（取消驻守）
+---@param fleetId number 编队ID
+function GalaxyScene.RecallGarrison(fleetId)
+    garrisonedFleets_[fleetId] = nil
+end
+
+--- 查询编队是否正在驻守某星球
+---@param fleetId number 编队ID
+---@return table|nil  驻守的星球，或 nil
+function GalaxyScene.GetGarrisonedPlanet(fleetId)
+    return garrisonedFleets_[fleetId]
+end
+
+--- 查询星球上的驻守编队 ID（第一支）
+---@param planet table
+---@return number|nil
+function GalaxyScene.GetGarrisonFleetId(planet)
+    for fid, gp in pairs(garrisonedFleets_) do
+        if gp == planet then return fid end
+    end
+    return nil
+end
+
+--- 返回全部驻守关系（只读副本）：{ {fleetId, planet} }
+function GalaxyScene.GetAllGarrisons()
+    local result = {}
+    for fid, gp in pairs(garrisonedFleets_) do
+        result[#result + 1] = { fleetId = fid, planet = gp }
+    end
+    return result
+end
+
+--- softReset 时清除所有驻守关系
+function GalaxyScene.ClearGarrisons()
+    garrisonedFleets_ = {}
+end
+
 function GalaxyScene.Shutdown()
     if not vg_ then return end
     if asteroidImgs_ then

@@ -68,25 +68,41 @@ function TopBar.Render(ctx)
         text(tx, 29, string.format("%d (%s)", rawVal, rateStr), 10, 220,220,220,255)
     end
 
+    -- P2-1: 精炼资源低于阈值时变红闪烁
+    local RES_LOW_THRESH = { metal=200, esource=100, nuclear=50 }
+    local RES_LOW_SUGGEST = {
+        metal   = "⚠️ 金属不足，建议建造矿石精炼厂",
+        esource = "⚠️ 能源不足，建议研究太阳能效率",
+        nuclear = "⚠️ 核能不足，建议研究深层采矿",
+    }
+
     -- 精炼资源区（水晶列与星币之间）
     local rzX = 16 + cols * colW + 12
     local rzYs = {12, 24, 37}
     for j, res in ipairs(RES_ORDER) do
         local c      = RES_COLORS[res]
         local refVal = math.floor(rm.resources[res] or 0)
+        local thresh = RES_LOW_THRESH[res] or 0
+        local isLow  = refVal < thresh
         local label
         if res == "esource" and mult > 0 then
             label = string.format("能源 %d  +%.1f/s", refVal, esourceRefineRate)
         else
             label = string.format("%s %d", RES_LABELS[res], refVal)
         end
+        -- 低资源时用红色覆盖
+        local dc = c
+        if isLow then
+            local blink = math.floor(os.clock() * 2) % 2 == 0
+            dc = blink and {255, 60, 60} or {200, 80, 80}
+        end
         -- 小胶囊背景
         nvgFontSize(vg, 9); nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
         local tw = nvgTextBounds(vg, 0, 0, label, nil)
         nvgBeginPath(vg); nvgRoundedRect(vg, rzX - 2, rzYs[j] - 6, tw + 6, 12, 2)
-        nvgFillColor(vg, nvgRGBA(c[1], c[2], c[3], 30)); nvgFill(vg)
-        nvgStrokeColor(vg, nvgRGBA(c[1], c[2], c[3], 70)); nvgStrokeWidth(vg, 0.5); nvgStroke(vg)
-        text(rzX + 1, rzYs[j], label, 9, c[1],c[2],c[3],230)
+        nvgFillColor(vg, nvgRGBA(dc[1], dc[2], dc[3], isLow and 50 or 30)); nvgFill(vg)
+        nvgStrokeColor(vg, nvgRGBA(dc[1], dc[2], dc[3], isLow and 120 or 70)); nvgStrokeWidth(vg, isLow and 1.0 or 0.5); nvgStroke(vg)
+        text(rzX + 1, rzYs[j], label, 9, dc[1], dc[2], dc[3], 230)
     end
 
     -- 星币（右侧）

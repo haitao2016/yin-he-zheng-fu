@@ -29,11 +29,16 @@ BASE_MODULES = {
     SHIPYARD        = { name="星际造船厂", cost={metal=500,  esource=200},              desc="舰船建造速度×1.5/级（累乘）",        buildTime=15, upgradeK=2.0 },
     BASE_SHIELD     = { name="护盾发生器", cost={metal=300,  esource=400, nuclear=100}, desc="基地护盾值+200/级（累计）",          buildTime=12, upgradeK=1.8 },  -- L3: 原SHIELD_GEN，避免与BUILDINGS.SHIELD_GEN同名
     BUILD_CENTER    = { name="行星探索中心", cost={metal=250,  esource=150, nuclear=80},  desc="所有建造时间×0.75/级（最低25%）",  buildTime=10, upgradeK=1.7 },
-    EXCHANGE_CENTER = { name="资源互换中心", cost={metal=300, esource=200, nuclear=100},desc="按比例互换金属/能源/核能", buildTime=10, upgradeK=1.5 },
-    REFINERY        = { name="资源精炼厂",   cost={metal=250, esource=150},             desc="原矿精炼为可用资源，每升一级转化速率×1.5（Lv1=1× Lv2=1.5× Lv3=2×…）",   buildTime=8,  upgradeK=1.6 },
+    EXCHANGE_CENTER      = { name="资源互换中心",  cost={metal=300, esource=200, nuclear=100},                       desc="按比例互换金属/能源/核能",                                        buildTime=10, upgradeK=1.5 },
+    REFINERY             = { name="资源精炼厂",    cost={metal=250, esource=150},                                    desc="原矿精炼为可用资源，每升一级转化速率×1.5（Lv1=1× Lv2=1.5× Lv3=2×…）", buildTime=8,  upgradeK=1.6 },
+    -- P1-2: Lv8-10 专属模块
+    PARTICLE_ACCELERATOR = { name="粒子加速器",    cost={metal=3000, nuclear=1200, esource=2000},                    desc="全局科研速度×2.5，精炼速率+50%",                                  buildTime=40, upgradeK=2.0 },
+    WARP_GATE_PRIME      = { name="主曲速门",      cost={metal=5000, nuclear=2500, esource=3000},                    desc="舰队可瞬移至任意星球（冷却120s）",                                buildTime=55, upgradeK=2.5 },
+    STELLAR_FORTRESS     = { name="恒星要塞",      cost={metal=8000, nuclear=4000, esource=5000},                    desc="基地防御力×2（翻倍），敌方来袭损失额外20%舰队",                   buildTime=70, upgradeK=3.0 },
 }
 BASE_MODULE_ORDER = {"ENERGY_CORE","COMMAND_CENTER","MINERAL_SILO","MATERIAL_DEPOT","REFINERY","DEFENSE_CANNON","HANGAR","WARP_GATE",
-                     "SOLAR_ARRAY","RESEARCH_CENTER","SHIPYARD","BASE_SHIELD","BUILD_CENTER","EXCHANGE_CENTER"}
+                     "SOLAR_ARRAY","RESEARCH_CENTER","SHIPYARD","BASE_SHIELD","BUILD_CENTER","EXCHANGE_CENTER",
+                     "PARTICLE_ACCELERATOR","WARP_GATE_PRIME","STELLAR_FORTRESS"}
 
 -- ============================================================================
 -- 基地核心等级系统
@@ -53,8 +58,12 @@ BASE_MODULE_UNLOCK_LEVEL = {
     REFINERY        = 2,   -- Lv2 解锁
     EXCHANGE_CENTER = 5,   -- Lv5 解锁
     SHIPYARD        = 3,   -- Lv3 解锁
-    BASE_SHIELD     = 6,   -- Lv6 解锁
-    WARP_GATE       = 7,   -- Lv7 解锁
+    BASE_SHIELD          = 6,   -- Lv6 解锁
+    WARP_GATE            = 7,   -- Lv7 解锁
+    -- P1-2: Lv8-10 专属模块
+    PARTICLE_ACCELERATOR = 8,   -- Lv8 解锁
+    WARP_GATE_PRIME      = 9,   -- Lv9 解锁
+    STELLAR_FORTRESS     = 10,  -- Lv10 解锁
 }
 
 -- 基地核心最大等级
@@ -88,9 +97,9 @@ BASE_CORE_UNLOCK_PREVIEW = {
     [5]  = {"EXCHANGE_CENTER"},
     [6]  = {"BASE_SHIELD"},
     [7]  = {"WARP_GATE"},
-    [8]  = {},
-    [9]  = {},
-    [10] = {},
+    [8]  = {"PARTICLE_ACCELERATOR"},  -- P1-2: 粒子加速器
+    [9]  = {"WARP_GATE_PRIME"},        -- P1-2: 主曲速门
+    [10] = {"STELLAR_FORTRESS"},       -- P1-2: 恒星要塞
 }
 
 -- 互换比例表：EXCHANGE_RATES[from][to] = 消耗 from 数量获得 to 数量的比例
@@ -115,20 +124,30 @@ TECHS = {
     COLONY_BIOTECH   = { name="殖民生物技术", desc="殖民星球人口增长速率+40%", cost={esource=150, nuclear=80},            time=35, prereqs={"CRYSTAL_PROCESS"},                     bonus={colonyPopMult=1.4} },
     NANO_REPAIR      = { name="纳米修复",   desc="所有战舰最大耐久+20%",      cost={metal=200,   esource=100},           time=30, prereqs={"HULL_ALLOY"},                          bonus={shipHealthMult=1.20} },
 
-    -- Tier 3（需要 2 项 Tier2 前置）
-    WARP_DRIVE       = { name="曲速引擎",   desc="舰队移动速度+50%",          cost={nuclear=300, esource=500},           time=60, prereqs={"SHIELD_REINFORCE","RAPID_REFINE"},     bonus={fleetSpeedMult=1.5} },
-    ADVANCED_WEAPONS = { name="高级武器系统", desc="所有战舰攻击力+30%",      cost={metal=500,   nuclear=200},           time=55, prereqs={"HULL_ALLOY","RAPID_REFINE"},           bonus={shipDmgMult=1.3} },
-    DEFENSE_MATRIX   = { name="防御矩阵",   desc="基地护盾+400，防御+30%",    cost={nuclear=200, metal=500},             time=50, prereqs={"SHIELD_REINFORCE","NANO_REPAIR"},      bonus={shieldBonus=400, defenseBonus=0.3} },
+    -- Tier 3（需要 2 项 Tier2 前置）── P1-1: 三者互斥，只能选一
+    WARP_DRIVE       = { name="曲速引擎",   desc="舰队移动速度+50%",          cost={nuclear=300, esource=500},           time=60, prereqs={"SHIELD_REINFORCE","RAPID_REFINE"},     bonus={fleetSpeedMult=1.5},  exclusiveGroup="TIER3" },
+    ADVANCED_WEAPONS = { name="高级武器系统", desc="所有战舰攻击力+30%",      cost={metal=500,   nuclear=200},           time=55, prereqs={"HULL_ALLOY","RAPID_REFINE"},           bonus={shipDmgMult=1.3},     exclusiveGroup="TIER3" },
+    DEFENSE_MATRIX   = { name="防御矩阵",   desc="基地护盾+400，防御+30%",    cost={nuclear=200, metal=500},             time=50, prereqs={"SHIELD_REINFORCE","NANO_REPAIR"},      bonus={shieldBonus=400, defenseBonus=0.3}, exclusiveGroup="TIER3" },
 
     -- Tier 4（顶层科技，需要 Tier3 前置）
     QUANTUM_CORE     = { name="量子核心",   desc="基地核心升级费用-20%，科研速度+50%", cost={nuclear=600, esource=800, metal=1000}, time=90, prereqs={"WARP_DRIVE","ADVANCED_WEAPONS"}, bonus={coreUpgradeCostMult=0.8, researchSpeedMult=1.5} },
-    PHASE_DRIVE      = { name="相位驱动",   desc="精炼速率×1.4，舰队速度+40%", cost={nuclear=500, esource=600, metal=800}, time=80, prereqs={"WARP_DRIVE","NANO_REPAIR"},          bonus={globalRefineMult=1.4, fleetSpeedMult=1.4} },
+    PHASE_DRIVE      = { name="相位驱动",   desc="精炼速率×1.4，舰队速度+40%",         cost={nuclear=500, esource=600, metal=800},  time=80, prereqs={"WARP_DRIVE","NANO_REPAIR"},          bonus={globalRefineMult=1.4, fleetSpeedMult=1.4} },
+    -- P1-1: 攻击路线 Tier4 —— 前置 ADVANCED_WEAPONS
+    NOVA_CANNON      = { name="新星炮",     desc="战舰AOE半径+80%，每波战斗开始获得1次星陨打击技能",
+                         cost={nuclear=500, metal=800, esource=400}, time=85,
+                         prereqs={"ADVANCED_WEAPONS"},
+                         bonus={aoeRadiusMult=1.8, battleStartSkillCharge=1} },
+    -- P1-1: 防御路线 Tier4 —— 前置 DEFENSE_MATRIX
+    FORTRESS_PROTOCOL= { name="要塞协议",   desc="基地最大护盾×2.2，战斗中每10s护盾自动恢复5%",
+                         cost={nuclear=400, metal=600, esource=600}, time=80,
+                         prereqs={"DEFENSE_MATRIX"},
+                         bonus={shieldMaxMult=2.2, shieldRegenPct=0.05} },
 }
 TECH_ORDER = {
-    "DEEP_MINING","SOLAR_EFFICIENCY","CRYSTAL_PROCESS","HULL_ALLOY",          -- Tier 1
-    "SHIELD_REINFORCE","RAPID_REFINE","COLONY_BIOTECH","NANO_REPAIR",          -- Tier 2
-    "WARP_DRIVE","ADVANCED_WEAPONS","DEFENSE_MATRIX",                          -- Tier 3
-    "QUANTUM_CORE","PHASE_DRIVE",                                              -- Tier 4
+    "DEEP_MINING","SOLAR_EFFICIENCY","CRYSTAL_PROCESS","HULL_ALLOY",             -- Tier 1
+    "SHIELD_REINFORCE","RAPID_REFINE","COLONY_BIOTECH","NANO_REPAIR",             -- Tier 2
+    "WARP_DRIVE","ADVANCED_WEAPONS","DEFENSE_MATRIX",                             -- Tier 3
+    "QUANTUM_CORE","PHASE_DRIVE","NOVA_CANNON","FORTRESS_PROTOCOL",               -- Tier 4
 }
 
 RANKS = {"见习指挥官","资深舰长","舰队少将","星系统治者","银河霸主"}
@@ -173,12 +192,12 @@ SHIP_COSTS = {
 -- 星球类型加成表
 -- ============================================================================
 PLANET_TYPE_BONUS = {
-    Terran   = { mineralMult=1.2,  label="矿产+20%" },
-    Desert   = { energyMult=1.3,   label="能量+30%" },
-    Oceanic  = { popMult=1.5,      label="人口增长+50%" },
-    Volcanic = { mineralMult=1.4,  crystalMult=1.4, label="矿产/水晶+40%" },
-    Barren   = { metalCapMult=1.3, label="金属存储+30%" },
-    ["Gas Giant"] = { esourceMult=1.5, label="能源精炼+50%" },
+    Terran        = { mineralMult=1.3,   label="矿石产量+30%"   },
+    Oceanic       = { crystalMult=1.5,   label="水晶产量+50%"   },
+    Volcanic      = { nuclearMult=1.4,   label="核能精炼+40%"   },
+    Desert        = { mineralMult=1.3,   label="矿石产量+30%"   },
+    Barren        = { buildCostMult=0.85, label="建造费用-15%"  },
+    ["Gas Giant"] = { esourceMult=1.6,   label="能源精炼+60%"   },
 }
 
 -- ============================================================================
@@ -192,6 +211,63 @@ STAGE_GOALS = {
     { id="research_first", title="完成第一项科技",     desc="解锁任意一项科技",            check=function(gs) return gs.rs and next(gs.rs.unlocked) ~= nil end,              reward={nuclear=200, credits=500} },
     { id="core_lv3",       title="基地核心Lv.3",       desc="将基地核心升级至3级",         check=function(gs) return gs.base and (gs.base.coreLevel or 1) >= 3 end,          reward={metal=1000, esource=500,  nuclear=200} },
     { id="colony_3",       title="三星联盟",           desc="殖民3颗星球",                 check=function(gs) return (gs.profile and gs.profile.colonized or 0) >= 3 end,  reward={credits=1000, metal=800} },
+    -- ── 扩展目标（P2-3）: 8个中后期目标 ────────────────────────────────────
+    -- 1. 完成5项科技
+    { id="research_5",   title="科技先驱",     desc="解锁任意5项科技",
+      check=function(gs)
+          if not (gs.rs and gs.rs.unlocked) then return false end
+          local n = 0; for _ in pairs(gs.rs.unlocked) do n = n + 1 end; return n >= 5
+      end,
+      reward={nuclear=400, credits=1000} },
+
+    -- 2. 完成量子核心科技
+    { id="quantum_core", title="量子突破",     desc="研究完成量子核心科技",
+      check=function(gs)
+          return gs.rs and gs.rs.unlocked and gs.rs.unlocked["QUANTUM_CORE"] == true
+      end,
+      reward={metal=2000, esource=1000, nuclear=600, credits=2000} },
+
+    -- 3. 殖民8颗星球
+    { id="colony_8",     title="星系帝国",     desc="殖民8颗星球",
+      check=function(gs) return (gs.profile and gs.profile.colonized or 0) >= 8 end,
+      reward={credits=3000, metal=2000, esource=1000} },
+
+    -- 4. 歼灭50艘海盗舰船（累计战斗击杀）
+    { id="pirates_50",   title="星域清道夫",   desc="累计击毁50艘海盗舰船",
+      check=function(gs) return (gs.totalEnemiesKilled or 0) >= 50 end,
+      reward={metal=1500, nuclear=300, credits=1000} },
+
+    -- 5. 无尽模式进入第3轮
+    { id="endless_3",    title="永恒征服者",   desc="无尽模式存活至第3轮",
+      check=function(gs) return (gs.endlessRound or 0) >= 3 end,
+      reward={metal=3000, esource=1500, nuclear=800, credits=3000} },
+
+    -- 6. 建造星际交易所
+    { id="trade_hub",    title="星际商人",     desc="在任意星球建造星际交易所",
+      check=function(gs)
+          if not gs.colonizedPlanets then return false end
+          for _, planet in ipairs(gs.colonizedPlanets) do
+              if planet.buildings then
+                  for _, b in ipairs(planet.buildings) do
+                      if b.key == "TRADE_HUB" then return true end
+                  end
+              end
+          end
+          return false
+      end,
+      reward={credits=2000, esource=500} },
+
+    -- 7. 舰队规模达15艘
+    { id="fleet_15",     title="钢铁舰队",     desc="累计建造15艘舰船",
+      check=function(gs) return (gs.totalShipsBuilt or 0) >= 15 end,
+      reward={metal=2500, esource=1200, nuclear=400} },
+
+    -- 8. 核能储量达5000
+    { id="nuclear_5000", title="核能霸主",     desc="核燃料储量达到5000",
+      check=function(gs)
+          return gs.rm and gs.rm.resources and (gs.rm.resources.nuclear or 0) >= 5000
+      end,
+      reward={credits=2500, metal=1000} },
 }
 
 -- ============================================================================
@@ -271,9 +347,11 @@ function ResourceManager:update(dt)
             local rawAmt = self.resources[raw] or 0
             if rawAmt > 0 then
                 -- S1 CRYSTAL_PROCESS: 水晶精炼效率独立加成
+                -- P1-2 Volcanic nuclearMult: 核能精炼速率加成
                 local extraMult = globalMult
                 if raw == "crystal" then
                     extraMult = extraMult * ((self.baseBonus and self.baseBonus.crystalRefineMult) or 1.0)
+                    extraMult = extraMult * ((self.baseBonus and self.baseBonus.nuclearMult) or 1.0)
                 end
                 local toConsume = math.min(rawAmt, cfg.processRate * self.refineryMult * extraMult * dt)
                 if toConsume > 0 then
@@ -369,27 +447,33 @@ function BuildingSystem:getUpgradeCost(key, level)
     local bd   = BUILDINGS[key]
     local cost = {}
     local m    = bd.upgradeK ^ level   -- H1: math.pow 在 Lua 5.3+ 已移除，改用 ^ 运算符
+    local bcm  = (self.rm.baseBonus and self.rm.baseBonus.buildCostMult) or 1.0
     for res, base in pairs(bd.cost) do
-        cost[res] = math.floor(base * m)
+        cost[res] = math.max(1, math.floor(base * m * bcm))
     end
     return cost
 end
 
---- 检查是否可以新建
-function BuildingSystem:canBuild(key, planet)
-    if not planet.colonized  then return false, "尚未殖民" end
-    if planet.constructing   then return false, "队列忙碌" end
-    if #planet.buildings >= 10 then return false, "槽位已满" end
-    if not self.rm:canAfford(BUILDINGS[key].cost) then return false, "资源不足" end
-    return true, ""
+--- P1-3: 获取建筑显示名称（供 UI 渲染队列条目时使用）
+function BuildingSystem:getBuildingName(key)
+    return BUILDINGS[key] and BUILDINGS[key].name or key
 end
 
---- 检查是否可以升级
-function BuildingSystem:canUpgrade(bldIdx, planet)
-    local b    = planet.buildings[bldIdx]
-    if not b then return false, "无效建筑" end
-    if planet.constructing then return false, "队列忙碌" end
-    local cost = self:getUpgradeCost(b.key, b.level)
+-- P1-3: 建造队列最大容量
+local BUILD_QUEUE_MAX = 3
+
+--- 检查是否可以新建（支持队列：constructing 满但 queue 未满也可以）
+function BuildingSystem:canBuild(key, planet)
+    if not planet.colonized  then return false, "尚未殖民" end
+    -- P1-3: 允许队列排队，队列满时才拒绝
+    local qLen = planet.buildQueue and #planet.buildQueue or 0
+    if planet.constructing and qLen >= BUILD_QUEUE_MAX then return false, "队列已满" end
+    if #planet.buildings + (planet.constructing and 1 or 0) + qLen >= 10 then return false, "槽位已满" end
+    local bcm  = (self.rm.baseBonus and self.rm.baseBonus.buildCostMult) or 1.0
+    local cost = {}
+    for res, base in pairs(BUILDINGS[key].cost) do
+        cost[res] = math.max(1, math.floor(base * bcm))
+    end
     if not self.rm:canAfford(cost) then return false, "资源不足" end
     return true, ""
 end
@@ -397,15 +481,39 @@ end
 function BuildingSystem:build(key, planet)
     local ok, reason = self:canBuild(key, planet)
     if not ok then return false, reason end
-    self.rm:spend(BUILDINGS[key].cost)
+    local bcm  = (self.rm.baseBonus and self.rm.baseBonus.buildCostMult) or 1.0
+    local cost = {}
+    for res, base in pairs(BUILDINGS[key].cost) do
+        cost[res] = math.max(1, math.floor(base * bcm))
+    end
+    self.rm:spend(cost)
     local bd = BUILDINGS[key]
     local bm = (self.rm.baseBonus and self.rm.baseBonus.buildMult) or 1.0
     local bt = math.max(1, math.floor(bd.buildTime * bm))
-    planet.constructing = {
+    local job = {
         key=key, progress=0,
         totalTime=bt, remaining=bt,
         level=1, isUpgrade=false, targetIdx=nil
     }
+    -- P1-3: 若当前没有建造任务，直接开始；否则入队
+    if not planet.constructing then
+        planet.constructing = job
+    else
+        planet.buildQueue = planet.buildQueue or {}
+        planet.buildQueue[#planet.buildQueue + 1] = job
+    end
+    return true, ""
+end
+
+--- 检查升级（canUpgrade 保持单槽校验，允许排队时调整）
+function BuildingSystem:canUpgrade(bldIdx, planet)
+    local b    = planet.buildings[bldIdx]
+    if not b then return false, "无效建筑" end
+    -- P1-3: 同 canBuild，允许队列排队
+    local qLen = planet.buildQueue and #planet.buildQueue or 0
+    if planet.constructing and qLen >= BUILD_QUEUE_MAX then return false, "队列已满" end
+    local cost = self:getUpgradeCost(b.key, b.level)
+    if not self.rm:canAfford(cost) then return false, "资源不足" end
     return true, ""
 end
 
@@ -418,11 +526,18 @@ function BuildingSystem:upgrade(bldIdx, planet)
     local bd = BUILDINGS[b.key]
     local bm = (self.rm.baseBonus and self.rm.baseBonus.buildMult) or 1.0
     local bt = math.max(1, math.floor(bd.buildTime * b.level * bm))
-    planet.constructing = {
+    local job = {
         key=b.key, progress=0,
         totalTime=bt, remaining=bt,
         level=b.level+1, isUpgrade=true, targetIdx=bldIdx
     }
+    -- P1-3: 若当前没有建造任务，直接开始；否则入队
+    if not planet.constructing then
+        planet.constructing = job
+    else
+        planet.buildQueue = planet.buildQueue or {}
+        planet.buildQueue[#planet.buildQueue + 1] = job
+    end
     return true, ""
 end
 
@@ -489,9 +604,40 @@ function BuildingSystem:update(dt, planet)
             end
         end
         planet.constructing = nil
+        -- P1-3: 自动出队下一个任务
+        if planet.buildQueue and #planet.buildQueue > 0 then
+            planet.constructing = table.remove(planet.buildQueue, 1)
+        end
         return completed
     end
     return nil
+end
+
+-- P1-3: 取消队列中某个建造任务（退还资源，index 为 buildQueue 中的 1-based 位置）
+function BuildingSystem:cancelQueued(qIdx, planet)
+    if not planet.buildQueue then return false end
+    local job = planet.buildQueue[qIdx]
+    if not job then return false end
+    -- 退还资源
+    local bcm  = (self.rm.baseBonus and self.rm.baseBonus.buildCostMult) or 1.0
+    local bd   = BUILDINGS[job.key]
+    if bd then
+        local refund = {}
+        if not job.isUpgrade then
+            for res, base in pairs(bd.cost) do
+                refund[res] = math.max(1, math.floor(base * bcm))
+            end
+        else
+            -- 升级退还：getUpgradeCost 需要当前等级，job.level-1 是原始等级
+            local origLevel = job.level - 1
+            for res, base in pairs(bd.cost) do
+                refund[res] = math.max(1, math.floor(base * origLevel * bcm))
+            end
+        end
+        for res, amt in pairs(refund) do self.rm:add(res, amt) end
+    end
+    table.remove(planet.buildQueue, qIdx)
+    return true
 end
 
 -- ============================================================================
@@ -520,8 +666,33 @@ function ResearchSystem:canResearch(id)
     for _, pre in ipairs(t.prereqs) do
         if not self.unlocked[pre] then return false, "需先完成: " .. TECHS[pre].name end
     end
+    -- P1-1: 互斥分组检查（同组内已解锁其他科技则封锁）
+    if t.exclusiveGroup then
+        for otherId, otherT in pairs(TECHS) do
+            if otherId ~= id and otherT.exclusiveGroup == t.exclusiveGroup
+               and self.unlocked[otherId] then
+                return false, "与 " .. otherT.name .. " 互斥（只能选一）"
+            end
+        end
+    end
     if not self.rm:canAfford(t.cost) then return false, "资源不足" end
     return true, ""
+end
+
+--- P1-1: 检查科技是否被互斥锁定（已有同组其他科技解锁）
+---@param id string
+---@return boolean  true = 被互斥封锁
+function ResearchSystem:isExcluded(id)
+    local t = TECHS[id]
+    if not t or not t.exclusiveGroup then return false end
+    if self.unlocked[id] then return false end
+    for otherId, otherT in pairs(TECHS) do
+        if otherId ~= id and otherT.exclusiveGroup == t.exclusiveGroup
+           and self.unlocked[otherId] then
+            return true
+        end
+    end
+    return false
 end
 
 -- 前置科技是否全部完成（不检查资源）
@@ -585,6 +756,28 @@ function ResearchSystem:update(dt)
                 self.rm.baseBonus.defenseBonus = (self.rm.baseBonus.defenseBonus or 0) + bonus.defenseBonus
                 print("[Research] 护盾强化激活：护盾+" .. tostring(bonus.shieldBonus))
             end
+            -- P1-1: NOVA_CANNON —— AOE 半径倍增 + 战斗开场技能充能
+            if bonus.aoeRadiusMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.aoeRadiusMult = (self.rm.baseBonus.aoeRadiusMult or 1.0) * bonus.aoeRadiusMult
+                print("[Research] 新星炮激活：AOE半径×" .. tostring(self.rm.baseBonus.aoeRadiusMult))
+            end
+            if bonus.battleStartSkillCharge then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.battleStartSkillCharge = (self.rm.baseBonus.battleStartSkillCharge or 0) + bonus.battleStartSkillCharge
+                print("[Research] 新星炮激活：每波战斗开始额外技能充能+" .. tostring(bonus.battleStartSkillCharge))
+            end
+            -- P1-1: FORTRESS_PROTOCOL —— 护盾上限倍增 + 护盾回复
+            if bonus.shieldMaxMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.shieldMaxMult = (self.rm.baseBonus.shieldMaxMult or 1.0) * bonus.shieldMaxMult
+                print("[Research] 要塞协议激活：护盾上限×" .. tostring(self.rm.baseBonus.shieldMaxMult))
+            end
+            if bonus.shieldRegenPct then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.shieldRegenPct = (self.rm.baseBonus.shieldRegenPct or 0) + bonus.shieldRegenPct
+                print("[Research] 要塞协议激活：战斗中护盾每10s回复" .. tostring(bonus.shieldRegenPct * 100) .. "%")
+            end
         end
         print("[Research] 完成: " .. TECHS[id].name)
         return id
@@ -606,20 +799,30 @@ MarketSystem.__index = MarketSystem
 
 function MarketSystem.new(rm)
     local self = setmetatable({ rm=rm, timer=0 }, MarketSystem)
-    self.rates   = {}
-    self.history = {}  -- 记录近期价格（用于UI显示趋势）
+    self.rates      = {}
+    self.history    = {}  -- 记录近期买价快照（最多6条）
+    self.priceFlash = {}  -- P2-3: 价格大幅波动提示计时器（秒）
     for res, r in pairs(BASE_RATES) do
-        self.rates[res]   = { buy=r.buy, sell=r.sell }
-        self.history[res] = {}
+        self.rates[res]      = { buy=r.buy, sell=r.sell }
+        self.history[res]    = { r.buy }  -- 初始时放一条基准价
+        self.priceFlash[res] = 0
     end
     return self
 end
 
 function MarketSystem:update(dt)
+    -- P2-3: 衰减所有 priceFlash 计时器
+    for res, _ in pairs(self.priceFlash) do
+        if self.priceFlash[res] > 0 then
+            self.priceFlash[res] = math.max(0, self.priceFlash[res] - dt)
+        end
+    end
+
     self.timer = self.timer + dt
     if self.timer >= 12 then   -- 每12秒波动一次，让玩家有感知
         self.timer = 0
         for res, r in pairs(self.rates) do
+            local prevBuy = r.buy   -- P2-3: 记录变动前价格
             -- 记录历史（买价快照）
             local h = self.history[res]
             h[#h+1] = r.buy
@@ -632,6 +835,11 @@ function MarketSystem:update(dt)
             r.sell = math.max(base.sell * 0.4, r.sell * change * (1 - revert) + base.sell * revert)
             -- 卖价始终 ≤ 买价的 60%（交易所差价）
             r.sell = math.min(r.sell, r.buy * 0.6)
+            -- P2-3: 变动 > 15% 触发价格闪烁提示（8秒）
+            local changePct = math.abs(r.buy - prevBuy) / prevBuy
+            if changePct >= 0.15 then
+                self.priceFlash[res] = 8.0
+            end
         end
     end
 end
@@ -763,6 +971,27 @@ function ShipProductionQueue:queue(shipType, planet)
         progress  = 0,
     }
     return true, ""
+end
+
+-- P2-3: 取消队列中第 index 项（退还已花费资源）
+function ShipProductionQueue:cancel(index)
+    if index < 1 or index > #self.items then return false end
+    local job  = self.items[index]
+    local cost = SHIP_COSTS[job.shipType]
+    if cost and self.rm then
+        for res, amt in pairs(cost) do
+            self.rm:add(res, amt)
+        end
+    end
+    table.remove(self.items, index)
+    return true
+end
+
+-- P2-3: 将队列中第 index 项上移一位（index 必须 >= 2）
+function ShipProductionQueue:promote(index)
+    if index <= 1 or index > #self.items then return false end
+    self.items[index-1], self.items[index] = self.items[index], self.items[index-1]
+    return true
 end
 
 function ShipProductionQueue:update(dt)

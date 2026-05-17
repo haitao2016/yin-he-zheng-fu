@@ -3,7 +3,7 @@ name: game-mission-orchestrator
 description: >
   UrhoX Lua 游戏开发任务编排器。将复杂游戏开发需求分解为里程碑阶段，
   设置质量门禁，支持中断恢复和跨会话进度追踪。
-  制定开发计划后自动生成项目文档（PLAN.md），后续每阶段完成时同步更新。
+  制定开发计划后自动生成项目文档并保存到 docs/ 目录（docs/PLAN.md + docs/snapshot.json），后续每阶段完成时同步更新。
   灵感来源于 Agent Studio (github.com/oimiragieo/agent-studio) 的
   Mission Orchestrator 架构和 Quality Gate 验证体系。
   Use when users need to:

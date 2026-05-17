@@ -10,7 +10,11 @@ local FleetPanel    = require("game.ui.FleetPanel")
 local TechPanel     = require("game.ui.TechPanel")
 local PlanetPanel   = require("game.ui.PlanetPanel")
 local BasePanel     = require("game.ui.BasePanel")
-local TutorialSystem = require("game.ui.TutorialSystem")
+local TutorialSystem    = require("game.ui.TutorialSystem")
+local SettingsPanel     = require("game.ui.SettingsPanel")
+local TimeoutPanel      = require("game.ui.TimeoutPanel")
+local AchievementPanel  = require("game.ui.AchievementPanel")
+local EndGamePanel      = require("game.ui.EndGamePanel")
 
 -- ============================================================================
 -- 颜色主题常量（避免散落的魔法数字）
@@ -72,6 +76,7 @@ local rs_            = nil
 local ms_            = nil
 local player_        = nil
 local spq_           = nil
+local pirateAI_      = nil   -- P1-3: 海盗 AI（情报面板数据源）
 
 -- 编队系统
 local fm_                 = nil   -- FleetManager 引用
@@ -87,6 +92,8 @@ local onResearchCb_       = nil
 local onMarketCb_         = nil
 local onExchangeCb_       = nil   -- 资源互换回调 function(fromRes, toRes)
 local onShipQueueCb_      = nil
+local onShipCancelCb_     = nil
+local onShipPromoteCb_    = nil
 local onExplorerColonizeCb_ = nil
 local explorerColonizeMode_  = false   -- 高亮提示玩家点击未殖民星球
 local onFleetSelectCb_    = nil
@@ -94,8 +101,17 @@ local onFleetMoveShipCb_  = nil
 local onAssignReserveCb_  = nil
 local onSpeedUpBuildCb_   = nil   -- 星币加速建造
 local onBuyNuclearCb_     = nil   -- 星币购买核能
-local onHarvestAllCb_     = nil   -- 全部征收回调
-local harvestAllCD_       = 0     -- 全部征收剩余冷却（秒）
+local onHarvestAllCb_       = nil   -- 全部征收回调
+local onTogglePriorityCb_   = nil   -- P2-1: 殖民优先标记切换回调
+local getIsPriorityCb_      = nil   -- P2-1: 查询是否标记 function(planet)->bool
+local onCancelQueuedCb_     = nil   -- P1-3: 取消建造队列回调 function(qIdx, planet)
+local onWarpFleetCb_        = nil   -- P1-2: 主曲速门瞬移回调 function(planet)
+local onSendSignalCb_       = nil   -- P3-1: 发送快捷信号回调 function(signal)
+local onGarrisonFleetCb_    = nil   -- P2-1: 驻守编队 function(fleetId, planet)
+local onRecallGarrisonCb_   = nil   -- P2-1: 召回驻守 function(fleetId)
+local getGarrisonInfoCb_    = nil   -- P2-1: 查询驻守信息 function(fleetId)->{garrisonedPlanet, colonizedPlanets}
+local getPlanetProdHistoryCb_ = nil -- P3-2: 查询星球产量历史 function(planetName)->{minerals,energy,crystal}
+local harvestAllCD_         = 0     -- 全部征收剩余冷却（秒）
 local HARVEST_ALL_CD      = 60    -- 全部征收冷却时间（秒）
 local getConquestProgress_ = nil  -- 返回 {colonized, total, piratesKilled, piratesTotal}
 
@@ -103,6 +119,22 @@ local getConquestProgress_ = nil  -- 返回 {colonized, total, piratesKilled, pi
 local pirateWarningTime_  = math.huge  -- 最近一次进攻倒计时（秒），math.huge 表示无威胁
 local PIRATE_WARN_THRESH  = 30         -- 倒计时 ≤ 30 秒时显示预警
 local pirateWarnBlink_    = 0          -- 闪烁计时器
+
+-- 资源危机预警状态
+local RES_CRISIS_THRESHOLDS = {
+    metal   = 200,   -- 金属 < 200 触发
+    esource = 100,   -- 能源块 < 100 触发（P2-1 修正）
+    nuclear = 80,    -- 核燃料 < 80 触发
+}
+-- P2-1: 每局只推送一次建议通知（进入危机首次），重开/新局时清空
+local RES_CRISIS_ADVICE = {
+    metal   = "建议升级矿场或征收更多殖民星球",
+    esource = "建议研究高效炼化或建造能源站",
+    nuclear = "建议研究深层采矿或升级精炼厂",
+}
+local resCrisisState_    = {}   -- key → true/false（当前是否危机）
+local resCrisisNotified_ = {}   -- key → true（本局已通知，不重复推送）
+local resCrisisBlink_    = 0    -- 全局闪烁计时器
 
 -- 场景状态
 local currentScene_  = "galaxy"
@@ -140,6 +172,21 @@ local deployCallback_ = nil
 -- eventPopup_ = { ev={...}, onChoice=fn } | nil
 local eventPopup_ = nil
 
+-- P3-1: 快捷信号系统
+local signalOpen_  = false   -- 面板是否展开
+local signalCooldown_ = 0    -- 发送冷却（秒），防止频繁刷屏
+local SIGNAL_CD    = 5       -- 冷却时间 5s
+local QUICK_SIGNALS = {
+    { icon = "🚨", label = "需要支援！",   color = {220, 60,  60},  type = "error"   },
+    { icon = "⚔️", label = "发起进攻！",   color = {255, 140, 30},  type = "warn"    },
+    { icon = "🛡️", label = "全力防守！",   color = {60,  140, 255}, type = "info"    },
+    { icon = "💰", label = "资源短缺",     color = {255, 210, 50},  type = "warn"    },
+    { icon = "🔬", label = "科技突破！",   color = {180, 100, 255}, type = "success" },
+    { icon = "🚀", label = "舰队集结！",   color = {80,  220, 200}, type = "info"    },
+    { icon = "👀", label = "海盗来袭！",   color = {255, 80,  80},  type = "error"   },
+    { icon = "✅", label = "一切就绪！",   color = {60,  210, 100}, type = "success" },
+}
+
 -- ============================================================================
 -- 资源数字滚动动画（P3-3）
 -- displayRes_[res] = 当前显示值（向真实值平滑靠近）
@@ -150,76 +197,84 @@ local flashRes_   = {}   -- { timer=0.6, dir=1/-1 }
 local SCROLL_SPEED_FACTOR = 8.0   -- 每秒追赶 (real-display)*factor
 local FLASH_DURATION      = 0.55  -- 闪光持续秒数
 
+-- P1-2: 资源趋势箭头
+-- resTrendDir_[res]  = 1(涨) / -1(跌) / 0(平稳)
+-- resTrendSample_[res] = 上次采样值
+local resTrendDir_    = {}   -- 当前箭头方向
+local resTrendSample_ = {}   -- 上次采样时的值
+local resTrendTimer_  = 0    -- 距下次采样的倒计时
+local RES_TREND_INTERVAL = 8.0   -- 采样间隔（秒）
+local RES_TREND_THRESHOLD = 5    -- 变化量超过多少才显示箭头（避免噪音）
+
 -- 按钮点击涟漪效果
 -- ripples_[i] = { x, y, r, maxR, timer, maxTimer }
 local ripples_         = {}
 local RIPPLE_DURATION  = 0.35   -- 涟漪扩散时长（秒）
 local RIPPLE_MAX_R     = 28     -- 最大涟漪半径（像素）
 
+-- P1-2: 科技完成粒子特效
+-- techCompleteEffects_[id] = { timer, maxTimer }
+-- timer 递增到 maxTimer 时粒子消失
+local techCompleteEffects_   = {}
+local TECH_EFFECT_DURATION   = 2.2   -- 粒子动画持续时长（秒）
+
 -- ============================================================================
--- 游戏时间限制
+-- 游戏时间限制（状态已移至 TimeoutPanel）
 -- ============================================================================
-local timeoutActive_    = false   -- 是否显示超时覆盖层
-local timeoutAdCount_   = 0       -- 剩余可看广告次数（最多2次）
-local timeoutOnWatch_   = nil     -- 点击"看广告"后的回调
 -- 剩余在线时间（由 Client.lua 更新，秒）
 local remainingTime_    = 7200    -- 默认2小时
 
--- ============================================================================
--- 结算界面
--- ============================================================================
-local endGameActive_   = false
-local endGameType_     = nil    -- "win" | "lose"
-local endGameStats_    = {}     -- { playTime, colonized, piratesKilled, rank, level }
-local endGameOnRetry_  = nil    -- 点击"再来一局"回调
-local endGameAnimT_    = 0      -- 进场动画计时器
+-- 无尽征服模式当前轮次（0=普通模式，>0=无尽模式第N轮）
+local endlessRound_     = 0
+
+-- P2-1: 轮间选卡面板状态
+local cardDraft_ = {
+    visible   = false,
+    cards     = {},       -- [{key, icon, label, desc, rarity}]
+    onSelect  = nil,      -- function(cardKey)
+    hoverIdx  = 0,        -- 鼠标悬停的卡牌索引
+    animT     = 0,        -- 入场动画计时器
+}
+
+-- EXPLORER 舰探索任务列表（由 Client.lua 通过 RefreshExplorerTasks 更新）
+local explorerTasks_UI_ = {}
+local onExplorerTaskCb_ = nil
+
+-- P1-3: 任务日志面板状态
+local logVisible_       = false   -- 面板是否打开
+local logTab_           = "goals" -- "goals" | "explore"
+local logScroll_        = 0       -- 探索记录 tab 的滚动偏移
+
+-- P2-1: 生涯战绩面板状态
+local statsVisible_     = false
+local careerStats_UI_   = {
+    totalGames=0, totalWins=0, bestWave=0,
+    totalKills=0, totalColonies=0, bestMvpShip="", playtime=0,
+}
+-- P3-2: 生涯战绩全屏页面
+local careerPageOpen_   = false
+local careerPageAnim_   = 0.0   -- 0→1 入场动画进度
+-- 探索日志（由 Client.lua 通过 GameUI.PushExploreLog 推送，保留最近 10 条）
+local exploreLog_       = {}
+-- 目标完成状态（由 Client.lua 通过 GameUI.SetCompletedGoals 同步）
+local completedGoals_UI_ = {}
 
 -- ============================================================================
--- 排行榜面板
+-- 结算/排行榜/成就/设置（状态已移至各面板模块）
 -- ============================================================================
-local lbVisible_       = false  -- 排行榜面板是否显示
-local lbData_          = nil    -- 排行榜数据 [{rank,nickname,score,isMe}]
-local lbLoading_       = false  -- 是否正在加载
-local lbMyRank_        = nil    -- 我的排名（number 或 nil）
-local lbMyScore_       = nil    -- 我的分数
-local lbOnRequest_     = nil    -- 拉取排行榜的回调（由 Client.lua 注入）
-
--- ============================================================================
--- 设置面板
--- ============================================================================
-local settingsVisible_  = false   -- 设置面板是否打开
-local settingsBgmVol_   = 0.7     -- BGM 音量 0-1
-local settingsSfxVol_   = 1.0     -- SFX 音量 0-1
-local settingsMute_     = false   -- 全局静音
--- 滑块拖拽状态
-local settingsDragSlider_ = nil   -- "bgm" | "sfx" | nil
-local SETTINGS_FILE = "galaxy_settings.json"
-
-local function saveSettings()
-    local cjson = require "cjson"
-    local data = cjson.encode({
-        bgmVolume = settingsBgmVol_,
-        sfxVolume = settingsSfxVol_,
-        mute      = settingsMute_,
-    })
-    local f = File(SETTINGS_FILE, FILE_WRITE)
-    if f:IsOpen() then f:WriteString(data); f:Close() end
-end
-
-local function loadSettings()
-    if not fileSystem:FileExists(SETTINGS_FILE) then return end
-    local f = File(SETTINGS_FILE, FILE_READ)
-    if not f:IsOpen() then return end
-    local raw = f:ReadString(); f:Close()
-    local ok, data = pcall(require("cjson").decode, raw)
-    if not ok or type(data) ~= "table" then return end
-    settingsBgmVol_ = tonumber(data.bgmVolume) or settingsBgmVol_
-    settingsSfxVol_ = tonumber(data.sfxVolume) or settingsSfxVol_
-    settingsMute_   = data.mute == true
-    Audio.SetBGMVolume(settingsBgmVol_)
-    Audio.SetSFXVolume(settingsSfxVol_)
-    Audio.SetMute(settingsMute_)
-end
+-- 广告相关（建造加速）
+local speedUpAdCb_      = nil   -- fn(target, onResult)，星币不足时免费完成
+local speedUpAdLoading_ = false -- 广告播放中
+-- 广告相关（科技研究加速）
+local techSpeedAdCb_      = nil   -- fn(onResult)，看广告加速5分钟
+local techSpeedAdLoading_ = false -- 广告播放中
+-- 广告相关（中期资源补给）
+local topBarAdCb_      = nil   -- fn(onResult)，看广告得资源包
+local topBarAdCount_   = 0     -- 本局已观看次数
+local topBarAdLoading_ = false -- 广告播放中
+local TOP_BAR_AD_MAX   = 3     -- 每局最多看3次
+-- 排行榜回调（由 Client.lua 注入，传递给 EndGamePanel）
+local lbOnRequest_     = nil
 
 -- ============================================================================
 -- 通知系统
@@ -235,10 +290,58 @@ end
 
 function GameUI.UpdateNotifications(dt)
     gameTime_ = gameTime_ + dt
+    -- 结算/排行榜动画计时
+    EndGamePanel.Update(dt)
+    -- P2-1: 选卡面板入场动画
+    if cardDraft_.visible then
+        cardDraft_.animT = math.min(1.0, cardDraft_.animT + dt * 3.0)
+    end
     -- 海盗预警闪烁
     if pirateWarningTime_ <= PIRATE_WARN_THRESH then
         pirateWarnBlink_ = pirateWarnBlink_ + dt
     end
+    -- 资源危机预警检测
+    if rm_ then
+        resCrisisBlink_ = resCrisisBlink_ + dt
+        local RES_NAMES = { metal="金属", esource="能源块", nuclear="核燃料" }
+        for res, thresh in pairs(RES_CRISIS_THRESHOLDS) do
+            local val      = rm_.resources[res] or 0
+            local isCrisis = val < thresh
+            resCrisisState_[res] = isCrisis
+            -- P2-1: 首次进入危机时推送一次建议通知，本局不再重复
+            if isCrisis and not resCrisisNotified_[res] then
+                resCrisisNotified_[res] = true
+                local name   = RES_NAMES[res] or res
+                local advice = RES_CRISIS_ADVICE[res] or "建议补充资源"
+                GameUI.Notify(
+                    string.format("⚠ %s不足（%d）\n%s", name, math.floor(val), advice),
+                    "error")
+            end
+        end
+    end
+    -- P1-2: 资源趋势采样（每 RES_TREND_INTERVAL 秒）
+    if rm_ then
+        resTrendTimer_ = resTrendTimer_ + dt
+        if resTrendTimer_ >= RES_TREND_INTERVAL then
+            resTrendTimer_ = 0
+            for _, res in ipairs(RES_ORDER) do
+                local cur  = rm_.resources[res] or 0
+                local prev = resTrendSample_[res]
+                if prev then
+                    local delta = cur - prev
+                    if delta > RES_TREND_THRESHOLD then
+                        resTrendDir_[res] = 1
+                    elseif delta < -RES_TREND_THRESHOLD then
+                        resTrendDir_[res] = -1
+                    else
+                        resTrendDir_[res] = 0
+                    end
+                end
+                resTrendSample_[res] = cur
+            end
+        end
+    end
+
     if slotFlashTimer_ > 0 then
         slotFlashTimer_ = slotFlashTimer_ - dt
     end
@@ -246,10 +349,11 @@ function GameUI.UpdateNotifications(dt)
     if harvestAllCD_ > 0 then
         harvestAllCD_ = math.max(0, harvestAllCD_ - dt)
     end
-    -- 结算界面进场动画
-    if endGameActive_ and endGameAnimT_ < 1 then
-        endGameAnimT_ = math.min(1, endGameAnimT_ + dt * 1.5)
+    -- P3-1: 信号发送冷却倒计时
+    if signalCooldown_ > 0 then
+        signalCooldown_ = math.max(0, signalCooldown_ - dt)
     end
+    -- 结算界面进场动画（由 EndGamePanel.Update 内部处理）
     NotifyPanel.Update(dt)
     NotifyPanel.SetGameTime(gameTime_)
     -- 教程动画更新
@@ -295,6 +399,22 @@ function GameUI.UpdateNotifications(dt)
             end
         end
     end
+    -- P1-2: 科技完成粒子特效计时器推进
+    for id, eff in pairs(techCompleteEffects_) do
+        eff.timer = eff.timer + dt
+        if eff.timer >= TECH_EFFECT_DURATION then
+            techCompleteEffects_[id] = nil
+        end
+    end
+end
+
+-- ============================================================================
+-- P1-2: 科技完成粒子特效触发接口
+-- ============================================================================
+--- 触发指定科技节点的完成粒子爆炸特效
+--- @param techId string 科技 ID
+function GameUI.TriggerTechComplete(techId)
+    techCompleteEffects_[techId] = { timer = 0 }
 end
 
 -- ============================================================================
@@ -368,6 +488,12 @@ function GameUI.OnTouchBegin(id, rawX, rawY)
     local dpr = graphics:GetDPR()
     local mx = rawX / dpr
     local my = rawY / dpr
+    -- 设置面板滑块触摸拖拽（委托给 SettingsPanel）
+    if SettingsPanel.IsVisible() then
+        if SettingsPanel.OnTouchBegin(id, mx, my) then
+            return true
+        end
+    end
     -- 检测是否在某个滚动区域内
     for i = #scrollAreas_, 1, -1 do
         local s = scrollAreas_[i]
@@ -383,6 +509,10 @@ function GameUI.OnTouchBegin(id, rawX, rawY)
 end
 
 function GameUI.OnTouchMove(id, rawX, rawY)
+    -- 设置面板滑块触摸拖拽跟随（委托给 SettingsPanel）
+    if SettingsPanel.OnTouchMove(id, rawX / graphics:GetDPR()) then
+        return true
+    end
     if not touchDragActive_ or touchDragId_ ~= id then return false end
     local dpr = graphics:GetDPR()
     local my = rawY / dpr
@@ -403,6 +533,11 @@ function GameUI.OnTouchEnd(id, rawX, rawY)
         touchDragActive_   = false
         touchDragId_       = 0
         touchDragScrollFn_ = nil
+    end
+
+    -- 结束设置面板滑块触摸拖拽（委托给 SettingsPanel）
+    if SettingsPanel.OnTouchEnd(id) then
+        return true
     end
 
     -- 点击（非拖拽）→ 检查命中区域，消费事件
@@ -570,17 +705,52 @@ function GameUI.RenderTopBar()
         nvgFontSize(vg_, 8); nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
         local tw = nvgTextBounds(vg_, 0, 0, label, nil)
         nvgBeginPath(vg_); nvgRoundedRect(vg_, rzX - 2, rzYs[j] - 5, tw + 6, 11, 2)
-        nvgFillColor(vg_, nvgRGBA(c[1], c[2], c[3], bgA)); nvgFill(vg_)
-        nvgStrokeColor(vg_, nvgRGBA(c[1], c[2], c[3], bdA)); nvgStrokeWidth(vg_, 0.5); nvgStroke(vg_)
-        nvgFillColor(vg_, nvgRGBA(txR, txG, txB, txA))
+        -- 危机状态：叠加红色半透明背景
+        if resCrisisState_[res] then
+            local blinkA = math.floor(30 + 25 * math.abs(math.sin(resCrisisBlink_ * 3.5)))
+            nvgFillColor(vg_, nvgRGBA(255, 60, 60, bgA + blinkA)); nvgFill(vg_)
+        else
+            nvgFillColor(vg_, nvgRGBA(c[1], c[2], c[3], bgA)); nvgFill(vg_)
+        end
+        -- 危机状态：红色闪烁边框
+        if resCrisisState_[res] then
+            local blinkB = math.floor(140 + 115 * math.abs(math.sin(resCrisisBlink_ * 3.5)))
+            nvgStrokeColor(vg_, nvgRGBA(255, 80, 80, blinkB)); nvgStrokeWidth(vg_, 1.2); nvgStroke(vg_)
+        else
+            nvgStrokeColor(vg_, nvgRGBA(c[1], c[2], c[3], bdA)); nvgStrokeWidth(vg_, 0.5); nvgStroke(vg_)
+        end
+        -- 危机状态文字改为红色
+        if resCrisisState_[res] then
+            nvgFillColor(vg_, nvgRGBA(255, 100, 100, 255))
+        else
+            nvgFillColor(vg_, nvgRGBA(txR, txG, txB, txA))
+        end
         nvgText(vg_, rzX + 1, rzYs[j], label)
+
+        -- P1-2: 趋势箭头（紧跟在胶囊右侧）
+        local tdir = resTrendDir_[res]
+        if tdir and tdir ~= 0 then
+            local arrowX = rzX + tw + 9   -- 胶囊右边缘外 3px
+            local arrowY = rzYs[j]
+            nvgFontSize(vg_, 8)
+            nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+            if tdir > 0 then
+                nvgFillColor(vg_, nvgRGBA(80, 230, 120, 200))
+                nvgText(vg_, arrowX, arrowY, "▲")
+            else
+                nvgFillColor(vg_, nvgRGBA(255, 100, 80, 200))
+                nvgText(vg_, arrowX, arrowY, "▼")
+            end
+        end
     end
 
-    -- ── 右区布局（从右往左，间距 8px，不重叠）──
+    -- ── 右区布局（从右往左，间距 6px，不重叠）──
     -- 🔔 铃铛：screenW-8 ~ screenW-36（宽28）
     -- ⚙  设置：screenW-42 ~ screenW-70（宽28）
-    -- 星币区：screenW-76 ~ screenW-156（宽80，图标14+标签+数值）
-    -- 玩家信息：screenW-162 ~ screenW-280（右对齐于 screenW-162）
+    -- 🏆 成就：screenW-76 ~ screenW-104（宽28）
+    -- 📋 日志：screenW-110 ~ screenW-138（宽28）
+    -- 星币区：screenW-144 ~ screenW-224（宽80，图标14+标签+数值）
+    -- 玩家信息：右对齐于 screenW-230
 
     -- 通知铃铛（最右）
     do
@@ -614,7 +784,7 @@ function GameUI.RenderTopBar()
     -- 设置按钮（铃铛左边，间距 6px）
     do
         local bx, by, bw, bh = screenW_ - 70, 6, 28, 28
-        local isOpen = settingsVisible_
+        local isOpen = SettingsPanel.IsVisible()
         nvgBeginPath(vg_)
         nvgRoundedRect(vg_, bx, by, bw, bh, 5)
         nvgFillColor(vg_, isOpen and nvgRGBA(20,80,180,200) or nvgRGBA(20,40,80,160))
@@ -629,9 +799,110 @@ function GameUI.RenderTopBar()
         -- addHit 移到 RenderHUD 末尾注册，确保最高优先级
     end
 
-    -- 星币（设置按钮左边，间距 6px）
+    -- 成就按钮（设置按钮左边，间距 6px）
+    do
+        local bx, by, bw, bh = screenW_ - 104, 6, 28, 28
+        local isOpen    = AchievementPanel.IsVisible()
+        local unlockCnt = AchievementPanel.GetUnlockCount()
+        nvgBeginPath(vg_)
+        nvgRoundedRect(vg_, bx, by, bw, bh, 5)
+        nvgFillColor(vg_, isOpen and nvgRGBA(80,50,20,220) or nvgRGBA(20,40,80,160))
+        nvgFill(vg_)
+        nvgBeginPath(vg_)
+        nvgRoundedRect(vg_, bx, by, bw, bh, 5)
+        nvgStrokeColor(vg_, isOpen and nvgRGBA(255,200,60,220) or nvgRGBA(60,100,180,120))
+        nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
+        nvgFontSize(vg_, 13); nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg_, nvgRGBA(255,210,80,230))
+        nvgText(vg_, bx + bw/2, by + bh/2, "🏆")
+        -- 成就数徽章
+        if unlockCnt > 0 then
+            nvgBeginPath(vg_); nvgCircle(vg_, bx + bw - 2, by + 2, 6)
+            nvgFillColor(vg_, nvgRGBA(60,200,100,240)); nvgFill(vg_)
+            nvgFontSize(vg_, 7); nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg_, nvgRGBA(255,255,255,255))
+            nvgText(vg_, bx + bw - 2, by + 2, tostring(unlockCnt))
+        end
+    end
+
+    -- 📋 日志按钮（成就按钮左边，间距 6px）
+    do
+        local bx, by, bw, bh = screenW_ - 138, 6, 28, 28
+        local isOpen = logVisible_
+        -- 计算未完成目标数（有徽章提示）
+        local pendingGoals = 0
+        if STAGE_GOALS then
+            for _, g in ipairs(STAGE_GOALS) do
+                if not completedGoals_UI_[g.id] then pendingGoals = pendingGoals + 1 end
+            end
+        end
+        nvgBeginPath(vg_)
+        nvgRoundedRect(vg_, bx, by, bw, bh, 5)
+        nvgFillColor(vg_, isOpen and nvgRGBA(20,60,120,220) or nvgRGBA(20,40,80,160))
+        nvgFill(vg_)
+        nvgBeginPath(vg_)
+        nvgRoundedRect(vg_, bx, by, bw, bh, 5)
+        nvgStrokeColor(vg_, isOpen and nvgRGBA(80,160,255,220) or nvgRGBA(60,100,180,120))
+        nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
+        nvgFontSize(vg_, 13); nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg_, nvgRGBA(160,210,255,230))
+        nvgText(vg_, bx + bw/2, by + bh/2, "📋")
+        -- 徽章：未完成目标数（橙色）
+        if pendingGoals > 0 then
+            nvgBeginPath(vg_); nvgCircle(vg_, bx + bw - 2, by + 2, 6)
+            nvgFillColor(vg_, nvgRGBA(255,150,30,240)); nvgFill(vg_)
+            nvgFontSize(vg_, 7); nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg_, nvgRGBA(255,255,255,255))
+            nvgText(vg_, bx + bw - 2, by + 2, tostring(math.min(pendingGoals, 9)))
+        end
+        -- addHit 在 RenderHUD 末尾注册
+    end
+
+    -- P2-1: 战绩按钮（日志按钮左边，间距 6px）
+    do
+        local bx, by, bw, bh = screenW_ - 172, 6, 28, 28
+        local isOpen = statsVisible_
+        nvgBeginPath(vg_); nvgRoundedRect(vg_, bx, by, bw, bh, 5)
+        nvgFillColor(vg_, isOpen and nvgRGBA(10, 50, 100, 220) or nvgRGBA(20, 40, 80, 160))
+        nvgFill(vg_)
+        nvgBeginPath(vg_); nvgRoundedRect(vg_, bx, by, bw, bh, 5)
+        nvgStrokeColor(vg_, isOpen and nvgRGBA(80, 180, 255, 220) or nvgRGBA(60, 100, 180, 120))
+        nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
+        nvgFontSize(vg_, 13); nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg_, nvgRGBA(100, 200, 255, 230))
+        nvgText(vg_, bx + bw/2, by + bh/2, "📊")
+    end
+
+    -- P3-1: 快捷信号按钮（战绩按钮左边，间距 6px）
+    do
+        local bx, by, bw, bh = screenW_ - 206, 6, 28, 28
+        local isOpen = signalOpen_
+        local onCD   = signalCooldown_ > 0
+        nvgBeginPath(vg_); nvgRoundedRect(vg_, bx, by, bw, bh, 5)
+        nvgFillColor(vg_, isOpen and nvgRGBA(40, 80, 20, 220)
+                       or (onCD and nvgRGBA(30, 30, 30, 140))
+                       or nvgRGBA(20, 40, 80, 160))
+        nvgFill(vg_)
+        nvgBeginPath(vg_); nvgRoundedRect(vg_, bx, by, bw, bh, 5)
+        nvgStrokeColor(vg_, isOpen and nvgRGBA(100, 220, 80, 220) or nvgRGBA(60, 100, 180, 120))
+        nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
+        nvgFontSize(vg_, 13); nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg_, onCD and nvgRGBA(120, 120, 120, 150) or nvgRGBA(140, 255, 120, 230))
+        nvgText(vg_, bx + bw/2, by + bh/2, "📡")
+        -- 冷却圆弧进度
+        if onCD then
+            local pct = signalCooldown_ / SIGNAL_CD
+            nvgBeginPath(vg_)
+            nvgArc(vg_, bx + bw/2, by + bh/2, 11,
+                   -math.pi/2, -math.pi/2 + (1 - pct) * math.pi * 2, 1)
+            nvgStrokeColor(vg_, nvgRGBA(100, 220, 80, 180))
+            nvgStrokeWidth(vg_, 2); nvgStroke(vg_)
+        end
+    end
+
+    -- 星币（战绩按钮左边，间距 6px）
     local credits = math.floor(rm_.resources.credits or 0)
-    local credX = screenW_ - 156
+    local credX = screenW_ - 258
     local credIconH = resIcons_["credits"]
     if credIconH and credIconH >= 0 then
         local paint = nvgImagePattern(vg_, credX, rowMid - 7, 14, 14, 0, credIconH, 1.0)
@@ -641,25 +912,35 @@ function GameUI.RenderTopBar()
     text(credX + 17, rowMid - 6, "星币", 9, 255,210,60,200)
     text(credX + 17, rowMid + 6, tostring(credits), 10, 255,230,80,255)
 
-    -- 玩家信息 + 在线时限（星币左边，右对齐于 credX-6）
-    local infoRightX = credX - 6
-    -- 在线时限
-    local rtSec     = math.max(0, math.floor(remainingTime_))
-    local rtMin     = math.floor(rtSec / 60)
-    local rtSecPart = rtSec % 60
-    local rtStr
-    if rtMin >= 60 then
-        rtStr = string.format("⏱%d:%02d:00", math.floor(rtMin/60), rtMin%60)
+    -- 玩家信息 + 在线时限/无尽轮次（星币左边，右对齐于 credX-6）
+    local infoRightX = credX - 8
+    local rtStr, tr, tg, tb
+    if endlessRound_ > 0 then
+        -- 无尽征服模式：显示当前轮次
+        rtStr = string.format("∞ 第 %d 轮", endlessRound_)
+        -- 橙色脉动
+        local pulse = math.abs(math.sin(os.clock() * 2.0))
+        tr = math.floor(255)
+        tg = math.floor(140 + 60 * pulse)
+        tb = math.floor(40  + 20 * pulse)
     else
-        rtStr = string.format("⏱%02d:%02d", rtMin, rtSecPart)
-    end
-    local isLowTime = rtMin < 30
-    local tr = isLowTime and 255 or 100
-    local tg = isLowTime and 80  or 200
-    local tb = isLowTime and 60  or 120
-    if rtMin < 5 then
-        local blink = math.floor(os.clock() * 2) % 2 == 0
-        tr, tg, tb = blink and 255 or 200, blink and 60 or 80, blink and 60 or 60
+        -- 普通模式：在线时限倒计时
+        local rtSec     = math.max(0, math.floor(remainingTime_))
+        local rtMin     = math.floor(rtSec / 60)
+        local rtSecPart = rtSec % 60
+        if rtMin >= 60 then
+            rtStr = string.format("⏱%d:%02d:00", math.floor(rtMin/60), rtMin%60)
+        else
+            rtStr = string.format("⏱%02d:%02d", rtMin, rtSecPart)
+        end
+        local isLowTime = rtMin < 30
+        tr = isLowTime and 255 or 100
+        tg = isLowTime and 80  or 200
+        tb = isLowTime and 60  or 120
+        if rtMin < 5 then
+            local blink = math.floor(os.clock() * 2) % 2 == 0
+            tr, tg, tb = blink and 255 or 200, blink and 60 or 80, blink and 60 or 60
+        end
     end
     text(infoRightX, rowMid - 6, player_.name .. " Lv." .. player_.level, 9,
         160,210,255,210, NVG_ALIGN_RIGHT+NVG_ALIGN_MIDDLE)
@@ -823,6 +1104,807 @@ local function renderPirateWarning()
 end
 
 -- ============================================================================
+-- 3.6 海盗情报面板 P1-3（右侧，科技树下方）
+-- ============================================================================
+local function renderIntelPanel()
+    if not UICommon.pirateAI then return end
+    local intel = UICommon.pirateAI:GetActiveIntel()
+    if #intel == 0 then return end
+
+    -- 面板参数
+    local PW      = 190
+    local LINE_H  = 18
+    local PAD     = 8
+    local ENTRY_H = LINE_H * 4 + PAD  -- 每条情报：4行
+    local HEADER  = 22
+    local ph      = HEADER + #intel * (ENTRY_H + 4) + PAD
+    local px      = screenW_ - PW - 8
+    local py      = 50   -- 顶部留给 TopBar
+
+    local function ic(r, g, b, a) return nvgRGBA(r, g, b, a or 255) end
+
+    -- 面板背景
+    nvgBeginPath(vg_)
+    nvgRoundedRect(vg_, px, py, PW, ph, 6)
+    nvgFillColor(vg_, ic(10, 30, 40, 210))
+    nvgFill(vg_)
+    nvgStrokeColor(vg_, ic(60, 220, 200, 200))
+    nvgStrokeWidth(vg_, 1.2)
+    nvgStroke(vg_)
+
+    -- 标题
+    nvgFontFace(vg_, "sans")
+    nvgFontSize(vg_, 11)
+    nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg_, ic(60, 240, 220, 255))
+    nvgText(vg_, px + PW / 2, py + HEADER / 2, "[ 海盗情报 ]")
+
+    -- 分割线
+    nvgBeginPath(vg_)
+    nvgMoveTo(vg_, px + 6, py + HEADER)
+    nvgLineTo(vg_, px + PW - 6, py + HEADER)
+    nvgStrokeColor(vg_, ic(60, 200, 180, 120))
+    nvgStrokeWidth(vg_, 0.8)
+    nvgStroke(vg_)
+
+    local ey = py + HEADER + 2
+
+    -- 计算玩家基地位置（用于方位判断）
+    local baseX, baseY = 0, 0
+    if UICommon.bs then
+        baseX = UICommon.bs.x or 0
+        baseY = UICommon.bs.y or 0
+    end
+
+    for i, entry in ipairs(intel) do
+        local ex = px + PAD
+        local ew = PW - PAD * 2
+
+        -- 条目背景
+        nvgBeginPath(vg_)
+        nvgRoundedRect(vg_, ex - 2, ey, ew + 4, ENTRY_H, 4)
+        nvgFillColor(vg_, ic(20, 50, 60, 180))
+        nvgFill(vg_)
+        nvgStrokeColor(vg_, ic(60, 180, 160, 80))
+        nvgStrokeWidth(vg_, 0.7)
+        nvgStroke(vg_)
+
+        nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_TOP)
+
+        -- 行1: 基地等级 + 方位
+        local dx = entry.x - baseX
+        local dy = entry.y - baseY
+        local angle = math.deg(math.atan(dy, dx))
+        local dirs = { "东", "东北", "北", "西北", "西", "西南", "南", "东南" }
+        local dirIdx = math.floor((angle + 202.5) / 45) % 8 + 1
+        local dirStr = dirs[dirIdx]
+
+        nvgFontSize(vg_, 10)
+        nvgFillColor(vg_, ic(60, 240, 220, 240))
+        nvgText(vg_, ex, ey + 2, string.format("Lv%d 海盗基地  [%s]", entry.level, dirStr))
+
+        -- 行2: 预计进攻时间（±20% 误差）
+        local urgency = entry.estimatedAttack <= 30
+        local tr = urgency and 255 or 220
+        local tg = urgency and 100 or 190
+        nvgFontSize(vg_, 10)
+        nvgFillColor(vg_, ic(tr, tg, 60, 240))
+        nvgText(vg_, ex, ey + LINE_H + 2,
+            string.format("进攻: 约 %ds", entry.estimatedAttack))
+
+        -- 行3: 舰队编成
+        nvgFontSize(vg_, 9)
+        nvgFillColor(vg_, ic(180, 210, 230, 220))
+        nvgText(vg_, ex, ey + LINE_H * 2 + 2,
+            "兵力: " .. entry.composition)
+
+        -- 行4: 情报有效时间
+        local itLeft = math.ceil(entry.intelTimer)
+        local itR = itLeft <= 20 and 255 or 140
+        local itG = itLeft <= 20 and 160 or 200
+        nvgFontSize(vg_, 9)
+        nvgFillColor(vg_, ic(itR, itG, 140, 200))
+        nvgText(vg_, ex, ey + LINE_H * 3 + 2,
+            string.format("情报剩余: %ds", itLeft))
+
+        ey = ey + ENTRY_H + 4
+    end
+end
+
+-- ============================================================================
+-- P2-1. 生涯战绩面板（右侧浮动，6格数据卡片 3×2）
+-- ============================================================================
+local function renderCareerStatsPanel()
+    if not statsVisible_ then return end
+
+    local cs   = careerStats_UI_
+    local PW   = 260
+    local PAD  = 10
+    local PH   = 258   -- P3-2: 底部加了"查看完整战绩"按钮，高度+28
+    local px   = screenW_ - PW - 6
+    local py   = 40
+
+    -- 背景板
+    nvgBeginPath(vg_); nvgRoundedRect(vg_, px, py, PW, PH, 8)
+    nvgFillColor(vg_, nvgRGBA(6, 10, 26, 235)); nvgFill(vg_)
+    nvgBeginPath(vg_); nvgRoundedRect(vg_, px, py, PW, PH, 8)
+    nvgStrokeColor(vg_, nvgRGBA(80, 140, 255, 180)); nvgStrokeWidth(vg_, 1.2); nvgStroke(vg_)
+
+    -- 标题栏
+    nvgFontSize(vg_, 13); nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg_, nvgRGBA(100, 200, 255, 255))
+    nvgText(vg_, px + PAD, py + 14, "📊 生涯战绩")
+    -- 关闭按钮
+    nvgFontSize(vg_, 12); nvgTextAlign(vg_, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg_, nvgRGBA(150, 180, 220, 200))
+    nvgText(vg_, px + PW - PAD, py + 14, "✕")
+    addHit(px + PW - 26, py, 26, 28, function() statsVisible_ = false end)
+
+    -- 分隔线
+    nvgBeginPath(vg_); nvgMoveTo(vg_, px + PAD, py + 28); nvgLineTo(vg_, px + PW - PAD, py + 28)
+    nvgStrokeColor(vg_, nvgRGBA(60, 100, 180, 120)); nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
+
+    -- 6 格卡片数据（3列×2行）
+    local cards = {
+        { icon="🎮", label="总局数",   value=tostring(cs.totalGames) },
+        { icon="🏆", label="胜利",     value=string.format("%d局 (%.0f%%)",
+            cs.totalWins,
+            cs.totalGames > 0 and (cs.totalWins / cs.totalGames * 100) or 0) },
+        { icon="⚡", label="最高波次", value=tostring(cs.bestWave) .. "波" },
+        { icon="💥", label="总击杀",   value=tostring(cs.totalKills) },
+        { icon="🌍", label="总殖民",   value=tostring(cs.totalColonies) .. "颗" },
+        { icon="⏱",  label="游戏时长", value=(function()
+            local t = cs.playtime
+            if t < 60 then return t .. "秒"
+            elseif t < 3600 then return string.format("%d分%d秒", math.floor(t/60), t%60)
+            else return string.format("%dh%dm", math.floor(t/3600), math.floor((t%3600)/60)) end
+        end)() },
+    }
+    local COLS      = 3
+    local CARD_W    = math.floor((PW - PAD*2 - (COLS-1)*6) / COLS)
+    local CARD_H    = 58
+    local ROWS      = 2
+    local gridTop   = py + 34
+    for i, card in ipairs(cards) do
+        local col = (i - 1) % COLS
+        local row = math.floor((i - 1) / COLS)
+        local cx  = px + PAD + col * (CARD_W + 6)
+        local cy  = gridTop + row * (CARD_H + 6)
+        -- 卡片背景
+        nvgBeginPath(vg_); nvgRoundedRect(vg_, cx, cy, CARD_W, CARD_H, 5)
+        nvgFillColor(vg_, nvgRGBA(15, 25, 55, 200)); nvgFill(vg_)
+        nvgBeginPath(vg_); nvgRoundedRect(vg_, cx, cy, CARD_W, CARD_H, 5)
+        nvgStrokeColor(vg_, nvgRGBA(50, 90, 160, 120)); nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
+        -- 图标
+        nvgFontSize(vg_, 16); nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_TOP)
+        nvgFillColor(vg_, nvgRGBA(255, 255, 255, 220))
+        nvgText(vg_, cx + CARD_W/2, cy + 5, card.icon)
+        -- 数值
+        nvgFontSize(vg_, 12); nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_TOP)
+        nvgFillColor(vg_, nvgRGBA(180, 220, 255, 255))
+        nvgText(vg_, cx + CARD_W/2, cy + 24, card.value)
+        -- 标签
+        nvgFontSize(vg_, 9); nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_TOP)
+        nvgFillColor(vg_, nvgRGBA(100, 140, 200, 160))
+        nvgText(vg_, cx + CARD_W/2, cy + CARD_H - 13, card.label)
+    end
+
+    -- MVP 舰种（底部）
+    local mvpY = gridTop + ROWS * (CARD_H + 6) + 2
+    nvgBeginPath(vg_); nvgRoundedRect(vg_, px + PAD, mvpY, PW - PAD*2, 22, 4)
+    nvgFillColor(vg_, nvgRGBA(40, 30, 10, 180)); nvgFill(vg_)
+    nvgBeginPath(vg_); nvgRoundedRect(vg_, px + PAD, mvpY, PW - PAD*2, 22, 4)
+    nvgStrokeColor(vg_, nvgRGBA(200, 160, 40, 120)); nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
+    nvgFontSize(vg_, 10); nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg_, nvgRGBA(200, 160, 60, 220))
+    local mvpLabel = (cs.bestMvpShip and cs.bestMvpShip ~= "") and ("🥇 历史MVP：" .. cs.bestMvpShip) or "🥇 历史MVP：尚无记录"
+    nvgText(vg_, px + PAD + 6, mvpY + 11, mvpLabel)
+
+    -- P3-2: "查看完整战绩"按钮
+    local btnY  = mvpY + 28
+    local btnX  = px + PAD
+    local btnW  = PW - PAD * 2
+    local btnH  = 22
+    local bhov  = cursorX_ >= btnX and cursorX_ <= btnX+btnW
+               and cursorY_ >= btnY and cursorY_ <= btnY+btnH
+    nvgBeginPath(vg_); nvgRoundedRect(vg_, btnX, btnY, btnW, btnH, 4)
+    nvgFillColor(vg_, bhov and nvgRGBA(40, 80, 160, 230) or nvgRGBA(20, 40, 90, 180))
+    nvgFill(vg_)
+    nvgBeginPath(vg_); nvgRoundedRect(vg_, btnX, btnY, btnW, btnH, 4)
+    nvgStrokeColor(vg_, bhov and nvgRGBA(100, 180, 255, 220) or nvgRGBA(60, 100, 200, 120))
+    nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
+    nvgFontSize(vg_, 10); nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg_, nvgRGBA(140, 200, 255, 230))
+    nvgText(vg_, btnX + btnW/2, btnY + btnH/2, "🏛 查看完整战绩 →")
+    addHit(btnX, btnY, btnW, btnH, function()
+        careerPageOpen_ = true
+        statsVisible_   = false
+    end)
+end
+
+-- ============================================================================
+-- P3-2. 生涯战绩全屏页面
+-- ============================================================================
+local function renderCareerPage(dt)
+    if not careerPageOpen_ and careerPageAnim_ <= 0 then return end
+
+    -- 入场/退场动画
+    local TARGET = careerPageOpen_ and 1.0 or 0.0
+    local SPEED  = 6.0
+    if dt and dt > 0 then
+        careerPageAnim_ = careerPageAnim_ + (TARGET - careerPageAnim_) * math.min(1, SPEED * dt)
+        if math.abs(careerPageAnim_ - TARGET) < 0.005 then careerPageAnim_ = TARGET end
+    end
+    if careerPageAnim_ <= 0.01 then return end
+
+    local vg  = vg_
+    local sw  = screenW_
+    local sh  = screenH_
+    local a   = careerPageAnim_  -- 透明度/缩放驱动
+
+    -- 全屏遮罩
+    nvgBeginPath(vg); nvgRect(vg, 0, 0, sw, sh)
+    nvgFillColor(vg, nvgRGBA(0, 5, 20, math.floor(210 * a)))
+    nvgFill(vg)
+
+    -- 主面板（居中，80% 宽，最大 820px）
+    local PW  = math.min(820, sw * 0.86)
+    local PH  = math.min(560, sh * 0.84)
+    local px  = (sw - PW) * 0.5
+    local py  = (sh - PH) * 0.5 + (1 - a) * 30   -- 向下偏移实现滑入
+
+    -- 背景板
+    nvgBeginPath(vg); nvgRoundedRect(vg, px, py, PW, PH, 14)
+    nvgFillColor(vg, nvgRGBA(8, 14, 36, math.floor(245 * a))); nvgFill(vg)
+    nvgBeginPath(vg); nvgRoundedRect(vg, px, py, PW, PH, 14)
+    nvgStrokeColor(vg, nvgRGBA(60, 120, 255, math.floor(200 * a)))
+    nvgStrokeWidth(vg, 1.5); nvgStroke(vg)
+
+    -- 顶部装饰线
+    nvgBeginPath(vg)
+    nvgMoveTo(vg, px + 14, py); nvgLineTo(vg, px + PW - 14, py)
+    nvgStrokeColor(vg, nvgRGBA(80, 160, 255, math.floor(180 * a)))
+    nvgStrokeWidth(vg, 2); nvgStroke(vg)
+
+    -- 标题
+    nvgFontFace(vg, "sans")
+    nvgFontSize(vg, 18)
+    nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg, nvgRGBA(120, 200, 255, math.floor(255 * a)))
+    nvgText(vg, px + 20, py + 22, "🏛  生涯战绩")
+
+    -- 关闭按钮
+    local cx = px + PW - 20; local cy = py + 22
+    local mpos = input:GetMousePosition()
+    local dpr  = graphics:GetDPR()
+    local mx = mpos.x / dpr / UICommon.uiScale
+    local my = mpos.y / dpr / UICommon.uiScale
+    local closeDist = math.sqrt((mx - cx)^2 + (my - cy)^2)
+    nvgFontSize(vg, 15)
+    nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg, closeDist < 14
+        and nvgRGBA(255, 90, 90, math.floor(255 * a))
+        or  nvgRGBA(160, 180, 220, math.floor(180 * a)))
+    nvgText(vg, cx, cy, "✕")
+    addHit(cx - 14, cy - 14, 28, 28, function() careerPageOpen_ = false end)
+
+    -- 分隔线
+    nvgBeginPath(vg)
+    nvgMoveTo(vg, px + 16, py + 38); nvgLineTo(vg, px + PW - 16, py + 38)
+    nvgStrokeColor(vg, nvgRGBA(60, 100, 200, math.floor(120 * a)))
+    nvgStrokeWidth(vg, 1); nvgStroke(vg)
+
+    -- ─── 数据读取 ─────────────────────────────────────────
+    local cs  = careerStats_UI_
+    local win = cs.totalGames > 0 and (cs.totalWins / cs.totalGames) or 0
+    local function fmtTime(s)
+        if s < 60    then return string.format("%d秒", s)
+        elseif s < 3600 then return string.format("%d分%d秒", math.floor(s/60), s%60)
+        else return string.format("%dh %dm", math.floor(s/3600), math.floor((s%3600)/60)) end
+    end
+
+    -- ─── 左侧：统计数据网格 (4×2) ──────────────────────────
+    local GRID_COLS = 4
+    local GRID_ROWS = 2
+    local GRID_W    = PW * 0.56
+    local GRID_H    = PH - 76
+    local CARD_W    = (GRID_W - 16 - (GRID_COLS-1)*8) / GRID_COLS
+    local CARD_H    = (GRID_H - (GRID_ROWS-1)*8) / GRID_ROWS
+    local gx        = px + 16
+    local gy        = py + 46
+
+    local cards = {
+        { icon="🎮", label="总局数",   val=tostring(cs.totalGames),  color={100,180,255} },
+        { icon="🏆", label="胜率",     val=string.format("%.0f%%", win*100), color={80,220,120} },
+        { icon="⚡", label="最高波次", val=tostring(cs.bestWave).."波",      color={255,200,60}  },
+        { icon="💥", label="总击杀",   val=tostring(cs.totalKills),          color={255,120,80}  },
+        { icon="🌍", label="总殖民",   val=tostring(cs.totalColonies).."颗", color={60,200,200}  },
+        { icon="🕹️", label="胜利局数", val=tostring(cs.totalWins).."局",    color={180,120,255} },
+        { icon="⏱",  label="总时长",   val=fmtTime(cs.playtime),            color={160,200,255} },
+        { icon="🥇", label="历史MVP",  val=(cs.bestMvpShip ~= "" and cs.bestMvpShip or "无"),
+                                                                              color={255,190,50}  },
+    }
+
+    for i, card in ipairs(cards) do
+        local col = (i - 1) % GRID_COLS
+        local row = math.floor((i - 1) / GRID_COLS)
+        local bx  = gx + col * (CARD_W + 8)
+        local by  = gy + row * (CARD_H + 8)
+
+        -- 卡片背景
+        nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, CARD_W, CARD_H, 7)
+        nvgFillColor(vg, nvgRGBA(16, 28, 60, math.floor(210 * a))); nvgFill(vg)
+        nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, CARD_W, CARD_H, 7)
+        nvgStrokeColor(vg, nvgRGBA(card.color[1], card.color[2], card.color[3], math.floor(90 * a)))
+        nvgStrokeWidth(vg, 1); nvgStroke(vg)
+
+        -- 顶部彩色条
+        nvgBeginPath(vg); nvgRoundedRect(vg, bx+2, by+2, CARD_W-4, 3, 1.5)
+        nvgFillColor(vg, nvgRGBA(card.color[1], card.color[2], card.color[3], math.floor(160 * a)))
+        nvgFill(vg)
+
+        -- 图标
+        nvgFontSize(vg, 18)
+        nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_TOP)
+        nvgFillColor(vg, nvgRGBA(255, 255, 255, math.floor(220 * a)))
+        nvgText(vg, bx + CARD_W/2, by + 8, card.icon)
+
+        -- 数值
+        nvgFontSize(vg, 13)
+        nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_TOP)
+        nvgFillColor(vg, nvgRGBA(card.color[1], card.color[2], card.color[3], math.floor(240 * a)))
+        nvgText(vg, bx + CARD_W/2, by + 30, card.val)
+
+        -- 标签
+        nvgFontSize(vg, 9)
+        nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_BOTTOM)
+        nvgFillColor(vg, nvgRGBA(120, 150, 200, math.floor(160 * a)))
+        nvgText(vg, bx + CARD_W/2, by + CARD_H - 4, card.label)
+    end
+
+    -- ─── 右侧：雷达图 ──────────────────────────────────────
+    local RW   = PW - GRID_W - 32
+    local rx   = gx + GRID_W + 16
+    local ry   = gy
+    local rcx  = rx + RW / 2
+    local rcy  = gy + GRID_H / 2
+    local R    = math.min(RW, GRID_H) * 0.38
+
+    -- 雷达图标题
+    nvgFontSize(vg, 11)
+    nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_TOP)
+    nvgFillColor(vg, nvgRGBA(140, 180, 255, math.floor(180 * a)))
+    nvgText(vg, rcx, ry, "综合评分")
+
+    -- 六维数据（归一化到 0~1）
+    local DIMS = {
+        { label="胜率",   val=win },
+        { label="波次",   val=math.min(1, cs.bestWave / 20) },
+        { label="击杀",   val=math.min(1, cs.totalKills / 200) },
+        { label="殖民",   val=math.min(1, cs.totalColonies / 50) },
+        { label="游戏数", val=math.min(1, cs.totalGames / 30) },
+        { label="时长",   val=math.min(1, cs.playtime / 7200) },
+    }
+    local N    = #DIMS
+    local TWO_PI = math.pi * 2
+
+    -- 背景网格（3层）
+    for layer = 1, 3 do
+        local r = R * (layer / 3)
+        nvgBeginPath(vg)
+        for i = 1, N do
+            local ang = (i - 1) * TWO_PI / N - math.pi / 2
+            local lx  = rcx + r * math.cos(ang)
+            local ly  = rcy + r * math.sin(ang)
+            if i == 1 then nvgMoveTo(vg, lx, ly) else nvgLineTo(vg, lx, ly) end
+        end
+        nvgClosePath(vg)
+        nvgStrokeColor(vg, nvgRGBA(60, 100, 180, math.floor(80 * a)))
+        nvgStrokeWidth(vg, 1); nvgStroke(vg)
+    end
+
+    -- 轴线
+    for i = 1, N do
+        local ang = (i - 1) * TWO_PI / N - math.pi / 2
+        nvgBeginPath(vg)
+        nvgMoveTo(vg, rcx, rcy)
+        nvgLineTo(vg, rcx + R * math.cos(ang), rcy + R * math.sin(ang))
+        nvgStrokeColor(vg, nvgRGBA(60, 100, 180, math.floor(60 * a)))
+        nvgStrokeWidth(vg, 1); nvgStroke(vg)
+    end
+
+    -- 数据多边形（填充）
+    nvgBeginPath(vg)
+    for i = 1, N do
+        local ang = (i - 1) * TWO_PI / N - math.pi / 2
+        local r   = R * math.max(0.04, DIMS[i].val) * a
+        local lx  = rcx + r * math.cos(ang)
+        local ly  = rcy + r * math.sin(ang)
+        if i == 1 then nvgMoveTo(vg, lx, ly) else nvgLineTo(vg, lx, ly) end
+    end
+    nvgClosePath(vg)
+    nvgFillColor(vg, nvgRGBA(60, 140, 255, math.floor(70 * a))); nvgFill(vg)
+    nvgStrokeColor(vg, nvgRGBA(100, 180, 255, math.floor(200 * a)))
+    nvgStrokeWidth(vg, 1.5); nvgStroke(vg)
+
+    -- 数据点
+    for i = 1, N do
+        local ang = (i - 1) * TWO_PI / N - math.pi / 2
+        local r   = R * math.max(0.04, DIMS[i].val) * a
+        local lx  = rcx + r * math.cos(ang)
+        local ly  = rcy + r * math.sin(ang)
+        nvgBeginPath(vg); nvgCircle(vg, lx, ly, 3)
+        nvgFillColor(vg, nvgRGBA(150, 210, 255, math.floor(240 * a))); nvgFill(vg)
+    end
+
+    -- 维度标签
+    for i = 1, N do
+        local ang  = (i - 1) * TWO_PI / N - math.pi / 2
+        local LR   = R + 18
+        local lx   = rcx + LR * math.cos(ang)
+        local ly   = rcy + LR * math.sin(ang)
+        nvgFontSize(vg, 9)
+        nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, nvgRGBA(160, 200, 255, math.floor(200 * a)))
+        nvgText(vg, lx, ly, DIMS[i].label)
+    end
+
+    -- ─── 底部提示 ──────────────────────────────────────────
+    nvgFontSize(vg, 9)
+    nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_BOTTOM)
+    nvgFillColor(vg, nvgRGBA(100, 130, 180, math.floor(120 * a)))
+    nvgText(vg, px + PW/2, py + PH - 6, "点击遮罩或右上角 ✕ 关闭")
+
+    -- 点击遮罩关闭（最后注册，优先级最低）
+    addHit(0, 0, px, sh, function() careerPageOpen_ = false end)
+    addHit(px + PW, 0, sw - px - PW, sh, function() careerPageOpen_ = false end)
+    addHit(px, 0, PW, py, function() careerPageOpen_ = false end)
+    addHit(px, py + PH, PW, sh - py - PH, function() careerPageOpen_ = false end)
+end
+
+-- ============================================================================
+-- P3-1. 快捷信号面板（TopBar 下方居中弹出，4×2 格布局）
+-- ============================================================================
+local function renderSignalPanel()
+    if not signalOpen_ then return end
+    local vg   = vg_
+    local sw   = screenW_
+    -- 面板尺寸
+    local COLS, ROWS = 4, 2
+    local BTN_W, BTN_H = 120, 44
+    local GAP  = 6
+    local PAD  = 10
+    local pw   = COLS * BTN_W + (COLS - 1) * GAP + PAD * 2
+    local ph   = ROWS * BTN_H + (ROWS - 1) * GAP + PAD * 2
+    local px   = sw / 2 - pw / 2
+    local py   = 48    -- TopBar 正下方
+
+    -- 面板背景
+    nvgBeginPath(vg); nvgRoundedRect(vg, px, py, pw, ph, 8)
+    nvgFillColor(vg, nvgRGBA(8, 16, 36, 230)); nvgFill(vg)
+    nvgBeginPath(vg); nvgRoundedRect(vg, px, py, pw, ph, 8)
+    nvgStrokeColor(vg, nvgRGBA(80, 160, 80, 180)); nvgStrokeWidth(vg, 1.5); nvgStroke(vg)
+
+    -- 标题
+    nvgFontFace(vg, "sans"); nvgFontSize(vg, 10)
+    nvgFillColor(vg, nvgRGBA(140, 200, 140, 180))
+    nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_TOP)
+    local cdStr = signalCooldown_ > 0
+        and string.format("  [冷却 %.0fs]", signalCooldown_) or ""
+    nvgText(vg, px + PAD, py + 2, "📡 快捷信号" .. cdStr)
+
+    -- 8 个信号按钮
+    local onCD = signalCooldown_ > 0
+    for i, sig in ipairs(QUICK_SIGNALS) do
+        local col = (i - 1) % COLS
+        local row = math.floor((i - 1) / COLS)
+        local bx  = px + PAD + col * (BTN_W + GAP)
+        local by  = py + PAD + 10 + row * (BTN_H + GAP)
+        local cr, cg, cb = sig.color[1], sig.color[2], sig.color[3]
+        local mx, my = cursorX_, cursorY_
+        local hover = mx >= bx and mx <= bx + BTN_W and my >= by and my <= by + BTN_H
+
+        -- 按钮背景
+        nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, BTN_W, BTN_H, 6)
+        if onCD then
+            nvgFillColor(vg, nvgRGBA(20, 20, 30, 140))
+        elseif hover then
+            nvgFillColor(vg, nvgRGBA(cr, cg, cb, 50))
+        else
+            nvgFillColor(vg, nvgRGBA(12, 20, 40, 200))
+        end
+        nvgFill(vg)
+        -- 边框
+        nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, BTN_W, BTN_H, 6)
+        nvgStrokeColor(vg, onCD and nvgRGBA(60, 60, 60, 100)
+            or nvgRGBA(cr, cg, cb, hover and 220 or 100))
+        nvgStrokeWidth(vg, hover and 1.5 or 1); nvgStroke(vg)
+        -- 图标
+        nvgFontSize(vg, 16); nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, onCD and nvgRGBA(80, 80, 80, 150) or nvgRGBA(255, 255, 255, 230))
+        nvgText(vg, bx + 8, by + BTN_H / 2, sig.icon)
+        -- 文字
+        nvgFontSize(vg, 11); nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, onCD and nvgRGBA(80, 80, 80, 150)
+            or nvgRGBA(cr, cg, cb, hover and 255 or 200))
+        nvgText(vg, bx + 30, by + BTN_H / 2, sig.label)
+    end
+
+    -- 注册点击热区
+    for i, sig in ipairs(QUICK_SIGNALS) do
+        local col = (i - 1) % COLS
+        local row = math.floor((i - 1) / COLS)
+        local bx  = px + PAD + col * (BTN_W + GAP)
+        local by2 = py + PAD + 10 + row * (BTN_H + GAP)
+        if not onCD then
+            addHit(bx, by2, BTN_W, BTN_H, function()
+                -- 发送信号：本地通知 + 回调
+                signalOpen_    = false
+                signalCooldown_ = SIGNAL_CD
+                local msg = sig.icon .. " " .. sig.label
+                GameUI.Notify("📡 [信号] " .. msg, sig.type)
+                if onSendSignalCb_ then onSendSignalCb_(sig) end
+            end)
+        end
+    end
+    -- 点击面板外区域关闭
+    addHit(0, 0, px, screenH_, function() signalOpen_ = false end)
+    addHit(px + pw, 0, screenW_ - px - pw, screenH_, function() signalOpen_ = false end)
+    addHit(px, py + ph, pw, screenH_ - py - ph, function() signalOpen_ = false end)
+end
+
+-- ============================================================================
+-- P1-3. 任务日志面板（右侧浮动，双 Tab：目标 / 探索记录）
+-- ============================================================================
+local function renderLogPanel()
+    if not logVisible_ then return end
+
+    local PW      = 260
+    local PAD     = 10
+    local TAB_H   = 24
+    local HEADER  = 28
+    local ITEM_H  = 46    -- 目标条目高度
+    local LOG_H   = 38    -- 探索日志条目高度
+    local MAX_VIS = 6     -- 最多显示条目数（超出滚动）
+
+    -- 面板高度：固定高（避免随内容抖动）
+    local ph = HEADER + TAB_H + 4 + MAX_VIS * ITEM_H + PAD
+    local px = screenW_ - PW - 8
+    local py = 50    -- 低于 TopBar（44px）
+
+    -- 关闭按钮区域（后注册 hit）
+    local closeBx = px + PW - 22
+    local closeBy = py + 4
+
+    -- 面板背景
+    nvgBeginPath(vg_)
+    nvgRoundedRect(vg_, px, py, PW, ph, 8)
+    nvgFillColor(vg_, nvgRGBA(6, 12, 28, 230))
+    nvgFill(vg_)
+    nvgBeginPath(vg_)
+    nvgRoundedRect(vg_, px, py, PW, ph, 8)
+    nvgStrokeColor(vg_, nvgRGBA(60, 140, 255, 180))
+    nvgStrokeWidth(vg_, 1.2)
+    nvgStroke(vg_)
+
+    -- 标题行
+    nvgFontFace(vg_, "sans")
+    nvgFontSize(vg_, 12)
+    nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg_, nvgRGBA(100, 200, 255, 255))
+    nvgText(vg_, px + PAD, py + HEADER / 2, "📋 任务日志")
+    -- 关闭按钮
+    nvgFontSize(vg_, 11)
+    nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg_, nvgRGBA(160, 180, 220, 180))
+    nvgText(vg_, closeBx + 9, py + HEADER / 2, "✕")
+
+    -- 分隔线
+    local sepY = py + HEADER
+    nvgBeginPath(vg_)
+    nvgMoveTo(vg_, px + 6, sepY); nvgLineTo(vg_, px + PW - 6, sepY)
+    nvgStrokeColor(vg_, nvgRGBA(60, 100, 200, 60))
+    nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
+
+    -- Tab 按钮
+    local tabY     = sepY + 3
+    local tabW     = (PW - PAD * 2) / 2
+    local tabs     = { {key="goals", label="目标"}, {key="explore", label="探索记录"} }
+    for i, tab in ipairs(tabs) do
+        local tx = px + PAD + (i - 1) * tabW
+        local active = logTab_ == tab.key
+        nvgBeginPath(vg_)
+        nvgRoundedRect(vg_, tx, tabY, tabW - 3, TAB_H, 4)
+        nvgFillColor(vg_, active and nvgRGBA(20, 80, 180, 200) or nvgRGBA(14, 30, 60, 160))
+        nvgFill(vg_)
+        nvgStrokeColor(vg_, active and nvgRGBA(80, 160, 255, 220) or nvgRGBA(40, 70, 120, 100))
+        nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
+        nvgFontSize(vg_, 10)
+        nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg_, active and nvgRGBA(180, 220, 255, 255) or nvgRGBA(120, 160, 200, 180))
+        nvgText(vg_, tx + tabW / 2 - 1, tabY + TAB_H / 2, tab.label)
+        local capturedKey = tab.key
+        addHit(tx, tabY, tabW - 3, TAB_H, function()
+            logTab_ = capturedKey
+            logScroll_ = 0
+        end)
+    end
+
+    -- 内容区起始 Y
+    local contentY = tabY + TAB_H + 6
+    local contentH = ph - (contentY - py) - PAD
+    -- 裁剪区（用矩形遮罩模拟）
+    local clipX = px + 4
+    local clipW = PW - 8
+
+    -- ── Tab: 目标 ──
+    if logTab_ == "goals" then
+        local goals = STAGE_GOALS or {}
+        local itemCount = #goals
+        local totalH    = itemCount * ITEM_H
+        local maxScroll = math.max(0, totalH - contentH)
+        logScroll_ = math.min(math.max(0, logScroll_), maxScroll)
+
+        -- 滚动区域注册
+        addScroll(clipX, contentY, clipW, contentH, function(delta)
+            logScroll_ = math.min(math.max(0, logScroll_ - delta * 30), maxScroll)
+        end)
+
+        local iy = contentY - logScroll_
+        for _, goal in ipairs(goals) do
+            if iy + ITEM_H > contentY - 4 and iy < contentY + contentH then
+                local done = completedGoals_UI_[goal.id] == true
+                -- 条目背景
+                nvgBeginPath(vg_)
+                nvgRoundedRect(vg_, clipX, iy, clipW, ITEM_H - 3, 5)
+                nvgFillColor(vg_, done and nvgRGBA(10,40,20,200) or nvgRGBA(12,20,44,200))
+                nvgFill(vg_)
+                nvgBeginPath(vg_)
+                nvgRoundedRect(vg_, clipX, iy, clipW, ITEM_H - 3, 5)
+                nvgStrokeColor(vg_, done and nvgRGBA(40,180,80,100) or nvgRGBA(40,80,160,80))
+                nvgStrokeWidth(vg_, 0.8); nvgStroke(vg_)
+
+                -- 完成指示条（左侧竖线）
+                nvgBeginPath(vg_)
+                nvgRect(vg_, clipX, iy + 2, 3, ITEM_H - 7)
+                nvgFillColor(vg_, done and nvgRGBA(40,200,80,230) or nvgRGBA(60,120,255,150))
+                nvgFill(vg_)
+
+                -- 目标标题
+                nvgFontFace(vg_, "sans")
+                nvgFontSize(vg_, 10)
+                nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_TOP)
+                nvgFillColor(vg_, done and nvgRGBA(100,220,120,240) or nvgRGBA(180,210,255,230))
+                nvgText(vg_, clipX + 10, iy + 4,
+                    (done and "✓ " or "○ ") .. goal.title)
+
+                -- 目标描述
+                nvgFontSize(vg_, 9)
+                nvgFillColor(vg_, done and nvgRGBA(80,160,100,180) or nvgRGBA(120,150,200,160))
+                nvgText(vg_, clipX + 10, iy + 17, goal.desc)
+
+                -- 奖励预览（右侧）
+                if not done and goal.reward then
+                    local parts = {}
+                    for res, amt in pairs(goal.reward) do
+                        local lbl = RES_LABELS and RES_LABELS[res] or res
+                        parts[#parts+1] = "+" .. amt .. lbl
+                    end
+                    local rStr = table.concat(parts, " ")
+                    nvgFontSize(vg_, 8)
+                    nvgTextAlign(vg_, NVG_ALIGN_RIGHT + NVG_ALIGN_TOP)
+                    nvgFillColor(vg_, nvgRGBA(255,210,60,180))
+                    nvgText(vg_, clipX + clipW - 4, iy + 4, rStr)
+                    nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_TOP)
+                end
+            end
+            iy = iy + ITEM_H
+        end
+
+        -- 无目标时提示
+        if #goals == 0 then
+            nvgFontSize(vg_, 10)
+            nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg_, nvgRGBA(120, 150, 200, 160))
+            nvgText(vg_, px + PW / 2, contentY + contentH / 2, "暂无阶段目标")
+        end
+
+        -- 滚动条（有溢出时显示）
+        if maxScroll > 0 then
+            local barH   = contentH * contentH / totalH
+            local barY   = contentY + logScroll_ / maxScroll * (contentH - barH)
+            nvgBeginPath(vg_)
+            nvgRoundedRect(vg_, px + PW - 6, barY, 3, barH, 2)
+            nvgFillColor(vg_, nvgRGBA(60, 140, 255, 160))
+            nvgFill(vg_)
+        end
+
+    -- ── Tab: 探索记录 ──
+    else
+        local logs = exploreLog_
+        local itemCount = #logs
+        if itemCount == 0 then
+            nvgFontSize(vg_, 10)
+            nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg_, nvgRGBA(120, 150, 200, 160))
+            nvgText(vg_, px + PW / 2, contentY + contentH / 2, "暂无探索记录")
+        else
+            local totalH    = itemCount * LOG_H
+            local maxScroll = math.max(0, totalH - contentH)
+            logScroll_ = math.min(math.max(0, logScroll_), maxScroll)
+
+            -- 滚动区域
+            addScroll(clipX, contentY, clipW, contentH, function(delta)
+                logScroll_ = math.min(math.max(0, logScroll_ - delta * 30), maxScroll)
+            end)
+
+            -- 最新在最前（倒序显示）
+            local iy = contentY - logScroll_
+            for idx = itemCount, 1, -1 do
+                local entry = logs[idx]
+                if iy + LOG_H > contentY - 4 and iy < contentY + contentH then
+                    -- 条目背景
+                    nvgBeginPath(vg_)
+                    nvgRoundedRect(vg_, clipX, iy, clipW, LOG_H - 3, 4)
+                    nvgFillColor(vg_, nvgRGBA(10, 24, 48, 200))
+                    nvgFill(vg_)
+                    nvgBeginPath(vg_)
+                    nvgRoundedRect(vg_, clipX, iy, clipW, LOG_H - 3, 4)
+                    nvgStrokeColor(vg_, nvgRGBA(40, 100, 200, 80))
+                    nvgStrokeWidth(vg_, 0.7); nvgStroke(vg_)
+
+                    -- 左竖线（蓝绿色）
+                    nvgBeginPath(vg_)
+                    nvgRect(vg_, clipX, iy + 2, 3, LOG_H - 7)
+                    nvgFillColor(vg_, nvgRGBA(40, 200, 180, 200))
+                    nvgFill(vg_)
+
+                    -- 图标 + 任务名
+                    nvgFontFace(vg_, "sans")
+                    nvgFontSize(vg_, 11)
+                    nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_TOP)
+                    nvgFillColor(vg_, nvgRGBA(160, 220, 255, 230))
+                    nvgText(vg_, clipX + 9, iy + 3,
+                        (entry.icon or "🔭") .. " " .. (entry.label or "未知任务"))
+
+                    -- 奖励摘要
+                    nvgFontSize(vg_, 9)
+                    nvgFillColor(vg_, nvgRGBA(100, 200, 140, 200))
+                    nvgText(vg_, clipX + 9, iy + 16, entry.rewardStr or "")
+
+                    -- 时间戳（右对齐）
+                    nvgFontSize(vg_, 8)
+                    nvgTextAlign(vg_, NVG_ALIGN_RIGHT + NVG_ALIGN_TOP)
+                    nvgFillColor(vg_, nvgRGBA(100, 130, 180, 160))
+                    local ts = entry.timeStr or ""
+                    nvgText(vg_, clipX + clipW - 4, iy + 3, ts)
+                    nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_TOP)
+                end
+                iy = iy + LOG_H
+            end
+
+            -- 滚动条
+            if maxScroll > 0 then
+                local barH = contentH * contentH / totalH
+                local barY = contentY + logScroll_ / maxScroll * (contentH - barH)
+                nvgBeginPath(vg_)
+                nvgRoundedRect(vg_, px + PW - 6, barY, 3, barH, 2)
+                nvgFillColor(vg_, nvgRGBA(40, 200, 180, 160))
+                nvgFill(vg_)
+            end
+        end
+    end
+
+    -- 关闭按钮 hit
+    addHit(closeBx, closeBy, 20, 20, function()
+        logVisible_ = false
+        logScroll_  = 0
+    end)
+    -- 面板遮罩（点击面板内部不穿透）
+    addHit(px, py, PW, ph, function() end)
+end
+
+-- ============================================================================
 -- 4. 市场面板（左下）
 -- ============================================================================
 local function renderMarketPanel()
@@ -864,6 +1946,49 @@ local function renderMarketPanel()
     nvgStrokeColor(vg_, clr(40,180,80,60)); nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
     sy = sy + 8
 
+    -- P2-3: 迷你折线图绘制函数（sparkline）
+    local function drawSparkline(cx, cy, w, h, history, upR,upG,upB, downR,downG,downB)
+        if not history or #history < 2 then return end
+        -- 找最大最小值（归一化）
+        local minV, maxV = history[1], history[1]
+        for _, v in ipairs(history) do
+            if v < minV then minV = v end
+            if v > maxV then maxV = v end
+        end
+        local range = maxV - minV
+        if range < 0.01 then range = 0.01 end
+        -- 图表背景
+        nvgBeginPath(vg_)
+        nvgRoundedRect(vg_, cx, cy, w, h, 2)
+        nvgFillColor(vg_, clr(15,15,15,120))
+        nvgFill(vg_)
+        -- 折线
+        local n = #history
+        local lastDir = history[n] >= history[n-1]
+        local lr = lastDir and upR  or downR
+        local lg = lastDir and upG  or downG
+        local lb = lastDir and upB  or downB
+        nvgBeginPath(vg_)
+        for i, v in ipairs(history) do
+            local t = (i - 1) / (n - 1)
+            local nx2 = cx + t * w
+            local ny2 = cy + h - ((v - minV) / range) * h
+            ny2 = math.max(cy + 1, math.min(cy + h - 1, ny2))
+            if i == 1 then nvgMoveTo(vg_, nx2, ny2)
+            else            nvgLineTo(vg_, nx2, ny2) end
+        end
+        nvgStrokeColor(vg_, clr(lr, lg, lb, 200))
+        nvgStrokeWidth(vg_, 1.2); nvgStroke(vg_)
+        -- 最新值端点
+        local lx = cx + w
+        local ly = cy + h - ((history[n] - minV) / range) * h
+        ly = math.max(cy + 1, math.min(cy + h - 1, ly))
+        nvgBeginPath(vg_)
+        nvgCircle(vg_, lx, ly, 2)
+        nvgFillColor(vg_, clr(lr, lg, lb, 255))
+        nvgFill(vg_)
+    end
+
     for _, res in ipairs({"metal","esource","nuclear"}) do
         local r     = ms_.rates[res]
         local c     = RES_COLORS[res]
@@ -872,13 +1997,29 @@ local function renderMarketPanel()
         local tr,tg,tb = 150,150,150
         if trend == "↑" then tr,tg,tb = 50,230,100
         elseif trend == "↓" then tr,tg,tb = 255,80,80 end
+
+        -- P2-3: 价格突变提示（!标记 + 边框闪烁）
+        local flash = ms_.priceFlash and (ms_.priceFlash[res] or 0) or 0
+        local flashAlpha = flash > 0 and math.floor(math.abs(math.sin(flash * 4)) * 180 + 60) or 0
+
         -- 资源名 + 趋势箭头
         text(px+10, sy+9, RES_LABELS[res], 10, c[1]+40,c[2]+40,c[3]+40,230)
         text(px+60, sy+9, trend, 12, tr,tg,tb,255)
-        -- 卖/买价格
-        text(px+78, sy+9,
-            "卖:" .. string.format("%.1f", r.sell) .. "★  买:" .. string.format("%.1f", r.buy) .. "★",
+        -- P2-3: 突变感叹号
+        if flashAlpha > 0 then
+            text(px+74, sy+9, "!", 11, 255,220,60,flashAlpha)
+        end
+        -- 卖/买价格（缩短文字以腾出 sparkline 空间）
+        text(px+82, sy+9,
+            "卖" .. string.format("%.1f", r.sell) .. " 买" .. string.format("%.1f", r.buy),
             10, c[1]+20,c[2]+20,c[3]+20,210)
+        -- P2-3: 迷你折线图（右侧，46×13px）
+        local sparkX = px + pw - 52
+        local sparkY = sy + 1
+        drawSparkline(sparkX, sparkY, 44, 13, ms_.history[res],
+            50,230,100,   -- 上升色（绿）
+            255,100,80    -- 下降色（红）
+        )
         sy = sy + 18
 
         local capturedRes = res
@@ -1197,30 +2338,81 @@ local function renderShipyardPanel(planet)
     text(px+pw/2, sy, "[ 造船厂 ]", 13, 100,170,255,255, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
     sy = py + titleH + 4
 
-    -- 队列状态
+    -- P2-3: 队列状态（最多显示3条，含取消×和上移↑按钮）
     if spq_ and #spq_.items > 0 then
-        -- 第一条：正在生产，带进度条
-        local job = spq_.items[1]
-        local pct = job.progress or 0
-        local lbl = "生产: "..SHIP_TYPES[job.shipType].name.." "..math.floor(pct*100).."%"
-        progressBar(px+8, sy, pw-16, 12, pct, lbl, 100,160,255)
-        sy = sy + 16
-        -- 后续等待条目
-        if #spq_.items > 1 then
-            nvgBeginPath(vg_); nvgMoveTo(vg_, px+6, sy+2); nvgLineTo(vg_, px+pw-6, sy+2)
-            nvgStrokeColor(vg_, clr(60,120,200,40)); nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
-            sy = sy + 8
-            for i = 2, #spq_.items do
-                local q  = spq_.items[i]
-                local st = SHIP_TYPES[q.shipType]
+        local displayMax = math.min(3, #spq_.items)
+        for i = 1, displayMax do
+            local capturedIdx = i
+            local q   = spq_.items[i]
+            local st  = SHIP_TYPES[q.shipType]
+            local rowH = 18
+            local rowY = sy
+
+            if i == 1 then
+                -- 第一条：正在生产，带进度条（闪烁蓝光效果用透明度脉动）
+                local pct   = q.progress or 0
+                local pulse = math.abs(math.sin(gameTime_ * 3)) * 80 + 120  -- 120~200
+                local barW  = pw - 52  -- 留出×按钮空间
+                -- 进度条背景
+                nvgBeginPath(vg_)
+                nvgRoundedRect(vg_, px+8, rowY, barW, 14, 3)
+                nvgFillColor(vg_, nvgRGBA(20,50,100,180))
+                nvgFill(vg_)
+                -- 进度条填充（闪烁）
+                if pct > 0 then
+                    nvgBeginPath(vg_)
+                    nvgRoundedRect(vg_, px+8, rowY, barW * pct, 14, 3)
+                    nvgFillColor(vg_, nvgRGBA(60, 140, 255, math.floor(pulse)))
+                    nvgFill(vg_)
+                end
+                -- 进度文字
+                local lbl = st.name .. " " .. math.floor(pct*100) .. "%"
+                text(px+8+barW/2, rowY+7, lbl, 9, 180,210,255,220, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+                -- × 取消按钮
+                nvgBeginPath(vg_)
+                nvgRoundedRect(vg_, px+pw-40, rowY+1, 14, 12, 2)
+                nvgFillColor(vg_, nvgRGBA(180,60,60,160))
+                nvgFill(vg_)
+                text(px+pw-33, rowY+7, "×", 10, 255,180,180,255, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+                addHit(px+pw-40, rowY, 14, 14, function()
+                    if onShipCancelCb_ then onShipCancelCb_(capturedIdx) end
+                end)
+                sy = sy + 18
+            else
+                -- 等待中的条目：序号圆点 + 名称 + ↑上移 + ×取消
+                local rowMid = rowY + rowH/2
                 -- 序号圆点
                 nvgBeginPath(vg_)
-                nvgCircle(vg_, px+14, sy+6, 4)
+                nvgCircle(vg_, px+14, rowMid, 4)
                 nvgFillColor(vg_, nvgRGBA(st.color[1], st.color[2], st.color[3], 200))
                 nvgFill(vg_)
-                text(px+24, sy+6, (i-1)..". "..st.name, 10, 160,180,220,200)
-                sy = sy + 16
+                -- 名称
+                text(px+24, rowMid, (i-1)..". "..st.name, 10, 160,185,225,200, NVG_ALIGN_LEFT+NVG_ALIGN_MIDDLE)
+                -- ↑ 上移按钮
+                nvgBeginPath(vg_)
+                nvgRoundedRect(vg_, px+pw-56, rowY+3, 14, 12, 2)
+                nvgFillColor(vg_, nvgRGBA(60,120,200,140))
+                nvgFill(vg_)
+                text(px+pw-49, rowMid, "↑", 9, 160,210,255,255, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+                addHit(px+pw-56, rowY+2, 14, 14, function()
+                    if onShipPromoteCb_ then onShipPromoteCb_(capturedIdx) end
+                end)
+                -- × 取消按钮
+                nvgBeginPath(vg_)
+                nvgRoundedRect(vg_, px+pw-40, rowY+3, 14, 12, 2)
+                nvgFillColor(vg_, nvgRGBA(180,60,60,140))
+                nvgFill(vg_)
+                text(px+pw-33, rowMid, "×", 10, 255,180,180,255, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+                addHit(px+pw-40, rowY+2, 14, 14, function()
+                    if onShipCancelCb_ then onShipCancelCb_(capturedIdx) end
+                end)
+                sy = sy + rowH
             end
+        end
+        -- 超出显示范围的条目提示
+        if #spq_.items > 3 then
+            text(px+pw/2, sy+6, "...还有 " .. (#spq_.items-3) .. " 艘", 9, 120,140,170,160, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+            sy = sy + 14
         end
     else
         text(px+10, sy+7, "队列: 空闲", 10, 130,150,180,180)
@@ -1264,550 +2456,6 @@ function GameUI.RenderNotifications()
     NotifyPanel.RenderToasts()
 end
 
--- ============================================================================
--- 结算覆盖层
--- ============================================================================
-local function renderEndGameOverlay()
-    if not endGameActive_ then return end
-
-    local isWin = (endGameType_ == "win")
-    -- smoothstep 进场
-    local t = endGameAnimT_
-    local ease = t * t * (3 - 2 * t)
-
-    -- 全屏遮罩（随动画淡入）
-    nvgBeginPath(vg_)
-    nvgRect(vg_, 0, 0, screenW_, screenH_)
-    nvgFillColor(vg_, nvgRGBA(0, 0, 0, math.floor(180 * ease)))
-    nvgFill(vg_)
-
-    -- 面板尺寸
-    local dw, dh = 480, 450
-    local dx = (screenW_ - dw) / 2
-    -- 从屏幕下方滑入
-    local dy = (screenH_ - dh) / 2 + (1 - ease) * screenH_ * 0.3
-
-    -- 发光边框
-    local glowR, glowG, glowB = isWin and 80 or 220, isWin and 220 or 50, isWin and 60 or 50
-    nvgBeginPath(vg_)
-    nvgRoundedRect(vg_, dx-3, dy-3, dw+6, dh+6, 16)
-    nvgFillColor(vg_, nvgRGBA(glowR, glowG, glowB, math.floor(70 * ease)))
-    nvgFill(vg_)
-
-    -- 面板背景
-    nvgBeginPath(vg_)
-    nvgRoundedRect(vg_, dx, dy, dw, dh, 14)
-    nvgFillColor(vg_, nvgRGBA(8, 10, 22, 252))
-    nvgFill(vg_)
-    nvgStrokeColor(vg_, nvgRGBA(glowR, glowG, glowB, math.floor(220 * ease)))
-    nvgStrokeWidth(vg_, 2)
-    nvgStroke(vg_)
-
-    -- 大图标
-    nvgFontFace(vg_, "sans")
-    nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-    nvgFontSize(vg_, 44)
-    nvgFillColor(vg_, nvgRGBA(glowR+40, glowG+40, glowB+40, math.floor(255 * ease)))
-    nvgText(vg_, screenW_ / 2, dy + 56, isWin and "🏆" or "💀")
-
-    -- 主标题
-    nvgFontSize(vg_, 22)
-    nvgFillColor(vg_, nvgRGBA(glowR+60, glowG+60, glowB+60, math.floor(255 * ease)))
-    nvgText(vg_, screenW_ / 2, dy + 102, isWin and "银河征服完成！" or "帝国覆灭")
-
-    -- 副标题
-    nvgFontSize(vg_, 12)
-    nvgFillColor(vg_, nvgRGBA(160, 180, 220, math.floor(200 * ease)))
-    nvgText(vg_, screenW_ / 2, dy + 124,
-        isWin and "你已消灭所有海盗势力，统一银河！" or "星航基地已被摧毁，帝国就此终结。")
-
-    -- 分割线
-    local lx1, lx2, ly = dx + 30, dx + dw - 30, dy + 138
-    nvgBeginPath(vg_)
-    nvgMoveTo(vg_, lx1, ly); nvgLineTo(vg_, lx2, ly)
-    nvgStrokeColor(vg_, nvgRGBA(glowR, glowG, glowB, math.floor(80 * ease)))
-    nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
-
-    -- 统计数据（两列）
-    local stats = endGameStats_ or {}
-    local function fmtTime(s)
-        local m = math.floor((s or 0) / 60)
-        local sec = math.floor((s or 0) % 60)
-        return string.format("%d分%02d秒", m, sec)
-    end
-    local rows = {
-        { label="游戏时长",   value=fmtTime(stats.playTime) },
-        { label="殖民星球",   value=tostring(stats.colonized or 0) .. " 颗" },
-        { label="击败海盗",   value=tostring(stats.piratesKilled or 0) .. " 次" },
-        { label="最终等级",   value="Lv." .. tostring(stats.level or 1) .. "  [" .. (stats.rank or "见习指挥官") .. "]" },
-    }
-    local sy = dy + 152
-    for _, row in ipairs(rows) do
-        nvgFontSize(vg_, 11)
-        nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
-        nvgFillColor(vg_, nvgRGBA(120, 150, 200, math.floor(180 * ease)))
-        nvgText(vg_, dx + 60, sy + 7, row.label)
-        nvgTextAlign(vg_, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
-        nvgFillColor(vg_, nvgRGBA(200, 220, 255, math.floor(230 * ease)))
-        nvgText(vg_, dx + dw - 60, sy + 7, row.value)
-        sy = sy + 22
-    end
-
-    -- 分割线2
-    nvgBeginPath(vg_)
-    nvgMoveTo(vg_, lx1, sy + 4); nvgLineTo(vg_, lx2, sy + 4)
-    nvgStrokeColor(vg_, nvgRGBA(60, 80, 140, math.floor(80 * ease)))
-    nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
-    sy = sy + 14
-
-    -- 战斗详情分区标题
-    nvgFontSize(vg_, 10)
-    nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-    nvgFillColor(vg_, nvgRGBA(100, 130, 200, math.floor(160 * ease)))
-    nvgText(vg_, screenW_ / 2, sy + 7, "— 战斗详情 —")
-    sy = sy + 18
-
-    -- 舰型名称映射
-    local shipNames = {
-        SCOUT="侦察舰", FRIGATE="护卫舰", DESTROYER="驱逐舰",
-        BATTLECRUISER="战列舰", CARRIER="航母", INTERCEPTOR="拦截机",
-        MINER="采矿舰", ENGINEER="工程舰", EXPLORER="探索舰",
-    }
-    local function fmtNum(n)
-        if n >= 10000 then return string.format("%.1fw", n/10000) end
-        return tostring(math.floor(n or 0))
-    end
-    local survivor = stats.bestSurvivor and (shipNames[stats.bestSurvivor] or stats.bestSurvivor) or "—"
-    local battleRows = {
-        { label="伤害输出", value=fmtNum(stats.dmgDealt or 0),      color={80,220,120} },
-        { label="受到伤害", value=fmtNum(stats.dmgTaken or 0),      color={220,100,80} },
-        { label="击落敌舰", value=(stats.enemiesKilled or 0).." 艘", color={200,180,80} },
-        { label="通关波次", value=(stats.wavesCleared  or 0).." 波", color={120,180,255} },
-        { label="存活旗舰", value=survivor,                          color={180,140,255} },
-    }
-    for _, row in ipairs(battleRows) do
-        nvgFontSize(vg_, 11)
-        nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
-        nvgFillColor(vg_, nvgRGBA(100, 130, 180, math.floor(160 * ease)))
-        nvgText(vg_, dx + 60, sy + 7, row.label)
-        nvgTextAlign(vg_, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
-        nvgFillColor(vg_, nvgRGBA(row.color[1], row.color[2], row.color[3], math.floor(230 * ease)))
-        nvgText(vg_, dx + dw - 60, sy + 7, row.value)
-        sy = sy + 20
-    end
-
-    -- 分割线3
-    nvgBeginPath(vg_)
-    nvgMoveTo(vg_, lx1, sy + 4); nvgLineTo(vg_, lx2, sy + 4)
-    nvgStrokeColor(vg_, nvgRGBA(60, 80, 140, math.floor(60 * ease)))
-    nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
-    sy = sy + 14
-
-    -- 再来一局按钮
-    local bw, bh = 200, 44
-    local bx = (screenW_ - bw) / 2
-    local by = dy + dh - 60
-
-    nvgBeginPath(vg_)
-    nvgRoundedRect(vg_, bx, by, bw, bh, 8)
-    nvgFillColor(vg_, nvgRGBA(
-        isWin and 30 or 160,
-        isWin and 120 or 40,
-        isWin and 200 or 40,
-        math.floor(220 * ease)))
-    nvgFill(vg_)
-    nvgStrokeColor(vg_, nvgRGBA(
-        isWin and 80 or 220,
-        isWin and 180 or 80,
-        isWin and 255 or 80,
-        math.floor(200 * ease)))
-    nvgStrokeWidth(vg_, 1.5); nvgStroke(vg_)
-
-    nvgFontSize(vg_, 14)
-    nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-    nvgFillColor(vg_, nvgRGBA(220, 235, 255, math.floor(255 * ease)))
-    nvgText(vg_, screenW_ / 2, by + bh / 2, "🔄  再来一局")
-
-    if ease > 0.8 then
-        addHit(bx, by, bw, bh, function()
-            if endGameOnRetry_ then endGameOnRetry_() end
-        end)
-    end
-
-    -- 排行榜按钮（位于再来一局按钮上方）
-    local lbw, lbh = 160, 34
-    local lbx = (screenW_ - lbw) / 2
-    local lby = by - lbh - 10
-
-    nvgBeginPath(vg_)
-    nvgRoundedRect(vg_, lbx, lby, lbw, lbh, 7)
-    nvgFillColor(vg_, nvgRGBA(40, 30, 80, math.floor(200 * ease)))
-    nvgFill(vg_)
-    nvgStrokeColor(vg_, nvgRGBA(120, 80, 220, math.floor(180 * ease)))
-    nvgStrokeWidth(vg_, 1.2); nvgStroke(vg_)
-    nvgFontSize(vg_, 12)
-    nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-    nvgFillColor(vg_, nvgRGBA(180, 150, 255, math.floor(240 * ease)))
-    nvgText(vg_, screenW_ / 2, lby + lbh / 2, "🏅  银河排行榜")
-
-    if ease > 0.8 then
-        addHit(lbx, lby, lbw, lbh, function()
-            lbVisible_ = true
-            lbLoading_ = true
-            lbData_    = nil
-            lbMyRank_  = nil
-            lbMyScore_ = nil
-            if lbOnRequest_ then
-                lbOnRequest_(function(data, myRank, myScore)
-                    lbData_    = data
-                    lbMyRank_  = myRank
-                    lbMyScore_ = myScore
-                    lbLoading_ = false
-                end)
-            else
-                lbLoading_ = false
-            end
-        end)
-    end
-end
-
--- ============================================================================
--- 排行榜面板渲染
--- ============================================================================
-local function renderLeaderboard()
-    if not lbVisible_ then return end
-
-    -- 全屏半透明遮罩
-    nvgBeginPath(vg_)
-    nvgRect(vg_, 0, 0, screenW_, screenH_)
-    nvgFillColor(vg_, nvgRGBA(0, 0, 0, 180))
-    nvgFill(vg_)
-
-    local pw = math.min(420, screenW_ - 40)
-    local ph = math.min(520, screenH_ - 40)
-    local px = (screenW_ - pw) / 2
-    local py = (screenH_ - ph) / 2
-
-    -- 面板背景光晕
-    nvgBeginPath(vg_)
-    nvgRoundedRect(vg_, px - 2, py - 2, pw + 4, ph + 4, 14)
-    nvgFillColor(vg_, nvgRGBA(80, 50, 180, 60))
-    nvgFill(vg_)
-    nvgBeginPath(vg_)
-    nvgRoundedRect(vg_, px, py, pw, ph, 12)
-    nvgFillColor(vg_, nvgRGBA(8, 5, 22, 248))
-    nvgFill(vg_)
-    nvgStrokeColor(vg_, nvgRGBA(100, 70, 200, 200))
-    nvgStrokeWidth(vg_, 1.5); nvgStroke(vg_)
-
-    -- 标题
-    nvgFontFace(vg_, "sans")
-    nvgFontSize(vg_, 16)
-    nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-    nvgFillColor(vg_, nvgRGBA(180, 150, 255, 255))
-    nvgText(vg_, px + pw / 2, py + 22, "🏅  银河征服 · 排行榜")
-
-    -- 分割线
-    nvgBeginPath(vg_)
-    nvgMoveTo(vg_, px + 20, py + 36); nvgLineTo(vg_, px + pw - 20, py + 36)
-    nvgStrokeColor(vg_, nvgRGBA(80, 60, 160, 120))
-    nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
-
-    -- 我的排名固定栏
-    local listY = py + 44
-    if lbMyRank_ or lbMyScore_ then
-        nvgBeginPath(vg_)
-        nvgRoundedRect(vg_, px + 10, listY, pw - 20, 20, 4)
-        nvgFillColor(vg_, nvgRGBA(60, 40, 120, 160)); nvgFill(vg_)
-        nvgFontSize(vg_, 10)
-        nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
-        nvgFillColor(vg_, nvgRGBA(180, 150, 255, 220))
-        local rankStr = lbMyRank_ and string.format("我的排名: #%d", lbMyRank_) or "我的排名: 未上榜"
-        nvgText(vg_, px + 16, listY + 10, rankStr)
-        if lbMyScore_ then
-            nvgTextAlign(vg_, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
-            nvgFillColor(vg_, nvgRGBA(255, 220, 100, 220))
-            nvgText(vg_, px + pw - 16, listY + 10, string.format("得分: %d", lbMyScore_))
-        end
-        listY = listY + 28
-    end
-
-    local rowH = 28
-    local rankColors = { {255,215,0}, {192,192,192}, {205,127,50} }
-
-    if lbLoading_ then
-        nvgFontSize(vg_, 13)
-        nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-        nvgFillColor(vg_, nvgRGBA(140, 120, 200, 200))
-        nvgText(vg_, px + pw / 2, listY + 60, "加载中...")
-    elseif not lbData_ or #lbData_ == 0 then
-        nvgFontSize(vg_, 13)
-        nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-        nvgFillColor(vg_, nvgRGBA(120, 100, 160, 180))
-        nvgText(vg_, px + pw / 2, listY + 60, "暂无排行榜数据")
-    else
-        -- 表头
-        nvgFontSize(vg_, 9)
-        nvgFillColor(vg_, nvgRGBA(100, 90, 150, 180))
-        nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
-        nvgText(vg_, px + 16, listY + 6, "排名  指挥官")
-        nvgTextAlign(vg_, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
-        nvgText(vg_, px + pw - 16, listY + 6, "得分")
-        listY = listY + 16
-
-        local maxRows = math.floor((py + ph - 50 - listY) / rowH)
-        for i, entry in ipairs(lbData_) do
-            if i > maxRows then break end
-            local ry = listY + (i - 1) * rowH
-
-            if entry.isMe then
-                nvgBeginPath(vg_)
-                nvgRoundedRect(vg_, px + 8, ry + 1, pw - 16, rowH - 2, 4)
-                nvgFillColor(vg_, nvgRGBA(60, 40, 130, 140)); nvgFill(vg_)
-            elseif i % 2 == 0 then
-                nvgBeginPath(vg_)
-                nvgRoundedRect(vg_, px + 8, ry + 1, pw - 16, rowH - 2, 4)
-                nvgFillColor(vg_, nvgRGBA(20, 15, 45, 80)); nvgFill(vg_)
-            end
-
-            local rc = rankColors[entry.rank] or {160, 150, 200}
-            nvgFontSize(vg_, entry.rank <= 3 and 13 or 11)
-            nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
-            nvgFillColor(vg_, nvgRGBA(rc[1], rc[2], rc[3], 255))
-            local medal = entry.rank == 1 and "🥇"
-                       or entry.rank == 2 and "🥈"
-                       or entry.rank == 3 and "🥉"
-                       or string.format("#%d", entry.rank)
-            nvgText(vg_, px + 16, ry + rowH / 2, medal)
-
-            nvgFontSize(vg_, 11)
-            nvgFillColor(vg_, entry.isMe
-                and nvgRGBA(220, 200, 255, 255)
-                or  nvgRGBA(180, 170, 210, 220))
-            local nameX = entry.rank <= 9 and (px + 46) or (px + 52)
-            local name = entry.nickname or ("玩家" .. tostring(entry.userId or "?"))
-            nvgText(vg_, nameX, ry + rowH / 2, name .. (entry.isMe and " ★" or ""))
-
-            nvgTextAlign(vg_, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
-            nvgFillColor(vg_, nvgRGBA(255, 220, 100, 230))
-            nvgText(vg_, px + pw - 16, ry + rowH / 2, tostring(entry.score or 0))
-        end
-    end
-
-    -- 关闭按钮
-    local cbw, cbh = 120, 32
-    local cbx = (screenW_ - cbw) / 2
-    local cby = py + ph - cbh - 12
-    nvgBeginPath(vg_)
-    nvgRoundedRect(vg_, cbx, cby, cbw, cbh, 7)
-    nvgFillColor(vg_, nvgRGBA(40, 30, 80, 200)); nvgFill(vg_)
-    nvgStrokeColor(vg_, nvgRGBA(100, 70, 180, 160))
-    nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
-    nvgFontSize(vg_, 12)
-    nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-    nvgFillColor(vg_, nvgRGBA(160, 140, 220, 240))
-    nvgText(vg_, screenW_ / 2, cby + cbh / 2, "关闭")
-    addHit(cbx, cby, cbw, cbh, function()
-        lbVisible_ = false
-    end)
-end
-
--- ============================================================================
--- 设置面板
--- ============================================================================
--- 滑块拖拽上下文（trackX/trackW 用于每帧计算值）
-local settingsDragCtx_ = { trackX = 0, trackW = 1 }
-
-local function renderSettingsPanel()
-    if not settingsVisible_ then return end
-
-    -- 处理滑块拖拽（每帧检测鼠标按键状态）
-    if settingsDragSlider_ then
-        if input:GetMouseButtonDown(MOUSEB_LEFT) then
-            local newVal = math.max(0, math.min(1,
-                (cursorX_ - settingsDragCtx_.trackX) / settingsDragCtx_.trackW))
-            if settingsDragSlider_ == "bgm" then
-                settingsBgmVol_ = newVal
-                Audio.SetBGMVolume(newVal)
-            elseif settingsDragSlider_ == "sfx" then
-                settingsSfxVol_ = newVal
-                Audio.SetSFXVolume(newVal)
-            end
-        else
-            -- 鼠标松开，保存并结束拖拽
-            saveSettings()
-            settingsDragSlider_ = nil
-        end
-    end
-
-    -- 全屏半透明遮罩（点击遮罩关闭面板）
-    nvgBeginPath(vg_)
-    nvgRect(vg_, 0, 0, screenW_, screenH_)
-    nvgFillColor(vg_, nvgRGBA(0, 0, 0, 160))
-    nvgFill(vg_)
-    addHit(0, 0, screenW_, screenH_, function()
-        settingsVisible_ = false
-    end)
-
-    -- 面板尺寸和位置（居中）
-    local pw, ph = 340, 280
-    local px = (screenW_ - pw) / 2
-    local py = (screenH_ - ph) / 2
-
-    -- 面板背景
-    nvgBeginPath(vg_)
-    nvgRoundedRect(vg_, px, py, pw, ph, 12)
-    nvgFillColor(vg_, nvgRGBA(8, 12, 30, 245)); nvgFill(vg_)
-    nvgStrokeColor(vg_, nvgRGBA(80, 140, 255, 200))
-    nvgStrokeWidth(vg_, 1.5); nvgStroke(vg_)
-    -- 面板内部点击不传到遮罩
-    addHit(px, py, pw, ph, function() end)
-
-    -- 标题
-    nvgFontFace(vg_, "sans")
-    nvgFontSize(vg_, 16)
-    nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-    nvgFillColor(vg_, nvgRGBA(100, 200, 255, 255))
-    nvgText(vg_, px + pw / 2, py + 24, "⚙  游戏设置")
-
-    -- 分隔线
-    nvgBeginPath(vg_)
-    nvgMoveTo(vg_, px + 16, py + 40)
-    nvgLineTo(vg_, px + pw - 16, py + 40)
-    nvgStrokeColor(vg_, nvgRGBA(60, 100, 180, 80))
-    nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
-
-    -- 辅助函数：绘制带标签的水平滑块
-    -- 返回：用户点击/拖拽后的新值（nil 表示没有交互）
-    local function drawSlider(label, val, sx, sy, sw, sh, key)
-        -- 标签
-        nvgFontSize(vg_, 11)
-        nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
-        nvgFillColor(vg_, nvgRGBA(160, 200, 255, 220))
-        nvgText(vg_, sx, sy + sh / 2, label)
-
-        -- 百分比文字（右端）
-        local pctStr = string.format("%d%%", math.floor(val * 100))
-        nvgTextAlign(vg_, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
-        nvgFillColor(vg_, nvgRGBA(120, 180, 255, 200))
-        nvgText(vg_, sx + sw, sy + sh / 2, pctStr)
-
-        -- 滑槽
-        local trackX = sx + 70
-        local trackW = sw - 70 - 36
-        local trackY = sy + sh / 2
-        nvgBeginPath(vg_)
-        nvgRoundedRect(vg_, trackX, trackY - 3, trackW, 6, 3)
-        nvgFillColor(vg_, nvgRGBA(30, 50, 90, 200)); nvgFill(vg_)
-
-        -- 已填充段
-        local fillW = trackW * val
-        if fillW > 1 then
-            nvgBeginPath(vg_)
-            nvgRoundedRect(vg_, trackX, trackY - 3, fillW, 6, 3)
-            nvgFillColor(vg_, nvgRGBA(60, 160, 255, 220)); nvgFill(vg_)
-        end
-
-        -- 滑块圆点（拖拽中高亮）
-        local thumbX  = trackX + fillW
-        local isDragging = (settingsDragSlider_ == key)
-        nvgBeginPath(vg_); nvgCircle(vg_, thumbX, trackY, isDragging and 9 or 7)
-        nvgFillColor(vg_, isDragging and nvgRGBA(180, 230, 255, 255) or nvgRGBA(120, 200, 255, 255))
-        nvgFill(vg_)
-        nvgStrokeColor(vg_, nvgRGBA(200, 230, 255, 220))
-        nvgStrokeWidth(vg_, isDragging and 2 or 1.5); nvgStroke(vg_)
-
-        -- 点击/拖拽起始区域（整个滑槽 + 圆点区域）
-        addHit(trackX - 8, trackY - 12, trackW + 16, 24, function()
-            -- 鼠标按下：立即更新值并开启拖拽
-            local newVal = math.max(0, math.min(1, (cursorX_ - trackX) / trackW))
-            if key == "bgm" then
-                settingsBgmVol_ = newVal
-                Audio.SetBGMVolume(newVal)
-            elseif key == "sfx" then
-                settingsSfxVol_ = newVal
-                Audio.SetSFXVolume(newVal)
-            end
-            -- 记录拖拽状态（松开时 renderSettingsPanel 保存设置）
-            settingsDragSlider_ = key
-            settingsDragCtx_.trackX = trackX
-            settingsDragCtx_.trackW = trackW
-        end)
-    end
-
-    -- BGM 音量滑块
-    local rowH   = 40
-    local slotX  = px + 16
-    local slotW  = pw - 32
-    local row1Y  = py + 52
-
-    drawSlider("BGM 音乐", settingsBgmVol_, slotX, row1Y, slotW, rowH, "bgm")
-
-    -- SFX 音量滑块
-    local row2Y = row1Y + rowH + 8
-    drawSlider("SFX 音效", settingsSfxVol_, slotX, row2Y, slotW, rowH, "sfx")
-
-    -- 静音开关
-    local row3Y  = row2Y + rowH + 12
-    local togW, togH = 52, 26
-    local togX   = px + pw - 16 - togW
-    local togY   = row3Y + 4
-
-    nvgFontSize(vg_, 11)
-    nvgTextAlign(vg_, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
-    nvgFillColor(vg_, nvgRGBA(160, 200, 255, 220))
-    nvgText(vg_, slotX, togY + togH / 2, "全局静音")
-
-    -- 开关背景
-    nvgBeginPath(vg_)
-    nvgRoundedRect(vg_, togX, togY, togW, togH, togH / 2)
-    nvgFillColor(vg_, settingsMute_ and nvgRGBA(60,160,255,200) or nvgRGBA(30,50,90,200))
-    nvgFill(vg_)
-    nvgStrokeColor(vg_, settingsMute_ and nvgRGBA(100,200,255,180) or nvgRGBA(60,100,180,100))
-    nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
-    -- 开关圆点
-    local dotX = settingsMute_ and (togX + togW - togH/2 - 2) or (togX + togH/2 + 2)
-    nvgBeginPath(vg_); nvgCircle(vg_, dotX, togY + togH/2, togH/2 - 3)
-    nvgFillColor(vg_, nvgRGBA(220, 240, 255, 255)); nvgFill(vg_)
-    -- 开关文字
-    nvgFontSize(vg_, 9)
-    nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-    nvgFillColor(vg_, settingsMute_ and nvgRGBA(255,255,255,200) or nvgRGBA(100,140,200,180))
-    nvgText(vg_, togX + togW/2, togY + togH/2, settingsMute_ and "ON" or "OFF")
-    addHit(togX, togY, togW, togH, function()
-        settingsMute_ = not settingsMute_
-        Audio.SetMute(settingsMute_)
-        saveSettings()
-    end)
-
-    -- 分隔线（按钮上方）
-    nvgBeginPath(vg_)
-    nvgMoveTo(vg_, px + 16, py + ph - 48)
-    nvgLineTo(vg_, px + pw - 16, py + ph - 48)
-    nvgStrokeColor(vg_, nvgRGBA(60, 100, 180, 60))
-    nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
-
-    -- 关闭按钮
-    local cbw, cbh = 120, 32
-    local cbx = px + (pw - cbw) / 2
-    local cby = py + ph - cbh - 10
-    nvgBeginPath(vg_)
-    nvgRoundedRect(vg_, cbx, cby, cbw, cbh, 7)
-    nvgFillColor(vg_, nvgRGBA(20, 60, 140, 200)); nvgFill(vg_)
-    nvgStrokeColor(vg_, nvgRGBA(80, 140, 255, 160))
-    nvgStrokeWidth(vg_, 1); nvgStroke(vg_)
-    nvgFontSize(vg_, 12)
-    nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-    nvgFillColor(vg_, nvgRGBA(180, 220, 255, 240))
-    nvgText(vg_, cbx + cbw / 2, cby + cbh / 2, "关闭")
-    addHit(cbx, cby, cbw, cbh, function()
-        settingsVisible_ = false
-    end)
-end
-
--- ============================================================================
--- 游戏超时覆盖层
--- ============================================================================
 -- ============================================================================
 -- 星图随机事件弹窗
 -- ============================================================================
@@ -1917,100 +2565,11 @@ function GameUI.ShowEventPopup(ev, onChoice)
     eventPopup_ = { ev = ev, onChoice = onChoice }
 end
 
-local function renderTimeoutOverlay()
-    if not timeoutActive_ then return end
-
-    -- 全屏半透明遮罩
-    nvgBeginPath(vg_)
-    nvgRect(vg_, 0, 0, screenW_, screenH_)
-    nvgFillColor(vg_, nvgRGBA(0, 0, 0, 200))
-    nvgFill(vg_)
-
-    -- 中心对话框
-    local dw, dh = 460, 280
-    local dx = (screenW_ - dw) / 2
-    local dy = (screenH_ - dh) / 2
-
-    -- 边框发光效果
-    nvgBeginPath(vg_)
-    nvgRoundedRect(vg_, dx-2, dy-2, dw+4, dh+4, 14)
-    nvgFillColor(vg_, nvgRGBA(200, 60, 60, 80))
-    nvgFill(vg_)
-
-    -- 面板背景
-    nvgBeginPath(vg_)
-    nvgRoundedRect(vg_, dx, dy, dw, dh, 12)
-    nvgFillColor(vg_, nvgRGBA(12, 8, 20, 250))
-    nvgFill(vg_)
-    nvgStrokeColor(vg_, nvgRGBA(200, 60, 60, 220))
-    nvgStrokeWidth(vg_, 2)
-    nvgStroke(vg_)
-
-    -- 图标（警告符号）
-    nvgFontFace(vg_, "sans")
-    nvgFontSize(vg_, 36)
-    nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-    nvgFillColor(vg_, nvgRGBA(255, 80, 60, 255))
-    nvgText(vg_, screenW_ / 2, dy + 50, "⏰")
-
-    -- 标题
-    nvgFontSize(vg_, 20)
-    nvgFillColor(vg_, nvgRGBA(255, 100, 80, 255))
-    nvgText(vg_, screenW_ / 2, dy + 90, "在线时间已到！")
-
-    -- 说明文字
-    nvgFontSize(vg_, 12)
-    nvgFillColor(vg_, nvgRGBA(200, 200, 220, 220))
-    nvgText(vg_, screenW_ / 2, dy + 116, "您今日的2小时免费游玩时间已用完。")
-    nvgText(vg_, screenW_ / 2, dy + 135, "观看一段广告可延长1小时游玩，最多可延长2次。")
-
-    -- 剩余次数显示
-    nvgFontSize(vg_, 13)
-    local countColor = timeoutAdCount_ > 0 and nvgRGBA(80,220,150,255) or nvgRGBA(150,150,160,200)
-    nvgFillColor(vg_, countColor)
-    nvgText(vg_, screenW_ / 2, dy + 163,
-        "剩余可用次数：" .. timeoutAdCount_ .. " / 2")
-
-    -- 看广告按钮
-    if timeoutAdCount_ > 0 then
-        local bw2, bh2 = 220, 44
-        local bx2 = (screenW_ - bw2) / 2
-        local by2 = dy + dh - 90
-
-        -- 按钮背景渐变感
-        nvgBeginPath(vg_)
-        nvgRoundedRect(vg_, bx2, by2, bw2, bh2, 8)
-        nvgFillColor(vg_, nvgRGBA(40, 160, 80, 230))
-        nvgFill(vg_)
-        nvgStrokeColor(vg_, nvgRGBA(80, 240, 120, 200))
-        nvgStrokeWidth(vg_, 1.5)
-        nvgStroke(vg_)
-
-        nvgFontSize(vg_, 14)
-        nvgFillColor(vg_, nvgRGBA(220, 255, 230, 255))
-        nvgText(vg_, screenW_ / 2, by2 + bh2 / 2, "▶  观看广告 延长1小时")
-
-        addHit(bx2, by2, bw2, bh2, function()
-            if timeoutOnWatch_ then timeoutOnWatch_() end
-        end)
-    else
-        -- 无广告次数
-        nvgFontSize(vg_, 12)
-        nvgFillColor(vg_, nvgRGBA(160, 160, 160, 200))
-        nvgText(vg_, screenW_ / 2, dy + dh - 68, "今日广告延时次数已用完，请明天再来。")
-    end
-
-    -- 退出说明（小字）
-    nvgFontSize(vg_, 10)
-    nvgFillColor(vg_, nvgRGBA(120, 120, 140, 160))
-    nvgText(vg_, screenW_ / 2, dy + dh - 20,
-        "已自动断开服务器。感谢游玩《银河征服》！")
-end
-
 -- ============================================================================
 -- 主渲染入口（每帧从 main.lua 调用）
 -- ============================================================================
-function GameUI.RenderHUD()
+function GameUI.RenderHUD(dt)
+    dt = dt or 0
     screenW_, screenH_ = UICommon.getVirtualSize()
     -- 更新鼠标位置（用于按钮悬停判断）
     local mpos = input:GetMousePosition()
@@ -2030,11 +2589,26 @@ function GameUI.RenderHUD()
             -- 屏幕尺寸和光标已在帧顶部同步到 UICommon
 
             renderPirateWarning()
+            renderIntelPanel()          -- 海盗情报面板
+            renderCareerStatsPanel()    -- P2-1: 生涯战绩面板
+            renderSignalPanel()         -- P3-1: 快捷信号面板
+            renderCareerPage(dt)        -- P3-2: 生涯战绩全屏页面
+            renderLogPanel()            -- P1-3: 任务日志面板
             TechPanel.Render({
-                selectedPlanet = selectedPlanet_,
-                onResearch     = onResearchCb_,
+                selectedPlanet       = selectedPlanet_,
+                onResearch           = onResearchCb_,
+                techCompleteEffects  = techCompleteEffects_,  -- P1-2: 粒子特效状态
+                onResearchSpeedAd = techSpeedAdLoading_ and nil or (techSpeedAdCb_ and function(onResult)
+                    techSpeedAdLoading_ = true
+                    techSpeedAdCb_(function(ok, msg)
+                        techSpeedAdLoading_ = false
+                        if onResult then onResult(ok, msg) end
+                    end)
+                end),
             })
             renderMarketPanel()
+            -- P2-1: 查询当前活动编队的驻守信息
+            local garrisonInfo_ = getGarrisonInfoCb_ and getGarrisonInfoCb_(FleetPanel.GetActiveId()) or {}
             FleetPanel.Render({
                 explorerColonizeMode = explorerColonizeMode_,
                 onFleetSelect        = onFleetSelectCb_,
@@ -2042,6 +2616,12 @@ function GameUI.RenderHUD()
                 onExplorerColonize   = onExplorerColonizeCb_,
                 onAssignReserve      = onAssignReserveCb_,
                 baseBonus            = rm_ and rm_.baseBonus or nil,
+                onExplorerTask       = onExplorerTaskCb_,
+                explorerTasks        = explorerTasks_UI_,
+                garrisonedPlanet     = garrisonInfo_.garrisonedPlanet,
+                colonizedPlanets     = garrisonInfo_.colonizedPlanets or {},
+                onGarrisonFleet      = onGarrisonFleetCb_,
+                onRecallGarrison     = onRecallGarrisonCb_,
             })
             if hasPlanet_ and selectedPlanet_ then
                 if selectedPlanet_.isBase then
@@ -2049,18 +2629,38 @@ function GameUI.RenderHUD()
                         onBuild          = onBaseBuildCb_,
                         onCoreUpgrade    = onCoreUpgradeCb_,
                         onSpeedUpBuild   = onSpeedUpBuildCb_,
+                        onSpeedUpBuildAd = speedUpAdLoading_ and nil or (speedUpAdCb_ and function(target)
+                            speedUpAdLoading_ = true
+                            speedUpAdCb_(target, function(ok, msg)
+                                speedUpAdLoading_ = false
+                            end)
+                        end),
                         slotFlashTimer   = slotFlashTimer_,
                         slotFlashDuration= SLOT_FLASH_DURATION,
                         progressBar      = progressBar,
                         shipyardMult     = rm_ and rm_.baseBonus and rm_.baseBonus.shipyardMult or 1.0,
+                        -- P1-2 WARP_GATE_PRIME
+                        hasWarpGate      = rm_ and rm_.baseBonus and rm_.baseBonus.hasWarpGatePrime or false,
+                        warpCooldown     = rm_ and rm_.baseBonus and rm_.baseBonus.warpGatePrimeCooldown or 0,
+                        onWarpFleet      = onWarpFleetCb_,
                     })
                     renderExchangePanel(selectedPlanet_, bph)
                     renderShipyardPanel(selectedPlanet_)
                 else
                     PlanetPanel.Render(selectedPlanet_, {
-                        onBuild        = onBuildCb_,
-                        onSpeedUpBuild = onSpeedUpBuildCb_,
-                        progressBar    = progressBar,
+                        onBuild           = onBuildCb_,
+                        onSpeedUpBuild    = onSpeedUpBuildCb_,
+                        onSpeedUpBuildAd  = speedUpAdLoading_ and nil or (speedUpAdCb_ and function(target)
+                            speedUpAdLoading_ = true
+                            speedUpAdCb_(target, function(ok, msg)
+                                speedUpAdLoading_ = false
+                            end)
+                        end),
+                        progressBar       = progressBar,
+                        onTogglePriority  = onTogglePriorityCb_,
+                        isPriority        = getIsPriorityCb_ and getIsPriorityCb_(selectedPlanet_),
+                        onCancelQueued    = onCancelQueuedCb_,  -- P1-3
+                        prodHistory       = getPlanetProdHistoryCb_ and getPlanetProdHistoryCb_(selectedPlanet_.name), -- P3-2
                     })
                     renderShipyardPanel(selectedPlanet_)
                 end
@@ -2078,13 +2678,106 @@ function GameUI.RenderHUD()
     renderEventPopup()
 
     -- 超时覆盖层
-    renderTimeoutOverlay()
+    TimeoutPanel.Render()
+    -- P2-1: 轮间选卡覆盖层（在超时层之后，结算层之前）
+    if cardDraft_.visible and #cardDraft_.cards > 0 then
+        local vg      = vg_
+        local sw, sh  = screenW_, screenH_
+        local t       = cardDraft_.animT  -- 0→1 入场插值
+        -- 暗化背景
+        nvgBeginPath(vg); nvgRect(vg, 0, 0, sw, sh)
+        nvgFillColor(vg, nvgRGBA(0, 0, 10, math.floor(200 * t)))
+        nvgFill(vg)
+        -- 标题
+        local titleY = sh * 0.12 + (1 - t) * 40
+        nvgFontFace(vg, "sans"); nvgFontSize(vg, 22)
+        nvgFillColor(vg, nvgRGBA(255, 220, 80, math.floor(255 * t)))
+        nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgText(vg, sw/2, titleY, string.format("⚡ 第 %d 轮奖励 — 选择强化卡牌", endlessRound_))
+        nvgFontSize(vg, 13)
+        nvgFillColor(vg, nvgRGBA(180, 180, 200, math.floor(200 * t)))
+        nvgText(vg, sw/2, titleY + 26, "选择一张卡牌增强你的舰队")
+        -- 卡牌布局
+        local CARD_W, CARD_H = 170, 240
+        local GAP    = 24
+        local n      = #cardDraft_.cards
+        local totalW = n * CARD_W + (n - 1) * GAP
+        local startX = sw/2 - totalW/2
+        local cardY  = sh * 0.5 - CARD_H/2 + (1 - t) * 60
+        -- 稀有度颜色
+        local rarityColors = {
+            common   = {120, 200, 255},
+            rare     = {160, 120, 255},
+            epic     = {255, 180, 60},
+        }
+        -- 先用原始 cardY 做本帧 hover 命中检测，再进入渲染
+        local newHoverIdx = 0
+        for i = 1, n do
+            local cx2 = startX + (i-1) * (CARD_W + GAP)
+            if cursorX_ >= cx2 and cursorX_ <= cx2 + CARD_W
+               and cursorY_ >= cardY - 10 and cursorY_ <= cardY + CARD_H then
+                newHoverIdx = i
+            end
+        end
+        cardDraft_.hoverIdx = newHoverIdx
+        for i, card in ipairs(cardDraft_.cards) do
+            local cx = startX + (i-1) * (CARD_W + GAP)
+            local isHover = (cardDraft_.hoverIdx == i)
+            local ry = isHover and (cardY - 10) or cardY
+            local rc = rarityColors[card.rarity or "common"]
+            -- 卡牌背景
+            nvgBeginPath(vg); nvgRoundedRect(vg, cx, ry, CARD_W, CARD_H, 12)
+            nvgFillColor(vg, nvgRGBA(12, 20, 40, 240))
+            nvgFill(vg)
+            -- 边框（稀有度色）
+            nvgStrokeWidth(vg, isHover and 3 or 2)
+            nvgStrokeColor(vg, nvgRGBA(rc[1], rc[2], rc[3], isHover and 255 or 180))
+            nvgStroke(vg)
+            -- 图标
+            nvgFontSize(vg, 44); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg, nvgRGBA(255, 255, 255, math.floor(255 * t)))
+            nvgText(vg, cx + CARD_W/2, ry + 62, card.icon or "★")
+            -- 稀有度标签
+            local rl = card.rarity == "epic" and "史诗" or card.rarity == "rare" and "稀有" or "普通"
+            nvgFontSize(vg, 10); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg, nvgRGBA(rc[1], rc[2], rc[3], 220))
+            nvgText(vg, cx + CARD_W/2, ry + 112, rl)
+            -- 卡名
+            nvgFontSize(vg, 14); nvgFillColor(vg, nvgRGBA(220, 230, 255, 240))
+            nvgText(vg, cx + CARD_W/2, ry + 132, card.label or "")
+            -- 描述（最多2行，手动换行）
+            nvgFontSize(vg, 11); nvgFillColor(vg, nvgRGBA(160, 170, 200, 200))
+            nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_TOP)
+            local desc = card.desc or ""
+            -- 简单按字数折行（每行最多14字）
+            local line1, line2 = desc:sub(1, 14), desc:sub(15)
+            nvgText(vg, cx + CARD_W/2, ry + 154, line1)
+            if line2 ~= "" then nvgText(vg, cx + CARD_W/2, ry + 168, line2) end
+            -- 选择按钮
+            local btnX, btnY, btnW2, btnH2 = cx + 16, ry + CARD_H - 38, CARD_W - 32, 26
+            nvgBeginPath(vg); nvgRoundedRect(vg, btnX, btnY, btnW2, btnH2, 6)
+            nvgFillColor(vg, nvgRGBA(rc[1], rc[2], rc[3], isHover and 200 or 120))
+            nvgFill(vg)
+            nvgFontSize(vg, 12); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg, nvgRGBA(255, 255, 255, 230))
+            nvgText(vg, cx + CARD_W/2, btnY + btnH2/2, "选择")
+            -- 注册点击热区（t 足够大才响应）
+            if t > 0.5 then
+                addHit(cx, ry, CARD_W, CARD_H, function()
+                    if cardDraft_.onSelect then cardDraft_.onSelect(card.key) end
+                    cardDraft_.visible = false
+                end)
+            end
+        end
+    end
     -- 结算覆盖层（最顶层，覆盖超时层）
-    renderEndGameOverlay()
+    EndGamePanel.Render()
     -- 排行榜浮层（覆盖在结算层之上）
-    renderLeaderboard()
+    EndGamePanel.RenderLeaderboard()
+    -- 成就面板（高于结算层，低于设置层）
+    AchievementPanel.Render()
     -- 设置面板（最顶层，任何时候均可打开）
-    renderSettingsPanel()
+    SettingsPanel.Render()
     -- 涟漪反馈（最顶层叠加，不受任何面板遮挡）
     if #ripples_ > 0 then
         for _, rp in ipairs(ripples_) do
@@ -2099,14 +2792,66 @@ function GameUI.RenderHUD()
         end
     end
 
+    -- ── 中期资源补给广告按钮（底部居中浮动，最多3次/局）──
+    if deployed_ and topBarAdCb_ and topBarAdCount_ < TOP_BAR_AD_MAX
+       and currentScene_ == "galaxy" and not EndGamePanel.IsActive() then
+        local abW, abH = 152, 22
+        local abX = math.floor(screenW_ / 2 - abW / 2)
+        local abY = screenH_ - 32
+        if not topBarAdLoading_ then
+            local remain = TOP_BAR_AD_MAX - topBarAdCount_
+            -- 轻微脉动边框
+            local pulse = math.abs(math.sin(os.clock() * 1.8))
+            local brdA  = math.floor(140 + 80 * pulse)
+            nvgBeginPath(vg_); nvgRoundedRect(vg_, abX, abY, abW, abH, 5)
+            nvgFillColor(vg_, nvgRGBA(0, 55, 30, 210)); nvgFill(vg_)
+            nvgBeginPath(vg_); nvgRoundedRect(vg_, abX+0.5, abY+0.5, abW-1, abH-1, 5)
+            nvgStrokeColor(vg_, nvgRGBA(0, 210, 110, brdA))
+            nvgStrokeWidth(vg_, 1.2); nvgStroke(vg_)
+            nvgFontFace(vg_, "sans"); nvgFontSize(vg_, 9)
+            nvgTextAlign(vg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg_, nvgRGBA(80, 255, 160, 255))
+            nvgText(vg_, abX + abW/2, abY + abH/2,
+                "🎬 看广告得资源补给 ×" .. remain)
+            addHit(abX, abY, abW, abH, function()
+                if topBarAdCb_ and not topBarAdLoading_ and topBarAdCount_ < TOP_BAR_AD_MAX then
+                    topBarAdLoading_ = true
+                    topBarAdCb_(function(ok)
+                        topBarAdLoading_ = false
+                        if ok then topBarAdCount_ = topBarAdCount_ + 1 end
+                    end)
+                end
+            end)
+        end
+    end
+
     -- 顶栏按钮命中区：在所有面板之后注册，确保最高优先级（不被任何面板遮挡）
-    -- 设置面板打开时全屏遮罩已覆盖，无需额外处理
-    if not settingsVisible_ then
+    -- 设置面板/成就面板打开时全屏遮罩已覆盖，无需额外处理
+    if not SettingsPanel.IsVisible() and not AchievementPanel.IsVisible() then
         -- 铃铛按钮
         addHit(screenW_ - 36, 6, 28, 28, function() NotifyPanel.Toggle() end)
         -- 设置按钮（扩大热区到 36×36，中心不变）
         addHit(screenW_ - 76, 2, 36, 36, function()
-            settingsVisible_ = not settingsVisible_
+            SettingsPanel.Toggle()
+        end)
+        -- 成就按钮
+        addHit(screenW_ - 104, 6, 28, 28, function()
+            AchievementPanel.Toggle()
+        end)
+        -- 📋 日志按钮
+        addHit(screenW_ - 138, 6, 28, 28, function()
+            logVisible_ = not logVisible_
+            logScroll_  = 0
+        end)
+        -- 📊 战绩按钮
+        addHit(screenW_ - 172, 6, 28, 28, function()
+            statsVisible_ = not statsVisible_
+        end)
+        -- 📡 P3-1: 信号按钮
+        addHit(screenW_ - 206, 6, 28, 28, function()
+            if signalCooldown_ <= 0 then
+                signalOpen_ = not signalOpen_
+            end
         end)
     end
 end
@@ -2128,6 +2873,13 @@ function GameUI.RefreshPlanetPanel(planet)
     selectedPlanet_ = planet
 end
 
+-- 强制刷新当前面板（广告奖励等场景下数据已改变但 selectedPlanet_ 引用未变）
+function GameUI.ForceRefreshPanel(planet)
+    -- 先置 nil 再赋值，确保渲染函数检测到"切换"并重新读取数据
+    selectedPlanet_ = nil
+    selectedPlanet_ = planet
+end
+
 
 function GameUI.RefreshShipyardPanel()
     -- 实时读取，无需缓存
@@ -2136,6 +2888,78 @@ end
 -- 设置探索舰殖民模式（影响提示文字和储备面板高亮）
 function GameUI.SetExplorerColonizeMode(active)
     explorerColonizeMode_ = active == true
+end
+
+-- 注入成就数据（由 Client.lua 在初始化/解锁时调用）
+-- data: { {id, name, desc, category, unlocked}, ... }
+-- total: 成就总数（含未解锁）
+function GameUI.SetAchievements(data, total)
+    AchievementPanel.SetData(data, total)
+end
+
+-- P2-3: 注入成就奖励兑换回调
+function GameUI.SetRedeemCallback(fn)
+    AchievementPanel.SetRedeemCallback(fn)
+end
+
+-- P2-3: 返回可兑换奖励数量（供外部读取）
+function GameUI.GetRedeemableCount()
+    return AchievementPanel.GetRedeemableCount()
+end
+
+-- 设置无尽征服模式当前轮次（0 = 普通模式，>0 = 无尽模式第N轮）
+-- 由 Client.lua 在进入无尽模式、每轮开始时调用
+function GameUI.SetEndlessRound(round)
+    endlessRound_ = round or 0
+end
+
+-- P2-1: 展示无尽模式选卡面板
+-- cards: [{key, icon, label, desc, rarity}], onSelect: function(cardKey)
+function GameUI.ShowCardDraft(cards, onSelect)
+    cardDraft_.visible  = true
+    cardDraft_.cards    = cards or {}
+    cardDraft_.onSelect = onSelect
+    cardDraft_.hoverIdx = 0
+    cardDraft_.animT    = 0
+end
+
+-- P2-1: 隐藏选卡面板
+function GameUI.HideCardDraft()
+    cardDraft_.visible  = false
+    cardDraft_.cards    = {}
+    cardDraft_.onSelect = nil
+end
+
+-- 刷新探索任务列表（由 Client.lua 在任务启动/完成时调用）
+function GameUI.RefreshExplorerTasks(tasks)
+    explorerTasks_UI_ = tasks or {}
+end
+
+-- P1-3: 推送一条探索完成日志（由 Client.lua 在 updateExplorerTasks 任务完成时调用）
+-- entry: { icon=string, label=string, rewardStr=string, timeStr=string }
+function GameUI.PushExploreLog(entry)
+    table.insert(exploreLog_, 1, entry)  -- 最新的排最前
+    if #exploreLog_ > 20 then
+        table.remove(exploreLog_)        -- 只保留最近 20 条
+    end
+end
+
+-- P1-3: 同步已完成目标集合（由 Client.lua 在 checkStageGoals 后调用）
+-- completed: { [goalId] = true, ... }
+function GameUI.SetCompletedGoals(completed)
+    completedGoals_UI_ = completed or {}
+end
+
+-- P2-1: 同步生涯战绩数据到 UI（由 Client.lua 在游戏结束/场景初始化时调用）
+function GameUI.SetCareerStats(stats)
+    if type(stats) ~= "table" then return end
+    careerStats_UI_.totalGames    = stats.totalGames    or 0
+    careerStats_UI_.totalWins     = stats.totalWins     or 0
+    careerStats_UI_.bestWave      = stats.bestWave      or 0
+    careerStats_UI_.totalKills    = stats.totalKills    or 0
+    careerStats_UI_.totalColonies = stats.totalColonies or 0
+    careerStats_UI_.bestMvpShip   = stats.bestMvpShip   or ""
+    careerStats_UI_.playtime      = stats.playtime      or 0
 end
 
 -- ============================================================================
@@ -2179,22 +3003,39 @@ function GameUI.Init(opts)
     onMarketCb_         = opts.onMarketCb
     onExchangeCb_       = opts.onExchangeCb
     onShipQueueCb_          = opts.onShipQueueCb
+    onShipCancelCb_         = opts.onShipCancelCb
+    onShipPromoteCb_        = opts.onShipPromoteCb
     onExplorerColonizeCb_   = opts.onExplorerColonizeCb
+    onExplorerTaskCb_       = opts.onExplorerTaskCb
+    explorerTasks_UI_       = opts.explorerTasks or {}
     fm_                 = opts.fm
+    pirateAI_           = opts.pirateAI    -- P1-3: 情报面板
     onFleetSelectCb_    = opts.onFleetSelectCb
     onFleetMoveShipCb_  = opts.onFleetMoveShipCb
     onAssignReserveCb_  = opts.onAssignReserveCb
     onSpeedUpBuildCb_      = opts.onSpeedUpBuildCb
     onBuyNuclearCb_        = opts.onBuyNuclearCb
     onHarvestAllCb_        = opts.onHarvestAllCb
+    onTogglePriorityCb_    = opts.onTogglePriorityCb   -- P2-1
+    getIsPriorityCb_       = opts.getIsPriorityCb       -- P2-1: 查询函数 function(planet)->bool
+    onCancelQueuedCb_      = opts.onCancelQueuedCb      -- P1-3: 取消建造队列
+    onWarpFleetCb_         = opts.onWarpFleetCb         -- P1-2: 主曲速门瞬移
+    onSendSignalCb_        = opts.onSendSignalCb        -- P3-1: 快捷信号
+    onGarrisonFleetCb_     = opts.onGarrisonFleetCb     -- P2-1: 驻守编队
+    onRecallGarrisonCb_    = opts.onRecallGarrisonCb    -- P2-1: 召回驻守
+    getGarrisonInfoCb_     = opts.getGarrisonInfoCb     -- P2-1: 查询驻守信息
+    getPlanetProdHistoryCb_ = opts.getPlanetProdHistoryCb -- P3-2: 查询星球产量历史
     getConquestProgress_   = opts.getConquestProgress
     lbOnRequest_           = opts.onShowLeaderboard
     if opts.fm then
         FleetPanel.SetActiveId(1)
     end
 
-    -- 加载用户设置（音量等）
-    loadSettings()
+    -- 初始化面板模块
+    SettingsPanel.SetAudio(Audio)
+    SettingsPanel.Load()
+    EndGamePanel.SetNotifyFn(GameUI.Notify)
+    EndGamePanel.SetLeaderboardCallback(opts.onShowLeaderboard)
 
     -- 创建字体（GameUI 使用 main 传入的 vg_，只需注册字体）
     nvgCreateFont(vg_, "sans", "Fonts/MiSans-Regular.ttf")
@@ -2211,6 +3052,25 @@ function GameUI.Init(opts)
     resIcons_["esource"] = resIcons_["energy"]
     resIcons_["nuclear"] = resIcons_["crystal"]
 
+    -- P2-1: 每局开始重置危机通知标记，确保新游戏能再次提示
+    resCrisisNotified_ = {}
+    resCrisisState_    = {}
+    -- P1-2: 重置趋势采样（新局资源重置，旧趋势无效）
+    resTrendDir_    = {}
+    resTrendSample_ = {}
+    resTrendTimer_  = 0
+    -- P1-3: 重置日志面板状态（新局开始时清空）
+    logVisible_         = false
+    logTab_             = "goals"
+    logScroll_          = 0
+    exploreLog_         = {}
+    completedGoals_UI_  = {}
+    -- P2-1: 重置战绩面板开合状态（数据保留，面板默认关闭）
+    statsVisible_       = false
+    -- P3-1: 重置信号面板状态
+    signalOpen_         = false
+    signalCooldown_     = 0
+
     -- 同步共享上下文供 UI 子模块使用
     UICommon.vg            = vg_
     UICommon.screenW       = screenW_
@@ -2223,6 +3083,7 @@ function GameUI.Init(opts)
     UICommon.player        = player_
     UICommon.fm            = fm_
     UICommon.spq           = spq_
+    UICommon.pirateAI      = pirateAI_   -- P1-3
     UICommon.resIcons      = resIcons_
     UICommon.bindFns({
         clr       = clr,
@@ -2283,19 +3144,41 @@ end
 ---@param stats    table   { playTime, colonized, piratesKilled, rank, level }
 ---@param onRetry  function 点击"再来一局"回调
 function GameUI.ShowEndGame(gameType, stats, onRetry)
-    endGameActive_  = true
-    endGameType_    = gameType
-    endGameStats_   = stats or {}
-    endGameOnRetry_ = onRetry
-    endGameAnimT_   = 0
+    EndGamePanel.Show(gameType, stats, onRetry)
 end
 
 --- 隐藏结算界面（重置状态）
 function GameUI.HideEndGame()
-    endGameActive_ = false
-    endGameType_   = nil
-    endGameStats_  = {}
-    endGameAnimT_  = 0
+    EndGamePanel.Hide()
+    -- 新局开始时重置中期资源广告计数
+    topBarAdCount_      = 0
+    topBarAdLoading_    = false
+    speedUpAdLoading_   = false
+    techSpeedAdLoading_ = false
+end
+
+--- 注入广告回调（由 Client.lua 调用）
+--- @param fn function  fn(onResult) — onResult(success, msg) 在广告结束后被调用
+function GameUI.SetAdCallback(fn)
+    EndGamePanel.SetAdCallback(fn)
+end
+
+--- 注入建造加速广告回调（星币不足时免费完成建造）
+--- @param fn function  fn(target, onResult) — target 为建造目标（星球/基地）
+function GameUI.SetSpeedUpAdCallback(fn)
+    speedUpAdCb_ = fn
+end
+
+--- 注入科技研究加速广告回调（看广告加速5分钟）
+--- @param fn function  fn(onResult)
+function GameUI.SetTechSpeedAdCallback(fn)
+    techSpeedAdCb_ = fn
+end
+
+--- 注入中期资源补给广告回调（每局最多3次）
+--- @param fn function  fn(onResult)
+function GameUI.SetTopBarAdCallback(fn)
+    topBarAdCb_ = fn
 end
 
 -- ============================================================================
@@ -2330,19 +3213,17 @@ end
 -- adCount: 剩余可看广告次数
 -- onWatch: 点击"看广告"按钮的回调
 function GameUI.ShowTimeoutScreen(adCount, onWatch)
-    timeoutActive_  = true
-    timeoutAdCount_ = adCount or 0
-    timeoutOnWatch_ = onWatch
+    TimeoutPanel.Show(adCount, onWatch)
 end
 
 -- 更新超时面板中的广告次数（看完广告后调用）
 function GameUI.UpdateTimeoutAdCount(adCount)
-    timeoutAdCount_ = adCount or 0
+    TimeoutPanel.UpdateAdCount(adCount)
 end
 
 -- 隐藏超时覆盖层（如广告续时成功后调用）
 function GameUI.HideTimeoutScreen()
-    timeoutActive_ = false
+    TimeoutPanel.Hide()
 end
 
 -- TechPanel 每帧重绘，无需显式刷新；保留接口避免调用方报错
@@ -2350,6 +3231,16 @@ function GameUI.RefreshTechPanel() end
 
 function GameUI.SetVg(vg, w, h)
     vg_ = vg; screenW_ = w; screenH_ = h
+end
+
+-- P3-2: 打开/关闭生涯战绩全屏页面
+function GameUI.ShowCareerPage()
+    careerPageOpen_ = true
+    statsVisible_   = false   -- 关闭小浮动面板，避免遮挡
+end
+
+function GameUI.HideCareerPage()
+    careerPageOpen_ = false
 end
 
 return GameUI

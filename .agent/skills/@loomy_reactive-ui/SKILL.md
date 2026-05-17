@@ -1,131 +1,249 @@
 ---
 name: reactive-ui
-description: "ReactiveUI 响应式 UI 框架的初始化与开发指南。Use when users need to (1) 初始化UI框架 / 初始化响应式UI / 添加ReactiveUI, (2) 编写UI / 编写任意UI / 用响应式方式写UI / 数据驱动UI / 局部更新UI, (3) 用户提到 ReactiveUI 或响应式状态管理, (4) 需要将数据绑定到 UrhoX UI 控件实现自动更新。"
+description: >
+  UrhoX UI reactive state management framework. Data-driven partial UI updates.
+  MUST auto-trigger when: writing ANY UI code (require "urhox-libs/UI"),
+  discussing UI architecture, adding/modifying UI panels/HUD/menus,
+  or any conversation involving UrhoX UI components.
+  When triggered, check if scripts/ReactiveUI.lua exists; if not,
+  copy from assets/ReactiveUI.lua automatically.
 ---
 
-# ReactiveUI 响应式 UI 框架
+# ReactiveUI - UrhoX UI Reactive State Management
 
-数据驱动的局部 UI 更新，告别整树重建。修改 `store.score = 999`，绑定的 Label 自动变为 `"999"`。
+Data-driven partial UI updates without full tree rebuilds.
 
-## 两种使用模式
+## Auto-Setup Rule
 
-### 模式 A：初始化框架
+**This skill auto-loads whenever UI code is being written or UI topics are discussed.**
 
-**触发词**: "初始化ui框架"、"添加ReactiveUI"、"初始化响应式UI"
+On activation:
 
-**操作**: 将 `assets/ReactiveUI.lua` 复制到用户项目的 `scripts/ReactiveUI.lua`。
+1. Check if `scripts/ReactiveUI.lua` exists
+2. If **NOT** found, copy from `assets/ReactiveUI.lua` to `scripts/ReactiveUI.lua`, notify user
+3. If found but **outdated** (line count differs from assets version), warn user and offer to update
+4. If found and up-to-date, skip silently
 
 ```bash
-cp <skill-dir>/assets/ReactiveUI.lua /workspace/scripts/ReactiveUI.lua
+# Auto-setup check (run on skill activation)
+ASSET=".agent/skills/reactive-ui/assets/ReactiveUI.lua"
+TARGET="scripts/ReactiveUI.lua"
+if [ \! -f "$TARGET" ]; then
+    cp "$ASSET" "$TARGET"
+    echo "ReactiveUI auto-copied to scripts/"
+elif [ "$(wc -l < "$ASSET")" \!= "$(wc -l < "$TARGET")" ]; then
+    echo "WARNING: scripts/ReactiveUI.lua differs from skill assets version. Consider updating."
+fi
 ```
 
-复制后提示用户：
-- 已将 ReactiveUI.lua 放入 `scripts/` 目录
-- 使用方式：`local ReactiveUI = require "ReactiveUI"`
+## When to Use
 
-### 模式 B：编写 UI
+| Scenario | Solution |
+|----------|----------|
+| Simple HUD (1-2 Labels) | Direct `widget:SetText()`, no ReactiveUI needed |
+| Multi-panel UI / Tab / list sync | **Use ReactiveUI** |
+| Decouple GameState from UI (MVC/MVVM) | **Use ReactiveUI as ViewModel** |
 
-**触发词**: "编写UI"、"编写任意UI"、"用响应式方式写UI"、"数据驱动UI"、需要将数据绑定到控件
-
-**操作**:
-
-1. 读取 `references/ReactiveUI-API.md` 了解完整 API
-2. 读取 `references/example.lua` 了解实际用法模式
-3. 确认 `scripts/ReactiveUI.lua` 已存在（不存在则先执行模式 A）
-4. 基于框架编写代码
-
-## 核心用法速查
+## Quick Start
 
 ```lua
-local UI = require "urhox-libs/UI"
 local ReactiveUI = require "ReactiveUI"
+local UI = require("urhox-libs/UI")
 
--- 创建 Store
-local store = ReactiveUI.new({ score = 0, hp = 100, maxHp = 100 })
+local store = ReactiveUI.new({ score = 0, hp = 100 })
 
--- 派生值
-store:computed("hpPct", { "hp", "maxHp" }, function(hp, max)
-    return math.floor(hp / max * 100)
-end)
+local scoreLabel = UI.Label { text = "Score: 0" }
+store:bind(scoreLabel, "text", "score", function(v) return "Score: " .. v end)
 
--- 绑定到控件（只做一次，后续自动更新）
-local label = UI.Label { text = "0" }
-store:bind(label, "text", "score", function(v) return tostring(v) end)
-
--- 多字段绑定
-store:bind(hpLabel, "text", { "hp", "maxHp" }, function(hp, max)
-    return hp .. "/" .. max
-end)
-
--- 批量更新（合并通知）
-store:batch(function()
-    store.score = store.score + 100
-    store.hp = math.max(0, store.hp - 10)
-end)
-
--- effect（自动追踪依赖）
-local dispose = store:effect(function(s)
-    local canAfford = s.gold >= item.cost
-    buyBtn:SetDisabled(not canAfford)
-end)
--- dispose()  -- 停止响应
-
--- 列表绑定（支持 remove 清理回调）
-local effectDisposers = {}
-store:bindList(container, "items", {
-    key = function(item) return item.id end,
-    render = function(item, i)
-        local w = UI.Label { text = item.name }
-        effectDisposers[w] = store:effect(function(s)
-            -- 自动追踪依赖，依赖变化时重新执行
-        end)
-        return w
-    end,
-    update = function(widget, item, i) widget.text = item.name end,
-    remove = function(widget)
-        local d = effectDisposers[widget]
-        if d then d(); effectDisposers[widget] = nil end
-    end,
-})
-store:listAppend("items", { id = 1, name = "Sword" })
-
--- 清理
-store:unbindAll()
+store.score = 999  -- scoreLabel auto-updates to "Score: 999"
 ```
 
-## API 清单
+## Architecture: GameState -> Store -> UI
 
-| 方法 | 说明 |
-|------|------|
-| `ReactiveUI.new(data)` | 创建 Store |
-| `store.key` / `store.key = val` | 透明读写，写入自动通知 |
-| `store:get(key)` / `store:set(key, val)` | 显式读写 |
-| `store:silent(key, val)` | 静默写入（不通知） |
-| `store:refresh(keyOrKeys?)` | 手动触发通知（配合 silent 使用） |
-| `store:watch(key, fn)` | 监听变化 → 返回 watcher ID |
-| `store:unwatch(id)` | 移除监听 |
-| `store:computed(name, deps, fn)` | 派生值（拓扑排序级联更新） |
-| `store:removeComputed(name)` | 移除派生值 |
-| `store:effect(fn)` | 自动追踪依赖的副作用 → 返回 dispose 函数 |
-| `store:batch(fn)` | 批量修改，合并通知 |
-| `store:bind(widget, prop, key, transform?)` | 绑定控件属性 |
-| `store:unbind(id)` | 解除单个绑定 |
-| `store:unbindWidget(widget)` | 解除控件所有绑定 |
-| `store:unbindAll()` | 全部解除 |
-| `store:bindList(container, key, opts)` | 列表绑定（opts: key/render/update/remove） |
-| `store:listAppend/Insert/Remove/Update/Replace/Sort/Clear` | 列表操作 |
-| `store:dump()` | 导出全部数据 |
-| `store:getBindingCount()` / `store:getWatcherCount(key?)` | 调试计数 |
+```
+GameState (raw data)  -->  Store (ReactiveUI)  -->  UI Widget (auto-update)
+```
 
-完整 API 细节、参数签名、返回值 → 读取 `references/ReactiveUI-API.md`
+- **GameState**: Pure data, no UI awareness
+- **Store**: Bridge layer, synced from GameState via `batch()`
+- **UI**: Only binds Store, never reads GameState directly
 
-完整使用示例（bind/computed/batch/bindList/watch/effect 全演示）→ 读取 `references/example.lua`
+> Full architecture example -> [references/example.lua](references/example.lua) Example 2
 
-## 关键注意事项
+## API Quick Reference
 
-1. **table 类型始终触发通知**（浅比较无法检测内部变化）
-2. **computed 只读**，赋值会抛错
-3. **列表必须用专用方法**（`listAppend` 等），直接 `table.insert` 不会更新 UI
-4. **Widget 销毁自动解绑**，无需手动清理
-5. **effect 返回 dispose**，必须在适当时机调用（或通过 bindList remove 自动管理）
-6. **Stop() 中调用 `store:unbindAll()`** 释放所有资源
+| API | Purpose |
+|-----|---------|
+| `ReactiveUI.new(data?)` | Create Store |
+| `store:bind(widget, prop, key, transform?)` | Bind key -> widget prop |
+| `store:bind(widget, prop, {k1,k2}, fn)` | Multi-key bind |
+| `store:watch(key, fn)` / `unwatch(id)` | Watch changes |
+| `store:computed(name, deps, fn)` | Read-only derived value |
+| `store:effect(fn)` -> dispose | Auto-track deps side effect |
+| `store:batch(fn)` | Batch update, notify once |
+| `store:bindList(container, key, opts)` | List CRUD binding |
+| `store:listAppend/Insert/Remove/Update/Replace/Sort/Clear` | List operations |
+| `store:listRemoveAll(key, predicate)` -> count | Batch remove all matches |
+| `store:listUpdateAll(key, predicate, patch)` -> count | Batch update all matches |
+| `store:unbind(id)` / `unbindWidget(w)` / `unbindAll()` | Cleanup |
+| `store:silent(key, val)` / `refresh(key?)` | Silent write / force notify |
+| `store:get(key)` / `set(key, val)` | Explicit read/write |
+| `store:keys()` / `has(key)` | Key enumeration / existence check |
+| `store:dump()` / `getBindingCount()` / `getWatcherCount(key?)` | Debug |
+
+> Full API signatures and behavior -> [references/ReactiveUI-API.md](references/ReactiveUI-API.md)
+
+## Key Rules (6 Rules)
+
+### 1. batch for bulk updates
+
+```lua
+-- WRONG: 3 notifications
+store.score = 100; store.hp = 50; store.stage = 2
+
+-- CORRECT: 1 notification
+store:batch(function()
+    store.score = 100; store.hp = 50; store.stage = 2
+end)
+```
+
+### 2. computed is read-only
+
+```lua
+store:computed("stageName", {"stage"}, function(s) return STAGES[s] end)
+store.stageName = "x"  -- ERROR\! read-only
+```
+
+### 3. listReplace for bindList refresh
+
+```lua
+store.items = newList                    -- WRONG: skips bindList diff
+store:listReplace("items", newList)      -- CORRECT: diff + reuse
+```
+
+### 4. Widget destroy auto-cleans bindings
+
+bind auto-hooks Widget `Destroy`; page-level cleanup uses `unbindAll()`.
+
+### 5. effect auto-tracks dependencies
+
+```lua
+local dispose = store:effect(function(s)
+    print(s.score, s.hp)  -- auto-tracks score and hp
+end)
+dispose()  -- stop
+```
+
+### 6. transform parameters follow key order
+
+- Single-key: `transform(value)`
+- Multi-key: `transform(v1, v2, ...)` in keys array order
+- computed: `fn(v1, v2, ...)` in deps order
+
+## Common Mistakes (Anti-patterns)
+
+### Mistake 1: Modify store inside effect -> infinite loop
+
+```lua
+-- WRONG: writing store.combo inside effect that tracks combo -> recursion
+store:effect(function(s)
+    if s.score > 100 then
+        store.combo = s.combo + 1  -- triggers re-run\!
+    end
+end)
+
+-- CORRECT: use watch for side effects that modify store
+store:watch("score", function(newVal)
+    if newVal > 100 then
+        store.combo = store.combo + 1
+    end
+end)
+```
+
+### Mistake 2: Forget batch in Sync function
+
+```lua
+-- WRONG: 5 fields = 5 notification rounds per frame
+function Sync()
+    store.score = GameState.score
+    store.hp = GameState.hp
+    store.stage = GameState.stage
+    store.matter = GameState.matter
+    store.combo = GameState.combo
+end
+
+-- CORRECT: wrap in batch
+function Sync()
+    store:batch(function()
+        store.score = GameState.score
+        store.hp = GameState.hp
+        store.stage = GameState.stage
+        store.matter = GameState.matter
+        store.combo = GameState.combo
+    end)
+end
+```
+
+### Mistake 3: Direct table assignment for list
+
+```lua
+-- WRONG: bindList never gets notified
+store.inventory = { {id="a"}, {id="b"} }
+
+-- CORRECT: use list operations
+store:listReplace("inventory", { {id="a"}, {id="b"} })
+store:listAppend("inventory", {id="c"})
+```
+
+### Mistake 4: Forget unbindAll on page destroy
+
+```lua
+-- WRONG: bindings leak, old watchers keep firing
+function ClosePage()
+    pageRoot:Destroy()  -- only destroys widgets
+end
+
+-- CORRECT: clean up store bindings
+function ClosePage()
+    store:unbindAll()   -- clean bindings + watchers + listBindings
+    pageRoot:Destroy()
+    store = nil
+end
+```
+
+### Mistake 5: computed depends on another computed but order wrong
+
+```lua
+-- No worries: ReactiveUI uses topological sort internally
+-- Order of computed() calls doesn't matter, deps resolve automatically
+store:computed("total", {"base","bonus"}, function(b, x) return b + x end)
+store:computed("display", {"total"}, function(t) return "Total: "..t end)
+-- "display" correctly updates after "total" recalculates
+```
+
+## Project File Mapping
+
+| File | Role | Key Patterns |
+|------|------|-------------|
+| `scripts/ReactiveUI.lua` | Framework source | `ReactiveUI.new()`, metatable proxy |
+| `scripts/Game/GameStore.lua` | Bridge layer | `new()` + `batch()` + `computed()` + `Sync()` |
+| `scripts/UI/HUD.lua` | Top HUD | `store:bind()` for labels/bars |
+| `scripts/UI/BottomPanel.lua` | Bottom tabs | `store:bind()` + tab switching |
+| `scripts/UI/GameUI.lua` | UI state manager | `store:unbindAll()` lifecycle |
+
+## Lifecycle Pattern
+
+```lua
+-- Init
+local store = ReactiveUI.new({ ... })
+
+-- Sync (per-frame or on events)
+store:batch(function() ... end)
+
+-- Destroy
+store:unbindAll()
+store = nil
+```
+
+> Usage examples -> [references/example.lua](references/example.lua)
+> Full API reference -> [references/ReactiveUI-API.md](references/ReactiveUI-API.md)
