@@ -129,6 +129,20 @@ local asteroids_       = {}
 local touches_         = {}   -- [touchID] = { x, y }（逻辑像素）
 local pinchDist_       = nil  -- 上一帧双指间距
 
+-- P3-3 V2.0: 惯性 & 弹性缩放 & 双击居中
+local camVel_          = { x=0, y=0 }   -- 相机惯性速度（世界单位/秒）
+local dragLastX_       = 0              -- 上一帧拖拽屏幕 x（用于速度采样）
+local dragLastY_       = 0
+local ZOOM_MIN         = 0.3
+local ZOOM_MAX         = 4.0
+local lastClickTime_   = 0              -- 上次点击时间戳（双击检测）
+local lastClickX_      = 0
+local lastClickY_      = 0
+local DOUBLE_CLICK_DT  = 0.35           -- 双击最大间隔（秒）
+local DOUBLE_CLICK_R   = 30             -- 双击最大位移半径（像素）
+local camPanAnim_      = nil            -- 双击居中动画 { sx,sy,tx,ty,t,dur }
+local totalTime_       = 0              -- 累计运行时间（用于双击时间差）
+
 -- 种子飞船前向声明（完整初始化在下方 SEED 区域）
 ---@type table
 local seedShip_        = nil
@@ -1647,6 +1661,31 @@ local function handleClick(mx, my)
     for _, sys in ipairs(starSystems_) do
         for _, p in ipairs(sys.planets) do
             if p._sx and dist2(mx, my, p._sx, p._sy) < (p.size * zoom_ + 12) then
+                -- P3-3 V2.0: 双击检测 → 平滑居中到该行星
+                local now = totalTime_
+                local ddx = mx - lastClickX_
+                local ddy = my - lastClickY_
+                local isDouble = (now - lastClickTime_) < DOUBLE_CLICK_DT
+                    and math.sqrt(ddx*ddx + ddy*ddy) < DOUBLE_CLICK_R
+                if isDouble then
+                    -- 计算目标相机位置（将行星世界坐标居中）
+                    local pw = sys.x + math.cos(p.angle) * p.orbitRadius
+                    local ph = sys.y + math.sin(p.angle) * p.orbitRadius
+                    local cx = screenW_ / 2
+                    local cy = screenH_ / 2
+                    local targetCX = cx - pw
+                    local targetCY = cy - ph
+                    camPanAnim_ = { sx=camera_.x, sy=camera_.y,
+                                    tx=targetCX,   ty=targetCY,
+                                    t=0, dur=0.3 }
+                    camVel_.x = 0
+                    camVel_.y = 0
+                    lastClickTime_ = 0  -- 重置，防止三击再次触发
+                else
+                    lastClickTime_ = now
+                    lastClickX_    = mx
+                    lastClickY_    = my
+                end
                 -- M4: 无论编队是否选中，都先显示行星信息
                 selectedPlanet_ = p
                 if onPlanetSelect_ then onPlanetSelect_(p) end
@@ -1729,6 +1768,10 @@ function GalaxyScene.Init(opts)
 
     -- 初始化随机事件系统（30~60s 后首次生成）
     GalaxyEvents.Reset()
+    -- P1-2 V2.0: 注入殖民星球列表提供者（灾害事件需要）
+    GalaxyEvents.SetPlanetProvider(function()
+        return allPlanets_
+    end)
     -- 加载所有游戏纹理
     local f = NVG_IMAGE_PREMULTIPLIED
     asteroidImgs_["minerals"] = nvgCreateImage(vg_, "image/asteroid_minerals_20260511190702.png", f)
@@ -2341,8 +2384,51 @@ end
 
 function GalaxyScene.Update(dt)
     screenW_, screenH_ = UICommon.getVirtualSize()
+    totalTime_      = totalTime_ + dt
     deepSpaceAnimT_ = deepSpaceAnimT_ + dt
     routeAnimT_     = routeAnimT_ + dt
+
+    -- P3-3 V2.0: 相机惯性衰减（松手后滑动，速度×0.88/帧 直到 < 0.5px/frame 停止）
+    if not isDragging_ and (camVel_.x ~= 0 or camVel_.y ~= 0) then
+        -- camPanAnim_ 运行时不叠加惯性（避免动画被打断）
+        if not camPanAnim_ then
+            camera_.x = camera_.x + camVel_.x * dt
+            camera_.y = camera_.y + camVel_.y * dt
+        end
+        local decay = 0.88
+        camVel_.x = camVel_.x * decay
+        camVel_.y = camVel_.y * decay
+        -- 速度足够小时清零
+        if math.abs(camVel_.x) < 0.5 and math.abs(camVel_.y) < 0.5 then
+            camVel_.x = 0
+            camVel_.y = 0
+        end
+    end
+
+    -- P3-3 V2.0: 弹性缩放（超出边界时以 spring 系数 0.18 弹回）
+    if zoom_ < ZOOM_MIN then
+        zoom_ = zoom_ + (ZOOM_MIN - zoom_) * 0.18
+        if zoom_ >= ZOOM_MIN - 0.005 then zoom_ = ZOOM_MIN end
+    elseif zoom_ > ZOOM_MAX then
+        zoom_ = zoom_ + (ZOOM_MAX - zoom_) * 0.18
+        if zoom_ <= ZOOM_MAX + 0.005 then zoom_ = ZOOM_MAX end
+    end
+
+    -- P3-3 V2.0: 双击居中平滑动画（0.3s ease-out）
+    if camPanAnim_ then
+        local a = camPanAnim_
+        a.t = a.t + dt
+        local progress = math.min(1, a.t / a.dur)
+        -- ease-out cubic
+        local p = 1 - (1 - progress)^3
+        camera_.x = a.sx + (a.tx - a.sx) * p
+        camera_.y = a.sy + (a.ty - a.sy) * p
+        if progress >= 1 then
+            camera_.x = a.tx
+            camera_.y = a.ty
+            camPanAnim_ = nil
+        end
+    end
     -- P3-1: 推进殖民涟漪动画并清理结束项
     if #colonyRipples_ > 0 then
         local alive = {}
@@ -3023,6 +3109,12 @@ function GalaxyScene.OnMouseDown(mx, my)
     dragStart_  = { x=mx, y=my }
     camAtDrag_  = { x=camera_.x, y=camera_.y }
     dragDist_   = 0
+    -- P3-3 V2.0: 开始新拖拽时清除惯性速度和居中动画
+    camVel_.x   = 0
+    camVel_.y   = 0
+    camPanAnim_ = nil
+    dragLastX_  = mx
+    dragLastY_  = my
 end
 
 function GalaxyScene.OnMouseMove(mx, my)
@@ -3034,6 +3126,14 @@ function GalaxyScene.OnMouseMove(mx, my)
     camera_.x  = camAtDrag_.x + dx / zoom_
     camera_.y  = camAtDrag_.y + dy / zoom_
     dragDist_  = math.sqrt(dx*dx + dy*dy)
+    -- P3-3 V2.0: 采样当前帧速度（屏幕像素/秒 → 世界单位/秒）
+    local frameVx = (mx - dragLastX_) / zoom_
+    local frameVy = (my - dragLastY_) / zoom_
+    -- 低通滤波混合（避免单帧抖动）
+    camVel_.x = camVel_.x * 0.4 + frameVx * 0.6 * 60   -- *60 换算到 /秒
+    camVel_.y = camVel_.y * 0.4 + frameVy * 0.6 * 60
+    dragLastX_ = mx
+    dragLastY_ = my
 end
 
 -- 小地图区域判断（返回小地图左上角坐标和宽高）
@@ -3065,6 +3165,9 @@ function GalaxyScene.OnMouseUp(mx, my)
     if not isDragging_ then return end
     isDragging_ = false
     if dragDist_ < 8 then
+        -- P3-3 V2.0: 短点击时清除惯性（避免误滑动）
+        camVel_.x = 0
+        camVel_.y = 0
         -- 判断是否点击在小地图区域内
         local mmx, mmy, mmw, mmh = minimapRect()
         if mx >= mmx and mx <= mmx+mmw and my >= mmy and my <= mmy+mmh then
@@ -3073,13 +3176,17 @@ function GalaxyScene.OnMouseUp(mx, my)
             handleClick(mx, my)
         end
     end
+    -- P3-3 V2.0: 拖拽结束后惯性速度已在 OnMouseMove 中采样，自然保留
 end
 
 --- 鼠标滚轮缩放（delta > 0 = 放大, < 0 = 缩小）
 --- 以鼠标位置为缩放中心
 function GalaxyScene.OnMouseWheel(mx, my, delta)
     local oldZoom = zoom_
-    zoom_ = math.max(0.3, math.min(4.0, zoom_ + delta * 0.12))
+    -- P3-3 V2.0: 允许 10% 超出弹性区间，Update 中弹回
+    local softMin = ZOOM_MIN * 0.90
+    local softMax = ZOOM_MAX * 1.10
+    zoom_ = math.max(softMin, math.min(softMax, zoom_ + delta * 0.12))
     -- 调整 camera 以保持鼠标下方的世界坐标不变
     local cx = screenW_ / 2
     local cy = screenH_ / 2
@@ -3123,6 +3230,9 @@ function GalaxyScene.OnTouchBegin(id, x, y)
         -- 第二根手指落下：进入捏合模式，停止单指拖拽
         isDragging_ = false
         pinchDist_  = pinchInfo()
+        -- P3-3 V2.0: 捏合开始时清除惯性
+        camVel_.x   = 0
+        camVel_.y   = 0
     else
         -- 第一根手指：初始化单指拖拽
         isDragging_ = true
@@ -3130,6 +3240,12 @@ function GalaxyScene.OnTouchBegin(id, x, y)
         camAtDrag_  = { x = camera_.x, y = camera_.y }
         dragDist_   = 0
         pinchDist_  = nil
+        -- P3-3 V2.0: 触摸开始清除惯性和居中动画
+        camVel_.x   = 0
+        camVel_.y   = 0
+        camPanAnim_ = nil
+        dragLastX_  = lx
+        dragLastY_  = ly
     end
 end
 
@@ -3147,7 +3263,8 @@ function GalaxyScene.OnTouchMove(id, x, y)
         if pinchDist_ and pinchDist_ > 1 and newDist then
             local scale   = newDist / pinchDist_
             local oldZoom = zoom_
-            zoom_ = math.max(0.3, math.min(4.0, zoom_ * scale))
+            -- P3-3 V2.0: 允许弹性超出
+            zoom_ = math.max(ZOOM_MIN * 0.90, math.min(ZOOM_MAX * 1.10, zoom_ * scale))
             -- 以双指中点为缩放中心
             local cx  = screenW_ / 2
             local cy  = screenH_ / 2
@@ -3164,6 +3281,13 @@ function GalaxyScene.OnTouchMove(id, x, y)
         camera_.x = camAtDrag_.x + dx / zoom_
         camera_.y = camAtDrag_.y + dy / zoom_
         dragDist_  = math.sqrt(dx * dx + dy * dy)
+        -- P3-3 V2.0: 采样速度
+        local frameVx = (lx - dragLastX_) / zoom_
+        local frameVy = (ly - dragLastY_) / zoom_
+        camVel_.x = camVel_.x * 0.4 + frameVx * 0.6 * 60
+        camVel_.y = camVel_.y * 0.4 + frameVy * 0.6 * 60
+        dragLastX_ = lx
+        dragLastY_ = ly
     end
 end
 
@@ -3173,8 +3297,12 @@ function GalaxyScene.OnTouchEnd(id, x, y)
 
     -- 单指短点击（未捏合）→ 触发 handleClick
     if touchCount() == 1 and isDragging_ and dragDist_ < 8 then
+        -- P3-3 V2.0: 短点击时清除惯性（避免误触发滑动）
+        camVel_.x = 0
+        camVel_.y = 0
         handleClick(lx, ly)
     end
+    -- P3-3 V2.0: 非点击松手时惯性已通过速度采样自动保留
 
     touches_[id] = nil
     pinchDist_   = nil
@@ -3189,6 +3317,9 @@ function GalaxyScene.OnTouchEnd(id, x, y)
             dragStart_  = { x = t.x, y = t.y }
             camAtDrag_  = { x = camera_.x, y = camera_.y }
             dragDist_   = 0
+            -- P3-3 V2.0: 剩余手指接管时重置速度采样基准
+            dragLastX_  = t.x
+            dragLastY_  = t.y
             break
         end
     end
@@ -3282,6 +3413,7 @@ function GalaxyScene.GetSaveData()
                         name        = b.name,
                         level       = b.level,
                         currentProd = prod,
+                        spec        = b.spec,  -- P2-3
                     }
                 end
                 local appliedTechs = {}
@@ -3339,7 +3471,8 @@ function GalaxyScene.GetSaveData()
                     local prod = {}
                     for res, v in pairs(b.currentProd or {}) do prod[res] = v end
                     buildings[#buildings + 1] = {
-                        key = b.key, name = b.name, level = b.level, currentProd = prod
+                        key = b.key, name = b.name, level = b.level, currentProd = prod,
+                        spec = b.spec,  -- P2-3
                     }
                 end
                 deepPlanets[#deepPlanets + 1] = {
@@ -3407,6 +3540,7 @@ function GalaxyScene.LoadSaveData(data, rm)
                         name        = bd.name,
                         level       = bd.level,
                         currentProd = {},
+                        spec        = bd.spec,  -- P2-3
                     }
                     for res, v in pairs(bd.currentProd or {}) do
                         bld.currentProd[res] = v
@@ -3480,7 +3614,7 @@ function GalaxyScene.LoadSaveData(data, rm)
                 p.owner     = "player"
                 p.buildings = {}
                 for _, bd in ipairs(pd.buildings or {}) do
-                    local bld = { key = bd.key, name = bd.name, level = bd.level, currentProd = {} }
+                    local bld = { key = bd.key, name = bd.name, level = bd.level, currentProd = {}, spec = bd.spec }  -- P2-3
                     for res, v in pairs(bd.currentProd or {}) do
                         bld.currentProd[res] = v
                         if rm then rm.rates[res] = (rm.rates[res] or 0) + v end

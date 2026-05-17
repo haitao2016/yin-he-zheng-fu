@@ -61,6 +61,9 @@ local spq_     = Sys.ShipProductionQueue.new(rm_)
 local fm_      = Sys.FleetManager.new()
 local activeFleetId_       = 1
 local explorerColonizeMode_ = false   -- true 时点击未殖民星球将自动使用储备探索舰殖民
+-- P1-1: 中立势力外交系统实例（setupSceneAndUI 后初始化）
+---@type table
+local ds_      = nil
 
 -- 基地模块效果脏标记（true=需要重算，避免每帧全量重算）
 local baseEffectsDirty_ = true
@@ -158,6 +161,9 @@ local customDiffSliderW_  = 0    -- 拖拽时滑块轨道宽度
 -- 无尽征服模式
 local isEndlessMode_    = false   -- 是否处于无尽模式（无时限，海盗基地摧毁后重生）
 local endlessRound_     = 0       -- 当前无尽模式轮次（每轮 +1，难度递增）
+-- P2-1 V2.0: 连胜计数（连续≥80%全消3轮触发资源×1.5）
+local endlessStreak_    = 0       -- 当前连胜轮数
+local endlessStreakBuff_= false   -- 本轮是否激活连胜资源加成
 -- P2-1: 累积卡牌加成（叠加应用到 baseBonus 的额外倍率/数值）
 local endlessCardBonuses_ = {
     shipDmgMult    = 0,  -- 攻击力加成（相加后 ×1 补正到 baseBonus）
@@ -302,6 +308,60 @@ local ENDLESS_CARD_POOL = {
       desc="所有生产+30%，攻击+20%，生命值+20%，史诗级全面强化",
       effect={ miningRateMult=0.30, energyRateMult=0.30, nuclearRateMult=0.30,
                shipDmgMult=0.20, shipHealthMult=0.20 } },
+
+    -- P2-1 V2.0: 15张史诗扩展卡（橙色边框，5轮起必保一张）────────────────
+    -- 战斗史诗（5张）
+    { key="void_blade",    rarity="epic", icon="🌑", label="虚空刃",
+      desc="攻击力+60%，但舰船HP-20%；极限输出流核心",
+      effect={ shipDmgMult=0.60, shipHealthMult=-0.20 } },
+    { key="titan_shield",  rarity="epic", icon="🛡", label="泰坦护盾",
+      desc="舰船HP+60%，每波维修+10%，铁壁防守必备",
+      effect={ shipHealthMult=0.60, waveRepairPct=0.10 } },
+    { key="chain_reaction",rarity="epic", icon="⚛", label="链式反应",
+      desc="AOE+60%，攻击+25%，核能产率+20%，爆炸覆盖极广",
+      effect={ aoeRadiusMult=0.60, shipDmgMult=0.25, nuclearRateMult=0.20 } },
+    { key="berserker",     rarity="epic", icon="🔥", label="狂战士",
+      desc="攻击+80%，HP-30%，造舰速度+40%，疯狂进攻流",
+      effect={ shipDmgMult=0.80, shipHealthMult=-0.30, shipyardSpeedMult=0.40 } },
+    { key="phoenix_fire",  rarity="epic", icon="🦅", label="浴火凤凰",
+      desc="每波维修+25%，攻击+30%，生命+30%，涅槃重生",
+      effect={ waveRepairPct=0.25, shipDmgMult=0.30, shipHealthMult=0.30 } },
+    -- 生产史诗（4张）
+    { key="dyson_ring",    rarity="epic", icon="☀", label="戴森环",
+      desc="能源产率+80%，核能储量+400，能源帝国核心",
+      effect={ energyRateMult=0.80, nuclearCapBonus=400 } },
+    { key="crystal_lattice",rarity="epic",icon="💎",label="晶格结构",
+      desc="所有资源+35%，晶石产率额外+20%，完美平衡",
+      effect={ miningRateMult=0.35, energyRateMult=0.35, nuclearRateMult=0.35 } },
+    { key="mega_shipyard", rarity="epic", icon="🏭", label="巨型船坞",
+      desc="造舰速度+70%，编队+3，快速成军之道",
+      effect={ shipyardSpeedMult=0.70, fleetCapBonus=3 } },
+    { key="stellar_forge", rarity="epic", icon="⭐", label="恒星熔炉",
+      desc="矿石+50%，核能+50%，攻击+20%，工业军事双强",
+      effect={ miningRateMult=0.50, nuclearRateMult=0.50, shipDmgMult=0.20 } },
+    -- 战略史诗（6张）
+    { key="armada",        rarity="epic", icon="🚀", label="无敌舰队",
+      desc="编队+5，攻击+20%，生命+20%，钢铁洪流",
+      effect={ fleetCapBonus=5, shipDmgMult=0.20, shipHealthMult=0.20 } },
+    { key="war_economy",   rarity="epic", icon="💰", label="战争经济",
+      desc="所有资源+25%，攻击+25%，造舰+25%，全能强化",
+      effect={ miningRateMult=0.25, energyRateMult=0.25, nuclearRateMult=0.25,
+               shipDmgMult=0.25, shipyardSpeedMult=0.25 } },
+    { key="singularity",   rarity="epic", icon="🌌", label="奇点突破",
+      desc="所有加成×1.2叠加（对已有卡效果额外+20%）",
+      effect={ shipDmgMult=0.20, shipHealthMult=0.20, miningRateMult=0.20,
+               energyRateMult=0.20, nuclearRateMult=0.20, shipyardSpeedMult=0.20 } },
+    { key="logistics_net", rarity="epic", icon="📦", label="后勤网络",
+      desc="造舰+50%，维修+20%，探索时长-40%，后勤为王",
+      effect={ shipyardSpeedMult=0.50, waveRepairPct=0.20, explorerDurMult=-0.40 } },
+    { key="apex_predator", rarity="epic", icon="👑", label="顶点掠食者",
+      desc="攻击+45%，AOE+45%，每波维修+15%，猎手之巅",
+      effect={ shipDmgMult=0.45, aoeRadiusMult=0.45, waveRepairPct=0.15 } },
+    { key="omega_protocol",rarity="epic", icon="Ω",  label="Ω协议",
+      desc="全属性+40%，最终形态，无尽的终极传说卡",
+      effect={ shipDmgMult=0.40, shipHealthMult=0.40, miningRateMult=0.40,
+               energyRateMult=0.40, nuclearRateMult=0.40, shipyardSpeedMult=0.40,
+               fleetCapBonus=2, waveRepairPct=0.10 } },
 }
 
 local DIFFICULTY_CONFIGS = {
@@ -570,9 +630,11 @@ local function applyBaseModuleEffects()
         rm_.caps.nuclear = (rm_.caps.nuclear or 9999) + cb.nuclearCapBonus
     end
     -- 生产速率：在 baseBonus 计算完毕后乘倍（通过修改 rates 的增量部分）
-    rm_.baseBonus.cardMiningMult  = 1 + cb.miningRateMult
-    rm_.baseBonus.cardEnergyMult  = 1 + cb.energyRateMult
-    rm_.baseBonus.cardNuclearMult = 1 + cb.nuclearRateMult
+    -- P2-1 V2.0: 连胜狂潮 buff 叠加 ×1.5 资源产出
+    local streakMult = (endlessStreakBuff_ and isEndlessMode_) and 1.5 or 1.0
+    rm_.baseBonus.cardMiningMult  = (1 + cb.miningRateMult)  * streakMult
+    rm_.baseBonus.cardEnergyMult  = (1 + cb.energyRateMult)  * streakMult
+    rm_.baseBonus.cardNuclearMult = (1 + cb.nuclearRateMult) * streakMult
     -- 其他效果存入 baseBonus 供其他系统读取
     rm_.baseBonus.waveRepairPct   = cb.waveRepairPct   or 0
     rm_.baseBonus.explorerDurMult = cb.explorerDurMult or 0
@@ -583,6 +645,7 @@ end
 -- P2-1: 无尽模式选卡 — 从卡池随机抽 3 张（避免重复），玩家选择后应用
 -- ============================================================================
 --- 从 ENDLESS_CARD_POOL 随机不重复抽取 count 张卡
+--- P2-1 V2.0: 每5轮起必保至少1张史诗卡
 local function drawEndlessCards(count)
     local pool  = {}
     for _, c in ipairs(ENDLESS_CARD_POOL) do pool[#pool+1] = c end
@@ -593,6 +656,24 @@ local function drawEndlessCards(count)
     end
     local result = {}
     for i = 1, math.min(count, #pool) do result[#result+1] = pool[i] end
+
+    -- P2-1 V2.0: 第5轮起，若抽出结果中无史诗卡，则强制换入一张
+    if endlessRound_ >= 5 then
+        local hasEpic = false
+        for _, c in ipairs(result) do
+            if c.rarity == "epic" then hasEpic = true; break end
+        end
+        if not hasEpic then
+            -- 从完整卡池中随机选一张史诗卡替换最后一张
+            local epics = {}
+            for _, c in ipairs(ENDLESS_CARD_POOL) do
+                if c.rarity == "epic" then epics[#epics+1] = c end
+            end
+            if #epics > 0 then
+                result[#result] = epics[math.random(1, #epics)]
+            end
+        end
+    end
     return result
 end
 
@@ -1029,7 +1110,49 @@ end
 
 --- P2-1: 无尽模式：弹出选卡面板，选完后执行下一轮（Roguelike 3选1）
 local function startEndlessNextRound()
+    -- P2-1 V2.0: 连胜判定（根据本轮战斗击杀率）
+    endlessStreakBuff_ = false
+    local killRate = 0
+    if battleStatsCache_.waveEnemyTotal and battleStatsCache_.waveEnemyTotal > 0 then
+        killRate = (battleStatsCache_.waveKillTotal or 0) / battleStatsCache_.waveEnemyTotal
+    end
+    if killRate >= 0.8 then
+        endlessStreak_ = endlessStreak_ + 1
+    else
+        endlessStreak_ = 0
+    end
+    if endlessStreak_ >= 3 then
+        endlessStreakBuff_ = true
+        GameUI.Notify(string.format(
+            "🔥 连胜狂潮！连续 %d 轮全消 (%.0f%%)，本轮资源收益 ×1.5！",
+            endlessStreak_, killRate * 100), "success")
+        print(string.format("[Endless] 连胜狂潮激活: streak=%d killRate=%.2f", endlessStreak_, killRate))
+    elseif endlessStreak_ > 0 then
+        GameUI.Notify(string.format(
+            "⚡ 全消 %.0f%%！连胜进度 %d/3", killRate * 100, endlessStreak_), "info")
+    end
+
     endlessRound_ = endlessRound_ + 1
+
+    -- P2-1 V2.0: 无尽模式排行榜 — 提交本轮轮次（分数 = 完成轮次数）
+    local endlessScore = endlessRound_ - 1  -- 刚完成的轮次
+    if endlessScore > 0 then
+        clientCloud:Get("endless_score", {
+            ok = function(_, iscores)
+                local best = iscores.endless_score or 0
+                if endlessScore > best then
+                    clientCloud:BatchSet()
+                        :SetInt("endless_score", endlessScore)
+                        :Save("无尽排行榜提交", {
+                            ok    = function() print(string.format("[Endless] 排行榜分数已更新: %d 轮", endlessScore)) end,
+                            error = function(_, r) print("[Endless] 排行榜提交失败: " .. tostring(r)) end,
+                        })
+                end
+            end,
+            error   = function() end,
+            timeout = function() end,
+        })
+    end
 
     -- P2-3: 隐藏成就 — 无尽模式波次
     Achievement.Check("endless_wave", { endlessWave = endlessRound_ })
@@ -1807,6 +1930,8 @@ local function buildSaveData()
         totalResearch   = totalResearch_,            -- 累计科技数（成就用）
         -- P1-3: 链式事件状态
         galaxyEvents = GalaxyEvents.Serialize(),
+        -- P1-1: 外交系统状态
+        diplomacy    = ds_ and ds_:serialize() or nil,
     }
     return cjson.encode(saveData)
 end
@@ -1900,6 +2025,12 @@ local function restoreGame(jsonStr)
     if data.galaxyEvents then
         local GalaxyEvents = require("game.GalaxyEvents")
         GalaxyEvents.Deserialize(data.galaxyEvents)
+    end
+
+    -- P1-1: 恢复外交系统状态（需在行星数据恢复后执行，以同步 neutralFaction 字段）
+    if ds_ and data.diplomacy then
+        ds_:deserialize(data.diplomacy, GalaxyScene.GetAllPlanets())
+        print("[Client] 外交系统已恢复")
     end
 
     -- H2 修复：读档后重新应用所有殖民行星的类型加成（之前只恢复了基地模块效果）
@@ -2415,6 +2546,14 @@ local function handleUpdate(eventType, eventData)
 
     rm_:update(dt)
     ms_:update(dt)
+
+    -- P1-1: 外交系统 tick（贸易收益 + 宣战衰减 + 殖民清除）
+    if ds_ and currentScene_ == "galaxy" and not endGameTriggered_ then
+        local dipEvts = ds_:tick(dt, rm_, GalaxyScene.GetAllPlanets())
+        for _, ev in ipairs(dipEvts or {}) do
+            GameUI.Notify(ev.msg, ev.msgType or "info")
+        end
+    end
 
     -- P2-1: 资源危机预警（节流：每 5 秒检查一次，每种资源每局只提示一次）
     resWarnTimer_ = (resWarnTimer_ or 0) + dt
@@ -3085,6 +3224,17 @@ setupSceneAndUI = function()
                         parts[#parts+1] = "EXP+100（无在研科技）"
                     end
                 end
+                -- P1-2 V2.0: 灾害事件惩罚（最差选项扣除资源）
+                if ch.penalty then
+                    for res, val in pairs(ch.penalty) do
+                        local cur  = rm_:get(res) or 0
+                        local loss = math.min(val, cur)
+                        if loss > 0 then
+                            rm_:add(res, -loss)
+                            parts[#parts+1] = res .. "-" .. loss .. "(灾害损失)"
+                        end
+                    end
+                end
                 if #parts > 0 then
                     GameUI.Notify(ev.label .. "：" .. table.concat(parts, "  "), "success")
                 else
@@ -3094,6 +3244,12 @@ setupSceneAndUI = function()
         end,
     })
     rs_:setPlanetGetter(GalaxyScene.GetAllPlanets)
+
+    -- P1-1: 初始化外交系统（GalaxyScene.Init 后才有行星数据）
+    ds_ = Sys.DiplomacySystem.new()
+    ds_:initFactions(GalaxyScene.GetAllPlanets(), 0.35)
+    print(string.format("[Client] 外交系统初始化完成"))
+
     -- P1-3: 注册危机事件超时惩罚回调
     local GalaxyEvents = require("game.GalaxyEvents")
     GalaxyEvents.onCrisisExpired = function(ev)
@@ -3416,6 +3572,45 @@ setupSceneAndUI = function()
         getPlanetProdHistoryCb = function(planetName)
             return planetProdHistory_[planetName] or nil
         end,
+        -- P1-1: 外交送礼
+        onSendGift = function(planetId)
+            if not ds_ then return end
+            local ok, msg = ds_:sendGift(planetId, rm_)
+            if ok then
+                GameUI.Notify("🎁 " .. msg, "success")
+                GameUI.RefreshPlanetPanel(selectedPlanet_)
+                saveGame()
+            else
+                GameUI.Notify(msg, "warn")
+            end
+        end,
+        -- P2-3: 设置建筑专精
+        onSetSpec = function(planetId, bldIdx, specKey)
+            if not selectedPlanet_ or selectedPlanet_.id ~= planetId then return end
+            local ok, msg = bs_:setSpec(bldIdx, selectedPlanet_, specKey)
+            if ok then
+                GameUI.Notify("✦ " .. msg, "success")
+                GameUI.RefreshPlanetPanel(selectedPlanet_)
+                saveGame()
+            else
+                GameUI.Notify(msg, "warn")
+            end
+        end,
+        -- P1-1: 查询外交状态（返回带 factionDef 的完整状态，或 nil）
+        getDiplomacyState = function(planetId)
+            if not ds_ then return nil end
+            local st = ds_:getState(planetId)
+            if not st then return nil end
+            local fdef = ds_:getFactionDef(st.factionKey) or {}
+            return {
+                factionKey = st.factionKey,
+                factionDef = fdef,
+                favor      = st.favor,
+                atWar      = st.atWar,
+                military   = st.military,
+                tradeTimer = st.tradeTimer,
+            }
+        end,
     })
 
     GameUI.ShowScene("galaxy", false)
@@ -3690,8 +3885,10 @@ softReset = function()
     -- baseFactor / currentFactor / enabled 由 setupSceneAndUI 在选择难度后重写，此处不重置
 
     -- 5. 重置无尽模式状态
-    isEndlessMode_    = false
-    endlessRound_     = 0
+    isEndlessMode_     = false
+    endlessRound_      = 0
+    endlessStreak_     = 0      -- P2-1 V2.0: 重置连胜计数
+    endlessStreakBuff_ = false  -- P2-1 V2.0: 重置连胜资源加成
     for k in pairs(endlessCardBonuses_) do endlessCardBonuses_[k] = 0 end  -- P2-1
     GameUI.SetEndlessRound(0)   -- 同步清除 TopBar 无尽轮次显示
 

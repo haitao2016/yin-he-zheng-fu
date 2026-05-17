@@ -9,11 +9,13 @@ local PlanetPanel = {}
 local scrollY_           = 0
 local planetBuildPending_   = nil   -- H4: 行星建造待确认（key string）
 local planetUpgradePending_ = nil   -- H4: 行星升级待确认 {idx, key}
+local specModalBld_         = nil   -- P2-3: 当前打开专精选择框的建筑 bldIdx
 
 function PlanetPanel.ResetScroll()
     scrollY_ = 0
     planetBuildPending_   = nil
     planetUpgradePending_ = nil
+    specModalBld_         = nil
 end
 
 --- 渲染行星面板
@@ -40,6 +42,9 @@ function PlanetPanel.Render(planet, ctx)
     local isPriority        = ctx.isPriority        -- P2-1: 当前是否已标记
     local onCancelQueued    = ctx.onCancelQueued    -- P1-3: 取消排队任务回调 function(qIdx)
     local prodHistory       = ctx.prodHistory       -- P3-2: 产量历史 {minerals={}, energy={}, crystal={}}
+    local onSendGift        = ctx.onSendGift        -- P1-1: 外交送礼回调 function(planetId)
+    local diplomacyState    = ctx.diplomacyState    -- P1-1: {factionKey, favor, atWar, military, tradeTimer} or nil
+    local onSetSpec         = ctx.onSetSpec         -- P2-3: 设置建筑专精 function(planetId, bldIdx, specKey)
 
     local pw = 275
     local px = screenW - pw - 12
@@ -180,7 +185,13 @@ function PlanetPanel.Render(planet, ctx)
         end
     end
 
-    local headerH = 36 + 18 + (planet.constructing and 22 or 16) + queueH + 16 + prodRowH + bonusRowH + colonyAdvRowH + chartRowH
+    -- P1-1: 外交区块高度（中立势力行星才显示）
+    local diplomacyRowH = 0
+    if planet.neutralFaction and not planet.colonized and not planet.isBase then
+        diplomacyRowH = 60  -- 势力行14 + 好感度条14 + 状态标签12 + 礼物按钮18 + 间距
+    end
+
+    local headerH = 36 + 18 + (planet.constructing and 22 or 16) + queueH + 16 + prodRowH + bonusRowH + colonyAdvRowH + chartRowH + diplomacyRowH
 
     local scrollContentH = 18
         + #BUILD_ORDER * 21
@@ -550,6 +561,119 @@ function PlanetPanel.Render(planet, ctx)
         sy = sy + ch + 6
     end
 
+    -- P1-1: 外交区块（仅中立势力未殖民行星）
+    if diplomacyRowH > 0 and diplomacyState then
+        local ds   = diplomacyState
+        local fdef = ds.factionDef or {}
+        local favor= math.max(0, math.min(100, ds.favor or 40))
+        local fc   = fdef.color or {200, 180, 100}
+
+        -- 区块背景卡片
+        local cardX, cardW, cardH = px + 8, pw - 16, diplomacyRowH - 6
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, cardX, sy, cardW, cardH, 5)
+        nvgFillColor(vg, nvgRGBA(fc[1], fc[2], fc[3], 18))
+        nvgFill(vg)
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, cardX + 0.5, sy + 0.5, cardW - 1, cardH - 1, 5)
+        nvgStrokeColor(vg, nvgRGBA(fc[1], fc[2], fc[3], 100))
+        nvgStrokeWidth(vg, 1); nvgStroke(vg)
+
+        local dy = sy + 7
+        -- 势力图标+名称
+        nvgFontFace(vg, "sans"); nvgFontSize(vg, 10)
+        nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, nvgRGBA(fc[1], fc[2], fc[3], 230))
+        nvgText(vg, cardX + 7, dy, (fdef.icon or "?") .. " " .. (fdef.name or "未知势力"))
+
+        -- 好感度标签（右侧）
+        nvgFontSize(vg, 9)
+        nvgTextAlign(vg, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
+        local favorColor
+        if ds.atWar then
+            favorColor = {255, 80, 80}
+        elseif favor >= 90 then
+            favorColor = {100, 255, 160}
+        elseif favor >= 60 then
+            favorColor = {80, 200, 255}
+        else
+            favorColor = {200, 200, 200}
+        end
+        nvgFillColor(vg, nvgRGBA(favorColor[1], favorColor[2], favorColor[3], 220))
+        nvgText(vg, cardX + cardW - 7, dy,
+            ds.atWar and "宣战!" or string.format("好感: %d", favor))
+
+        dy = dy + 14
+        -- 好感度进度条
+        local barX, barW2, barH2 = cardX + 7, cardW - 14, 7
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, barX, dy, barW2, barH2, 3)
+        nvgFillColor(vg, nvgRGBA(20, 20, 40, 160)); nvgFill(vg)
+        if favor > 0 then
+            local fillW = math.max(2, math.floor(barW2 * favor / 100))
+            local r1, g1, b1 = 200, 80, 80
+            local r2, g2, b2 = favorColor[1], favorColor[2], favorColor[3]
+            local grad = nvgLinearGradient(vg, barX, dy, barX + barW2, dy,
+                nvgRGBA(r1, g1, b1, 200), nvgRGBA(r2, g2, b2, 240))
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, barX, dy, fillW, barH2, 3)
+            nvgFillPaint(vg, grad); nvgFill(vg)
+        end
+        -- 门槛刻度线
+        for _, thresh in ipairs({60, 90}) do
+            local tx = barX + math.floor(barW2 * thresh / 100)
+            nvgBeginPath(vg)
+            nvgMoveTo(vg, tx, dy - 1); nvgLineTo(vg, tx, dy + barH2 + 1)
+            nvgStrokeColor(vg, nvgRGBA(255, 255, 255, 60))
+            nvgStrokeWidth(vg, 0.8); nvgStroke(vg)
+        end
+
+        dy = dy + barH2 + 5
+        -- 状态标签
+        local statusLabel, sr, sg, sb
+        if ds.atWar then
+            statusLabel, sr, sg, sb = "⚔ 宣战状态", 255, 80, 80
+        elseif ds.military then
+            statusLabel, sr, sg, sb = "🛡 军事合作", 100, 255, 160
+        elseif favor >= 60 then
+            statusLabel, sr, sg, sb = "📦 商贸协议", 80, 200, 255
+        else
+            statusLabel, sr, sg, sb = "○ 中立", 160, 160, 180
+        end
+        nvgFontSize(vg, 9); nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, nvgRGBA(sr, sg, sb, 220))
+        nvgText(vg, cardX + 7, dy, statusLabel)
+
+        -- 礼物按钮（右侧，宣战时禁用）
+        if not ds.atWar and onSendGift then
+            local costMetal  = (fdef.giftCost and fdef.giftCost.metal)   or 80
+            local costEsrc   = (fdef.giftCost and fdef.giftCost.esource) or 50
+            local btnW, btnH = 90, 14
+            local bx = cardX + cardW - btnW - 2
+            local by = dy - 7
+            local canAfford = (rm and (rm.resources.metal or 0) >= costMetal
+                                   and (rm.resources.esource or 0) >= costEsrc)
+            panel(bx, by, btnW, btnH, 4,
+                canAfford and {120, 90, 20, 80} or {60, 60, 80, 50},
+                canAfford and {220, 170, 40, 200} or {100, 100, 120, 120})
+            nvgFontSize(vg, 8); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg, nvgRGBA(
+                canAfford and 255 or 140,
+                canAfford and 220 or 140,
+                canAfford and 80 or 100, 240))
+            nvgText(vg, bx + btnW / 2, by + btnH / 2,
+                string.format("礼物 %dM+%dE", costMetal, costEsrc))
+            if canAfford then
+                local capturedId = planet.id
+                addHit(bx, by, btnW, btnH, function()
+                    if onSendGift then onSendGift(capturedId) end
+                end)
+            end
+        end
+
+        sy = sy + diplomacyRowH
+    end
+
     nvgBeginPath(vg); nvgMoveTo(vg, px+8, sy); nvgLineTo(vg, px+pw-8, sy)
     nvgStrokeColor(vg, clr(60,110,255,80)); nvgStrokeWidth(vg, 1); nvgStroke(vg)
 
@@ -642,10 +766,41 @@ function PlanetPanel.Render(planet, ctx)
             local sy2 = vy2sy(vy)
             if sy2 + 20 > clipY1 and sy2 < clipY2 then
                 text(px+14, sy2+8, "▸ " .. b.name .. " Lv." .. b.level, 10, 140,175,230,220)
+                -- P2-3: 专精槽图标（Lv.3+ 才显示，在升级按钮左侧）
+                local bx, bw, bh = px+pw-88, 84, 16
+                if b.level >= 3 then
+                    local sx, sr = bx - 22, 8
+                    local hasSp = b.spec ~= nil
+                    nvgBeginPath(vg)
+                    nvgCircle(vg, sx, sy2+bh/2, sr)
+                    if hasSp then
+                        nvgFillColor(vg, nvgRGBA(80,220,160,220))
+                    else
+                        nvgFillColor(vg, nvgRGBA(60,80,110,180))
+                    end
+                    nvgFill(vg)
+                    nvgStrokeColor(vg, nvgRGBA(100,180,255,160))
+                    nvgStrokeWidth(vg, 1.0)
+                    nvgStroke(vg)
+                    nvgFontSize(vg, 9)
+                    nvgFontFace(vg, "sans")
+                    nvgFillColor(vg, nvgRGBA(220,240,255,240))
+                    nvgTextAlign(vg, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+                    nvgText(vg, sx, sy2+bh/2, hasSp and "✦" or "+")
+                    local ci = bldIdx
+                    addHit(sx-sr, sy2, sr*2, bh, function()
+                        if specModalBld_ == ci then
+                            specModalBld_ = nil
+                        else
+                            specModalBld_ = ci
+                            planetBuildPending_   = nil
+                            planetUpgradePending_ = nil
+                        end
+                    end)
+                end
                 local canUp   = bs:canUpgrade(bldIdx, planet)
                 local cost    = bs:getUpgradeCost(b.key, b.level)
                 local costStr = rm:fmtCost(cost)
-                local bx, bw, bh = px+pw-88, 84, 16
                 -- H4：升级二次确认
                 local isPending = planetUpgradePending_ and
                     planetUpgradePending_.idx == bldIdx and
@@ -686,6 +841,81 @@ function PlanetPanel.Render(planet, ctx)
     end
 
     nvgRestore(vg)
+
+    -- P2-3: 专精选择模态框（不受 scissor 裁剪，渲染在 scroll 区域之上）
+    if specModalBld_ then
+        local b = planet.buildings[specModalBld_]
+        if b and b.level >= 3 then
+            local specs    = bs:getSpecsForBuilding(b.key)
+            local mw, mh   = 240, 16 + #specs * 40 + 14
+            local mx       = px + pw/2 - mw/2
+            -- 定位在面板中部
+            local my       = math.max(clipY1 + 4, clipY1 + (clipY2 - clipY1)/2 - mh/2)
+            -- 背景
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, mx, my, mw, mh, 8)
+            nvgFillColor(vg, nvgRGBA(12,20,38,240))
+            nvgFill(vg)
+            nvgStrokeColor(vg, nvgRGBA(80,160,255,180))
+            nvgStrokeWidth(vg, 1.2)
+            nvgStroke(vg)
+            -- 标题
+            nvgFontSize(vg, 11)
+            nvgFontFace(vg, "sans")
+            nvgFillColor(vg, nvgRGBA(180,210,255,240))
+            nvgTextAlign(vg, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+            nvgText(vg, mx+mw/2, my+10, b.name .. " — 选择专精  (消耗晶石×" .. tostring(SPEC_COST) .. ")")
+            -- 专精选项
+            for i, sp in ipairs(specs) do
+                local iy  = my + 16 + (i-1)*40
+                local iw, ih = mw - 16, 36
+                local ix  = mx + 8
+                local isSel = b.spec == sp.key
+                local canAff = rm:canAfford({crystal = SPEC_COST})
+                -- 选项背景
+                nvgBeginPath(vg)
+                nvgRoundedRect(vg, ix, iy, iw, ih, 5)
+                if isSel then
+                    nvgFillColor(vg, nvgRGBA(30,100,60,200))
+                elseif canAff then
+                    nvgFillColor(vg, nvgRGBA(25,45,80,180))
+                else
+                    nvgFillColor(vg, nvgRGBA(40,35,35,160))
+                end
+                nvgFill(vg)
+                nvgStrokeColor(vg, isSel and nvgRGBA(80,230,140,200) or nvgRGBA(60,100,160,120))
+                nvgStrokeWidth(vg, 1.0)
+                nvgStroke(vg)
+                -- 名称
+                nvgFontSize(vg, 11)
+                nvgFillColor(vg, isSel and nvgRGBA(120,255,180,255) or nvgRGBA(200,220,255,220))
+                nvgTextAlign(vg, NVG_ALIGN_LEFT+NVG_ALIGN_MIDDLE)
+                nvgText(vg, ix+8, iy+12, (isSel and "✦ " or "○ ") .. sp.name)
+                -- 描述
+                nvgFontSize(vg, 9)
+                nvgFillColor(vg, nvgRGBA(140,180,200,180))
+                nvgText(vg, ix+8, iy+26, sp.desc)
+                -- 点击
+                if not isSel then
+                    local ci2 = specModalBld_
+                    local sk  = sp.key
+                    addHit(ix, iy, iw, ih, function()
+                        if onSetSpec then onSetSpec(planet.id, ci2, sk) end
+                        specModalBld_ = nil
+                    end)
+                end
+            end
+            -- 关闭按钮
+            local cx, cy = mx+mw-14, my+8
+            nvgFontSize(vg, 11)
+            nvgFillColor(vg, nvgRGBA(180,120,120,220))
+            nvgTextAlign(vg, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+            nvgText(vg, cx, cy, "✕")
+            addHit(cx-8, cy-8, 16, 16, function() specModalBld_ = nil end)
+        else
+            specModalBld_ = nil
+        end
+    end
 
     -- 滚动条
     if maxScroll > 0 then

@@ -13,6 +13,31 @@ BUILDINGS = {
 }
 BUILD_ORDER = {"MINE","POWER_PLANT","SHIELD_GEN","TRADE_HUB"}
 
+-- P2-3: 建筑专精定义（每类行星建筑 3 种专精，Lv.3+ 解锁）
+BUILDING_SPECS = {
+    MINE = {
+        { key="DEEP_DRILL",   name="深层钻探", desc="+15%矿石产量",  effect={mineralsMult=1.15} },
+        { key="AUTO_SORT",    name="自动分拣", desc="+8矿石/s",      effect={mineralsFlat=8} },
+        { key="VEIN_SCAN",    name="矿脉扫描", desc="+25%晶石",      effect={crystalMult=1.25} },
+    },
+    POWER_PLANT = {
+        { key="THERMO_CYCLE", name="热核循环", desc="+20%能源",       effect={energyMult=1.20} },
+        { key="SOLAR_BOOST",  name="太阳增幅", desc="+12能源/s",      effect={energyFlat=12} },
+        { key="DARK_MATTER",  name="暗物质炉", desc="+10%能源晶石",   effect={energyMult=1.10, crystalMult=1.05} },
+    },
+    SHIELD_GEN = {
+        { key="SUPERCONDUCT", name="超导护盾", desc="+300基地护盾",   effect={shieldBonus=300} },
+        { key="REGEN_FIELD",  name="再生力场", desc="护盾恢复×1.5",  effect={shieldRegenMult=1.5} },
+        { key="PHASE_WALL",   name="相位屏障", desc="防御力+15%",    effect={defenseBonus=0.15} },
+    },
+    TRADE_HUB = {
+        { key="WARP_CHANNEL", name="星际通道", desc="+30%星币",       effect={creditsMult=1.30} },
+        { key="BLACK_MARKET", name="黑市网络", desc="+20星币/s",      effect={creditsFlat=20} },
+        { key="TECH_BROKER",  name="技术中介", desc="科研速度+20%",  effect={researchSpeedBonus=0.20} },
+    },
+}
+SPEC_COST = 50   -- P2-3: 激活专精消耗晶石数量
+
 -- ============================================================================
 -- 星航基地模块（与行星建筑完全独立）
 -- ============================================================================
@@ -124,13 +149,18 @@ TECHS = {
     COLONY_BIOTECH   = { name="殖民生物技术", desc="殖民星球人口增长速率+40%", cost={esource=150, nuclear=80},            time=35, prereqs={"CRYSTAL_PROCESS"},                     bonus={colonyPopMult=1.4} },
     NANO_REPAIR      = { name="纳米修复",   desc="所有战舰最大耐久+20%",      cost={metal=200,   esource=100},           time=30, prereqs={"HULL_ALLOY"},                          bonus={shipHealthMult=1.20} },
 
-    -- Tier 3（需要 2 项 Tier2 前置）── P1-1: 三者互斥，只能选一
+    -- Tier 3（需要 2 项 Tier2 前置）── 四者互斥，只能选一（P1-3: 新增 VOID_ANCHOR）
     WARP_DRIVE       = { name="曲速引擎",   desc="舰队移动速度+50%",          cost={nuclear=300, esource=500},           time=60, prereqs={"SHIELD_REINFORCE","RAPID_REFINE"},     bonus={fleetSpeedMult=1.5},  exclusiveGroup="TIER3" },
     ADVANCED_WEAPONS = { name="高级武器系统", desc="所有战舰攻击力+30%",      cost={metal=500,   nuclear=200},           time=55, prereqs={"HULL_ALLOY","RAPID_REFINE"},           bonus={shipDmgMult=1.3},     exclusiveGroup="TIER3" },
     DEFENSE_MATRIX   = { name="防御矩阵",   desc="基地护盾+400，防御+30%",    cost={nuclear=200, metal=500},             time=50, prereqs={"SHIELD_REINFORCE","NANO_REPAIR"},      bonus={shieldBonus=400, defenseBonus=0.3}, exclusiveGroup="TIER3" },
+    -- P1-3: 速攻专精替代路线（与 WARP_DRIVE 互斥）
+    VOID_ANCHOR      = { name="虚空锚定",   desc="战舰攻击力+20%，敌方舰队减速20%",
+                         cost={nuclear=280, esource=400, metal=200}, time=60,
+                         prereqs={"SHIELD_REINFORCE","RAPID_REFINE"},
+                         bonus={shipDmgMult=1.2, enemySpeedDebuff=0.8}, exclusiveGroup="TIER3" },
 
     -- Tier 4（顶层科技，需要 Tier3 前置）
-    QUANTUM_CORE     = { name="量子核心",   desc="基地核心升级费用-20%，科研速度+50%", cost={nuclear=600, esource=800, metal=1000}, time=90, prereqs={"WARP_DRIVE","ADVANCED_WEAPONS"}, bonus={coreUpgradeCostMult=0.8, researchSpeedMult=1.5} },
+    QUANTUM_CORE     = { name="量子核心",   desc="基地核心升级费用-20%，科研速度+50%", cost={nuclear=600, esource=800, metal=1000}, time=90, prereqs={"WARP_DRIVE","ADVANCED_WEAPONS"}, bonus={coreUpgradeCostMult=0.8, researchSpeedMult=1.5}, exclusiveGroup="TIER4_UTIL" },
     PHASE_DRIVE      = { name="相位驱动",   desc="精炼速率×1.4，舰队速度+40%",         cost={nuclear=500, esource=600, metal=800},  time=80, prereqs={"WARP_DRIVE","NANO_REPAIR"},          bonus={globalRefineMult=1.4, fleetSpeedMult=1.4} },
     -- P1-1: 攻击路线 Tier4 —— 前置 ADVANCED_WEAPONS
     NOVA_CANNON      = { name="新星炮",     desc="战舰AOE半径+80%，每波战斗开始获得1次星陨打击技能",
@@ -142,12 +172,17 @@ TECHS = {
                          cost={nuclear=400, metal=600, esource=600}, time=80,
                          prereqs={"DEFENSE_MATRIX"},
                          bonus={shieldMaxMult=2.2, shieldRegenPct=0.05} },
+    -- P1-3: 虚空锚定专精路线 Tier4（与 QUANTUM_CORE 互斥）
+    STELLAR_SYNC     = { name="星际同步",   desc="全局资源产出+25%，科研速度+30%",
+                         cost={nuclear=500, esource=700, metal=800}, time=85,
+                         prereqs={"VOID_ANCHOR","DEFENSE_MATRIX"},
+                         bonus={globalProdMult=1.25, researchSpeedMult=1.3}, exclusiveGroup="TIER4_UTIL" },
 }
 TECH_ORDER = {
     "DEEP_MINING","SOLAR_EFFICIENCY","CRYSTAL_PROCESS","HULL_ALLOY",             -- Tier 1
     "SHIELD_REINFORCE","RAPID_REFINE","COLONY_BIOTECH","NANO_REPAIR",             -- Tier 2
-    "WARP_DRIVE","ADVANCED_WEAPONS","DEFENSE_MATRIX",                             -- Tier 3
-    "QUANTUM_CORE","PHASE_DRIVE","NOVA_CANNON","FORTRESS_PROTOCOL",               -- Tier 4
+    "WARP_DRIVE","ADVANCED_WEAPONS","DEFENSE_MATRIX","VOID_ANCHOR",              -- Tier 3 (P1-3: +VOID_ANCHOR)
+    "QUANTUM_CORE","PHASE_DRIVE","NOVA_CANNON","FORTRESS_PROTOCOL","STELLAR_SYNC", -- Tier 4 (P1-3: +STELLAR_SYNC)
 }
 
 RANKS = {"见习指挥官","资深舰长","舰队少将","星系统治者","银河霸主"}
@@ -459,6 +494,75 @@ function BuildingSystem:getBuildingName(key)
     return BUILDINGS[key] and BUILDINGS[key].name or key
 end
 
+--- P2-3: 获取建筑类型可用专精列表
+function BuildingSystem:getSpecsForBuilding(key)
+    return BUILDING_SPECS[key] or {}
+end
+
+--- P2-3: 查找专精定义（按建筑类型 key + 专精 key）
+function BuildingSystem:findSpec(bKey, specKey)
+    for _, sp in ipairs(BUILDING_SPECS[bKey] or {}) do
+        if sp.key == specKey then return sp end
+    end
+    return nil
+end
+
+--- P2-3: 重算单个建筑产量（科技倍率 + 专精效果）
+--- 会先撤销旧贡献再写入新值到 rm.rates
+function BuildingSystem:_recalcBuildingProd(b, planet)
+    local bd = BUILDINGS[b.key]
+    if not bd then return end
+    -- 撤销旧产量贡献
+    for res, old in pairs(b.currentProd or {}) do
+        self.rm.rates[res] = math.max(0, (self.rm.rates[res] or 0) - old)
+    end
+    b.currentProd = {}
+    -- 科技倍率
+    local techMult = 1.0
+    if planet.appliedTechs then
+        for techId in pairs(planet.appliedTechs) do
+            local bonus = TECHS[techId] and TECHS[techId].bonus
+            if bonus and bonus.building == b.key then
+                techMult = bonus.prodMult; break
+            end
+        end
+    end
+    -- 专精效果
+    local specEffect = nil
+    if b.spec then
+        local sp = self:findSpec(b.key, b.spec)
+        if sp then specEffect = sp.effect end
+    end
+    for res, rate in pairs(bd.prod) do
+        local val = math.floor(rate * b.level * techMult)
+        if specEffect then
+            local mKey = res .. "Mult"
+            local fKey = res .. "Flat"
+            if specEffect[mKey] then val = math.floor(val * specEffect[mKey]) end
+            if specEffect[fKey] then val = val + specEffect[fKey] end
+        end
+        b.currentProd[res] = math.max(0, val)
+        self.rm.rates[res] = (self.rm.rates[res] or 0) + b.currentProd[res]
+    end
+end
+
+--- P2-3: 为建筑设置专精（消耗晶石 SPEC_COST）
+function BuildingSystem:setSpec(bldIdx, planet, specKey)
+    local b = planet.buildings[bldIdx]
+    if not b then return false, "无效建筑" end
+    if b.level < 3 then return false, "需要 Lv.3+" end
+    local sp = self:findSpec(b.key, specKey)
+    if not sp then return false, "未知专精" end
+    if b.spec == specKey then return false, "已选择此专精" end
+    if not self.rm:canAfford({crystal = SPEC_COST}) then
+        return false, string.format("晶石不足（需 %d）", SPEC_COST)
+    end
+    self.rm:spend({crystal = SPEC_COST})
+    b.spec = specKey
+    self:_recalcBuildingProd(b, planet)
+    return true, sp.name .. " 已激活"
+end
+
 -- P1-3: 建造队列最大容量
 local BUILD_QUEUE_MAX = 3
 
@@ -582,25 +686,8 @@ function BuildingSystem:update(dt, planet)
             -- 升级
             local b   = planet.buildings[job.targetIdx]
             if b then
-                local bd = BUILDINGS[b.key]
                 b.level = job.level
-                for res, rate in pairs(bd.prod) do
-                    local oldProd = b.currentProd[res] or 0
-                    -- 基础产量 × 新等级；若该建筑科技已应用则乘科技倍率
-                    local techMult = 1.0
-                    if planet.appliedTechs then
-                        for techId, _ in pairs(planet.appliedTechs) do
-                            local bonus = TECHS[techId] and TECHS[techId].bonus
-                            if bonus and bonus.building == b.key then
-                                techMult = bonus.prodMult
-                                break
-                            end
-                        end
-                    end
-                    local newProd = math.floor(rate * b.level * techMult)
-                    self.rm.rates[res] = (self.rm.rates[res] or 0) - oldProd + newProd
-                    b.currentProd[res] = newProd
-                end
+                self:_recalcBuildingProd(b, planet)  -- P2-3: 含科技+专精效果
             end
         end
         planet.constructing = nil
@@ -777,6 +864,18 @@ function ResearchSystem:update(dt)
                 self.rm.baseBonus = self.rm.baseBonus or {}
                 self.rm.baseBonus.shieldRegenPct = (self.rm.baseBonus.shieldRegenPct or 0) + bonus.shieldRegenPct
                 print("[Research] 要塞协议激活：战斗中护盾每10s回复" .. tostring(bonus.shieldRegenPct * 100) .. "%")
+            end
+            -- P1-3: VOID_ANCHOR —— 战舰攻击倍率 + 敌方减速系数
+            if bonus.enemySpeedDebuff then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.enemySpeedDebuff = (self.rm.baseBonus.enemySpeedDebuff or 1.0) * bonus.enemySpeedDebuff
+                print("[Research] 虚空锚定激活：敌方舰队速度×" .. tostring(self.rm.baseBonus.enemySpeedDebuff))
+            end
+            -- P1-3: STELLAR_SYNC —— 全局产出倍率
+            if bonus.globalProdMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.globalProdMult = (self.rm.baseBonus.globalProdMult or 1.0) * bonus.globalProdMult
+                print("[Research] 星际同步激活：全局产出×" .. tostring(self.rm.baseBonus.globalProdMult))
             end
         end
         print("[Research] 完成: " .. TECHS[id].name)
@@ -1449,6 +1548,199 @@ function FleetManager:deserialize(data)
 end
 
 -- ============================================================================
+-- P1-1: 中立势力外交系统
+-- ============================================================================
+--- 三种中立势力定义
+local NEUTRAL_FACTIONS = {
+    trade_union   = { name = "商业联盟", icon = "💰", giftCost = { metal = 80, esource = 50 },
+                      tradeInterval = 60, tradeGain = { metal = 30, esource = 20 },
+                      color = { 255, 200, 80 } },
+    star_guild    = { name = "星际工会", icon = "⚙️",  giftCost = { metal = 60, esource = 80 },
+                      tradeInterval = 60, tradeGain = { metal = 20, esource = 35 },
+                      color = { 100, 200, 255 } },
+    relic_keeper  = { name = "遗迹守护者", icon = "🏛️", giftCost = { metal = 100, esource = 30 },
+                      tradeInterval = 60, tradeGain = { metal = 50, esource = 10 },
+                      color = { 180, 120, 255 } },
+}
+
+local GIFT_FAVOR          = 20    -- 每次礼物 +20 好感
+local WAR_THRESHOLD       = 0     -- 好感 < 0 → 宣战
+local TRADE_THRESHOLD     = 60    -- 好感 ≥ 60 → 商贸协议
+local MILITARY_THRESHOLD  = 90    -- 好感 ≥ 90 → 军事合作
+
+local DiplomacySystem = {}
+DiplomacySystem.__index = DiplomacySystem
+
+--- 创建外交系统（每局游戏一个实例）
+function DiplomacySystem.new()
+    local self = setmetatable({}, DiplomacySystem)
+    -- planetId → { factionKey, favor(0-100), tradeTimer, atWar, military }
+    self.planets = {}
+    return self
+end
+
+--- 随机为未殖民星球分配中立势力标签（开局时调用）
+---@param allPlanets table  GalaxyScene.GetAllPlanets() 结果
+---@param ratio      number  0-1，随机标记比例（默认 0.35）
+function DiplomacySystem:initFactions(allPlanets, ratio)
+    ratio = ratio or 0.35
+    local keys = { "trade_union", "star_guild", "relic_keeper" }
+    for _, p in ipairs(allPlanets) do
+        if not p.isBase and not p.colonized then
+            if math.random() < ratio then
+                local fk = keys[math.random(1, #keys)]
+                self.planets[p.id] = {
+                    factionKey  = fk,
+                    favor       = 40,    -- 初始好感度 40（中立）
+                    tradeTimer  = 0,
+                    atWar       = false,
+                    military    = false,
+                }
+                p.neutralFaction = fk    -- 在行星对象上打标记，渲染用
+            end
+        end
+    end
+end
+
+--- 获取某行星的外交状态，无则返回 nil
+---@param planetId number
+---@return table|nil
+function DiplomacySystem:getState(planetId)
+    return self.planets[planetId]
+end
+
+--- 获取势力定义
+---@param factionKey string
+---@return table
+function DiplomacySystem.getFactionDef(factionKey)
+    return NEUTRAL_FACTIONS[factionKey]
+end
+
+--- 玩家送出外交礼物：扣资源、增好感
+---@param planetId number
+---@param rm       table
+---@return boolean success, string msg
+function DiplomacySystem:sendGift(planetId, rm)
+    local st = self.planets[planetId]
+    if not st then return false, "该星球无中立势力" end
+    if st.atWar  then return false, "宣战中，无法外交" end
+    local fd = NEUTRAL_FACTIONS[st.factionKey]
+    if not fd then return false, "未知势力" end
+    -- 扣除资源
+    local cost = fd.giftCost
+    if rm:get("metal") < cost.metal or rm:get("esource") < cost.esource then
+        return false, string.format("资源不足（需金属%d 能源%d）", cost.metal, cost.esource)
+    end
+    rm:add("metal",   -cost.metal)
+    rm:add("esource", -cost.esource)
+    -- 增加好感
+    st.favor = math.min(100, st.favor + GIFT_FAVOR)
+    -- 检查新解锁
+    if st.favor >= MILITARY_THRESHOLD then
+        st.military = true
+    end
+    local msg = string.format("%s好感 +%d → %d", fd.name, GIFT_FAVOR, st.favor)
+    if st.favor >= MILITARY_THRESHOLD and not st.military then
+        msg = msg .. "  🤝军事合作已解锁！"
+    elseif st.favor >= TRADE_THRESHOLD then
+        msg = msg .. "  📦商贸协议已激活"
+    end
+    return true, msg
+end
+
+--- 每秒 tick：处理商贸自动收益 + 宣战衰减
+---@param dt     number  时间步长（秒）
+---@param rm     table
+---@param allPlanets table
+---@return table events  { {type="trade"|"war", planetId, factionKey, gain} }
+function DiplomacySystem:tick(dt, rm, allPlanets)
+    local events = {}
+    -- 行星 id → 对象 快查
+    local pmap = {}
+    for _, p in ipairs(allPlanets or {}) do pmap[p.id] = p end
+
+    for pid, st in pairs(self.planets) do
+        if st.atWar then
+            -- 宣战中好感持续衰减（每5s -1）
+            st.tradeTimer = (st.tradeTimer or 0) + dt
+            if st.tradeTimer >= 5 then
+                st.tradeTimer = 0
+                st.favor = math.max(-20, st.favor - 1)
+            end
+        elseif st.favor >= TRADE_THRESHOLD then
+            -- 商贸协议自动收益
+            local fd = NEUTRAL_FACTIONS[st.factionKey]
+            if fd then
+                st.tradeTimer = (st.tradeTimer or 0) + dt
+                if st.tradeTimer >= fd.tradeInterval then
+                    st.tradeTimer = 0
+                    rm:add("metal",   fd.tradeGain.metal)
+                    rm:add("esource", fd.tradeGain.esource)
+                    events[#events+1] = {
+                        type = "trade", planetId = pid,
+                        factionKey = st.factionKey,
+                        gain = fd.tradeGain,
+                    }
+                end
+            end
+        end
+        -- 已殖民的星球移除外交状态
+        local p = pmap[pid]
+        if p and p.colonized then
+            if p.neutralFaction then p.neutralFaction = nil end
+            self.planets[pid] = nil
+        end
+    end
+    return events
+end
+
+--- 检查某星球是否处于军事合作（海盗攻击时协防）
+---@param planetId number
+---@return boolean
+function DiplomacySystem:hasMilitary(planetId)
+    local st = self.planets[planetId]
+    return st and st.military and not st.atWar
+end
+
+--- 序列化（存档）
+function DiplomacySystem:serialize()
+    local out = {}
+    for pid, st in pairs(self.planets) do
+        out[tostring(pid)] = {
+            factionKey = st.factionKey,
+            favor      = st.favor,
+            tradeTimer = st.tradeTimer,
+            atWar      = st.atWar,
+            military   = st.military,
+        }
+    end
+    return out
+end
+
+--- 反序列化（读档）
+---@param data table   serialize() 结果
+---@param allPlanets table
+function DiplomacySystem:deserialize(data, allPlanets)
+    if type(data) ~= "table" then return end
+    local pmap = {}
+    for _, p in ipairs(allPlanets or {}) do pmap[p.id] = p end
+    for pidStr, st in pairs(data) do
+        local pid = tonumber(pidStr)
+        if pid then
+            self.planets[pid] = {
+                factionKey = st.factionKey,
+                favor      = st.favor      or 40,
+                tradeTimer = st.tradeTimer or 0,
+                atWar      = st.atWar      or false,
+                military   = st.military   or false,
+            }
+            local p = pmap[pid]
+            if p then p.neutralFaction = st.factionKey end
+        end
+    end
+end
+
+-- ============================================================================
 -- 导出（返回类与工厂函数）
 -- ============================================================================
 return {
@@ -1460,4 +1752,8 @@ return {
     PlayerProfile        = PlayerProfile,
     ShipProductionQueue  = ShipProductionQueue,
     FleetManager         = FleetManager,
+    DiplomacySystem      = DiplomacySystem,
+    NEUTRAL_FACTIONS     = NEUTRAL_FACTIONS,
+    TRADE_THRESHOLD      = TRADE_THRESHOLD,
+    MILITARY_THRESHOLD   = MILITARY_THRESHOLD,
 }

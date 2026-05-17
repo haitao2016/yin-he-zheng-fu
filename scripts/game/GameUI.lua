@@ -111,6 +111,9 @@ local onGarrisonFleetCb_    = nil   -- P2-1: 驻守编队 function(fleetId, plan
 local onRecallGarrisonCb_   = nil   -- P2-1: 召回驻守 function(fleetId)
 local getGarrisonInfoCb_    = nil   -- P2-1: 查询驻守信息 function(fleetId)->{garrisonedPlanet, colonizedPlanets}
 local getPlanetProdHistoryCb_ = nil -- P3-2: 查询星球产量历史 function(planetName)->{minerals,energy,crystal}
+local onSendGiftCb_          = nil  -- P1-1: 外交送礼 function(planetId)
+local getDiplomacyStateCb_   = nil  -- P1-1: 查询外交状态 function(planetId)->{factionKey,factionDef,favor,atWar,military}
+local onSetSpecCb_           = nil  -- P2-3: 设置建筑专精 function(planetId, bldIdx, specKey)
 local harvestAllCD_         = 0     -- 全部征收剩余冷却（秒）
 local HARVEST_ALL_CD      = 60    -- 全部征收冷却时间（秒）
 local getConquestProgress_ = nil  -- 返回 {colonized, total, piratesKilled, piratesTotal}
@@ -295,6 +298,7 @@ function GameUI.UpdateNotifications(dt)
     -- P2-1: 选卡面板入场动画
     if cardDraft_.visible then
         cardDraft_.animT = math.min(1.0, cardDraft_.animT + dt * 3.0)
+        cardDraft_.runT  = (cardDraft_.runT or 0) + dt  -- P2-1 V2.0: 粒子动画累计时间
     end
     -- 海盗预警闪烁
     if pirateWarningTime_ <= PIRATE_WARN_THRESH then
@@ -2661,6 +2665,9 @@ function GameUI.RenderHUD(dt)
                         isPriority        = getIsPriorityCb_ and getIsPriorityCb_(selectedPlanet_),
                         onCancelQueued    = onCancelQueuedCb_,  -- P1-3
                         prodHistory       = getPlanetProdHistoryCb_ and getPlanetProdHistoryCb_(selectedPlanet_.name), -- P3-2
+                        onSendGift        = onSendGiftCb_,      -- P1-1
+                        diplomacyState    = getDiplomacyStateCb_ and getDiplomacyStateCb_(selectedPlanet_.id), -- P1-1
+                        onSetSpec         = onSetSpecCb_,       -- P2-3
                     })
                     renderShipyardPanel(selectedPlanet_)
                 end
@@ -2733,6 +2740,40 @@ function GameUI.RenderHUD(dt)
             nvgStrokeWidth(vg, isHover and 3 or 2)
             nvgStrokeColor(vg, nvgRGBA(rc[1], rc[2], rc[3], isHover and 255 or 180))
             nvgStroke(vg)
+            -- P2-1 V2.0: 史诗卡金色粒子特效（沿边框环绕的闪光粒子）
+            if card.rarity == "epic" then
+                local gt = cardDraft_.runT or 0  -- 粒子运动累计时间
+                local SPARKS = 12
+                for si = 1, SPARKS do
+                    local phase = (si / SPARKS) * math.pi * 2 + gt * 1.8
+                    -- 沿矩形边框参数化运动
+                    local perim = 2 * (CARD_W + CARD_H)
+                    local pos   = ((phase % (math.pi * 2)) / (math.pi * 2)) * perim
+                    local px, py
+                    if pos < CARD_W then
+                        px, py = cx + pos, ry
+                    elseif pos < CARD_W + CARD_H then
+                        px, py = cx + CARD_W, ry + (pos - CARD_W)
+                    elseif pos < 2 * CARD_W + CARD_H then
+                        px, py = cx + CARD_W - (pos - CARD_W - CARD_H), ry + CARD_H
+                    else
+                        px, py = cx, ry + CARD_H - (pos - 2 * CARD_W - CARD_H)
+                    end
+                    local sparkAlpha = math.floor(180 * t * (0.5 + 0.5 * math.sin(phase * 3 + si)))
+                    local sparkR     = 2.0 + 1.5 * math.abs(math.sin(phase * 2 + si * 0.7))
+                    nvgBeginPath(vg)
+                    nvgCircle(vg, px, py, sparkR)
+                    nvgFillColor(vg, nvgRGBA(255, 210, 60, sparkAlpha))
+                    nvgFill(vg)
+                end
+                -- 史诗卡顶部金色光晕
+                local glowPaint = nvgRadialGradient(vg,
+                    cx + CARD_W/2, ry - 4, 0, 60,
+                    nvgRGBA(255, 200, 50, math.floor(80 * t)),
+                    nvgRGBA(255, 180, 0, 0))
+                nvgBeginPath(vg); nvgRect(vg, cx - 10, ry - 30, CARD_W + 20, 60)
+                nvgFillPaint(vg, glowPaint); nvgFill(vg)
+            end
             -- 图标
             nvgFontSize(vg, 44); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
             nvgFillColor(vg, nvgRGBA(255, 255, 255, math.floor(255 * t)))
@@ -2921,6 +2962,7 @@ function GameUI.ShowCardDraft(cards, onSelect)
     cardDraft_.onSelect = onSelect
     cardDraft_.hoverIdx = 0
     cardDraft_.animT    = 0
+    cardDraft_.runT     = 0  -- P2-1 V2.0: 重置粒子动画时间
 end
 
 -- P2-1: 隐藏选卡面板
@@ -2960,6 +3002,7 @@ function GameUI.SetCareerStats(stats)
     careerStats_UI_.totalColonies = stats.totalColonies or 0
     careerStats_UI_.bestMvpShip   = stats.bestMvpShip   or ""
     careerStats_UI_.playtime      = stats.playtime      or 0
+    EndGamePanel.SetCareerStats(stats)   -- P3-1: 同步生涯数据到个人主页弹窗
 end
 
 -- ============================================================================
@@ -3025,6 +3068,9 @@ function GameUI.Init(opts)
     onRecallGarrisonCb_    = opts.onRecallGarrisonCb    -- P2-1: 召回驻守
     getGarrisonInfoCb_     = opts.getGarrisonInfoCb     -- P2-1: 查询驻守信息
     getPlanetProdHistoryCb_ = opts.getPlanetProdHistoryCb -- P3-2: 查询星球产量历史
+    onSendGiftCb_           = opts.onSendGift            -- P1-1: 外交送礼
+    getDiplomacyStateCb_    = opts.getDiplomacyState     -- P1-1: 查询外交状态
+    onSetSpecCb_            = opts.onSetSpec             -- P2-3: 设置建筑专精
     getConquestProgress_   = opts.getConquestProgress
     lbOnRequest_           = opts.onShowLeaderboard
     if opts.fm then
