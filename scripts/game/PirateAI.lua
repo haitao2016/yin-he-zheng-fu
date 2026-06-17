@@ -311,8 +311,8 @@ end
 function PirateAI:weakenBase(baseId)
     for _, base in ipairs(self.bases) do
         if base.id == baseId then
-            base.hp = math.max(0, base.hp - PIRATE_WEAKEN_AMOUNT)
-            if base.hp <= 0 then
+            base.health = math.max(0, (base.health or base.hp or 0) - PIRATE_WEAKEN_AMOUNT)
+            if (base.health or base.hp or 0) <= 0 then
                 base.active = false
                 self.streakKills = self.streakKills + 1  -- 摧毁基地也算连击
                 if self.notifyFn then
@@ -321,7 +321,8 @@ function PirateAI:weakenBase(baseId)
                 print(string.format("[PirateAI] 基地%d 已摧毁", baseId))
             else
                 -- 削弱后降低等级（最低1级）
-                if base.hp <= base.maxHp * 0.3 and base.level > 1 then
+                local maxHp = base.maxHealth or base.maxHp or base.health or 1
+                if (base.health or base.hp or 0) <= maxHp * 0.3 and base.level > 1 then
                     base.level = base.level - 1
                 end
                 -- 记录玩家获胜连击（用于动态难度缓冲）
@@ -377,7 +378,9 @@ function PirateAI:RevealMostThreateningBase(duration)
     print(string.format("[PirateAI] 情报揭露基地#%d Lv%d，进攻延迟+30s，情报有效%ds",
         target.id, target.level, duration))
     return string.format("基地#%d Lv%d  进攻倒计时: %ds  HP:%d/%d",
-        target.id, target.level, math.ceil(target.attackTimer), target.hp, target.maxHp)
+        target.id, target.level, math.ceil(target.attackTimer),
+        target.health or target.hp or 0,
+        target.maxHealth or target.maxHp or target.health or 1)
 end
 
 -- ============================================================================

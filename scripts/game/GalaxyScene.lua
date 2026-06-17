@@ -613,7 +613,7 @@ local function updateHover()
     end
     -- 再检测小行星
     for _, a in ipairs(asteroids_) do
-        if a.hp and a.hp > 0 then
+        if a.health and a.health > 0 then
             local sx, sy = w2s(a.x, a.y)
             local r = a.size * zoom_ + 6
             if dist(mouseX_, mouseY_, sx, sy) < r then
@@ -660,7 +660,7 @@ local getOrCreateFleetObj  -- 前向声明（定义在编队模块区域）
 
 local function tryClickAsteroid(mx, my)
     for _, a in ipairs(asteroids_) do
-        if a.hp > 0 then
+        if a.health and a.health > 0 then
             local sx, sy = w2s(a.x, a.y)
             local r = (a.size + 8) * zoom_   -- 点击容差
             if dist(mx, my, sx, sy) < r then
@@ -1244,7 +1244,7 @@ local function updateFleets(dt)
             -- 编队静止时采矿（在采矿目标附近）
             if not obj.targetX and obj.miningTarget then
                 local a = obj.miningTarget
-                if a.hp <= 0 then
+                if not a.health or a.health <= 0 then
                     obj.pendingAsteroid = a     -- 记住，等待重生后自动返回
                     obj.miningTarget    = nil
                     if seedShip_.state == "deployed" then
@@ -1270,9 +1270,9 @@ local function updateFleets(dt)
                                 local yield = a.yield * engCount
                                 local dmg   = 1
                                 rm_:add(a.atype, yield)
-                                a.hp = math.max(0, a.hp - dmg)
+                                a.health = math.max(0, (a.health or a.hp or 0) - dmg)
                                 print(string.format("[Fleet%d] 采矿 +%.1f %s, 小行星HP %d/%d",
-                                    i, yield, a.atype, a.hp, a.maxHP))
+                                    i, yield, a.atype, a.health or a.hp or 0, a.maxHealth or a.maxHP or 1))
                                 -- 本轮击尽：标记耗尽，下一帧检测到 hp==0 时触发返航
                             else
                                 obj.miningTarget = nil
@@ -1288,7 +1288,7 @@ local function updateFleets(dt)
                 and countEngineersInFleet(i) > 0 then
                 local nearest, nearestD = nil, math.huge
                 for _, a in ipairs(asteroids_) do
-                    if a.hp > 0 then
+                    if a.health and a.health > 0 then
                         local d = (obj.x - a.x)^2 + (obj.y - a.y)^2
                         if d < nearestD then nearestD = d; nearest = a end
                     end
@@ -1525,10 +1525,10 @@ function GalaxyScene.Update(dt)
     GalaxyEvents.Update(dt, seedShip_.colonized, seedShip_.x, seedShip_.y)
     -- 耗尽的小行星定期重生
     for _, a in ipairs(asteroids_) do
-        if a.hp <= 0 then
+        if not a.health or a.health <= 0 then
             a.respawnTimer = (a.respawnTimer or 0) + dt
             if a.respawnTimer >= 60 then  -- 60秒重生
-                a.hp = a.maxHP
+                a.health = a.maxHealth or a.maxHP
                 a.respawnTimer = 0
             end
         else

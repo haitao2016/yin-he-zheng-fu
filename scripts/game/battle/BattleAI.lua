@@ -741,7 +741,7 @@ function BattleAI.UpdatePlayerFleet(dt)
         end
 
         -- 移动
-        if ship.target then
+        if ship.target and ship.target.health and ship.target.health > 0 then
             local tx, ty = ship.target.x, ship.target.y
             local range = ship.range or 180
             local d = dist(ship.x, ship.y, tx, ty)
@@ -752,7 +752,10 @@ function BattleAI.UpdatePlayerFleet(dt)
                 ship.x = ship.x + (dx / len) * moveSpd * dt
                 ship.y = ship.y + (dy / len) * moveSpd * dt
             end
-        elseif vars_.moveTarget then
+        else
+            ship.target = nil
+        end
+        if ship.target == nil and vars_.moveTarget then
             -- 移向指定目标点
             local tx, ty = vars_.moveTarget.x, vars_.moveTarget.y
             local d = dist(ship.x, ship.y, tx, ty)
@@ -783,7 +786,7 @@ function BattleAI.UpdatePlayerFleet(dt)
                 ship.lastShot = (ship.lastShot or 0) + dt
                 -- unstable 锁定检查
                 local locked = ship.unstableLock and ship.unstableLock > 0
-                if not locked and ship.lastShot >= (1.0 / ship.shotRate) then
+                if not locked and ship.lastShot >= (1.0 / (ship.shotRate or 1.0)) then
                     ship.lastShot = 0
                     local target = ship.target
                     local dmg = ship.dmg
@@ -991,7 +994,7 @@ function BattleAI.UpdateEnemyFleet(dt)
         -- 射击
         if tDist <= range then
             ship.lastShot = (ship.lastShot or 0) + dt
-            if ship.lastShot >= (1.0 / ship.shotRate) then
+            if ship.lastShot >= (1.0 / (ship.shotRate or 1.0)) then
                 ship.lastShot = 0
                 local dmg = ship.dmg
                 -- 联赛攻击力修正
@@ -1358,7 +1361,7 @@ function BattleAI.ProcessDeaths(dt)
 
             -- INTERCEPTOR 超音速穿越
             if ship.lastHitter and ship.lastHitter.stype == "INTERCEPTOR" and math.random() < 0.20 then
-                ship.lastHitter.lastShot = 1.0 / ship.lastHitter.shotRate
+                ship.lastHitter.lastShot = 1.0 / (ship.lastHitter.shotRate or 1.0)
                 floatTexts_[#floatTexts_ + 1] = {
                     x = ship.lastHitter.x, y = ship.lastHitter.y - 18,
                     text = "超音速！", life = 0.8, maxLife = 0.8, vy = -26, team = "intercept"

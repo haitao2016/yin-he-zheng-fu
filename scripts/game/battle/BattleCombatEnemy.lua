@@ -58,7 +58,7 @@ function BattleCombatEnemy.Update(dt, ctx)
                 if td < effectiveRange then
                     -- EMP同时降低敌方射速（倍率复用 empMult）
                     es.lastShot = es.lastShot + dt * empMult
-                    if es.lastShot >= 1.0 / es.shotRate then
+                    if es.lastShot >= 1.0 / (es.shotRate or 1.0) then
                         es.lastShot = 0
                         -- 主目标伤害（护盾强化时减半）
                         local actualEsDmg = math.floor(es.dmg * shieldMult)

@@ -263,7 +263,7 @@ function BattleDeath.Update(dt, ctx, makeShip)
             -- P1-1 INTERCEPTOR: 超音速穿越 — 击杀后20%概率立刻再次攻击
             if ship.lastHitter and ship.lastHitter.stype == "INTERCEPTOR"
                and math.random() < 0.20 then
-                ship.lastHitter.lastShot = 1.0 / ship.lastHitter.shotRate  -- 重置为可立即攻击
+                ship.lastHitter.lastShot = 1.0 / (ship.lastHitter.shotRate or 1.0)  -- 重置为可立即攻击
                 ctx.floatTexts[#ctx.floatTexts+1] = {
                     x=ship.lastHitter.x, y=ship.lastHitter.y - 18,
                     text="超音速！", life=0.8, maxLife=0.8,
