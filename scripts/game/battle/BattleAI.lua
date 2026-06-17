@@ -307,6 +307,18 @@ function BattleAI.MakeBossShip(baseType, x, y)
     ship.bossPhaseTimer = 0
     ship.bossPhaseChanged = false  -- 标记本帧是否刚切换阶段
 
+    -- V2.6 A3: 应用阶段1的属性修饰符（确保阶段转换公式对称有效）
+    local phase1 = phases[1]
+    if phase1 then
+        if phase1.dmgMult then ship.dmg = ship.dmg * phase1.dmgMult end
+        if phase1.speedMult then ship.speed = ship.speed * phase1.speedMult end
+        if phase1.aoeRadiusMult and ship.aoeRadius then ship.aoeRadius = ship.aoeRadius * phase1.aoeRadiusMult end
+        if phase1.shieldMult then
+            ship.shield = ship.shield * phase1.shieldMult
+            ship.maxShield = ship.maxShield * phase1.shieldMult
+        end
+    end
+
     -- 虚空Boss特殊：初始隐形
     if phases[1] and phases[1].stealthPhase then
         ship.stealthTimer = 5.0
@@ -1026,9 +1038,10 @@ function BattleAI.UpdateEnemyFleet(dt)
 
         -- V2.6 A3: Boss阶段转换检查
         if ship.isBoss and ship.bossPhases then
-            local hpRatio = ship.health / ship.maxHealth
+            local hpRatio = ship.maxHealth > 0 and (ship.health / ship.maxHealth) or 1.0
             local phases = ship.bossPhases
             local currentPhaseIdx = ship.bossPhaseIndex
+            local prevPhase = phases[currentPhaseIdx]
             -- 检查是否需要进入下一个阶段
             for i = #phases, 1, -1 do
                 if hpRatio <= phases[i].hpThreshold and i > currentPhaseIdx then
@@ -1039,21 +1052,23 @@ function BattleAI.UpdateEnemyFleet(dt)
                     ship.bossPhaseChanged = true
                     ship.bossPhaseTimer = 0
 
-                    -- 应用阶段属性修改
-                    if newPhase.dmgMult then
-                        local baseDmg = ship.dmg / (phases[currentPhaseIdx] and phases[currentPhaseIdx].dmgMult or 1.0)
-                        ship.dmg = baseDmg * newPhase.dmgMult
+                    -- 应用阶段属性修改（统一公式：先撤销前一阶段修饰，再应用新阶段；缺失修饰符视为1.0）
+                    if newPhase.dmgMult or (prevPhase and prevPhase.dmgMult) then
+                        local baseDmg = ship.dmg / (prevPhase and prevPhase.dmgMult or 1.0)
+                        ship.dmg = baseDmg * (newPhase.dmgMult or 1.0)
                     end
-                    if newPhase.aoeRadiusMult and ship.aoeRadius then
-                        ship.aoeRadius = ship.aoeRadius * newPhase.aoeRadiusMult
+                    if (newPhase.aoeRadiusMult or (prevPhase and prevPhase.aoeRadiusMult)) and ship.aoeRadius then
+                        local baseAoe = ship.aoeRadius / (prevPhase and prevPhase.aoeRadiusMult or 1.0)
+                        ship.aoeRadius = baseAoe * (newPhase.aoeRadiusMult or 1.0)
                     end
-                    if newPhase.speedMult then
-                        ship.speed = ship.speed * newPhase.speedMult
+                    if newPhase.speedMult or (prevPhase and prevPhase.speedMult) then
+                        local baseSpeed = ship.speed / (prevPhase and prevPhase.speedMult or 1.0)
+                        ship.speed = baseSpeed * (newPhase.speedMult or 1.0)
                     end
-                    if newPhase.shieldMult then
-                        local baseShield = ship.maxShield / (phases[currentPhaseIdx] and phases[currentPhaseIdx].shieldMult or 1.0)
-                        ship.shield = baseShield * newPhase.shieldMult
-                        ship.maxShield = baseShield * newPhase.shieldMult
+                    if newPhase.shieldMult or (prevPhase and prevPhase.shieldMult) then
+                        local baseShield = ship.maxShield / (prevPhase and prevPhase.shieldMult or 1.0)
+                        ship.shield = baseShield * (newPhase.shieldMult or 1.0)
+                        ship.maxShield = baseShield * (newPhase.shieldMult or 1.0)
                     end
 
                     -- 虚空Boss阶段特效
