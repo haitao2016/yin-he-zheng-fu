@@ -7,4 +7,5 @@
 | 银河征服 V1.6 | 2026-05-17 | 进行中 | [2026-05-17_galaxy-conquest-v1.6.plan.md](./2026-05-17_galaxy-conquest-v1.6.plan.md) |
 | Bug修复与稳定性提升 | 2026-06-17 | 已完成 | [2026-06-17-bugfix-stability.md](./2026-06-17-bugfix-stability.md) |
 | 性能与代码质量优化 | 2026-06-17 | 已完成 | [2026-06-17-optimization.md](./2026-06-17-optimization.md) |
-| V2.6 舰种扩展·战斗深化·经济升级 | 2026-06-17 | 待审核 | [2026-06-17-v2.6-expansion-plan.md](./2026-06-17-v2.6-expansion-plan.md) |
+| V2.6 舰种扩展·战斗深化·经济升级 | 2026-06-17 | 进行中 | [2026-06-17-v2.6-expansion-plan.md](./2026-06-17-v2.6-expansion-plan.md) |
+| V2.6 更新开发计划（收尾+新功能） | 2026-06-17 | 待实施 | [2026-06-17-v2.6-update-plan.md](./2026-06-17-v2.6-update-plan.md) |
