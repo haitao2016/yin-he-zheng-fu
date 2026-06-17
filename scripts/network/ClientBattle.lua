@@ -576,17 +576,19 @@ end
 --- 获取玩家可攻击目标列表
 function M.GetPlayerTargets()
     local targets = {}
-    -- 殖民地
+    -- 殖民地：使用行星在星系中的世界坐标（轨道坐标）
     local planets = GalaxyScene.GetColonizedPlanets and GalaxyScene.GetColonizedPlanets() or {}
     for _, p in ipairs(planets) do
         if p.colonized then
-            targets[#targets+1] = { name = p.name, pos = p.pos }
+            local wx = p.system and (p.system.x + math.cos(p.angle) * p.orbitRadius) or 0
+            local wy = p.system and (p.system.y + math.sin(p.angle) * p.orbitRadius) or 0
+            targets[#targets+1] = { x = wx, y = wy, name = p.name }
         end
     end
-    -- 基地位置
+    -- 星航基地（已展开时才是目标）
     local base = GalaxyScene.GetBase()
-    if base then
-        targets[#targets+1] = { name = "主基地", pos = base.pos or Vector3(0,0,0) }
+    if base and base.colonized then
+        targets[#targets+1] = { x = base.x or 0, y = base.y or 0, name = "主基地" }
     end
     return targets
 end

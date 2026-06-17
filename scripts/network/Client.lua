@@ -1443,7 +1443,7 @@ local function handleUpdate(eventType, eventData)
 
     -- P2-1 V2.4: 任务板 tick（生成 + 超时 + 完成检测）
     if not endGameTriggered_ then
-        local completedQuest = QuestBoard.Update(dt, rm_, ds_)
+        local completedQuest = QuestBoard.Update(dt, rm_, ds_, fm_)
         if completedQuest then
             Audio.Play(Audio.SFX.RESEARCH_COMPLETE)
             -- 发放奖励
