@@ -300,6 +300,12 @@ function GameUI.Notify(msg, ntype)
     NotifyPanel.Push(msg, ntype)
 end
 
+--- 渲染浮动 toast 通知（顶部飘字）
+--- 由 Client 在 RenderHUD 之后调用，确保 toast 叠加在 HUD 之上
+function GameUI.RenderNotifications()
+    NotifyPanel.RenderToasts()
+end
+
 function GameUI.SetPirateWarning(minTime)
     pirateWarningTime_ = minTime or math.huge
 end
