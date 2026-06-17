@@ -3,6 +3,7 @@
 -- 每 120s 生成 1 个新任务，最多同时 3 个活跃任务
 -- 类型: 歼灭(40%) / 经济(30%) / 外交(20%) / 探索(10%)
 -- ============================================================================
+local GalaxyScene = require("game.GalaxyScene")  -- 用于获取殖民星球数量
 local QuestBoard = {}
 
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -192,7 +193,11 @@ local function checkCondition(quest, rm, diplo, fm)
     elseif c == "colonize" then
         return quest.progress >= t
     elseif c == "total_colonies" then
-        return rm and (rm.colonizedCount or 0) >= t
+        -- 从 GalaxyScene 获取殖民星球数量（rm 没有此字段）
+        local planets = GalaxyScene.GetColonizedPlanets and GalaxyScene.GetColonizedPlanets() or {}
+        local count = 0
+        for _, p in ipairs(planets) do if p.colonized then count = count + 1 end end
+        return count >= t
     elseif c == "anomaly_battle_win" then
         return quest.progress >= t
     elseif c == "explore_planet" then

@@ -553,6 +553,18 @@ function DiplomacySystem:hasMilitary(planetId)
     return st and st.military and not st.atWar
 end
 
+--- 获取所有势力中最高好感度（供 QuestBoard 检测 faction_favor 任务）
+---@return number  最高好感度值（0-100），无势力时返回 0
+function DiplomacySystem:getMaxFavor()
+    local maxFavor = 0
+    for _, st in pairs(self.planets) do
+        if not st.atWar and st.favor then
+            maxFavor = math.max(maxFavor, st.favor)
+        end
+    end
+    return maxFavor
+end
+
 -- P2-2: 长期贸易协议 API =====================================================
 
 --- 当前激活的长期协议数量
