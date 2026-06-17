@@ -1375,6 +1375,11 @@ function M.RenderShipyard(planet)
     nvgStrokeColor(vg, clr(60,120,200,60)); nvgStrokeWidth(vg, 1); nvgStroke(vg)
     sy = sy + 8
 
+    -- P0-1: 运行时解锁状态（核心等级 / 已解锁科技 / 本波DREADNOUGHT）
+    local coreLv = planet.coreLevel or (planet.isBase and (planet.coreLevel or 1)) or 1
+    local techUnlocked = (UICommon.rs and UICommon.rs.unlocked) or {}
+    local dreadBuiltThisWave = spq and spq.dreadBuiltThisWave or false
+
     for si_, stype in ipairs(SHIP_QUEUE_ORDER) do
         local capturedType = stype
         local cost = SHIP_COSTS[stype]
@@ -1382,12 +1387,45 @@ function M.RenderShipyard(planet)
         local st = SHIP_TYPES[stype]
         local timeStr = st.buildTime and (" ⏱"..st.buildTime.."s") or ""
         local hkPrefix = si_ <= 5 and (si_..".") or "  "
-        sy = drawButton(px+8, sy, pw-16, 18,
-            hkPrefix..st.name.." ["..costStr.."]"..timeStr,
-            60, 100, 220,
-            function()
-                if onShipQueueCb_ then onShipQueueCb_(capturedType) end
-            end)
+
+        -- P0-1: V2.6 新舰种解锁状态检查
+        local unlockReq = SHIP_UNLOCK_REQUIREMENTS and SHIP_UNLOCK_REQUIREMENTS[stype]
+        local isUnlocked = true
+        local lockReason = ""
+        if unlockReq then
+            if unlockReq.coreLevel and coreLv < unlockReq.coreLevel then
+                isUnlocked = false
+                lockReason = "🔒核心Lv." .. unlockReq.coreLevel
+            end
+            if isUnlocked and unlockReq.tech and not techUnlocked[unlockReq.tech] then
+                isUnlocked = false
+                lockReason = "🔒科技:" .. (unlockReq.desc or unlockReq.tech)
+            end
+            if isUnlocked and stype == "DREADNOUGHT" and dreadBuiltThisWave then
+                isUnlocked = false
+                lockReason = "🔒本波次已建造"
+            end
+        end
+
+        if isUnlocked then
+            sy = drawButton(px+8, sy, pw-16, 18,
+                hkPrefix..st.name.." ["..costStr.."]"..timeStr,
+                60, 100, 220,
+                function()
+                    if onShipQueueCb_ then onShipQueueCb_(capturedType) end
+                end)
+        else
+            -- 锁定舰船：灰色显示，不可点击
+            nvgBeginPath(vg); nvgRoundedRect(vg, px+8, sy, pw-16, 18, 3)
+            nvgFillColor(vg, nvgRGBA(40,40,60,100))
+            nvgFill(vg)
+            nvgFontFace(vg, "sans")
+            nvgFontSize(vg, 9)
+            nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg, nvgRGBA(120,120,140,180))
+            nvgText(vg, px+14, sy+9, hkPrefix..st.name.." "..lockReason)
+            sy = sy + 20
+        end
     end
 end
 

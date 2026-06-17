@@ -7,12 +7,21 @@
 -- 全局常量
 -- ============================================================================
 BUILDINGS = {
-    MINE         = { name="自动化矿井",   cost={metal=100,esource=50},               prod={minerals=10},  buildTime=5,  upgradeK=1.5 },
-    POWER_PLANT  = { name="太阳能阵列",   cost={metal=80},                           prod={energy=15},    buildTime=3,  upgradeK=1.4 },
-    SHIELD_GEN   = { name="护盾发生器",   cost={metal=300,esource=400,nuclear=100},  prod={},             buildTime=12, upgradeK=1.8 },
-    TRADE_HUB    = { name="星际交易所",   cost={metal=500,esource=300,nuclear=80},   prod={credits=5},    buildTime=15, upgradeK=1.6 },
+    MINE             = { name="自动化矿井",    cost={metal=100,esource=50},                      prod={minerals=10}, buildTime=5,  upgradeK=1.5 },
+    POWER_PLANT      = { name="太阳能阵列",    cost={metal=80},                                   prod={energy=15},   buildTime=3,  upgradeK=1.4 },
+    SHIELD_GEN       = { name="护盾发生器",    cost={metal=300,esource=400,nuclear=100},         prod={},             buildTime=12, upgradeK=1.8,
+                         specDefense=true, shieldBonus=200 },
+    TRADE_HUB        = { name="星际交易所",    cost={metal=500,esource=300,nuclear=80},          prod={credits=5},   buildTime=15, upgradeK=1.6 },
+    DEFENSE_TURRET   = { name="轨道炮塔",      cost={metal=400, esource=200},                    prod={},            buildTime=10, upgradeK=1.5,
+                         combatEffect=true, turretDmg=25, turretRange=300, turretRate=1.5 },
+    ADVANCED_REFINERY = { name="高级精炼厂",   cost={metal=600, esource=400, nuclear=150},       prod={minerals=5, energy=3, crystal=1},
+                         refineBonus=2.0, rareChance=0.05, buildTime=12, upgradeK=1.6 },
+    RESEARCH_STATION = { name="科研站",        cost={metal=500, esource=300, nuclear=200},       prod={},            buildTime=14, upgradeK=1.6,
+                         researchBonus=0.20, researchMult=1.15 },
+    STARGATE_NODE    = { name="星门节点",      cost={metal=800, esource=500, nuclear=200, crystal=50}, prod={},    buildTime=20, upgradeK=1.8,
+                         teleportEnabled=true, teleportCooldown=60 },
 }
-BUILD_ORDER = {"MINE","POWER_PLANT","SHIELD_GEN","TRADE_HUB"}
+BUILD_ORDER = {"MINE","POWER_PLANT","SHIELD_GEN","TRADE_HUB","DEFENSE_TURRET","ADVANCED_REFINERY","RESEARCH_STATION","STARGATE_NODE"}
 
 -- P2-3: 建筑专精定义（每类行星建筑 3 种专精，Lv.3+ 解锁）
 BUILDING_SPECS = {
@@ -162,13 +171,49 @@ TECHS = {
                          cost={nuclear=500, esource=700, metal=800}, time=85,
                          prereqs={"VOID_ANCHOR","DEFENSE_MATRIX"},
                          bonus={globalProdMult=1.25, researchSpeedMult=1.3}, exclusiveGroup="TIER4_UTIL" },
+    -- Tier 5（P2-6: V2.6 高阶科技，需基地核心 Lv8 解锁）
+    STELLAR_ENGINE   = { name="恒星引擎",     desc="舰队移动速度+60%",
+                         cost={metal=3000, esource=2000, nuclear=500}, time=120, prereqs={"WARP_DRIVE"},
+                         bonus={fleetSpeedMult=1.6}, coreLevelReq=8 },
+    QUANTUM_FACTORY  = { name="量子工厂",     desc="舰船建造速度+50%，升级费用-25%",
+                         cost={metal=3500, esource=1500, nuclear=800}, time=130, prereqs={"QUANTUM_CORE"},
+                         bonus={shipyardSpeedMult=1.5, upgradeCostMult=0.75}, coreLevelReq=8 },
+    VOID_FLEET       = { name="虚空舰队",     desc="所有舰船攻击力+25%，生命值+20%",
+                         cost={metal=4000, esource=2500, nuclear=1000}, time=150, prereqs={"ADVANCED_WEAPONS","NOVA_CANNON"},
+                         bonus={shipDmgMult=1.25, shipHealthMult=1.20}, coreLevelReq=8 },
+    FORTRESS_PROTOCOL_II = { name="要塞协议II", desc="基地护盾+500，防御力+40%，战斗中护盾每秒回复8%",
+                         cost={metal=3000, esource=2000, nuclear=1200}, time=140, prereqs={"FORTRESS_PROTOCOL"},
+                         bonus={shieldBonus=500, defenseBonus=0.40, shieldRegenPct=0.08}, coreLevelReq=8 },
+    CHRONO_RESEARCH  = { name="时空研究",     desc="科研速度×2.0，全局资源产出+15%",
+                         cost={metal=2500, esource=1500, nuclear=800}, time=120, prereqs={"STELLAR_SYNC"},
+                         bonus={researchSpeedMult=2.0, globalProdMult=1.15}, coreLevelReq=8 },
+    GALACTIC_ASCEND  = { name="文明飞跃",     desc="全局伤害+30%，舰队上限+3，每波技能点+1",
+                         cost={metal=5000, esource=3000, nuclear=1500, crystal=500}, time=180,
+                         prereqs={"STELLAR_ENGINE","QUANTUM_FACTORY","VOID_FLEET","FORTRESS_PROTOCOL_II","CHRONO_RESEARCH"},
+                         bonus={globalDmgMult=1.3, fleetCapBonus=3, skillPointBonus=1}, coreLevelReq=10, isFinal=true },
 }
 TECH_ORDER = {
     "DEEP_MINING","SOLAR_EFFICIENCY","CRYSTAL_PROCESS","HULL_ALLOY",
     "SHIELD_REINFORCE","RAPID_REFINE","COLONY_BIOTECH","NANO_REPAIR",
     "WARP_DRIVE","ADVANCED_WEAPONS","DEFENSE_MATRIX","VOID_ANCHOR",
     "QUANTUM_CORE","PHASE_DRIVE","NOVA_CANNON","FORTRESS_PROTOCOL","STELLAR_SYNC",
+    "STELLAR_ENGINE","QUANTUM_FACTORY","VOID_FLEET","FORTRESS_PROTOCOL_II","CHRONO_RESEARCH","GALACTIC_ASCEND",
 }
+
+-- P2-5: 星球建筑槽位扩展（基础 4 槽，随基地核心等级扩展）
+PLANET_BUILDING_SLOTS = {
+    base          = 4,   -- 每个星球默认建筑槽位
+    coreLv3Bonus  = 1,   -- 基地核心 Lv3 解锁 +1 槽
+    coreLv5Bonus  = 1,   -- 基地核心 Lv5 解锁 +1 槽
+}
+--- 根据核心等级计算星球可拥有的最大建筑槽位
+function PlanetBuildingSlots(coreLevel)
+    local lv = coreLevel or 1
+    local total = PLANET_BUILDING_SLOTS.base
+    if lv >= 3 then total = total + PLANET_BUILDING_SLOTS.coreLv3Bonus end
+    if lv >= 5 then total = total + PLANET_BUILDING_SLOTS.coreLv5Bonus end
+    return total
+end
 
 RANKS = {"见习指挥官","资深舰长","舰队少将","星系统治者","银河霸主"}
 EXP_PER_LEVEL = 1000
@@ -216,12 +261,14 @@ SHIP_TYPES = {
     INTERCEPTOR  = { name="拦截舰", speed=240, health=80,   maxHealth=80,   range=180, dmg=14, color={255,220,80},  buildTime=20,
                      shotRate=1.5 },
     -- V2.6 A1: 新增舰种
-    STEALTH      = { name="隐形舰", speed=150, health=60,   maxHealth=60,   range=150,  dmg=8,  color={80,200,160}, buildTime=25,
+    STEALTH      = { name="隐形舰", speed=140, health=80,   maxHealth=80,   range=150,  dmg=15, color={80,200,160}, buildTime=25,
                      isStealth=true, stealthDuration=5, stealthSpeedMult=2.0, firstStrikeDmgMult=1.5 },
     SUPPORT      = { name="支援舰", speed=50,  health=200,  maxHealth=200,  range=0,    dmg=0,  color={180,100,220}, buildTime=30,
                      isSupport=true, healRadius=120, healInterval=8, healAmount=15, allyDmgBonus=0.10, allyDmgBonusRadius=80 },
-    DREADNOUGHT  = { name="巨型战舰", speed=20, health=5000, maxHealth=5000, range=450, dmg=80, color={180,60,60}, buildTime=240,
-                     aoeRadius=100, shotRate=0.4, isDreadnought=true, counterAttackChance=0.10, counterAttackDmg=50 },
+    DREADNOUGHT  = { name="巨型战舰", speed=25, health=4000, maxHealth=4000, range=450, dmg=70, color={180,60,60}, buildTime=240,
+                     aoeRadius=90, shotRate=0.4, isDreadnought=true, counterAttackChance=0.10, counterAttackDmg=50 },
+    TURRET         = { name="轨道炮塔", speed=0, health=100, maxHealth=100, range=300, dmg=25, color={255,200,120}, buildTime=0,
+                     isTurret=true, shotRate=1.5 },
 }
 SHIP_QUEUE_ORDER = {"ENGINEER","EXPLORER","SCOUT","INTERCEPTOR","FRIGATE","DESTROYER","STEALTH","SUPPORT","BATTLECRUISER","CARRIER","DREADNOUGHT"}
 SHIP_COSTS = {
@@ -274,6 +321,21 @@ BOSS_PHASES = {
         { hpThreshold = 0.20, name = "虚空吞噬",    dmgMult = 2.0, special = "VOID_CONSUME", channelDamage = 20, channelInterruptable = true, channelInterruptThreshold = 500 },
     },
 }
+
+-- P1-4/5: Boss 专属技能参数
+BOSS_SKILL_INTERVAL = {
+    BARRAGE = 6.0,         -- 战列Boss狂怒形态：每6秒一次炮击
+    DRONE_SWARM = 8.0,     -- 母舰Boss：每8秒释放无人机群
+    VOID_CONSUME = 10.0,   -- 虚空Boss：每10秒尝试吞噬
+    PHANTOM_SPLIT = 12.0, -- 虚空Boss分裂形态：每12秒产生分身
+    SELF_DESTRUCT = 15.0,   -- 母舰自爆倒计时：15秒
+}
+BOSS_BARRAGE_DMG = 30     -- 炮击基础伤害
+BOSS_DRONE_COUNT = 6        -- 无人机群数量
+BOSS_DRONE_DMG = 8         -- 无人机攻击
+BOSS_VOID_DMG = 30        -- 虚空吞噬基础伤害（由40下调，避免被秒杀）
+BOSS_PHANTOM_COUNT = 2     -- 幻影分身数量
+
 BOSS_SPAWN_WAVE = { BATTLECRUISER = 10, CARRIER = 10, VOID_LORD = 15 }  -- 各类型Boss首次出现波次
 
 -- ============================================================================

@@ -14,6 +14,11 @@ function ResearchSystem.new(rm, bs)
     return self
 end
 
+--- P2-6: 记录当前基地核心等级（用于 Tier5 科技解锁校验）
+function ResearchSystem:setCoreLevel(lv)
+    if self.rm then self.rm.coreLevel = lv end
+end
+
 --- 设置动态行星列表获取函数（每次科技完成时调用，确保包含新殖民的行星）
 function ResearchSystem:setPlanetGetter(fn)
     self.planetGetter = fn
@@ -34,6 +39,13 @@ function ResearchSystem:canResearch(id)
                and self.unlocked[otherId] then
                 return false, "与 " .. otherT.name .. " 互斥（只能选一）"
             end
+        end
+    end
+    -- P2-6: Tier5 科技基地核心等级前置检查
+    if t.coreLevelReq then
+        local lv = (self.rm and self.rm.coreLevel) or 1
+        if lv < t.coreLevelReq then
+            return false, "需要基地核心Lv." .. t.coreLevelReq
         end
     end
     if not self.rm:canAfford(t.cost) then return false, "资源不足" end
@@ -86,6 +98,11 @@ function ResearchSystem:update(dt)
     -- S1 QUANTUM_CORE: researchSpeedMult 与科研中心的 researchMult 叠乘
     local speedMult = ((self.rm.baseBonus and self.rm.baseBonus.researchMult) or 1.0)
                     * ((self.rm.baseBonus and self.rm.baseBonus.researchSpeedMult) or 1.0)
+    -- P2-4: 行星科研站加成（由 BuildingSystem 聚合）
+    if self.planetGetter and self.bs and self.bs.aggregatePlanetEffects then
+        local pe = self.bs:aggregatePlanetEffects(self.planetGetter())
+        speedMult = speedMult * (1 + (pe.researchSpeedBonus or 0))
+    end
     self.active.remaining = self.active.remaining - dt * speedMult
     self.active.progress  = 1.0 - math.max(0, self.active.remaining) / self.active.totalTime
     if self.active.remaining <= 0 then
@@ -148,6 +165,36 @@ function ResearchSystem:update(dt)
                 self.rm.baseBonus = self.rm.baseBonus or {}
                 self.rm.baseBonus.globalProdMult = (self.rm.baseBonus.globalProdMult or 1.0) * bonus.globalProdMult
                 print("[Research] 星际同步激活：全局产出×" .. tostring(self.rm.baseBonus.globalProdMult))
+            end
+            -- P2-6: QUANTUM_FACTORY 舰船建造速度 ×
+            if bonus.shipyardSpeedMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.shipyardMult = (self.rm.baseBonus.shipyardMult or 1.0) * bonus.shipyardSpeedMult
+                print("[Research] 量子工厂激活：舰船建造速度×" .. tostring(self.rm.baseBonus.shipyardMult))
+            end
+            -- P2-6: QUANTUM_FACTORY 升级费用 -25%
+            if bonus.upgradeCostMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.upgradeCostMult = (self.rm.baseBonus.upgradeCostMult or 1.0) * bonus.upgradeCostMult
+                print("[Research] 量子工厂激活：升级费用×" .. tostring(self.rm.baseBonus.upgradeCostMult))
+            end
+            -- P2-6: GALACTIC_ASCEND 全局伤害倍率
+            if bonus.globalDmgMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.globalDmgMult = (self.rm.baseBonus.globalDmgMult or 1.0) * bonus.globalDmgMult
+                print("[Research] 文明飞跃激活：全局伤害×" .. tostring(self.rm.baseBonus.globalDmgMult))
+            end
+            -- P2-6: GALACTIC_ASCEND 舰队上限 +3
+            if bonus.fleetCapBonus then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.fleetCapBonus = (self.rm.baseBonus.fleetCapBonus or 0) + bonus.fleetCapBonus
+                print("[Research] 文明飞跃激活：舰队上限+" .. tostring(self.rm.baseBonus.fleetCapBonus))
+            end
+            -- P2-6: GALACTIC_ASCEND 每波技能点 +1
+            if bonus.skillPointBonus then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.skillPointBonus = (self.rm.baseBonus.skillPointBonus or 0) + bonus.skillPointBonus
+                print("[Research] 文明飞跃激活：每波技能点+" .. tostring(self.rm.baseBonus.skillPointBonus))
             end
         end
         print("[Research] 完成: " .. TECHS[id].name)

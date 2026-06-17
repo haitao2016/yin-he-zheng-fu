@@ -9,7 +9,10 @@ local GalactopediaSystem = {}
 -- ============================================================================
 local CATEGORIES = {
     { id = "ships",     name = "舰船图鉴", icon = "🚀" },
+    { id = "buildings", name = "建筑设施", icon = "🏗️" },
     { id = "tech",      name = "科技档案", icon = "🔬" },
+    { id = "skills",    name = "战斗技能", icon = "🎯" },
+    { id = "bosses",    name = "Boss指南",  icon = "👾" },
     { id = "factions",  name = "派系情报", icon = "🏛️" },
     { id = "anomalies", name = "星象奇观", icon = "✨" },
     { id = "captains",  name = "宿敌档案", icon = "💀" },
@@ -27,6 +30,10 @@ local SHIP_ENTRIES = {
     { id = "INTERCEPTOR",   name = "拦截舰",  icon = "💨", desc = "高速玻璃炮，极快射速但脆弱如纸。以数量取胜的消耗品。", unlockCondition = "build_ship_INTERCEPTOR" },
     { id = "ENGINEER",      name = "工程舰",  icon = "🔧", desc = "非战斗单位，专职采集星球矿物资源。经济发展的基石。", unlockCondition = "build_ship_ENGINEER" },
     { id = "EXPLORER",      name = "探索舰",  icon = "🌍", desc = "殖民专用舰，可在未开发星球建立前哨站。版图扩张的先驱者。", unlockCondition = "build_ship_EXPLORER" },
+    -- V2.6 新增舰种
+    { id = "STEALTH",       name = "隐形舰",  icon = "👻", desc = "高机动性舰种，需相位驱动科技解锁。攻击附带相位伤害，可短暂隐形躲避敌方火力，适合特种突袭与后排狙击。", unlockCondition = "build_ship_STEALTH" },
+    { id = "SUPPORT",       name = "支援舰",  icon = "⚕️", desc = "纳米修复科技解锁的辅助单位。为友军提供治疗光环，并小幅提升附近战舰的攻击输出，是持久战的关键支柱。", unlockCondition = "build_ship_SUPPORT" },
+    { id = "DREADNOUGHT",   name = "巨型战舰", icon = "🛸", desc = "新星炮+量子堡垒解锁的终极战舰，超高血量与范围攻击，每波战斗仅能部署一艘，是舰队的核心王牌。", unlockCondition = "build_ship_DREADNOUGHT" },
 }
 
 --- 科技条目
@@ -43,6 +50,25 @@ local TECH_ENTRIES = {
     { id = "NOVA_CANNON",      name = "新星炮",       icon = "☄️",  desc = "AOE半径+80%。聚焦恒星能量释放毁灭性打击。", unlockCondition = "research_NOVA_CANNON" },
     { id = "VOID_ANCHOR",      name = "虚空锚定",     icon = "⚓",  desc = "攻击+20%，敌方减速20%。操纵虚空能量束缚敌舰。", unlockCondition = "research_VOID_ANCHOR" },
     { id = "STELLAR_SYNC",     name = "星际同步",     icon = "🔗",  desc = "全局产出+25%，科研+30%。恒星网络同步提升文明效率。", unlockCondition = "research_STELLAR_SYNC" },
+    -- Tier5 扩展（V2.6）
+    { id = "STELLAR_ENGINE",   name = "恒星引擎",    icon = "☀️",  desc = "将恒星能量转化为舰队动能，全局移动速度+60%，战斗开场获得初始加速。", unlockCondition = "research_STELLAR_ENGINE" },
+    { id = "QUANTUM_FACTORY",  name = "量子工厂",    icon = "🏭", desc = "基于量子纠缠的自动化生产，金属/能源精炼效率+80%，舰船建造时间-25%。", unlockCondition = "research_QUANTUM_FACTORY" },
+    { id = "VOID_FLEET",       name = "虚空舰队",    icon = "🌌", desc = "解锁虚空舰体技术，所有舰船生命值+40%，并可在战斗开始触发一次虚空跃迁。", unlockCondition = "research_VOID_FLEET" },
+    { id = "FORTRESS_PROTOCOL_II", name = "要塞协议II", icon = "🏯", desc = "基地护盾最大值翻倍，每秒恢复1%基地护盾，遭受攻击时触发反击护盾。", unlockCondition = "research_FORTRESS_PROTOCOL_II" },
+    { id = "SPACE_TIME_STUDY", name = "时空研究",    icon = "⏳", desc = "高阶时空学研究，科研速度+60%，解锁 Tier5 全部进阶协议。", unlockCondition = "research_SPACE_TIME_STUDY" },
+    { id = "CIVILIZATION_LEAP",name = "文明飞跃",    icon = "🚀", desc = "文明等级跃迁，全局资源产出+50%，舰队上限+2，是 V2.6 的终极科技。", unlockCondition = "research_CIVILIZATION_LEAP" },
+}
+
+--- 建筑条目（V2.6 扩展）
+local BUILDING_ENTRIES = {
+    { id = "BUILD_MINE",            name = "自动化矿井",   icon = "⛏️", desc = "行星基础建筑，持续产出矿石资源。是任何殖民点的起步设施。", unlockCondition = "auto" },
+    { id = "BUILD_POWER",          name = "太阳能阵列",   icon = "☀️", desc = "产出能源资源，驱动一切高级建筑与舰船建造。", unlockCondition = "auto" },
+    { id = "BUILD_SHIELD",         name = "护盾发生器", icon = "🛡️", desc = "为基地/行星提供额外护盾，防御敌方突袭。", unlockCondition = "auto" },
+    { id = "BUILD_TRADE",          name = "星际交易所", icon = "💰", desc = "提供星币产出建筑，用于外交与贸易的基石。", unlockCondition = "auto" },
+    { id = "BUILD_DEFENSE_TURRET", name = "轨道炮塔",   icon = "🔫", desc = "在星球战斗中部署的固定炮塔，自动攻击进入射程的敌人。配合舰队可形成坚固防线。", unlockCondition = "build_DEFENSE_TURRET" },
+    { id = "BUILD_ADV_REFINERY",   name = "高级精炼厂", icon = "🏭", desc = "精炼速率大幅提升，并有5%概率产出稀有资源，是高等级资源链的核心建筑。", unlockCondition = "build_ADV_REFINERY" },
+    { id = "BUILD_RESEARCH",       name = "科研站",     icon = "🔬", desc = "科研速度+20%，科研点倍率×1.15，加速整个科技树解锁。", unlockCondition = "build_RESEARCH_STATION" },
+    { id = "BUILD_STARGATE",       name = "星门节点",   icon = "🌀", desc = "舰队可瞬移至该星球轨道，冷却60秒。高速机动与战略绕后必备。", unlockCondition = "build_STARGATE_NODE" },
 }
 
 --- 派系条目
@@ -50,6 +76,20 @@ local FACTION_ENTRIES = {
     { id = "trade_union",  name = "商业联盟",   icon = "💰", desc = "控制着星域间贸易航线的富商组织。提供金属和能源贸易机会，以利益为纽带。", unlockCondition = "meet_faction_trade_union" },
     { id = "star_guild",   name = "星际工会",   icon = "⚙️", desc = "技术工匠与工程师组成的互助组织。掌握先进生产工艺，擅长能源精炼。", unlockCondition = "meet_faction_star_guild" },
     { id = "relic_keeper", name = "遗迹守护者", icon = "🏛️", desc = "致力于保护远古文明遗迹的神秘组织。掌握珍贵矿物资源，对外来者态度谨慎。", unlockCondition = "meet_faction_relic_keeper" },
+}
+
+--- 战斗技能条目（V2.6 扩展）
+local SKILL_ENTRIES = {
+    { id = "SK_TACTICAL",  name = "战术协同", icon = "🎯", desc = "激活8秒内，友舰对同一目标的攻击叠加伤害，最高可额外叠加100%伤害。集火战首选。", unlockCondition = "auto" },
+    { id = "SK_GRAVITY",   name = "引力陷阱", icon = "🌀", desc = "在战场选定位置生成减速与持续伤害陷阱，敌舰进入范围内会被拖慢并受到每秒伤害。", unlockCondition = "auto" },
+    { id = "SK_DARK_STORM", name = "暗能风暴", icon = "🌪️", desc = "全场增益：友舰攻击力与速度同时提升，敌舰命中率下降，是大混战中最致命的技能。", unlockCondition = "auto" },
+}
+
+--- Boss 指南（V2.6 扩展）
+local BOSS_ENTRIES = {
+    { id = "BOSS_BC",      name = "战列巡洋舰Boss", icon = "⚔️", desc = "3阶段机制：血量低于70%进入狂怒，范围炮击威胁全队；低于30%时召唤小型舰增援。建议分阶段集火+护盾强化交替。", unlockCondition = "auto" },
+    { id = "BOSS_CARRIER", name = "母舰Boss",        icon = "🛸", desc = "3阶段机制：释放无人机群持续骚扰，血量低于20%启动自爆倒计时。需在15秒内完成击杀或全队后撤避免范围伤害。", unlockCondition = "auto" },
+    { id = "BOSS_VOID",    name = "虚空领主Boss",    icon = "👾", desc = "4阶段机制：隐形→分身→腐蚀持续伤害→吞噬大招。需高机动舰队保持机动，避免被吞噬锁定。", unlockCondition = "auto" },
 }
 
 --- 异象条目
@@ -75,6 +115,13 @@ local RESOURCE_ENTRIES = {
     { id = "esource",  name = "能源矿",  icon = "⚡", desc = "高密度能量结晶体，是文明运转的动力源泉。从恒星辐射和星际尘埃中凝结而成，驱动一切高级设备。", unlockCondition = "auto" },
     { id = "nuclear",  name = "核能水晶", icon = "💎", desc = "极其稀有的量子级能量载体，蕴含恒星核心般的巨大能量。只有最先进的科技和最强大的战舰才需要它。", unlockCondition = "auto" },
     { id = "crystal",  name = "晶石",     icon = "🔮", desc = "跨维度共振晶体，用于专精系统激活和高级协议缔结。产量稀少但用途广泛。", unlockCondition = "auto" },
+    -- V2.6 稀有资源扩展
+    { id = "rare_titanium",    name = "钛合金",   icon = "🔩", desc = "高级舰船建造的核心材料。比普通金属轻且强度更高，是隐形舰与巨型战舰的舰体基础。", unlockCondition = "auto" },
+    { id = "rare_darkmatter",  name = "暗物质",   icon = "🌀", desc = "虚空科技原料，来源于深空与虚空领主残骸。用于激活 Tier5 协议与虚空舰队升级。", unlockCondition = "auto" },
+    { id = "rare_starcore",    name = "星核碎片", icon = "🌟", desc = "极高能量密度的恒星内核碎片，Tier5 科技和终极舰船建造的必需资源。", unlockCondition = "auto" },
+    { id = "rare_blue_crystal", name = "蓝晶石",  icon = "💙", desc = "高级建筑升级材料，蓝晶小行星的产物。精炼后可用于强化护盾与引擎系统。", unlockCondition = "auto" },
+    { id = "rare_purple_crystal", name = "紫晶石", icon = "💜", desc = "高级建筑升级材料，稀有混合小行星的产物。强化量子计算与科研设施。", unlockCondition = "auto" },
+    { id = "rare_rainbow_crystal", name = "彩虹晶", icon = "🌈", desc = "传说级晶体，仅在特殊星象与虚空领主处获得，可解锁最高阶的文明突破。", unlockCondition = "auto" },
 }
 
 --- 传说条目（通过里程碑解锁）
@@ -94,7 +141,10 @@ local LORE_ENTRIES = {
 -- ============================================================================
 local ENTRIES_BY_CATEGORY = {
     ships     = SHIP_ENTRIES,
+    buildings = BUILDING_ENTRIES,
     tech      = TECH_ENTRIES,
+    skills    = SKILL_ENTRIES,
+    bosses    = BOSS_ENTRIES,
     factions  = FACTION_ENTRIES,
     anomalies = ANOMALY_ENTRIES,
     captains  = CAPTAIN_ENTRIES,

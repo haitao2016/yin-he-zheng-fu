@@ -21,12 +21,13 @@ end
 -- ============================================================================
 -- 科技树节点布局（预计算，避免每帧重算）
 -- ============================================================================
--- 每 Tier 的科技 id 列表（P1-3: Tier3 新增 VOID_ANCHOR，Tier4 新增 STELLAR_SYNC）
+-- 每 Tier 的科技 id 列表（P1-3: Tier3 新增 VOID_ANCHOR，Tier4 新增 STELLAR_SYNC，P2-6: Tier5 新增 6 个高阶科技）
 local TIER_NODES = {
     { "DEEP_MINING", "SOLAR_EFFICIENCY", "CRYSTAL_PROCESS", "HULL_ALLOY" },                        -- Tier1
     { "SHIELD_REINFORCE", "RAPID_REFINE", "COLONY_BIOTECH", "NANO_REPAIR" },                        -- Tier2
     { "WARP_DRIVE", "ADVANCED_WEAPONS", "DEFENSE_MATRIX", "VOID_ANCHOR" },                         -- Tier3 P1-3
     { "QUANTUM_CORE", "PHASE_DRIVE", "NOVA_CANNON", "FORTRESS_PROTOCOL", "STELLAR_SYNC" },         -- Tier4 P1-3
+    { "STELLAR_ENGINE", "QUANTUM_FACTORY", "VOID_FLEET", "FORTRESS_PROTOCOL_II", "CHRONO_RESEARCH", "GALACTIC_ASCEND" }, -- Tier5 P2-6
 }
 
 -- P1-1: 扩大间距，避免节点重叠导致连线不可见
@@ -36,8 +37,8 @@ local TIER_GAP  = 76    -- 列间距（保留足够连线空间：76-56=20px gap
 local ROW_GAP   = 38    -- 行间距（节点高28 + 间距10）
 local CONTENT_X = 12    -- 内容起始 X（相对面板）
 local HEADER_H  = 18    -- Tier 标签行高
--- P1-3: 最大单列节点数（Tier4 有5个节点），用于居中计算和面板高
-local MAX_ROW   = 5
+-- P1-3: 最大单列节点数（Tier5 有6个节点），用于居中计算和面板高
+local MAX_ROW   = 6
 
 -- P1-1: 每 Tier 的颜色主题 {r, g, b}
 local TIER_COLORS = {
@@ -45,10 +46,11 @@ local TIER_COLORS = {
     { 80, 220, 140 },   -- Tier2: 绿
     { 220, 160, 60 },   -- Tier3: 橙
     { 200, 80,  255 },  -- Tier4: 紫
+    { 255, 200, 80  },  -- Tier5: 金（P2-6）
 }
 
 -- P1-1: Tier 标签文字
-local TIER_LABELS = { "基础", "中级", "高级", "顶级" }
+local TIER_LABELS = { "基础", "中级", "高级", "顶级", "终极" }
 
 -- 计算各节点的相对坐标（相对于内容区 y=0）
 local NODE_POS = {}  -- id → {rx, ry, tier}
@@ -217,6 +219,14 @@ function TechPanel.Render(ctx)
     local onResearchSpeedAd = ctx.onResearchSpeedAd  -- 广告加速5分钟
     if not selectedPlanet or not selectedPlanet.colonized then return end
 
+    -- P2-6: 从基地行星取 coreLevel（用于 Tier5 科技解锁检查）
+    local coreLevel = (selectedPlanet and selectedPlanet.coreLevel)
+                     or (selectedPlanet and selectedPlanet.isBase and selectedPlanet.coreLevel)
+                     or (UICommon.rm and UICommon.rm.coreLevel)
+                     or 1
+    -- 同步到 rm，供 ResearchSystem:canResearch 使用
+    if UICommon.rm then UICommon.rm.coreLevel = coreLevel end
+
     -- 仅当星球有科研中心时显示
     local hasLab = false
     if selectedPlanet.buildings then
@@ -319,7 +329,7 @@ function TechPanel.Render(ctx)
     local graphBaseY = vy + 4
 
     -- ── P1-1: Tier 标签（带颜色主题）────────────────────────────
-    for tier = 1, 4 do
+    for tier = 1, #TIER_NODES do
         local tc  = TIER_COLORS[tier]
         local lx  = px + CONTENT_X + (tier - 1) * TIER_GAP + NODE_W / 2
         local ly  = graphBaseY + 8
@@ -451,12 +461,15 @@ function TechPanel.Render(ctx)
         local tc        = TIER_COLORS[pos.tier]
         -- P1-1: 互斥锁定状态
         local isExcluded = (not unlocked) and rs.isExcluded and rs:isExcluded(id) or false
+        -- P2-6: 核心等级不足锁定状态
+        local isCoreLocked = (not unlocked) and t.coreLevelReq and (coreLevel < t.coreLevelReq)
 
         -- P1-1 状态色规范：
         --   已解锁 → 绿色背景
         --   研发中 → 蓝色背景
         --   可解锁 → 白色/亮色（plan 要求）
         --   互斥封锁 → 深红背景
+        --   核心等级不足 → 深灰背景，🔒 锁
         --   未满足前置 → 暗灰
         local nr, ng, nb, na
         if unlocked then
@@ -465,6 +478,8 @@ function TechPanel.Render(ctx)
             nr, ng, nb, na = 18, 52, 110, 230
         elseif isExcluded then
             nr, ng, nb, na = 60, 15, 18, 210   -- 深红底（互斥锁定）
+        elseif isCoreLocked then
+            nr, ng, nb, na = 25, 25, 50, 200    -- 深灰底（核心等级不足）
         elseif canRes then
             nr, ng, nb, na = 60, 65, 80, 240   -- 亮白底
         else
@@ -481,6 +496,8 @@ function TechPanel.Render(ctx)
             br, bg, bb, ba = 50, 150, 255, 230
         elseif isExcluded then
             br, bg, bb, ba = 200, 40, 40, 200   -- 暗红边框（互斥锁定）
+        elseif isCoreLocked then
+            br, bg, bb, ba = 120, 110, 140, 180  -- 暗灰边框（核心等级不足）
         elseif canRes then
             -- P1-1: 可解锁用 Tier 主题色高亮边框
             br, bg, bb, ba = tc[1], tc[2], tc[3], 220
@@ -500,6 +517,14 @@ function TechPanel.Render(ctx)
             nvgTextAlign(vg, NVG_ALIGN_RIGHT + NVG_ALIGN_TOP)
             nvgFillColor(vg, clr(220, 60, 60, 210))
             nvgText(vg, nx + NODE_W - 1, ny + 1, "🔒")
+            nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        end
+        -- P2-6: 核心等级不足 — 左上角 🔒 图标
+        if isCoreLocked then
+            nvgFontFace(vg, "sans"); nvgFontSize(vg, 9)
+            nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_TOP)
+            nvgFillColor(vg, clr(200, 180, 80, 210))
+            nvgText(vg, nx + 1, ny + 1, "🔒")
             nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
         end
         -- P1-1: 可解锁节点加一个微弱的 Tier 色光晕
@@ -543,6 +568,12 @@ function TechPanel.Render(ctx)
             nameR, nameG, nameB, nameA = 120, 135, 170, 180
         end
 
+        -- P2-6: 节点名称（根据核心等级要求标注）
+        local displayName = t.name
+        if t.coreLevelReq then
+            displayName = displayName .. " [核心Lv." .. t.coreLevelReq .. "]"
+        end
+
         -- 状态符号（右下角）
         local stateSym
         if unlocked then
@@ -551,6 +582,8 @@ function TechPanel.Render(ctx)
             stateSym = "▶"
         elseif isExcluded then
             stateSym = "✗"   -- P1-1: 互斥锁定
+        elseif isCoreLocked then
+            stateSym = "✗"   -- P2-6: 核心等级不足
         elseif canRes then
             stateSym = "●"
         else
@@ -563,13 +596,15 @@ function TechPanel.Render(ctx)
             symR, symG, symB = 60, 180, 255
         elseif isExcluded then
             symR, symG, symB = 210, 55, 55   -- P1-1: 红色叉
+        elseif isCoreLocked then
+            symR, symG, symB = 200, 180, 80  -- P2-6: 金色锁
         elseif canRes then
             symR, symG, symB = tc[1], tc[2], tc[3]
         else
             symR, symG, symB = 70, 80, 120
         end
 
-        text(nx + NODE_W / 2, ny + 11, t.name, 8, nameR, nameG, nameB, nameA, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+        text(nx + NODE_W / 2, ny + 11, displayName, 8, nameR, nameG, nameB, nameA, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
         text(nx + NODE_W - 6, ny + NODE_H - 5, stateSym, 7, symR, symG, symB, 220, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
 
         -- P1-2: 科技完成粒子特效
@@ -680,8 +715,12 @@ function TechPanel.Render(ctx)
             nvgStrokeWidth(vg, 1); nvgStroke(vg)
 
             local dy = dvy + 6
-            -- 科技名 + 描述
-            text(px + 8,  dy,      t.name, 11, selTc[1], selTc[2], selTc[3], 255)
+            -- 科技名 + 描述（P2-6: 标题附加核心等级要求）
+            local titleText = t.name
+            if t.coreLevelReq then
+                titleText = titleText .. "  [需核心Lv." .. t.coreLevelReq .. "]"
+            end
+            text(px + 8,  dy,      titleText, 11, selTc[1], selTc[2], selTc[3], 255)
             text(px + 8,  dy + 14, t.desc, 9,  150, 165, 200, 220)
 
             -- P1-1: 费用行（含 credits）
@@ -741,8 +780,12 @@ function TechPanel.Render(ctx)
                 end
             -- P1-1: 互斥锁定提示（优先于其他状态）
             elseif rs.isExcluded and rs:isExcluded(selectedId_) then
-                text(px + 8, dvy + 42, "🔒 互斥锁定", 9, 200, 60, 60, 230)
+                text(px + 8, dvy + 42, "❌ 被互斥", 9, 200, 60, 60, 230)
                 text(px + 8, dvy + 53, "同级已研究另一分支，此科技永久封锁", 7, 160, 80, 80, 190)
+            -- P2-6: 核心等级不足提示
+            elseif t.coreLevelReq and coreLevel < t.coreLevelReq then
+                text(px + 8, dvy + 42, "🔒 核心Lv." .. t.coreLevelReq .. "（当前Lv." .. coreLevel .. "）", 9, 220, 180, 80, 230)
+                text(px + 8, dvy + 53, "升级基地核心至 Lv." .. t.coreLevelReq .. " 后解锁", 7, 180, 150, 100, 190)
             elseif rs.active and rs.active.id == selectedId_ then
                 local pct = rs.active.progress or 0
                 text(px + pw - 64, dvy + 48, string.format("▶ 研发中 %d%%", math.floor(pct * 100)), 9, 60, 160, 255, 200)
@@ -777,7 +820,7 @@ function TechPanel.Render(ctx)
             tipX = px + (hpos and hpos.rx or 0) - 126
         end
 
-        -- 内容行（效果描述、前置、互斥、下游）
+        -- 内容行（效果描述、前置、互斥、核心等级、下游）
         local lines = {}
         lines[#lines + 1] = { label = "效果", value = ht.desc }
         -- 前置科技
@@ -797,6 +840,16 @@ function TechPanel.Render(ctx)
             end
             lines[#lines + 1] = { label = "互斥", value = table.concat(names, "、"), red = true }
         end
+        -- P2-6: 核心等级需求
+        if ht.coreLevelReq then
+            local ok = coreLevel >= ht.coreLevelReq
+            lines[#lines + 1] = {
+                label = "核心",
+                value = "Lv." .. ht.coreLevelReq .. "（当前Lv." .. coreLevel .. (ok and " ✓" or " ✗") .. "）",
+                yellow = not ok,
+                red = false,
+            }
+        end
         -- 下游科技链
         local ds = getDownstream(hoveredId_)
         if #ds > 0 then
@@ -807,7 +860,7 @@ function TechPanel.Render(ctx)
             lines[#lines + 1] = { label = "解锁", value = table.concat(names, "→") }
         end
 
-        local tipW = 120
+        local tipW = 130
         local tipH = 14 + #lines * 12
         -- 确保不超出屏幕底部
         if tipY + tipH > screenH - 8 then tipY = screenH - 8 - tipH end
@@ -826,7 +879,8 @@ function TechPanel.Render(ctx)
         local ly = tipY + 18
         for _, line in ipairs(lines) do
             local lr, lg, lb = 140, 160, 200
-            if line.red then lr, lg, lb = 220, 80, 80 end
+            if line.red  then lr, lg, lb = 220, 80, 80 end
+            if line.yellow then lr, lg, lb = 230, 190, 80 end
             text(tipX + 4, ly, line.label .. ": " .. line.value, 7, lr, lg, lb, 220, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
             ly = ly + 12
         end

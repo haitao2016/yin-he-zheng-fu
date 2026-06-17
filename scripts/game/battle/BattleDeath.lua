@@ -213,30 +213,36 @@ function BattleDeath.Update(dt, ctx, makeShip)
                     local nucBonus     = 150 + ctx.endlessRound * 30
                     local crystalBonus = 80  + ctx.endlessRound * 15
                     local metalBonus   = 100 + ctx.endlessRound * 20
+                    -- V2.6 C3: 里程碑 Boss 额外获得稀有蓝晶石
+                    local blueCrystalBonus = 80 + math.random(20, 40)
                     if ctx.rm then
                         ctx.rm:add("nuclear", nucBonus)
                         ctx.rm:add("crystal", crystalBonus)
                         ctx.rm:add("metal",   metalBonus)
+                        ctx.rm:addRare("blueCrystal", blueCrystalBonus)
                     end
                     if ctx.notifyFn then
                         ctx.notifyFn(string.format(
-                            "🏆 里程碑通关！第%d层  核能+%d  水晶+%d  金属+%d",
-                            ctx.endlessRound, nucBonus, crystalBonus, metalBonus), "success")
+                            "🏆 里程碑通关！第%d层  核能+%d  水晶+%d  金属+%d  蓝晶石+%d",
+                            ctx.endlessRound, nucBonus, crystalBonus, metalBonus, blueCrystalBonus), "success")
                     end
-                    print(string.format("[P2-3] 里程碑Boss击败！层=%d  核能+%d 水晶+%d 金属+%d",
-                        ctx.endlessRound, nucBonus, crystalBonus, metalBonus))
+                    print(string.format("[P2-3] 里程碑Boss击败！层=%d  核能+%d 水晶+%d 金属+%d 蓝晶石+%d",
+                        ctx.endlessRound, nucBonus, crystalBonus, metalBonus, blueCrystalBonus))
                 else
                     -- 普通 Boss 奖励
                     local nucBonus    = 80  + ctx.waveNum * 20
                     local crystalBonus= 30  + ctx.waveNum * 10
+                    -- V2.6 C3: 普通 Boss 额外获得稀有蓝晶石（50-100）
+                    local blueCrystalBonus = 50 + math.random(0, 50)
                     if ctx.rm then
                         ctx.rm:add("nuclear", nucBonus)
                         ctx.rm:add("crystal", crystalBonus)
+                        ctx.rm:addRare("blueCrystal", blueCrystalBonus)
                     end
                     if ctx.notifyFn then
-                        ctx.notifyFn(string.format("⚔️ BOSS已击败！核能+%d  水晶+%d", nucBonus, crystalBonus), "success")
+                        ctx.notifyFn(string.format("⚔️ BOSS已击败！核能+%d  水晶+%d  蓝晶石+%d", nucBonus, crystalBonus, blueCrystalBonus), "success")
                     end
-                    print(string.format("[Boss] Wave%d Boss击败  核能+%d 水晶+%d", ctx.waveNum, nucBonus, crystalBonus))
+                    print(string.format("[Boss] Wave%d Boss击败  核能+%d 水晶+%d 蓝晶石+%d", ctx.waveNum, nucBonus, crystalBonus, blueCrystalBonus))
                 end
                 -- P3-3: Boss击败 — 播放胜利fanfare + 恢复BGM正常音调
                 Audio.PlayBGM(Audio.BGM.VICTORY_FANFARE, 0.8, false)

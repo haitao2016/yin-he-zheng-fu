@@ -30,6 +30,7 @@ local drawHitSparks         = RenderEntities.drawHitSparks
 local drawShockRings        = RenderEntities.drawShockRings
 
 local drawWaveHUD           = RenderHUD.drawWaveHUD
+local drawBossPhaseBanner   = RenderHUD.drawBossPhaseBanner
 local drawComboHUD          = RenderHUD.drawComboHUD
 local drawShipInfoPanel     = RenderHUD.drawShipInfoPanel
 local drawFocusRing         = RenderHUD.drawFocusRing
@@ -89,6 +90,7 @@ function BattleRender.Render()
     drawFormationBar()
     drawRetreatReinforce()
     BS.BattleSkills.Draw({ vg = BS.vg, state = BS.state, rs = BS.rs, screenW = BS.screenW, screenH = BS.screenH })
+    drawBossPhaseBanner()
     drawBossWarning()
     drawPincerBanner()
     drawNemesisOverlay()

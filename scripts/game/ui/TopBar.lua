@@ -20,6 +20,9 @@ local LegacyPanel       = require("game.ui.LegacyPanel")
 
 local TopBar = {}
 
+-- P0-4: 稀有资源面板展开状态
+local rarePanelOpen_ = false
+
 -- ============================================================================
 --- 渲染完整顶栏（每帧由 GameUI.RenderTopBar 调用）
 --- @param ctx table  GameUI 传入的状态快照
@@ -206,6 +209,83 @@ function TopBar.Render(ctx)
     -- ══════════════════════════════════════════════════════════════════════════
     -- 右区工具按钮行（从右往左排列，每个 28×28，间距 4-6px）
     -- ══════════════════════════════════════════════════════════════════════════
+
+    -- P0-4: 稀有资源折叠面板（在工具按钮之前渲染/在遗产按钮左侧）
+    if rm.rareResources and RARE_RES_ORDER and #RARE_RES_ORDER > 0 then
+        local rareCount = 0
+        for _, k in ipairs(RARE_RES_ORDER) do
+            if (rm.rareResources[k] or 0) > 0 then
+                rareCount = rareCount + 1
+            end
+        end
+
+        if rareCount > 0 or rarePanelOpen_ then
+            -- 展开按钮：紧贴最左侧工具按钮（遗产）左边
+            local btnX, btnY, btnW, btnH = screenW - 508, 8, 34, 24
+
+            nvgBeginPath(vg); nvgRoundedRect(vg, btnX, btnY, btnW, btnH, 4)
+            nvgFillColor(vg, nvgRGBA(60, 40, 80, 180)); nvgFill(vg)
+            nvgBeginPath(vg); nvgRoundedRect(vg, btnX, btnY, btnW, btnH, 4)
+            nvgStrokeColor(vg, nvgRGBA(180, 120, 255, 150)); nvgStrokeWidth(vg, 1); nvgStroke(vg)
+
+            nvgFontFace(vg, "sans"); nvgFontSize(vg, 11)
+            nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg, nvgRGBA(230, 200, 255, 240))
+            nvgText(vg, btnX + btnW / 2, btnY + btnH / 2, "💎")
+
+            if rareCount > 0 then
+                nvgBeginPath(vg); nvgCircle(vg, btnX + btnW - 3, btnY + 3, 7)
+                nvgFillColor(vg, nvgRGBA(255, 120, 50, 240)); nvgFill(vg)
+                nvgFontSize(vg, 8); nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+                nvgText(vg, btnX + btnW - 3, btnY + 3, tostring(rareCount))
+            end
+
+            addHit(btnX, btnY, btnW, btnH, function()
+                rarePanelOpen_ = not rarePanelOpen_
+            end)
+
+            if rarePanelOpen_ then
+                local panelW, panelH = 180, 8 + #RARE_RES_ORDER * 18
+                local panelX, panelY = screenW - panelW - 10, btnY + btnH + 4
+
+                nvgBeginPath(vg); nvgRoundedRect(vg, panelX, panelY, panelW, panelH, 6)
+                nvgFillColor(vg, nvgRGBA(20, 15, 40, 230)); nvgFill(vg)
+                nvgBeginPath(vg); nvgRoundedRect(vg, panelX, panelY, panelW, panelH, 6)
+                nvgStrokeColor(vg, nvgRGBA(150, 100, 200, 180)); nvgStrokeWidth(vg, 1); nvgStroke(vg)
+
+                nvgFontFace(vg, "sans"); nvgFontSize(vg, 9)
+                nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+                nvgFillColor(vg, nvgRGBA(230, 200, 255, 220))
+                nvgText(vg, panelX + 10, panelY + 10, "稀有资源")
+
+                local rowY = panelY + 24
+                for _, key in ipairs(RARE_RES_ORDER) do
+                    local color = RARE_RES_COLORS[key] or {180, 180, 180}
+                    local amount = math.floor(rm.rareResources[key] or 0)
+                    local cap = RARE_RES_CAPS[key] or 500
+                    local label = RARE_RES_LABELS[key] or key
+                    local tag = RARE_RES_TAGS[key] or "?"
+
+                    nvgBeginPath(vg); nvgRect(vg, panelX + 10, rowY - 6, 8, 12)
+                    nvgFillColor(vg, nvgRGBA(color[1], color[2], color[3], 220)); nvgFill(vg)
+
+                    nvgFontSize(vg, 9); nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+                    nvgFillColor(vg, nvgRGBA(220, 200, 255, 220))
+                    nvgText(vg, panelX + 24, rowY, "[" .. tag .. "] " .. label)
+
+                    nvgTextAlign(vg, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
+                    if amount > 0 then
+                        nvgFillColor(vg, nvgRGBA(255, 230, 180, 240))
+                    else
+                        nvgFillColor(vg, nvgRGBA(120, 120, 140, 180))
+                    end
+                    nvgText(vg, panelX + panelW - 10, rowY, tostring(amount) .. "/" .. tostring(cap))
+
+                    rowY = rowY + 18
+                end
+            end
+        end
+    end
 
     -- 通知铃铛（最右）
     do

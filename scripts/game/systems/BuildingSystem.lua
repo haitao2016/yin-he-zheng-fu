@@ -32,6 +32,93 @@ function BuildingSystem:getSpecsForBuilding(key)
     return BUILDING_SPECS[key] or {}
 end
 
+--- 获取指定建筑在星球上的累计等级（某类建筑可能有多个，但目前每类一个）
+function BuildingSystem:getBuildingLevelOn(key, planet)
+    if not planet or not planet.buildings then return 0 end
+    for _, b in ipairs(planet.buildings) do
+        if b.key == key then return b.level or 1 end
+    end
+    return 0
+end
+
+--- 汇总所有已殖民行星上指定类型建筑的累计等级（用于全局效果）
+function BuildingSystem:getTotalLevelAcrossPlanets(key, planets)
+    if not planets then return 0 end
+    local total = 0
+    for _, p in ipairs(planets) do
+        total = total + self:getBuildingLevelOn(key, p)
+    end
+    return total
+end
+
+--- 获取新建筑的文本描述（供 UI 按钮提示）
+function BuildingSystem:getBuildingDescription(key)
+    local bd = BUILDINGS[key]
+    if not bd then return "" end
+    if key == "DEFENSE_TURRET" then
+        return string.format("炮塔×2+1/级 Dmg%d R%d %.1fs", bd.turretDmg, bd.turretRange, bd.turretRate)
+    elseif key == "ADVANCED_REFINERY" then
+        return string.format("精炼×%.1f 稀有%.0f%%", bd.refineBonus, (bd.rareChance or 0)*100)
+    elseif key == "RESEARCH_STATION" then
+        return string.format("科研+%.0f%% 点×%.2f", (bd.researchBonus or 0)*100, bd.researchMult or 1.0)
+    elseif key == "STARGATE_NODE" then
+        return string.format("瞬移 %ds CD", bd.teleportCooldown or 60)
+    elseif key == "SHIELD_GEN" then
+        return string.format("护盾+%d", bd.shieldBonus or 200)
+    elseif key == "TRADE_HUB" then
+        return string.format("星币+%d/s", (bd.prod and bd.prod.credits) or 0)
+    end
+    return ""
+end
+
+--- 聚合新建筑提供的全局修正（由资源/科研/战斗系统在每帧或事件时调用）
+-- @return { refineMult, researchSpeedBonus, researchPointMult, turretCount, shieldBonus, teleportEnabled }
+function BuildingSystem:aggregatePlanetEffects(planets)
+    local eff = {
+        refineMult         = 1.0,
+        researchSpeedBonus = 0.0,
+        researchPointMult  = 1.0,
+        turretCount        = 0,
+        shieldBonus        = 0,
+        teleportEnabled    = false,
+        teleportCooldown   = 60,
+        rareChance         = 0.0,
+    }
+    if not planets then return eff end
+    for _, p in ipairs(planets) do
+        if not p.buildings then goto nextPlanet end
+        for _, b in ipairs(p.buildings) do
+            local bd = BUILDINGS[b.key]
+            if not bd then goto nextBuilding end
+            local lv = b.level or 1
+            if b.key == "DEFENSE_TURRET" then
+                eff.turretCount = eff.turretCount + (1 + lv)   -- Lv1 = 2, Lv2 = 3, ...
+            elseif b.key == "ADVANCED_REFINERY" then
+                eff.refineMult = eff.refineMult * (1 + (bd.refineBonus - 1) * lv)
+                eff.rareChance = eff.rareChance + (bd.rareChance or 0) * lv
+            elseif b.key == "RESEARCH_STATION" then
+                eff.researchSpeedBonus = eff.researchSpeedBonus + (bd.researchBonus or 0) * lv
+                eff.researchPointMult  = eff.researchPointMult * (1 + ((bd.researchMult or 1) - 1) * lv)
+            elseif b.key == "STARGATE_NODE" then
+                eff.teleportEnabled = true
+                eff.teleportCooldown = math.min(eff.teleportCooldown, bd.teleportCooldown or 60)
+            elseif b.key == "SHIELD_GEN" then
+                eff.shieldBonus = eff.shieldBonus + (bd.shieldBonus or 200) * lv
+            end
+            ::nextBuilding::
+        end
+        ::nextPlanet::
+    end
+    return eff
+end
+
+--- 获取防御炮塔配置（战斗中生成友方炮塔用）
+function BuildingSystem:getTurretStats()
+    local bd = BUILDINGS.DEFENSE_TURRET
+    if not bd then return { dmg = 25, range = 300, rate = 1.5, hp = 100 } end
+    return { dmg = bd.turretDmg, range = bd.turretRange, rate = bd.turretRate, hp = 100 }
+end
+
 --- P2-3: 查找专精定义（按建筑类型 key + 专精 key）
 function BuildingSystem:findSpec(bKey, specKey)
     for _, sp in ipairs(BUILDING_SPECS[bKey] or {}) do

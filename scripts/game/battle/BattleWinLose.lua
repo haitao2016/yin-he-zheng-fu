@@ -27,7 +27,23 @@ function BattleWinLose.UpdateGuard(dt, ctx)
             ctx.battleEndFired = true
             ctx.onBattleEnd("lose")
         end
-        return true, false
+        return true, false, false
+    end
+
+    -- P1-6: Boss 预警阶段倒计时
+    if ctx.state == "bossWarning" then
+        ctx.stateTimer = ctx.stateTimer + dt
+        ctx.bossWarningTimer = ctx.bossWarningTimer - dt
+        -- 支持 SPACE 键跳过预警
+        if not ctx.prepSkipped and input:GetKeyPress(KEY_SPACE) then
+            ctx.prepSkipped = true
+            ctx.bossWarningTimer = 0
+        end
+        if ctx.bossWarningTimer <= 0 then
+            ctx.bossWarningActive = false
+            return true, false, true  -- handled=true, startNext=false, startBoss=true
+        end
+        return true, false, false
     end
 
     if ctx.state == "win" then
@@ -81,10 +97,10 @@ function BattleWinLose.UpdateGuard(dt, ctx)
                 i = i + 1
             end
         end
-        return true, startNext
+        return true, startNext, false
     end
 
-    return false, false
+    return false, false, false
 end
 
 --- 战斗中胜负检测与结算：在 Update 末尾调用

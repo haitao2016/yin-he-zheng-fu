@@ -21,6 +21,14 @@ local SKILL5_DUR       = 5    -- 相位加速：持续时间（秒）
 local SKILL6_CD        = 90   -- 量子弹幕：冷却时间（秒）
 local CARRIER_DRONE_CD = 15   -- CARRIER 无人机自动召唤间隔（秒）
 
+-- P1: V2.6 新技能（第7/8/9号）
+local SKILL7_CD  = 45   -- 战术协同：全队伤害叠加 + 击杀加速
+local SKILL7_DUR = 8
+local SKILL8_CD  = 60   -- 引力陷阱：区域减速 + 持续伤害
+local SKILL8_DUR = 6
+local SKILL9_CD  = 80   -- 暗能风暴：全队属性提升 + 敌队削弱
+local SKILL9_DUR = 10
+
 -- ============================================================================
 -- 私有状态
 -- ============================================================================
@@ -36,6 +44,18 @@ local skill5Active_   = 0    -- >0 表示激活中（相位加速：我方移速
 local skill6CD_       = 0
 local carrierDroneCD_ = 0
 
+-- P1: V2.6 新技能状态（第7/8/9号）
+local skill7Active_ = 0
+local skill7CD_     = 0
+local skill8Active_ = 0
+local skill8CD_     = 0
+local skill9Active_ = 0
+local skill9CD_     = 0
+
+-- P1-2: 引力陷阱状态（位置 + 半径 + 寿命）
+local gravityTraps_ = {}   -- { {x, y, radius, life, maxLife} }
+local placingGravity_ = false  -- 选择目标位置模式
+
 -- 技能按钮点击区域（每帧在 Draw 时更新）
 local skillBtn1_ = nil
 local skillBtn2_ = nil
@@ -43,16 +63,19 @@ local skillBtn3_ = nil
 local skillBtn4_ = nil
 local skillBtn5_ = nil
 local skillBtn6_ = nil
+local skillBtn7_ = nil
+local skillBtn8_ = nil
+local skillBtn9_ = nil
 
 -- ============================================================================
 -- P2-2: 技能等级系统
 -- ============================================================================
 -- 每个技能 Lv1(默认)~Lv3，每局战斗重置
 -- skillLevels_[n]: 1=默认, 2=效果+50%, 3=效果+100%+CD-20%
-local skillLevels_ = { 1, 1, 1, 1, 1, 1 }
+local skillLevels_ = { 1, 1, 1, 1, 1, 1, 1, 1, 1 }
 local skillPoints_ = 0   -- 可用技能点数
-local SKILL_NAMES  = { "全体集火", "紧急修复", "EMP冲击", "护盾强化", "相位加速", "量子弹幕" }
-local SKILL_ICONS  = { "⚡", "🔧", "🔵", "🛡", "💨", "✨" }
+local SKILL_NAMES  = { "全体集火", "紧急修复", "EMP冲击", "护盾强化", "相位加速", "量子弹幕", "战术协同", "引力陷阱", "暗能风暴" }
+local SKILL_ICONS  = { "⚡", "🔧", "🔵", "🛡", "💨", "✨", "🤝", "🌀", "🌪" }
 
 -- ============================================================================
 -- 公开 API
@@ -65,6 +88,11 @@ function BattleSkills.Reset()
     skill3Active_    = 0
     skill4Active_    = 0
     skill5Active_    = 0
+    skill7Active_    = 0
+    skill8Active_    = 0
+    skill9Active_    = 0
+    gravityTraps_    = {}
+    placingGravity_  = false
     carrierDroneCD_  = CARRIER_DRONE_CD
 end
 
@@ -76,9 +104,14 @@ function BattleSkills.FullReset()
     skill4CD_ = 0; skill4Active_ = 0
     skill5CD_ = 0; skill5Active_ = 0
     skill6CD_ = 0
+    skill7CD_ = 0; skill7Active_ = 0
+    skill8CD_ = 0; skill8Active_ = 0
+    skill9CD_ = 0; skill9Active_ = 0
+    gravityTraps_   = {}
+    placingGravity_ = false
     carrierDroneCD_ = CARRIER_DRONE_CD
     -- P2-2: 重置技能等级和技能点
-    skillLevels_ = { 1, 1, 1, 1, 1, 1 }
+    skillLevels_ = { 1, 1, 1, 1, 1, 1, 1, 1, 1 }
     skillPoints_ = 0
 end
 
@@ -128,7 +161,7 @@ end
 
 --- P2-3: 直接设置技能等级（成就奖励 skill_level 类型使用）
 function BattleSkills.SetLevel(n, lv)
-    if n >= 1 and n <= 6 then
+    if n >= 1 and n <= 9 then
         skillLevels_[n] = math.max(1, math.min(3, lv))
     end
 end
@@ -182,6 +215,9 @@ function BattleSkills.Update(dt, ctx)
     skill4CD_ = math.max(0, skill4CD_ - dt)
     skill5CD_ = math.max(0, skill5CD_ - dt)
     skill6CD_ = math.max(0, skill6CD_ - dt)
+    skill7CD_ = math.max(0, skill7CD_ - dt)
+    skill8CD_ = math.max(0, skill8CD_ - dt)
+    skill9CD_ = math.max(0, skill9CD_ - dt)
 
     -- 全体集火激活倒计时
     if skill1Active_ > 0 then
@@ -213,6 +249,43 @@ function BattleSkills.Update(dt, ctx)
         if skill5Active_ <= 0 then
             skill5Active_ = 0
             if ctx.notifyFn then ctx.notifyFn("相位加速结束", "info") end
+        end
+    end
+
+    -- P1-1: 战术协同激活倒计时
+    if skill7Active_ > 0 then
+        skill7Active_ = skill7Active_ - dt
+        if skill7Active_ <= 0 then
+            skill7Active_ = 0
+            if ctx.notifyFn then ctx.notifyFn("战术协同结束", "info") end
+        end
+    end
+
+    -- P1-2: 引力陷阱寿命倒计时 + 范围内敌舰持续伤害/减速
+    for i = #gravityTraps_, 1, -1 do
+        local tr = gravityTraps_[i]
+        tr.life = tr.life - dt
+        if tr.life <= 0 then table.remove(gravityTraps_, i) end
+    end
+    if #gravityTraps_ > 0 and ctx.enemyFleet then
+        for _, tr in ipairs(gravityTraps_) do
+            for _, enemy in ipairs(ctx.enemyFleet) do
+                local dx, dy = enemy.x - tr.x, enemy.y - tr.y
+                local dist = math.sqrt(dx * dx + dy * dy)
+                if dist <= tr.radius then
+                    enemy.health = enemy.health - 10 * dt
+                    enemy.gravitySlowTimer = 0.3
+                end
+            end
+        end
+    end
+
+    -- P1-3: 暗能风暴激活倒计时
+    if skill9Active_ > 0 then
+        skill9Active_ = skill9Active_ - dt
+        if skill9Active_ <= 0 then
+            skill9Active_ = 0
+            if ctx.notifyFn then ctx.notifyFn("暗能风暴结束", "info") end
         end
     end
 
@@ -254,8 +327,9 @@ function BattleSkills.Draw(ctx)
     local cols        = 3
     local totalW      = btnW * cols + gapX * (cols - 1)
     local startX      = screenW / 2 - totalW / 2
-    local row2Y       = screenH - btnH - 6
-    local row1Y       = row2Y - btnH - gapY
+    local row3Y       = screenH - btnH - 6    -- 第三行：战术协同/引力陷阱/暗能风暴
+    local row2Y       = row3Y - btnH - gapY   -- 第二行：紧急修复/护盾强化/量子弹幕
+    local row1Y       = row2Y - btnH - gapY   -- 第一行：全体集火/EMP冲击/相位加速
 
     -- 科技解锁检查
     local rs = ctx.rs
@@ -348,6 +422,14 @@ function BattleSkills.Draw(ctx)
     drawBtn(bx6, row2Y, "✨量子弹幕", "90s CD", skill6CD_, SKILL6_CD, 0,
         not hasQuantumCore, "需 量子核心")
 
+    -- P1: V2.6 第三行：战术协同 | 引力陷阱 | 暗能风暴
+    local bx7 = startX
+    local bx8 = startX + btnW + gapX
+    local bx9 = startX + (btnW + gapX) * 2
+    drawBtn(bx7, row3Y, "🤝战术协同", "45s CD", skill7CD_, SKILL7_CD, skill7Active_, false, nil)
+    drawBtn(bx8, row3Y, "🌀引力陷阱", "60s CD", skill8CD_, SKILL8_CD, skill8Active_, false, nil)
+    drawBtn(bx9, row3Y, "🌪暗能风暴", "80s CD", skill9CD_, SKILL9_CD, skill9Active_, false, nil)
+
     -- P2-2: 在每个按钮右上角绘制等级小标（Lv2/Lv3 时显示）
     local function drawLvBadge(bx, rowY, skillIdx)
         local lv = skillLevels_[skillIdx] or 1
@@ -376,14 +458,63 @@ function BattleSkills.Draw(ctx)
     drawLvBadge(bx2, row2Y, 2)
     drawLvBadge(bx4, row2Y, 4)
     drawLvBadge(bx6, row2Y, 6)
+    drawLvBadge(bx7, row3Y, 7)
+    drawLvBadge(bx8, row3Y, 8)
+    drawLvBadge(bx9, row3Y, 9)
 
-    -- 记录6个技能按钮点击区域（供 OnClick 使用）
+    -- 记录9个技能按钮点击区域（供 OnClick 使用）
     skillBtn1_ = { x = bx1, y = row1Y, w = btnW, h = btnH }
     skillBtn3_ = { x = bx3, y = row1Y, w = btnW, h = btnH }
     skillBtn5_ = { x = bx5, y = row1Y, w = btnW, h = btnH }
     skillBtn2_ = { x = bx2, y = row2Y, w = btnW, h = btnH }
     skillBtn4_ = { x = bx4, y = row2Y, w = btnW, h = btnH }
     skillBtn6_ = { x = bx6, y = row2Y, w = btnW, h = btnH }
+    skillBtn7_ = { x = bx7, y = row3Y, w = btnW, h = btnH }
+    skillBtn8_ = { x = bx8, y = row3Y, w = btnW, h = btnH }
+    skillBtn9_ = { x = bx9, y = row3Y, w = btnW, h = btnH }
+
+    -- P1-2: 引力陷阱可视化（旋转紫色光环 + 脉冲）
+    for _, tr in ipairs(gravityTraps_) do
+        local alpha = math.min(1, tr.life / tr.maxLife)
+        -- 外层光环
+        nvgBeginPath(vg); nvgCircle(vg, tr.x, tr.y, tr.radius)
+        nvgStrokeColor(vg, nvgRGBA(150, 80, 255, math.floor(200 * alpha)))
+        nvgStrokeWidth(vg, 2)
+        nvgStroke(vg)
+        -- 内层旋转粒子（6个）
+        for i = 1, 6 do
+            local angle = (os.clock() * 2 + i * math.pi / 3) % (math.pi * 2)
+            local px = tr.x + math.cos(angle) * tr.radius * 0.7
+            local py = tr.y + math.sin(angle) * tr.radius * 0.7
+            nvgBeginPath(vg); nvgCircle(vg, px, py, 4)
+            nvgFillColor(vg, nvgRGBA(200, 120, 255, math.floor(220 * alpha)))
+            nvgFill(vg)
+        end
+        -- 中心点
+        nvgBeginPath(vg); nvgCircle(vg, tr.x, tr.y, 6)
+        nvgFillColor(vg, nvgRGBA(230, 180, 255, math.floor(250 * alpha)))
+        nvgFill(vg)
+    end
+    -- 放置模式时的光标提示
+    if placingGravity_ then
+        local mx, my = nil, nil
+        if ctx.input and ctx.input.mousePosition then
+            mx = ctx.input.mousePosition.x
+            my = ctx.input.mousePosition.y
+        end
+        if mx and my then
+            nvgBeginPath(vg); nvgCircle(vg, mx, my, 80)
+            nvgStrokeColor(vg, nvgRGBA(180, 100, 255, 180))
+            nvgStrokeWidth(vg, 2); nvgStroke(vg)
+            nvgBeginPath(vg); nvgCircle(vg, mx, my, 80)
+            nvgFillColor(vg, nvgRGBA(150, 80, 220, 60)); nvgFill(vg)
+            -- 提示文字
+            nvgFontFace(vg, "sans"); nvgFontSize(vg, 11)
+            nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg, nvgRGBA(220, 180, 255, 220))
+            nvgText(vg, mx, my - 90, "⚙ 选择引力陷阱位置")
+        end
+    end
 end
 
 --- 处理技能按钮点击。返回 true 表示点击已被消费。
@@ -543,7 +674,65 @@ function BattleSkills.OnClick(mx, my, ctx)
         return true
     end
 
+    -- 若处于引力陷阱放置模式，点击战场空白处布置陷阱
+    if placingGravity_ then
+        gravityTraps_[#gravityTraps_ + 1] = {
+            x = mx, y = my, radius = 80,
+            life = SKILL8_DUR, maxLife = SKILL8_DUR
+        }
+        placingGravity_ = false
+        skill8Active_ = SKILL8_DUR
+        if notifyFn then notifyFn("引力陷阱已布置！", "success") end
+        return true
+    end
+
+    -- 技能7：战术协同
+    if inBtn(skillBtn7_) then
+        if skill7Active_ > 0 then
+            -- 已激活
+        elseif skill7CD_ > 0 then
+            if notifyFn then notifyFn(string.format("战术协同冷却中 %.0fs", skill7CD_), "warn") end
+        else
+            skill7Active_ = SKILL7_DUR
+            skill7CD_     = math.floor(SKILL7_CD * BattleSkills.GetCDMult(7))
+            if notifyFn then notifyFn("战术协同！全队伤害叠加 " .. SKILL7_DUR .. "s", "success") end
+        end
+        return true
+    end
+
+    -- 技能8：引力陷阱
+    if inBtn(skillBtn8_) then
+        if skill8CD_ > 0 then
+            if notifyFn then notifyFn(string.format("引力陷阱冷却中 %.0fs", skill8CD_), "warn") end
+        else
+            placingGravity_ = true
+            skill8CD_ = math.floor(SKILL8_CD * BattleSkills.GetCDMult(8))
+            if notifyFn then notifyFn("点击战场空白处布置引力陷阱", "info") end
+        end
+        return true
+    end
+
+    -- 技能9：暗能风暴
+    if inBtn(skillBtn9_) then
+        if skill9Active_ > 0 then
+            -- 已激活
+        elseif skill9CD_ > 0 then
+            if notifyFn then notifyFn(string.format("暗能风暴冷却中 %.0fs", skill9CD_), "warn") end
+        else
+            skill9Active_ = SKILL9_DUR
+            skill9CD_     = math.floor(SKILL9_CD * BattleSkills.GetCDMult(9))
+            if notifyFn then notifyFn("暗能风暴！全队强化 " .. SKILL9_DUR .. "s", "success") end
+        end
+        return true
+    end
+
     return false
 end
+
+-- P1: V2.6 对外暴露辅助接口（供战斗场景读取技能效果）
+function BattleSkills.IsTacticalSync() return skill7Active_ > 0 end
+function BattleSkills.IsDarkStorm() return skill9Active_ > 0 end
+function BattleSkills.GetGravityTraps() return gravityTraps_ end
+function BattleSkills.CancelGravityPlacement() placingGravity_ = false end
 
 return BattleSkills

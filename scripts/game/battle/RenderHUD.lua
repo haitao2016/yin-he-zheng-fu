@@ -9,9 +9,119 @@ local FORMATION_ORDER = {"wedge", "circle", "scatter", "charge", "custom"}
 
 local RenderHUD = {}
 
+-- P0-3: Boss 阶段转换横幅（由 BattleState 的 bossPhaseBannerTimer 触发）
+local function drawBossPhaseBanner()
+    if not BS.bossPhaseBannerTimer or BS.bossPhaseBannerTimer <= 0 then return end
+    local totalDuration = BS.bossPhaseBannerTotal or 2.5
+    local t = BS.bossPhaseBannerTimer / totalDuration
+    -- 淡入淡出
+    local alpha = 1.0
+    if t > 0.8 then
+        alpha = (1.0 - t) / 0.2
+    elseif t < 0.2 then
+        alpha = t / 0.2
+    end
+    alpha = math.max(0, math.min(1, alpha))
+
+    local bx, by = BS.screenW / 2, BS.screenH * 0.18
+    local text = BS.bossPhaseBannerText or "阶段转换"
+
+    nvgFontFace(BS.vg, "sans")
+    nvgFontSize(BS.vg, 28)
+    nvgTextAlign(BS.vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+
+    -- 文字阴影
+    nvgFillColor(BS.vg, nvgRGBA(0, 0, 0, math.floor(200 * alpha)))
+    nvgText(BS.vg, bx + 2, by + 2, text)
+
+    -- 主文字（橙金色）
+    nvgFillColor(BS.vg, nvgRGBA(255, 180, 50, math.floor(255 * alpha)))
+    nvgText(BS.vg, bx, by, text)
+
+    -- 上下装饰线
+    local textW = nvgTextBounds(BS.vg, 0, 0, text) or 200
+    local lineW = math.max(textW * 1.5, 200)
+    nvgStrokeWidth(BS.vg, 2)
+    nvgStrokeColor(BS.vg, nvgRGBA(255, 140, 30, math.floor(200 * alpha)))
+    nvgBeginPath(BS.vg)
+    nvgMoveTo(BS.vg, bx - lineW / 2, by - 20)
+    nvgLineTo(BS.vg, bx + lineW / 2, by - 20)
+    nvgMoveTo(BS.vg, bx - lineW / 2, by + 20)
+    nvgLineTo(BS.vg, bx + lineW / 2, by + 20)
+    nvgStroke(BS.vg)
+end
+
 local function drawWaveHUD()
-    if BS.state ~= "fighting" then return end
+    -- P1-6: Boss 预警阶段也绘制，否则只在战斗中绘制
+    if BS.state ~= "fighting" and BS.state ~= "bossWarning" then return end
     local cx = BS.screenW / 2
+
+    -- P1-6: Boss 预警横幅（在预警阶段绘制在顶部）
+    if BS.bossWarningActive and BS.bossWarningTimer and BS.bossWarningTimer > 0 then
+        local remain = math.max(0, math.ceil(BS.bossWarningTimer))
+        local totalDur = BS.bossWarningDuration or 10
+        local bossType = BS.bossWarningType or "BATTLECRUISER"
+        local bossName = "未知类型"
+        local bossDesc = ""
+        if bossType == "BATTLECRUISER" then
+            bossName = "战列巡洋舰"
+            bossDesc = "重甲 Boss · 高爆发伤害"
+        elseif bossType == "CARRIER" then
+            bossName = "母舰"
+            bossDesc = "无人机群 + 自爆舰载机"
+        elseif bossType == "VOID_LORD" then
+            bossName = "虚空领主"
+            bossDesc = "隐形突袭 + 幻影分身 + 虚空吞噬"
+        end
+
+        -- 闪烁边框效果（随倒计时变化，越接近0越急促）
+        local pulsePhase = os.clock() * (2.5 + (totalDur - BS.bossWarningTimer) * 0.15)
+        local pulse = 0.5 + 0.5 * math.sin(pulsePhase)
+
+        -- 外层预警大横幅（深红背景 + 橙边闪烁）
+        local bannerW = 460
+        local bannerH = 86
+        local bannerX = cx - bannerW / 2
+        local bannerY = 6
+        nvgBeginPath(BS.vg)
+        nvgRoundedRect(BS.vg, bannerX, bannerY, bannerW, bannerH, 10)
+        nvgFillColor(BS.vg, nvgRGBA(90, 10, 10, math.floor(180 + 40 * pulse)))
+        nvgFill(BS.vg)
+        nvgBeginPath(BS.vg)
+        nvgRoundedRect(BS.vg, bannerX, bannerY, bannerW, bannerH, 10)
+        nvgStrokeColor(BS.vg, nvgRGBA(255, 140, 40, math.floor(180 + 75 * pulse)))
+        nvgStrokeWidth(BS.vg, 2.5)
+        nvgStroke(BS.vg)
+
+        -- 顶部标题行
+        nvgFontFace(BS.vg, "sans")
+        nvgFontSize(BS.vg, 18)
+        nvgTextAlign(BS.vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(BS.vg, nvgRGBA(255, 220, 60, 255))
+        nvgText(BS.vg, cx, bannerY + 18,
+            "⚠ 第 " .. (BS.bossWarningWave or BS.waveNum) .. " 波：Boss 即将出现！")
+
+        -- Boss 类型名称（大号）
+        nvgFontSize(BS.vg, 16)
+        nvgFillColor(BS.vg, nvgRGBA(255, 180, 120, 250))
+        nvgText(BS.vg, cx, bannerY + 40, "◆ " .. bossName .. " ◆")
+
+        -- Boss 描述
+        nvgFontSize(BS.vg, 11)
+        nvgFillColor(BS.vg, nvgRGBA(230, 200, 160, 230))
+        nvgText(BS.vg, cx, bannerY + 58, bossDesc)
+
+        -- 倒计时 + 建议
+        nvgFontSize(BS.vg, 10)
+        nvgFillColor(BS.vg, nvgRGBA(180, 160, 140, 220))
+        nvgText(BS.vg, cx, bannerY + 74,
+            string.format("倒计时 %ds · 建议：检查舰队配置，确保有护卫舰/防御塔 [SPACE跳过]",
+                remain))
+
+        -- 预警状态下不再绘制普通波次 HUD
+        return
+    end
+
     local hw, hh = 140, 48
     -- 背景胶囊
     nvgBeginPath(BS.vg)
@@ -654,6 +764,7 @@ end
 
 --- P3-2: Boss击破全屏闪光 + BOSS DESTROYED 横幅
 
+RenderHUD.drawBossPhaseBanner = drawBossPhaseBanner
 RenderHUD.drawWaveHUD          = drawWaveHUD
 RenderHUD.drawComboHUD         = drawComboHUD
 RenderHUD.drawShipInfoPanel    = drawShipInfoPanel

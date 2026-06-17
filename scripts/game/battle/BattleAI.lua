@@ -306,6 +306,7 @@ function BattleAI.MakeBossShip(baseType, x, y)
     ship.bossPhaseName = phases[1] and phases[1].name or "常规形态"
     ship.bossPhaseTimer = 0
     ship.bossPhaseChanged = false  -- 标记本帧是否刚切换阶段
+    ship.shipType = baseType        -- P1-4/5: shipType 别名（与 stype 一致，便于技能分支判断）
 
     -- V2.6 A3: 应用阶段1的属性修饰符（确保阶段转换公式对称有效）
     local phase1 = phases[1]
@@ -402,7 +403,7 @@ end
 -- ============================================================================
 
 --- 构建敌方波次（与 BattleScene 完全一致的概率表 + 夹击逻辑）
-function BattleAI.BuildEnemyWave(wave)
+function BattleAI.BuildEnemyWave(wave, forceBossType)
     local screenW = vars_.screenW
     local screenH = vars_.screenH
     local fleet = {}
@@ -470,7 +471,8 @@ function BattleAI.BuildEnemyWave(wave)
     end
     -- Boss波次：生成强化旗舰 Boss
     if wave % BOSS_WAVE_INTERVAL == 0 then
-        local bossType = wave >= 10 and "CARRIER" or "BATTLECRUISER"
+        -- P1-6: 如果传入了强制 Boss 类型则优先使用；否则按波次默认
+        local bossType = forceBossType or (wave >= 10 and "CARRIER" or "BATTLECRUISER")
         local bx = screenW - 60 - math.random() * 30
         local by = 88 + battleH * 0.4 + math.random() * battleH * 0.2
         fleet[#fleet + 1] = BattleAI.MakeBossShip(bossType, bx, by)
@@ -810,7 +812,8 @@ function BattleAI.UpdatePlayerFleet(dt)
             local tx, ty = ship.target.x, ship.target.y
             local range = ship.range or 180
             local d = dist(ship.x, ship.y, tx, ty)
-            if d > range then
+            -- P2-4: 轨道炮塔 / 固定单位不移动，仅攻击
+            if d > range and not (ship.stype == "TURRET" or ship.isTurret or ship.speed <= 0) then
                 local dx, dy = tx - ship.x, ty - ship.y
                 local len = math.max(0.001, d)
                 local moveSpd = ship.speed * phaseMult
@@ -1089,6 +1092,11 @@ function BattleAI.UpdateEnemyFleet(dt)
                     ship.invulnTimer = 1.0
                     print(string.format("[Boss] 进入阶段%d: %s", i, newPhase.name))
 
+                    -- P0-3: 触发阶段转换全屏横幅
+                    BS.bossPhaseBannerTimer = BS.BOSS_BANNER_DUR or 2.5
+                    BS.bossPhaseBannerTotal = BS.BOSS_BANNER_DUR or 2.5
+                    BS.bossPhaseBannerText  = "⚡ 阶段 " .. i .. "：" .. (newPhase.name or "未知形态")
+
                     -- 全屏警告
                     vars_.bossPhaseWarning = true
                     vars_.bossPhaseName = newPhase.name
@@ -1117,6 +1125,150 @@ function BattleAI.UpdateEnemyFleet(dt)
                     }
                     -- 清除倒计时
                     ship.countdownTimer = phase.countdown
+                end
+            end
+        end
+
+        -- P1-4/5: Boss 专属技能（基于 ship.shipType 类型 + 阶段 special 字段）
+        if ship.isBoss and ship.bossPhases and ship.bossPhaseIndex then
+            local phase = ship.bossPhases[ship.bossPhaseIndex]
+            ship.skillTimers = ship.skillTimers or {}
+
+            -- 要塞炮击（战列Boss狂怒形态）：对 HP 最高友舰范围炮击
+            if phase and phase.special == "BARRAGE" then
+                ship.skillTimers.barrage = (ship.skillTimers.barrage or BOSS_SKILL_INTERVAL.BARRAGE) - dt
+                if ship.skillTimers.barrage <= 0 then
+                    ship.skillTimers.barrage = BOSS_SKILL_INTERVAL.BARRAGE
+                    local target = nil
+                    local maxHp = 0
+                    for _, ally in ipairs(playerFleet_) do
+                        if ally.health > maxHp then
+                            maxHp = ally.health
+                            target = ally
+                        end
+                    end
+                    if target then
+                        for _, ally in ipairs(playerFleet_) do
+                            local dx, dy = ally.x - target.x, ally.y - target.y
+                            local dist2 = math.sqrt(dx * dx + dy * dy)
+                            if dist2 <= 60 then
+                                local falloff = 1.0 - (dist2 / 60) * 0.5
+                                ally.health = ally.health - BOSS_BARRAGE_DMG * falloff * (ship.dmgMult or 1)
+                            end
+                        end
+                        -- 屏幕震动 + 飘字
+                        SK_.strength = math.max(SK_.strength, 8)
+                        SK_.dur = math.max(SK_.dur, 0.3)
+                        SK_.timer = math.max(SK_.timer, 0.3)
+                        floatTexts_[#floatTexts_ + 1] = {
+                            x = target.x, y = target.y - 20,
+                            text = "💥 炮击!", life = 1.2, maxLife = 1.2,
+                            vy = -20, team = "enemy"
+                        }
+                    end
+                end
+            end
+
+            -- 无人机群（母舰Boss舰载机形态 / 护盾强化形态）：非自爆阶段释放
+            if ship.shipType == "CARRIER" and (not phase or phase.special ~= "SELF_DESTRUCT") then
+                ship.skillTimers.drones = (ship.skillTimers.drones or BOSS_SKILL_INTERVAL.DRONE_SWARM) - dt
+                if ship.skillTimers.drones <= 0 then
+                    ship.skillTimers.drones = BOSS_SKILL_INTERVAL.DRONE_SWARM
+                    for i = 1, BOSS_DRONE_COUNT do
+                        local angle = (i / BOSS_DRONE_COUNT) * math.pi * 2
+                        local dx, dy = math.cos(angle) * 40, math.sin(angle) * 40
+                        local drone = makeShip_("INTERCEPTOR", ship.x + dx, ship.y + dy, "enemy")
+                        drone.health = 20
+                        drone.maxHealth = 20
+                        drone.dmg = BOSS_DRONE_DMG
+                        drone.isDrone = true
+                        drone.droneExplodeRange = 35
+                        enemyFleet_[#enemyFleet_ + 1] = drone
+                    end
+                    floatTexts_[#floatTexts_ + 1] = {
+                        x = ship.x, y = ship.y - 30,
+                        text = "🛩 无人机群!", life = 1.0, maxLife = 1.0,
+                        vy = -15, team = "enemy"
+                    }
+                end
+            end
+
+            -- 虚空吞噬（虚空Boss阶段4）：对最近友舰高伤
+            if phase and phase.special == "VOID_CONSUME" then
+                ship.skillTimers.consume = (ship.skillTimers.consume or BOSS_SKILL_INTERVAL.VOID_CONSUME) - dt
+                if ship.skillTimers.consume <= 0 then
+                    ship.skillTimers.consume = BOSS_SKILL_INTERVAL.VOID_CONSUME
+                    local target, minDist = nil, math.huge
+                    for _, ally in ipairs(playerFleet_) do
+                        local dx, dy = ally.x - ship.x, ally.y - ship.y
+                        local dist2 = math.sqrt(dx * dx + dy * dy)
+                        if dist2 < minDist then
+                            minDist = dist2
+                            target = ally
+                        end
+                    end
+                    if target then
+                        target.health = target.health - BOSS_VOID_DMG * (ship.dmgMult or 1)
+                        floatTexts_[#floatTexts_ + 1] = {
+                            x = target.x, y = target.y - 15,
+                            text = "🌀 吞噬!", life = 1.0, maxLife = 1.0,
+                            vy = -20, team = "enemy"
+                        }
+                    end
+                end
+            end
+
+            -- 幻影分身（虚空Boss阶段2）：生成幻影分身
+            if phase and phase.special == "PHANTOM_SPLIT" then
+                ship.skillTimers.phantom = (ship.skillTimers.phantom or BOSS_SKILL_INTERVAL.PHANTOM_SPLIT) - dt
+                if ship.skillTimers.phantom <= 0 then
+                    ship.skillTimers.phantom = BOSS_SKILL_INTERVAL.PHANTOM_SPLIT
+                    for i = 1, BOSS_PHANTOM_COUNT do
+                        local angle = (i / BOSS_PHANTOM_COUNT) * math.pi * 2
+                        local dx, dy = math.cos(angle) * 60, math.sin(angle) * 60
+                        local phantom = makeShip_("DESTROYER", ship.x + dx, ship.y + dy, "enemy")
+                        phantom.health = 50
+                        phantom.maxHealth = 50
+                        phantom.dmg = (ship.dmg or 20) * 0.3
+                        phantom.isPhantom = true
+                        phantom.lifetime = 8.0
+                        phantom.color = { 180, 80, 220 }
+                        enemyFleet_[#enemyFleet_ + 1] = phantom
+                    end
+                    floatTexts_[#floatTexts_ + 1] = {
+                        x = ship.x, y = ship.y - 35,
+                        text = "👥 幻影分身!", life = 1.0, maxLife = 1.0,
+                        vy = -18, team = "enemy"
+                    }
+                end
+            end
+
+            -- 母舰自爆倒计时（阶段3）
+            if phase and phase.special == "SELF_DESTRUCT" then
+                ship.selfDestructTimer = (ship.selfDestructTimer or BOSS_SKILL_INTERVAL.SELF_DESTRUCT) - dt
+                if ship.selfDestructTimer <= 0 then
+                    for _, ally in ipairs(playerFleet_) do
+                        local dx, dy = ally.x - ship.x, ally.y - ship.y
+                        local dist2 = math.sqrt(dx * dx + dy * dy)
+                        if dist2 <= 150 then
+                            local falloff = 1.0 - (dist2 / 150) * 0.5
+                            ally.health = ally.health - 100 * falloff
+                        end
+                    end
+                    SK_.strength = math.max(SK_.strength, 25)
+                    SK_.dur = math.max(SK_.dur, 1.5)
+                    SK_.timer = math.max(SK_.timer, 1.5)
+                    ship.health = 0
+                else
+                    ship.selfDestructCountdown = math.floor(ship.selfDestructTimer)
+                end
+            end
+
+            -- 幻影分身寿命递减
+            if ship.isPhantom then
+                ship.lifetime = (ship.lifetime or 8.0) - dt
+                if ship.lifetime <= 0 then
+                    ship.health = 0
                 end
             end
         end
@@ -1722,5 +1874,13 @@ BattleAI.DREAD_COUNTER_CHANCE = DREAD_COUNTER_CHANCE
 BattleAI.DREAD_COUNTER_DMG    = DREAD_COUNTER_DMG
 -- V2.6 A3: Boss阶段常量
 BattleAI.BOSS_PHASES = Systems.BOSS_PHASES
+
+-- P1-4/5: Boss 专属技能常量（GameConstants.lua 全局加载，此处导出供外部引用）
+BattleAI.BOSS_SKILL_INTERVAL  = BOSS_SKILL_INTERVAL
+BattleAI.BOSS_BARRAGE_DMG     = BOSS_BARRAGE_DMG
+BattleAI.BOSS_DRONE_COUNT     = BOSS_DRONE_COUNT
+BattleAI.BOSS_DRONE_DMG       = BOSS_DRONE_DMG
+BattleAI.BOSS_VOID_DMG        = BOSS_VOID_DMG
+BattleAI.BOSS_PHANTOM_COUNT   = BOSS_PHANTOM_COUNT
 
 return BattleAI

@@ -923,6 +923,8 @@ function PlanetPanel.Render(planet, ctx)
             local bd      = BUILDINGS[key]
             local canB, _ = bs:canBuild(key, planet)
             local costStr = rm:fmtCost(bd.cost)
+            local descStr = bs.getBuildingDescription and bs:getBuildingDescription(key) or ""
+            if #descStr > 0 then descStr = "  [" .. descStr .. "]" end
             local bx, bw, bh = px+8, pw-16, 18
 
             -- H4：二次确认逻辑
@@ -967,7 +969,7 @@ function PlanetPanel.Render(planet, ctx)
                 panel(rbx, sy2, bw, bh, 4,
                     {canB and 50 or 50, canB and 120 or 80, canB and 255 or 140, 60},
                     {canB and 50 or 50, canB and 120 or 80, canB and 255 or 140, 180})
-                text(rbx+bw/2, sy2+bh/2, bd.name.."  ["..costStr.."]", 10,
+                text(rbx+bw/2, sy2+bh/2, bd.name.."  ["..costStr.."]"..descStr, 10,
                     canB and 110 or 110, canB and 180 or 140, canB and 255 or 200, 240,
                     NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
                 if sc ~= 1.0 then nvgRestore(vg) end

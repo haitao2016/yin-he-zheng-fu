@@ -45,14 +45,31 @@ local REFINE_CFG = {
 }
 
 function ResourceManager:update(dt)
+    -- P2-4: 聚合行星建筑加成（高级精炼厂倍率 / 稀有几率）
+    local planetRefineMult = 1.0
+    local rareChance        = 0.0
+    if self.bs and self.planetGetter and self.bs.aggregatePlanetEffects then
+        local pe = self.bs:aggregatePlanetEffects(self.planetGetter())
+        planetRefineMult = pe.refineMult or 1.0
+        rareChance        = pe.rareChance or 0.0
+    end
+
     -- Step 1：所有资源按速率正常积累（原矿也进入库存）
     local resMult = self.leagueResMult or 1.0  -- P1-3: 联赛资源倍率
     for res, rate in pairs(self.rates) do
         if rate ~= 0 then
             local cap = self.caps[res] or 99999
             self.resources[res] = math.min(cap, (self.resources[res] or 0) + rate * resMult * dt)
+            -- P2-4: 高级精炼厂稀有资源几率（每次 tick 有机会额外产出稀有资源）
+            if rareChance > 0 and math.random() < rareChance * dt then
+                local rareKey = RARE_RES_ORDER[(math.floor(self.totalTime_ or 0) % #RARE_RES_ORDER) + 1]
+                if rareKey then
+                    self:addRare(rareKey, 1)
+                end
+            end
         end
     end
+    self.totalTime_ = (self.totalTime_ or 0) + dt
 
     -- Step 2：原矿 ⇄ 原矿 自动互换（convertRate 只作用于原矿层）
     if self.convertRate ~= 0 then
@@ -73,7 +90,8 @@ function ResourceManager:update(dt)
     -- Step 3：精炼厂以固定速率从原矿库存消耗并转化为精炼资源
     if self.refineryMult and self.refineryMult > 0 then
         -- S1 RAPID_REFINE: 全局精炼速率加成（累乘到 refineryMult 上）
-        local globalMult = (self.baseBonus and self.baseBonus.globalRefineMult) or 1.0
+        -- P2-4: 行星高级精炼厂（planetRefineMult）进一步叠乘
+        local globalMult = ((self.baseBonus and self.baseBonus.globalRefineMult) or 1.0) * planetRefineMult
         for raw, cfg in pairs(REFINE_CFG) do
             local rawAmt = self.resources[raw] or 0
             if rawAmt > 0 then
@@ -223,19 +241,77 @@ end
 
 -- 序列化 / 反序列化
 function ResourceManager:serialize()
-    return {
+    local function safeNum(v) return tonumber(v) or 0 end
+    local data = {
         resources = {
-            minerals=math.floor(self.resources.minerals or 0), energy=math.floor(self.resources.energy or 0),
-            crystal=math.floor(self.resources.crystal or 0), metal=math.floor(self.resources.metal or 0),
-            esource=math.floor(self.resources.esource or 0), nuclear=math.floor(self.resources.nuclear or 0),
-            population=math.floor(self.resources.population or 0), credits=math.floor(self.resources.credits or 0),
+            minerals=math.floor(safeNum(self.resources.minerals)), energy=math.floor(safeNum(self.resources.energy)),
+            crystal=math.floor(safeNum(self.resources.crystal)), metal=math.floor(safeNum(self.resources.metal)),
+            esource=math.floor(safeNum(self.resources.esource)), nuclear=math.floor(safeNum(self.resources.nuclear)),
+            population=math.floor(safeNum(self.resources.population)), credits=math.floor(safeNum(self.resources.credits)),
         }
     }
+    -- P0-2: V2.6 稀有资源（防御性保存，即便未来新增 key 也可正确序列化）
+    if self.rareResources then
+        data.rareResources = {}
+        if RARE_RES_ORDER then
+            for _, k in ipairs(RARE_RES_ORDER) do
+                data.rareResources[k] = math.floor(safeNum(self.rareResources[k]))
+            end
+        else
+            for k, v in pairs(self.rareResources) do
+                data.rareResources[k] = math.floor(safeNum(v))
+            end
+        end
+    end
+    -- 防御性保存速率（防止未来新增资源时丢失）
+    if self.rates then
+        data.rates = {}
+        for k, v in pairs(self.rates) do
+            data.rates[k] = tonumber(v) or 0
+        end
+    end
+    if self.rareRates then
+        data.rareRates = {}
+        for k, v in pairs(self.rareRates) do
+            data.rareRates[k] = tonumber(v) or 0
+        end
+    end
+    return data
 end
 
 function ResourceManager:deserialize(data)
-    if not data or not data.resources then return end
-    for k, v in pairs(data.resources) do if self.resources[k] ~= nil then self.resources[k] = v end end
+    if not data then return end
+    if data.resources then
+        for k, v in pairs(data.resources) do
+            if self.resources[k] ~= nil then
+                self.resources[k] = tonumber(v) or 0
+            end
+        end
+    end
+    -- P0-2: V2.6 稀有资源恢复（防御性：老存档可能无此字段）
+    if data.rareResources and self.rareResources then
+        for k, v in pairs(data.rareResources) do
+            self.rareResources[k] = tonumber(v) or 0
+        end
+    elseif RARE_RES_ORDER and self.rareResources then
+        -- 老存档兜底：初始化为 0（防止 nil 索引）
+        for _, k in ipairs(RARE_RES_ORDER) do
+            if self.rareResources[k] == nil then
+                self.rareResources[k] = 0
+            end
+        end
+    end
+    -- 速率恢复（防御性）
+    if data.rates and self.rates then
+        for k, v in pairs(data.rates) do
+            self.rates[k] = tonumber(v) or 0
+        end
+    end
+    if data.rareRates and self.rareRates then
+        for k, v in pairs(data.rareRates) do
+            self.rareRates[k] = tonumber(v) or 0
+        end
+    end
 end
 
 return ResourceManager

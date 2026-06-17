@@ -1245,6 +1245,8 @@ function GameUI.Init(opts)
     UICommon.player        = player_
     UICommon.fm            = fm_
     UICommon.spq           = spq_
+    -- P0-1: 同步已解锁科技表与 spq 判断（保持 UI/逻辑两边一致）
+    if spq_ and rs_ then spq_.techUnlocked = rs_.unlocked or {} end
     UICommon.pirateAI      = pirateAI_   -- P1-3
     UICommon.resIcons      = resIcons_
     UICommon.bindFns({
