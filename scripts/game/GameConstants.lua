@@ -694,3 +694,33 @@ BATTLE_SPEEDS = {
     { id = "FASTEST",  name = "3x",   mult = 3.0, icon = "⏩" },
 }
 CURRENT_BATTLE_SPEED = "NORMAL"
+
+-- P1-1: Boss Rush 模式定义
+BOSS_RUSH = {
+    -- 可选的 Boss 列表
+    bosses = {
+        { id = "BATTLECRUISER", name = "战列巡洋舰", healthMult = 1.0, phaseCount = 3 },
+        { id = "CARRIER", name = "母舰", healthMult = 1.2, phaseCount = 3 },
+        { id = "VOID_LORD", name = "虚空领主", healthMult = 1.5, phaseCount = 4 },
+        { id = "DEVASTATOR", name = "毁灭者", healthMult = 2.0, phaseCount = 3, isSuper = true },
+        { id = "VOID_TITAN", name = "虚空泰坦", healthMult = 3.0, phaseCount = 3, isSuper = true },
+    },
+    
+    -- Boss 数量选项
+    bossCounts = { 3, 5, 7 },
+    
+    -- 波次间隔（秒）
+    restInterval = 8,
+    
+    -- 奖励
+    rewards = {
+        perBoss = { blueCrystal = 30 },
+        completion = { purpleCrystal = 50 },
+        perfect = { purpleCrystal = 100, rainbowCrystal = 10 },
+    },
+    
+    -- 分数计算
+    scorePerBoss = 1000,
+    timeBonus = 100,  -- 每节省 10 秒 +100 分
+    healthBonus = 50, -- 每 10% 剩余生命 +50 分
+}

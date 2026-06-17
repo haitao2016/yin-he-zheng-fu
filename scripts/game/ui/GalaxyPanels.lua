@@ -63,6 +63,8 @@ local notifyFn_               = nil
 -- P0-2: 无尽/每日挑战按钮回调
 local onEndlessChallengeCb_   = nil
 local onDailyChallengeCb_     = nil
+-- P1-1: Boss Rush 按钮回调
+local onBossRushCb_           = nil
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- 公共 API
@@ -86,6 +88,8 @@ function M.Init(cfg)
     -- P0-2: 无尽/每日挑战回调
     onEndlessChallengeCb_  = cfg.onEndlessChallengeCb
     onDailyChallengeCb_    = cfg.onDailyChallengeCb
+    -- P1-1: Boss Rush 回调
+    onBossRushCb_          = cfg.onBossRushCb
 end
 
 function M.Update(dt)
@@ -1654,6 +1658,31 @@ function M.RenderChallengeButtons()
         if onEndlessChallengeCb_ then onEndlessChallengeCb_() end
     end)
 
+    -- P1-1: Boss Rush 按钮（无尽挑战下方）
+    local bossRushBtnX = screenW/2 - 70
+    local bossRushBtnY = screenH/2 + 130
+    local bossRushBtnW, bossRushBtnH = 140, 36
+
+    local bossRushHover = cursorX >= bossRushBtnX and cursorX <= bossRushBtnX + bossRushBtnW
+                     and cursorY >= bossRushBtnY and cursorY <= bossRushBtnY + bossRushBtnH
+
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, bossRushBtnX, bossRushBtnY, bossRushBtnW, bossRushBtnH, 6)
+    nvgFillColor(vg, bossRushHover and nvgRGBA(160, 50, 50, 220) or nvgRGBA(120, 40, 40, 200))
+    nvgFill(vg)
+    nvgStrokeColor(vg, nvgRGBA(220, 100, 100, bossRushHover and 200 or 150))
+    nvgStrokeWidth(vg, 2)
+    nvgStroke(vg)
+    nvgFontFace(vg, "sans")
+    nvgFontSize(vg, 13)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 200, 200, 255))
+    nvgText(vg, bossRushBtnX + bossRushBtnW/2, bossRushBtnY + bossRushBtnH/2, "💀 Boss Rush")
+
+    addHit(bossRushBtnX, bossRushBtnY, bossRushBtnW, bossRushBtnH, function()
+        if onBossRushCb_ then onBossRushCb_() end
+    end)
+
     -- P0-3: 每日挑战按钮（右上角）
     local dailyBtnX, dailyBtnY, dailyBtnW, dailyBtnH = screenW - 130, 15, 115, 28
     local dailyHover = cursorX >= dailyBtnX and cursorX <= dailyBtnX + dailyBtnW
@@ -1673,6 +1702,26 @@ function M.RenderChallengeButtons()
 
     addHit(dailyBtnX, dailyBtnY, dailyBtnW, dailyBtnH, function()
         if onDailyChallengeCb_ then onDailyChallengeCb_() end
+    end)
+
+    -- P1-2: 成就按钮
+    local achBtnX, achBtnY, achBtnW, achBtnH = screenW - 80, 15, 65, 28
+    local achHover = cursorX >= achBtnX and cursorX <= achBtnX + achBtnW
+                 and cursorY >= achBtnY and cursorY <= achBtnY + achBtnH
+
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, achBtnX, achBtnY, achBtnW, achBtnH, 6)
+    nvgFillColor(vg, achHover and nvgRGBA(100, 80, 130, 220) or nvgRGBA(80, 60, 100, 200)); nvgFill(vg)
+    nvgStrokeColor(vg, nvgRGBA(180, 150, 220, 150)); nvgStrokeWidth(vg, 1); nvgStroke(vg)
+    nvgFontSize(vg, 11)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 220, 255, 255))
+    nvgText(vg, achBtnX + achBtnW/2, achBtnY + achBtnH/2, "🏆 成就")
+
+    addHit(achBtnX, achBtnY, achBtnW, achBtnH, function()
+        local AP = require("game.ui.AchievementPanel")
+        local panel = AP.open()
+        registerOverlay("achievement", function(vg) panel.draw(vg) end)
     end)
 end
 

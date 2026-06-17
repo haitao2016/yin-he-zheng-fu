@@ -168,6 +168,10 @@ function BattleDeath.Update(dt, ctx, makeShip)
             -- Boss 击败：额外奖励 + 多次爆炸 + 屏幕震动
             if ship.isBoss and not ctx.bossDefeated then
                 ctx.bossDefeated = true
+                -- P1-1: Boss Rush 模式下标记特殊标志，由 BattleScene 处理
+                if ship.bossRushBoss then
+                    ctx.bossRushBossDefeated = true
+                else
                 -- 额外爆炸特效（3次；里程碑 Boss 额外更多）
                 local explodeCount = ship.isMilestoneBoss and 6 or 3
                 for _ = 1, explodeCount do BattleUtils.spawnExplosion(ctx, ship) end
@@ -292,6 +296,7 @@ function BattleDeath.Update(dt, ctx, makeShip)
                         ctx.notifyFn(string.format("⚔️ BOSS已击败！核能+%d  水晶+%d  蓝晶石+%d", nucBonus, crystalBonus, blueCrystalBonus), "success")
                     end
                     print(string.format("[Boss] Wave%d Boss击败  核能+%d 水晶+%d 蓝晶石+%d", ctx.waveNum, nucBonus, crystalBonus, blueCrystalBonus))
+                end
                 end
                 -- P3-3: Boss击败 — 播放胜利fanfare + 恢复BGM正常音调
                 Audio.PlayBGM(Audio.BGM.VICTORY_FANFARE, 0.8, false)

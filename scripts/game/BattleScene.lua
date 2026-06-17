@@ -109,6 +109,18 @@ local superBossName_      = nil    -- 超级 Boss 名称
 local superBossWarningTimer_ = 0   -- 超级 Boss 预警计时
 local superBossPending_   = false  -- 是否待生成超级 Boss
 
+-- P1-1: Boss Rush 模式状态
+local bossRushMode_       = false
+local bossRushBosses_      = {}      -- 待挑战 Boss 列表
+local bossRushCurrent_      = 1       -- 当前第几个 Boss
+local bossRushRestTimer_   = 0       -- 休息倒计时
+local bossRushScore_       = 0       -- 当前分数
+local bossRushStartTime_   = 0       -- 开始时间
+local bossRushHealthBonus_ = 0       -- 生命奖励
+local bossRushState_       = nil     -- "intro" | "fighting" | "rest" | "result"
+local bossRushIntroTimer_  = 0       -- 介绍阶段计时
+local bossRushResult_      = nil     -- 结算数据
+
 -- 新生产出的舰船临时存储（等待加入战场）
 local pendingShips_ = {}
 
@@ -1537,6 +1549,13 @@ local function pushToCtx()
     ctx.endlessWave        = endlessWave_
     ctx.endlessRecord      = endlessRecord_
     ctx.endlessDifficulty  = endlessDifficulty_
+    -- P1-1: Boss Rush 模式状态
+    ctx.bossRushMode       = bossRushMode_
+    ctx.bossRushState      = bossRushState_
+    ctx.bossRushCurrent    = bossRushCurrent_
+    ctx.bossRushRestTimer  = bossRushRestTimer_
+    ctx.bossRushScore      = bossRushScore_
+    ctx.bossRushResult     = bossRushResult_
     ctx.hpBlinkTimer       = hpBlinkTimer_
     ctx.interceptorEngineTimer = interceptorEngineTimer_
     ctx.fireTimer          = fireTimer_
@@ -1617,6 +1636,13 @@ local function pullFromCtx()
     endlessWave_        = ctx.endlessWave
     endlessRecord_      = ctx.endlessRecord
     endlessDifficulty_  = ctx.endlessDifficulty
+    -- P1-1: Boss Rush 模式状态
+    bossRushMode_      = ctx.bossRushMode
+    bossRushState_     = ctx.bossRushState
+    bossRushCurrent_   = ctx.bossRushCurrent
+    bossRushRestTimer_ = ctx.bossRushRestTimer
+    bossRushScore_     = ctx.bossRushScore
+    bossRushResult_    = ctx.bossRushResult
     hpBlinkTimer_       = ctx.hpBlinkTimer
     interceptorEngineTimer_ = ctx.interceptorEngineTimer
     fireTimer_          = ctx.fireTimer
@@ -1769,12 +1795,41 @@ function BattleScene.Update(dt)
         return
     end
 
+    -- P1-1: Boss Rush Boss 击败处理
+    if bossRushMode_ and ctx.state == "waveComplete" then
+        onBossRushBossDefeated()
+        pullFromCtx()
+        return
+    end
+
     -- 已结束状态守卫（win/lose/bossWarning）：处理倒计时/烟花，跳过战斗逻辑
     local handled, startNext, startBoss = BattleWinLose.UpdateGuard(scaledDt, ctx)
     if handled then
         pullFromCtx()
         if startBoss then BattleScene.StartBossWave() end
         if startNext then BattleScene.StartNextWave() end
+        return
+    end
+
+    -- P1-1: Boss Rush 休息阶段处理
+    if bossRushMode_ and bossRushState_ == "rest" then
+        bossRushRestTimer_ = bossRushRestTimer_ - scaledDt
+        if bossRushRestTimer_ <= 0 then
+            bossRushState_ = "fighting"
+            startBossRushWave()
+        end
+        pullFromCtx()
+        return
+    end
+
+    -- P1-1: Boss Rush 介绍阶段处理
+    if bossRushMode_ and bossRushState_ == "intro" then
+        bossRushIntroTimer_ = bossRushIntroTimer_ - scaledDt
+        if bossRushIntroTimer_ <= 0 then
+            bossRushState_ = "fighting"
+            startBossRushWave()
+        end
+        pullFromCtx()
         return
     end
 
@@ -1922,6 +1977,14 @@ function BattleScene.Render()
     BS.milestoneFlashAlpha = milestoneFlashAlpha_
     BS.milestoneBannerTimer = milestoneBannerTimer_
     BS.milestoneRound      = milestoneRound_
+
+    -- P1-1: Boss Rush 模式状态
+    BS.bossRushMode       = bossRushMode_
+    BS.bossRushState      = bossRushState_
+    BS.bossRushCurrent    = bossRushCurrent_
+    BS.bossRushRestTimer  = bossRushRestTimer_
+    BS.bossRushScore      = bossRushScore_
+    BS.bossRushResult     = bossRushResult_
 
     BS.waveSummary = waveSummary_
 
@@ -2225,6 +2288,212 @@ end
 --- 是否处于无尽模式
 function BattleScene.IsEndlessMode()
     return endlessMode_ ~= nil
+end
+
+-- ============================================================================
+-- P1-1: Boss Rush 模式
+-- ============================================================================
+
+--- 开始 Boss Rush
+function BattleScene.StartBossRush(bossCount)
+    bossCount = bossCount or 5
+    
+    bossRushMode_ = true
+    bossRushBosses_ = {}
+    bossRushCurrent_ = 1
+    bossRushScore_ = 0
+    bossRushStartTime_ = os.time()
+    bossRushHealthBonus_ = 0
+    
+    -- 随机选择 Boss 序列
+    local allBosses = BOSS_RUSH.bosses
+    for i = 1, bossCount do
+        local idx = math.random(#allBosses)
+        local boss = allBosses[idx]
+        -- 越后面越难
+        local difficultyMult = 1.0 + (i - 1) * 0.15
+        bossRushBosses_[#bossRushBosses_ + 1] = {
+            id = boss.id,
+            name = boss.name,
+            healthMult = boss.healthMult * difficultyMult,
+            phaseCount = boss.phaseCount,
+            isSuper = boss.isSuper,
+            defeated = false,
+        }
+    end
+    
+    -- 显示 Boss Rush 开始界面
+    bossRushState_ = "intro"
+    bossRushIntroTimer_ = 3.0
+    
+    -- 重置波次状态
+    waveNum_ = 1
+    state_ = "fighting"
+    stateTimer_ = 0
+    battleEndFired_ = false
+    
+    print("[BattleScene] 开始 Boss Rush: " .. bossCount .. " 个 Boss")
+    return true
+end
+
+--- Boss Rush 波次生成
+local function startBossRushWave()
+    local current = bossRushBosses_[bossRushCurrent_]
+    if not current then
+        -- 全部 Boss 已击败，结算
+        finishBossRush()
+        return
+    end
+    
+    waveNum_ = bossRushCurrent_
+    waveStartTimer_ = 3.0
+    
+    -- 计算 Boss 血量
+    local baseHealth = 5000
+    local health = baseHealth * current.healthMult
+    local dmg = 50 * current.healthMult
+    
+    -- 生成 Boss
+    if current.isSuper then
+        -- 超级 Boss
+        superBossPending_ = true
+        superBossType_ = current.id
+        superBossName_ = current.name
+        enemyFleet_ = {}
+    else
+        enemyFleet_ = {}
+        local boss = makeShip(current.id, screenW_ - 80, screenH_/2, "enemy")
+        boss.health = health
+        boss.maxHealth = health
+        boss.dmg = dmg
+        boss.isBoss = true
+        boss.phaseCount = current.phaseCount
+        boss.bossRushBoss = true
+        table.insert(enemyFleet_, boss)
+    end
+    
+    state_ = "fighting"
+    stateTimer_ = 0
+    formationLocked_ = true
+    
+    -- 注册新舰船到回放系统
+    for _, ship in ipairs(playerFleet_) do
+        if not ship._replayId then BattleReplaySystem.RegisterShip(ship) end
+    end
+    for _, ship in ipairs(enemyFleet_) do
+        BattleReplaySystem.RegisterShip(ship)
+    end
+    
+    projectiles_ = {}
+    floatTexts_ = {}
+    hitSparks_ = {}
+    shockRings_ = {}
+    
+    if notifyFn_ then
+        notifyFn_("💀 第 " .. bossRushCurrent_ .. " 个 Boss: " .. current.name .. " 出现！", "error")
+    end
+    
+    Audio.Play(Audio.SFX.WAVE_INCOMING)
+    Audio.SetBGMPitch(1.10)
+end
+
+--- Boss Rush Boss 击败处理
+local function onBossRushBossDefeated(boss)
+    local current = bossRushBosses_[bossRushCurrent_]
+    if current then
+        current.defeated = true
+    end
+    
+    -- 计算生命奖励
+    local totalHealth = 0
+    local remainingHealth = 0
+    for _, ship in ipairs(playerFleet_) do
+        totalHealth = totalHealth + ship.maxHealth
+        remainingHealth = remainingHealth + math.max(0, ship.health)
+    end
+    local healthPercent = totalHealth > 0 and (remainingHealth / totalHealth) or 0
+    bossRushHealthBonus_ = bossRushHealthBonus_ + math.floor(healthPercent * BOSS_RUSH.healthBonus)
+    
+    -- Boss 分数
+    bossRushScore_ = bossRushScore_ + BOSS_RUSH.scorePerBoss
+    
+    -- 发放每 Boss 奖励
+    if rm_ and rm_.addRare then
+        rm_:addRare("BLUE_CRYSTAL", BOSS_RUSH.rewards.perBoss.blueCrystal)
+        if notifyFn_ then
+            notifyFn_("击败 " .. current.name .. "！获得 30 蓝晶石", "success")
+        end
+    end
+    
+    -- 进入休息阶段
+    bossRushCurrent_ = bossRushCurrent_ + 1
+    bossRushRestTimer_ = BOSS_RUSH.restInterval
+    bossRushState_ = "rest"
+    state_ = "waveComplete"
+end
+
+--- Boss Rush 结算
+local function finishBossRush()
+    bossRushMode_ = false
+    bossRushState_ = "result"
+    
+    -- 时间奖励
+    local elapsed = os.time() - bossRushStartTime_
+    local targetTime = BOSS_RUSH.restInterval * (#bossRushBosses_ - 1) + 60  -- 估算
+    local timeSaved = math.max(0, targetTime - elapsed)
+    bossRushScore_ = bossRushScore_ + math.floor(timeSaved / 10) * BOSS_RUSH.timeBonus
+    
+    -- 生命奖励
+    bossRushScore_ = bossRushScore_ + bossRushHealthBonus_
+    
+    -- 计算是否完美（所有 Boss 全程无阵亡）
+    local perfect = true
+    -- 检查是否有舰船损失
+    for _, ship in ipairs(playerFleet_) do
+        if ship.health <= 0 or ship.isDead then
+            perfect = false
+            break
+        end
+    end
+    
+    -- 发放完成奖励
+    if rm_ and rm_.addRare then
+        local completionReward = perfect and BOSS_RUSH.rewards.perfect or BOSS_RUSH.rewards.completion
+        for res, amount in pairs(completionReward) do
+            rm_:addRare(res, amount)
+        end
+    end
+    
+    -- 显示结算界面
+    bossRushResult_ = {
+        score = bossRushScore_,
+        bossCount = #bossRushBosses_,
+        elapsed = elapsed,
+        perfect = perfect,
+    }
+    
+    if notifyFn_ then
+        notifyFn_("Boss Rush 完成！分数: " .. bossRushScore_, "legendary")
+    end
+    state_ = "win"
+end
+
+--- 获取 Boss Rush 状态
+function BattleScene.GetBossRushState()
+    return {
+        mode = bossRushMode_,
+        current = bossRushCurrent_,
+        total = #bossRushBosses_,
+        state = bossRushState_,
+        restTimer = bossRushRestTimer_,
+        score = bossRushScore_,
+        result = bossRushResult_,
+    }
+end
+
+--- 是否处于 Boss Rush 模式
+function BattleScene.IsBossRushMode()
+    return bossRushMode_
 end
 
 return BattleScene

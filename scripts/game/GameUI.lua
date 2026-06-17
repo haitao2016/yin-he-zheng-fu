@@ -1282,6 +1282,8 @@ function GameUI.Init(opts)
         -- P0-2: 无尽/每日挑战回调
         onEndlessChallengeCb  = GameUI.OpenEndlessModePanel,
         onDailyChallengeCb     = GameUI.OpenDailyChallengePanel,
+        -- P1-1: Boss Rush 回调
+        onBossRushCb          = GameUI.OpenBossRushPanel,
     })
     Overlays.Init({
         onCampaignDialogueDone = onCampaignDialogueDone_,
@@ -1514,6 +1516,12 @@ function GameUI.OpenDailyChallengePanel()
     local ChallengePanel = require("game.ui.ChallengePanel")
     local panel = ChallengePanel.open()
     registerOverlay("dailyChallenge", function(vg) panel.draw(vg) end)
+end
+
+-- P1-1: 打开 Boss Rush 面板
+function GameUI.OpenBossRushPanel()
+    local BossRushPanel = require("game.ui.BossRushPanel")
+    BossRushPanel.Show()
 end
 
 return GameUI

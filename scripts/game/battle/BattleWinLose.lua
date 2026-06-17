@@ -127,6 +127,13 @@ function BattleWinLose.Detect(dt, ctx)
         end
         print("[Battle] Wave " .. ctx.waveNum .. " 失败")
     elseif #enemyFleet == 0 and ctx.state == "fighting" then
+        -- P1-1: Boss Rush 模式下，boss 击败不触发普通胜利，由 BattleScene 处理
+        if ctx.bossRushBossDefeated then
+            ctx.bossRushBossDefeated = false  -- 清除标志
+            ctx.state = "waveComplete"         -- 切换状态，防止下一帧重复触发
+            ctx.stateTimer = 0
+            return  -- 不设置 win 状态，让 BattleScene 处理 Boss Rush 流程
+        end
         ctx.state = "win"
         ctx.stateTimer = 0
         ctx.waveGapTimer = 0
