@@ -54,6 +54,24 @@ local MINIMAP_H   = 120
 local MINIMAP_PAD = 10   -- 距右下角留白
 local MINIMAP_WORLD_RANGE = 2100  -- 世界坐标半径（约 ±2000）
 
+-- 星系生成常量
+local GALAXY_WORLD_SIZE = 6000      -- 世界坐标范围 (0 ~ 6000)
+local PLANET_ORBIT_MIN  = 150       -- 行星轨道最小半径
+local PLANET_ORBIT_MAX  = 450       -- 行星轨道最大半径
+local PLANET_COUNT_MIN  = 2         -- 每个恒星系最小行星数
+local PLANET_COUNT_MAX  = 7         -- 每个恒星系最大行星数
+local PLANET_BELT_CHANCE = 0.15     -- 小行星带生成概率
+local ASTEROID_COUNT_MIN = 0        -- 每个恒星系最小小行星数
+local ASTEROID_COUNT_MAX = 3        -- 每个恒星系最大小行星数
+local SYSTEM_STAR_COUNT_MIN = 1     -- 单星系最少恒星数
+local SYSTEM_STAR_COUNT_MAX = 3     -- 单星系最多恒星数（多星系统）
+local SPECIAL_PLANET_CHANCE = 0.1   -- 特殊星球生成概率
+
+-- 采矿常量
+local FLEET_MINE_INTERVAL = 1.0     -- 采矿间隔（秒）
+local ASTEROID_RESPAWN_TIME = 60     -- 小行星重生时间（秒）
+local ASTEROID_WORLD_RANGE = 4200   -- 小行星生成范围（世界坐标）
+
 -- ============================================================================
 -- 私有状态
 -- ============================================================================
@@ -202,8 +220,8 @@ local function generateBgStars()
     math.randomseed(12345)
     for i = 1, 600 do
         bgStars_[i] = {
-            x    = math.random(0, 6000),
-            y    = math.random(0, 6000),
+            x    = math.random(0, GALAXY_WORLD_SIZE),
+            y    = math.random(0, GALAXY_WORLD_SIZE),
             size = math.random() * 1.5 + 0.3,
             op   = math.random() * 180 + 50,
         }
@@ -313,7 +331,7 @@ local function generateStarSystems()
             color  = STAR_COLORS[stype],
             planets= {},
         }
-        local pCount = 2 + math.random(0, 5)
+        local pCount = PLANET_COUNT_MIN + math.random(0, PLANET_COUNT_MAX - PLANET_COUNT_MIN)
         for pi = 1, pCount do
             local ptype = randItem(PLANET_TYPES)
             -- 优先使用类型特征色，带随机微调（±15）使同类行星间有细微差异
@@ -474,8 +492,8 @@ local function generateAsteroids()
                 local sz = szCfg.sizeMin + math.random() * (szCfg.sizeMax - szCfg.sizeMin)
                 local y  = szCfg.yieldMin + math.random() * (szCfg.yieldMax - szCfg.yieldMin)
                 asteroids_[#asteroids_+1] = {
-                    x        = (math.random() - 0.5) * 4200,
-                    y        = (math.random() - 0.5) * 4200,
+                    x        = (math.random() - 0.5) * ASTEROID_WORLD_RANGE,
+                    y        = (math.random() - 0.5) * ASTEROID_WORLD_RANGE,
                     atype    = atype,
                     sizeKey  = sizeKey,          -- "small"/"medium"/"large"
                     size     = sz,               -- 世界半径（渲染用）
@@ -1527,7 +1545,7 @@ function GalaxyScene.Update(dt)
     for _, a in ipairs(asteroids_) do
         if not a.health or a.health <= 0 then
             a.respawnTimer = (a.respawnTimer or 0) + dt
-            if a.respawnTimer >= 60 then  -- 60秒重生
+            if a.respawnTimer >= ASTEROID_RESPAWN_TIME then  -- 60秒重生
                 a.health = a.maxHealth or a.maxHP
                 a.respawnTimer = 0
             end

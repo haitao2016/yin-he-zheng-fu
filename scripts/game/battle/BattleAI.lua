@@ -34,6 +34,19 @@ local COMBO_RESET_TIME      = 5.0
 local BOSS_BANNER_DUR       = 2.5
 local MILESTONE_BANNER_DUR  = 4.0
 
+-- 舰船类型中文名缓存（避免每帧创建 table）
+local SHIP_TYPE_LABELS = {
+    SCOUT = "侦察舰",
+    FRIGATE = "护卫舰",
+    DESTROYER = "驱逐舰",
+    BATTLECRUISER = "战列巡洋舰",
+    MINER = "采矿船",
+    ENGINEER = "工程舰",
+    EXPLORER = "探索舰",
+    CARRIER = "航母",
+    INTERCEPTOR = "拦截舰",
+}
+
 local BATTLE_ENVIRONMENTS = {
     NONE     = { enemyRangeMult = 1.0, shieldAbsorb = 1.0, asteroidDamage = 0, particleType = "none" },
     NEBULA   = { enemyRangeMult = 0.75, shieldAbsorb = 1.0, asteroidDamage = 0, particleType = "nebula" },
@@ -144,10 +157,7 @@ local function getComboLevel()
 end
 
 local function shipTypeName(stype)
-    local labels = { SCOUT="侦察舰", FRIGATE="护卫舰", DESTROYER="驱逐舰",
-        BATTLECRUISER="战列巡洋舰", MINER="采矿船", ENGINEER="工程舰",
-        EXPLORER="探索舰", CARRIER="航母", INTERCEPTOR="拦截舰" }
-    return labels[stype] or stype
+    return SHIP_TYPE_LABELS[stype] or stype
 end
 
 local function logBattleEvent(text)
