@@ -479,31 +479,53 @@ local ASTEROID_SIZES = {
 }
 local ASTEROID_SIZE_ORDER = {"small","medium","large"}
 
+-- V2.6 C3: 小行星生成权重
+local ASTEROID_SPAWN_WEIGHTS = {
+    normal = { minerals=0.35, energy=0.30, crystal=0.25, blueCrystal=0.08, mixed=0.02 },
+    crisis = { minerals=0.25, energy=0.20, crystal=0.20, blueCrystal=0.10, mixed=0.05, void=0.20 },
+}
+
 local function generateAsteroids()
     asteroids_ = {}
     math.randomseed(54321)
     -- 每种资源类型：微型30颗、中型20颗、大型10颗（共60颗/类型，总180颗）
     local sizeCounts = { small=30, medium=20, large=10 }
-    for _, atype in ipairs(ASTEROID_TYPE_ORDER) do
-        for _, sizeKey in ipairs(ASTEROID_SIZE_ORDER) do
-            local cfg    = ASTEROID_TYPES[atype]
-            local szCfg  = ASTEROID_SIZES[sizeKey]
-            for _ = 1, sizeCounts[sizeKey] do
-                local sz = szCfg.sizeMin + math.random() * (szCfg.sizeMax - szCfg.sizeMin)
-                local y  = szCfg.yieldMin + math.random() * (szCfg.yieldMax - szCfg.yieldMin)
-                asteroids_[#asteroids_+1] = {
-                    x        = (math.random() - 0.5) * ASTEROID_WORLD_RANGE,
-                    y        = (math.random() - 0.5) * ASTEROID_WORLD_RANGE,
-                    atype    = atype,
-                    sizeKey  = sizeKey,          -- "small"/"medium"/"large"
-                    size     = sz,               -- 世界半径（渲染用）
-                    yield    = y,
-                    hp       = szCfg.hpBase,
-                    maxHP    = szCfg.hpBase,
-                    angle    = math.random() * math.pi * 2,
-                    rotSpd   = (math.random() - 0.5) * 0.8,
-                }
+    -- V2.6 C3: 使用加权随机选择小行星类型
+    local atypeOrder = {"minerals","energy","crystal","blueCrystal","mixed"}
+    local weights = ASTEROID_SPAWN_WEIGHTS.normal
+    for _, sizeKey in ipairs(ASTEROID_SIZE_ORDER) do
+        for _ = 1, sizeCounts[sizeKey] do
+            -- 加权随机选择类型
+            local totalWeight = 0
+            for _, atype in ipairs(atypeOrder) do
+                totalWeight = totalWeight + (weights[atype] or 0)
             end
+            local r = math.random() * totalWeight
+            local cumulative = 0
+            local selectedAtype = "minerals"
+            for _, atype in ipairs(atypeOrder) do
+                cumulative = cumulative + (weights[atype] or 0)
+                if r <= cumulative then
+                    selectedAtype = atype
+                    break
+                end
+            end
+            local cfg    = ASTEROID_TYPES[selectedAtype]
+            local szCfg  = ASTEROID_SIZES[sizeKey]
+            local sz = szCfg.sizeMin + math.random() * (szCfg.sizeMax - szCfg.sizeMin)
+            local y  = szCfg.yieldMin + math.random() * (szCfg.yieldMax - szCfg.yieldMin)
+            asteroids_[#asteroids_+1] = {
+                x        = (math.random() - 0.5) * ASTEROID_WORLD_RANGE,
+                y        = (math.random() - 0.5) * ASTEROID_WORLD_RANGE,
+                atype    = selectedAtype,
+                sizeKey  = sizeKey,          -- "small"/"medium"/"large"
+                size     = sz,               -- 世界半径（渲染用）
+                yield    = y,
+                hp       = szCfg.hpBase,
+                maxHP    = szCfg.hpBase,
+                angle    = math.random() * math.pi * 2,
+                rotSpd   = (math.random() - 0.5) * 0.8,
+            }
         end
     end
     math.randomseed(os.time())
@@ -969,9 +991,12 @@ function GalaxyScene.Init(opts)
     end
     -- 加载所有游戏纹理
     local f = NVG_IMAGE_PREMULTIPLIED
-    asteroidImgs_["minerals"] = nvgCreateImage(vg_, "image/asteroid_minerals_20260511190702.png", f)
-    asteroidImgs_["energy"]   = nvgCreateImage(vg_, "image/asteroid_energy_20260511190703.png",   f)
-    asteroidImgs_["crystal"]  = nvgCreateImage(vg_, "image/asteroid_crystal_20260511190707.png",  f)
+    asteroidImgs_["minerals"]    = nvgCreateImage(vg_, "image/asteroid_minerals_20260511190702.png", f)
+    asteroidImgs_["energy"]      = nvgCreateImage(vg_, "image/asteroid_energy_20260511190703.png",   f)
+    asteroidImgs_["crystal"]     = nvgCreateImage(vg_, "image/asteroid_crystal_20260511190707.png",  f)
+    -- V2.6 C3: 新小行星类型（使用水晶图像作为占位符）
+    asteroidImgs_["blueCrystal"] = nvgCreateImage(vg_, "image/asteroid_crystal_20260511190707.png",  f)  -- TODO: 替换为真实图像
+    asteroidImgs_["mixed"]       = nvgCreateImage(vg_, "image/asteroid_minerals_20260511190702.png", f)  -- TODO: 替换为真实图像
     imgSeedShip_    = nvgCreateImage(vg_, "image/ship_seed_20260511190720.png",       f)
     imgBaseStation_ = nvgCreateImage(vg_, "image/base_station_20260511190708.png",    f)
     generateBgStars()

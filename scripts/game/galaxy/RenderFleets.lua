@@ -510,9 +510,12 @@ function M.drawAsteroidSummary()
 
     -- 每种资源类型行
     local typeRows = {
-        { atype="minerals", label="矿石",  color=ASTEROID_TYPES.minerals.color },
-        { atype="energy",   label="能量块", color=ASTEROID_TYPES.energy.color   },
-        { atype="crystal",  label="水晶",  color=ASTEROID_TYPES.crystal.color  },
+        { atype="minerals",    label="矿石",    color=ASTEROID_TYPES.minerals.color },
+        { atype="energy",      label="能量块",  color=ASTEROID_TYPES.energy.color   },
+        { atype="crystal",     label="水晶",    color=ASTEROID_TYPES.crystal.color  },
+        -- V2.6 C3: 新增小行星类型
+        { atype="blueCrystal",  label="蓝晶",    color=ASTEROID_TYPES.blueCrystal.color },
+        { atype="mixed",       label="混合",    color=ASTEROID_TYPES.mixed.color     },
     }
     local sizeColors = {
         small  = { 160, 160, 160 },

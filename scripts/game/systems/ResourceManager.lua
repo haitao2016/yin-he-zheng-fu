@@ -20,6 +20,31 @@ function ResourceManager.new()
     self.caps        = { minerals=9999,  energy=9999,  crystal=2000,
                          metal=99999,    esource=99999, nuclear=9999,
                          population=99999, credits=9999999 }
+    -- V2.6 C3: 稀有资源（独立上限500，超出自动转化）
+    self.rareResources = {
+        titanium       = 0,   -- 钛合金
+        darkMatter     = 0,   -- 暗物质
+        starCore       = 0,   -- 星核碎片
+        blueCrystal    = 0,   -- 蓝晶石
+        purpleCrystal  = 0,   -- 紫晶石
+        rainbowCrystal = 0,   -- 彩虹晶
+    }
+    self.rareRates = {
+        titanium       = 0,
+        darkMatter     = 0,
+        starCore       = 0,
+        blueCrystal    = 0,
+        purpleCrystal  = 0,
+        rainbowCrystal = 0,
+    }
+    self.rareCaps = {
+        titanium       = 500,
+        darkMatter     = 500,
+        starCore       = 500,
+        blueCrystal    = 500,
+        purpleCrystal  = 500,
+        rainbowCrystal = 500,
+    }
     self.convertRate  = 0   -- 范围 -20 ~ +20（原矿互换用）
     self.refineryMult = 0   -- 0=无精炼厂，>0=精炼厂倍率（由 applyBaseModuleEffects 设置）
     return self
@@ -83,6 +108,34 @@ function ResourceManager:update(dt)
                         (self.resources[cfg.ref] or 0) + toConsume / cfg.ratio)
                 end
             end
+        end
+    end
+
+    -- V2.6 C3: 稀有资源更新（按速率积累，超上限自动转化）
+    for res, rate in pairs(self.rareRates) do
+        if rate ~= 0 then
+            local cap = self.rareCaps[res] or 500
+            self.rareResources[res] = math.min(cap, (self.rareResources[res] or 0) + rate * dt)
+        end
+    end
+    -- 稀有资源超出上限时自动转化为普通资源
+    local conversionRatios = {
+        titanium       = { to="metal",    ratio=50 },
+        darkMatter     = { to="nuclear", ratio=50 },
+        starCore       = { to="nuclear", ratio=50 },
+        blueCrystal    = { to="crystal", ratio=50 },
+        purpleCrystal  = { to="crystal", ratio=50 },
+        rainbowCrystal = { to="crystal", ratio=50 },
+    }
+    for res, conv in pairs(conversionRatios) do
+        local cap = self.rareCaps[res] or 500
+        if (self.rareResources[res] or 0) > cap then
+            local overflow = self.rareResources[res] - cap
+            self.rareResources[res] = cap
+            -- 转化到对应普通资源
+            local refCap = self.caps[conv.to] or 99999
+            self.resources[conv.to] = math.min(refCap,
+                (self.resources[conv.to] or 0) + math.floor(overflow * conv.ratio / 100))
         end
     end
 end

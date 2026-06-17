@@ -173,11 +173,30 @@ TECH_ORDER = {
 RANKS = {"见习指挥官","资深舰长","舰队少将","星系统治者","银河霸主"}
 EXP_PER_LEVEL = 1000
 
-RES_ORDER  = {"metal","esource","nuclear"}
-RES_LABELS = { metal="金属", esource="能源", nuclear="核能" }
-RES_TAGS   = { metal="矿石", esource="能量块", nuclear="水晶" }
-RES_REFINED_LABELS = { metal="金属(精)", esource="能源(精)", nuclear="核能(精)" }
-RES_COLORS = { metal={180,180,180}, esource={255,255,0}, nuclear={0,255,255} }
+-- V2.6 C3: 稀有资源独立存储上限，超出自动转化为普通资源
+RES_ORDER  = {"metal","esource","nuclear","titanium","darkMatter","starCore","blueCrystal","purpleCrystal","rainbowCrystal"}
+RES_LABELS = { metal="金属", esource="能源", nuclear="核能",
+                titanium="钛合金", darkMatter="暗物质", starCore="星核碎片",
+                blueCrystal="蓝晶石", purpleCrystal="紫晶石", rainbowCrystal="彩虹晶" }
+RES_TAGS   = { metal="矿石", esource="能量块", nuclear="水晶",
+                titanium="钛矿", darkMatter="暗能", starCore="星核",
+                blueCrystal="蓝晶", purpleCrystal="紫晶", rainbowCrystal="虹晶" }
+RES_REFINED_LABELS = { metal="金属(精)", esource="能源(精)", nuclear="核能(精)",
+                        titanium="钛合金(纯)", darkMatter="暗物质(纯)", starCore="星核碎片(纯)",
+                        blueCrystal="蓝晶石(纯)", purpleCrystal="紫晶石(纯)", rainbowCrystal="彩虹晶(纯)" }
+RES_COLORS = { metal={180,180,180}, esource={255,255,0}, nuclear={0,255,255},
+               titanium={180,180,200}, darkMatter={100,0,150}, starCore={255,200,50},
+               blueCrystal={60,140,255}, purpleCrystal={180,60,255}, rainbowCrystal={200,150,255} }
+
+-- V2.6 C3: 稀有资源自动转化比例（超出上限时）
+RES_OVERFLOW_CONVERSION = {
+    { from="titanium",      to="metal",      ratio=50 },
+    { from="darkMatter",    to="nuclear",    ratio=50 },
+    { from="starCore",      to="nuclear",    ratio=50 },
+    { from="blueCrystal",   to="crystal",    ratio=50 },
+    { from="purpleCrystal", to="crystal",    ratio=50 },
+    { from="rainbowCrystal",to="crystal",    ratio=50 },
+}
 
 SHIP_TYPES = {
     SCOUT         = { name="侦察舰", speed=180, health=50,   maxHealth=50,   range=100,  dmg=6,  color={100,200,255}, buildTime=14 },
@@ -193,8 +212,15 @@ SHIP_TYPES = {
                      aoeRadius=80, shotRate=0.3 },
     INTERCEPTOR  = { name="拦截舰", speed=240, health=80,   maxHealth=80,   range=180, dmg=14, color={255,220,80},  buildTime=20,
                      shotRate=1.5 },
+    -- V2.6 A1: 新增舰种
+    STEALTH      = { name="隐形舰", speed=150, health=60,   maxHealth=60,   range=150,  dmg=8,  color={80,200,160}, buildTime=25,
+                     isStealth=true, stealthDuration=5, stealthSpeedMult=2.0, firstStrikeDmgMult=1.5 },
+    SUPPORT      = { name="支援舰", speed=50,  health=200,  maxHealth=200,  range=0,    dmg=0,  color={180,100,220}, buildTime=30,
+                     isSupport=true, healRadius=120, healInterval=8, healAmount=15, allyDmgBonus=0.10, allyDmgBonusRadius=80 },
+    DREADNOUGHT  = { name="巨型战舰", speed=20, health=5000, maxHealth=5000, range=450, dmg=80, color={180,60,60}, buildTime=240,
+                     aoeRadius=100, shotRate=0.4, isDreadnought=true, counterAttackChance=0.10, counterAttackDmg=50 },
 }
-SHIP_QUEUE_ORDER = {"ENGINEER","EXPLORER","SCOUT","INTERCEPTOR","FRIGATE","DESTROYER","BATTLECRUISER","CARRIER"}
+SHIP_QUEUE_ORDER = {"ENGINEER","EXPLORER","SCOUT","INTERCEPTOR","FRIGATE","DESTROYER","STEALTH","SUPPORT","BATTLECRUISER","CARRIER","DREADNOUGHT"}
 SHIP_COSTS = {
     SCOUT         = { metal=100,  esource=50  },
     FRIGATE       = { metal=250,  esource=100 },
@@ -204,7 +230,45 @@ SHIP_COSTS = {
     EXPLORER      = { metal=300,  esource=120 },
     CARRIER       = { metal=2500, esource=1000, nuclear=400 },
     INTERCEPTOR   = { metal=120,  esource=60  },
+    -- V2.6 A1: 新增舰种建造费用
+    STEALTH       = { metal=200,  esource=100, crystal=50  },
+    SUPPORT       = { metal=300,  esource=150 },
+    DREADNOUGHT  = { metal=5000, esource=2000, nuclear=800, crystal=200 },
 }
+
+-- V2.6 A1: 新舰种解锁条件
+SHIP_UNLOCK_REQUIREMENTS = {
+    STEALTH      = { coreLevel=4, tech="PHASE_DRIVE",       desc="核心Lv.4 + 相位驱动" },
+    SUPPORT      = { coreLevel=3, tech="NANO_REPAIR",       desc="核心Lv.3 + 纳米修复" },
+    DREADNOUGHT = { coreLevel=8, tech="NOVA_CANNON",        desc="核心Lv.8 + 新星炮 + 量子堡垒" },
+}
+
+-- V2.6 A1: 巨型战舰建造上限（每波次）
+DREADNOUGHT_PER_WAVE_LIMIT = 1
+
+-- V2.6 A3: 多阶段Boss系统定义
+BOSS_PHASES = {
+    -- 战列Boss：3阶段
+    BATTLECRUISER = {
+        { hpThreshold = 0.70, name = "常规形态",    dmgMult = 1.0, aoeRadiusMult = 1.0, special = nil },
+        { hpThreshold = 0.30, name = "狂怒形态",    dmgMult = 1.5, aoeRadiusMult = 2.0, special = "BARRAGE" },
+        { hpThreshold = 0.00, name = "死战形态",    dmgMult = 2.0, aoeRadiusMult = 2.0, special = "SUMMON_MINIONS", summonCount = 2, summonInterval = 5.0 },
+    },
+    -- 母舰Boss：3阶段
+    CARRIER = {
+        { hpThreshold = 0.60, name = "舰载机形态",  dmgMult = 1.0, shieldMult = 1.0, droneInterval = 8.0, special = nil },
+        { hpThreshold = 0.20, name = "护盾强化",   dmgMult = 1.0, shieldMult = 3.0, droneInterval = 4.0, special = nil },
+        { hpThreshold = 0.00, name = "自爆倒计时",  dmgMult = 1.0, shieldMult = 3.0, droneInterval = 2.0, special = "SELF_DESTRUCT", countdown = 15.0 },
+    },
+    -- 虚空Boss：4阶段（新增）
+    VOID_LORD = {
+        { hpThreshold = 1.00, name = "隐形形态",    dmgMult = 0.8, speedMult = 1.5, special = "STEALTH", stealthPhase = true },
+        { hpThreshold = 0.50, name = "分裂形态",    dmgMult = 1.2, special = "PHANTOM_SPLIT", phantomCount = 2 },
+        { hpThreshold = 0.20, name = "暗能腐蚀",    dmgMult = 1.5, special = "DARK_ENERGY", dotDamage = 20, dotInterval = 1.0 },
+        { hpThreshold = 0.00, name = "虚空吞噬",    dmgMult = 2.0, special = "VOID_CONSUME", channelDamage = 20, channelInterruptable = true, channelInterruptThreshold = 500 },
+    },
+}
+BOSS_SPAWN_WAVE = { BATTLECRUISER = 10, CARRIER = 10, VOID_LORD = 15 }  -- 各类型Boss首次出现波次
 
 -- ============================================================================
 -- P1-1: 舰船改装模块系统

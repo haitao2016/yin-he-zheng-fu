@@ -55,14 +55,34 @@ GS.ASTEROID_TYPES = {
     minerals = { label="矿石",  color={180,140,90},  res="minerals" },
     energy   = { label="能量块", color={80,220,255}, res="energy"   },
     crystal  = { label="水晶",  color={200,120,255}, res="crystal"  },
+    -- V2.6 C3: 新增小行星类型
+    blueCrystal = { label="蓝晶",   color={60,140,255}, res="blueCrystal" },  -- 蓝晶石产出
+    mixed      = { label="混合",   color={180,160,120}, res="mixed" },       -- 矿石+能量块+水晶
 }
-GS.ASTEROID_TYPE_ORDER = {"minerals","energy","crystal"}
+GS.ASTEROID_TYPE_ORDER = {"minerals","energy","crystal","blueCrystal","mixed"}
+
+-- V2.6 C3: 小行星生成权重（普通/虚空危机）
+GS.ASTEROID_SPAWN_WEIGHTS = {
+    normal = { minerals=0.35, energy=0.30, crystal=0.25, blueCrystal=0.08, mixed=0.02 },
+    crisis = { minerals=0.25, energy=0.20, crystal=0.20, blueCrystal=0.10, mixed=0.05, void=0.20 },
+}
+
 GS.ASTEROID_SIZES = {
     small  = { label="微型", sizeMin=3,  sizeMax=6,  hpBase=8,  yieldMin=5,  yieldMax=12 },
     medium = { label="中型", sizeMin=7,  sizeMax=11, hpBase=20, yieldMin=18, yieldMax=35 },
     large  = { label="大型", sizeMin=12, sizeMax=18, hpBase=45, yieldMin=50, yieldMax=90 },
 }
 GS.ASTEROID_SIZE_ORDER = {"small","medium","large"}
+
+-- V2.6 C3: 稀有资源定义
+GS.RARE_RESOURCES = {
+    titanium      = { label="钛合金",    color={180,180,200}, maxStack=500, desc="用于巨型战舰建造" },
+    darkMatter    = { label="暗物质",    color={100,0,150},   maxStack=500, desc="虚空Boss/终局危机" },
+    starCore      = { label="星核碎片",  color={255,200,50},  maxStack=500, desc="巨构工程加速" },
+    blueCrystal   = { label="蓝晶石",    color={60,140,255},  maxStack=500, desc="支援舰建造" },
+    purpleCrystal = { label="紫晶石",    color={180,60,255},  maxStack=500, desc="高级技能解锁" },
+    rainbowCrystal= { label="彩虹晶",    color={200,150,255}, maxStack=500, desc="变异舰船强化" },
+}
 
 -- 海盗舰队速度（ETA 计算用）
 GS.PIRATE_FLEET_SPEED = 55

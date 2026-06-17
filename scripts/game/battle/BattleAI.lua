@@ -34,6 +34,19 @@ local COMBO_RESET_TIME      = 5.0
 local BOSS_BANNER_DUR       = 2.5
 local MILESTONE_BANNER_DUR  = 4.0
 
+-- V2.6 A1: 新舰种常量
+local SUPPORT_HEAL_INTERVAL  = 8.0
+local SUPPORT_HEAL_RADIUS    = 120
+local SUPPORT_HEAL_AMOUNT    = 15
+local SUPPORT_DMG_BONUS      = 0.10
+local SUPPORT_DMG_RADIUS     = 80
+local SUPPORT_DMG_MAX_STACK  = 3  -- 最多3层
+local STEALTH_DURATION       = 5.0
+local STEALTH_SPEED_MULT     = 2.0
+local STEALTH_FIRST_STRIKE  = 1.5
+local DREAD_COUNTER_CHANCE   = 0.10
+local DREAD_COUNTER_DMG     = 50
+
 -- 舰船类型中文名缓存（避免每帧创建 table）
 local SHIP_TYPE_LABELS = {
     SCOUT = "侦察舰",
@@ -45,6 +58,10 @@ local SHIP_TYPE_LABELS = {
     EXPLORER = "探索舰",
     CARRIER = "航母",
     INTERCEPTOR = "拦截舰",
+    -- V2.6 A1: 新增舰种
+    STEALTH = "隐形舰",
+    SUPPORT = "支援舰",
+    DREADNOUGHT = "巨型战舰",
 }
 
 local BATTLE_ENVIRONMENTS = {
@@ -280,6 +297,22 @@ function BattleAI.MakeBossShip(baseType, x, y)
     local shieldVal = math.floor(ship.maxHealth * 0.5)
     ship.shield = shieldVal
     ship.maxShield = shieldVal
+
+    -- V2.6 A3: 多阶段Boss系统初始化
+    local BOSS_PHASES = Systems.BOSS_PHASES
+    local phases = BOSS_PHASES[baseType] or BOSS_PHASES["BATTLECRUISER"]
+    ship.bossPhases = phases
+    ship.bossPhaseIndex = 1
+    ship.bossPhaseName = phases[1] and phases[1].name or "常规形态"
+    ship.bossPhaseTimer = 0
+    ship.bossPhaseChanged = false  -- 标记本帧是否刚切换阶段
+
+    -- 虚空Boss特殊：初始隐形
+    if phases[1] and phases[1].stealthPhase then
+        ship.stealthTimer = 5.0
+        ship.isVoidStealth = true
+    end
+
     return ship
 end
 
@@ -688,6 +721,16 @@ function BattleAI.UpdatePlayerFleet(dt)
         if ship.stealthTimer and ship.stealthTimer > 0 then
             ship.stealthTimer = ship.stealthTimer - dt
         end
+        -- V2.6 A1: STEALTH 隐身舰 - 战斗开始时隐身
+        if ship.stype == "STEALTH" and not ship.stealthInitDone then
+            ship.stealthInitDone = true
+            ship.stealthTimer = STEALTH_DURATION
+            ship.stealthFirstStrike = true  -- 首次攻击增伤标记
+        end
+        -- V2.6 A1: DREADNOUGHT 巨型战舰 - 反击机制
+        if ship.stype == "DREADNOUGHT" then
+            ship.dreadCounterTimer = (ship.dreadCounterTimer or 0) + dt
+        end
         -- 模块效果：紧急维修（血量 <20% 时触发一次）
         if ship.modules and ship.modules.emergencyHeal and not ship.emergencyUsed then
             if ship.health < ship.maxHealth * 0.2 then
@@ -759,6 +802,10 @@ function BattleAI.UpdatePlayerFleet(dt)
                 local dx, dy = tx - ship.x, ty - ship.y
                 local len = math.max(0.001, d)
                 local moveSpd = ship.speed * phaseMult
+                -- V2.6 A1: STEALTH 隐身期间移动速度×2
+                if ship.stype == "STEALTH" and ship.stealthTimer and ship.stealthTimer > 0 then
+                    moveSpd = moveSpd * STEALTH_SPEED_MULT
+                end
                 ship.x = ship.x + (dx / len) * moveSpd * dt
                 ship.y = ship.y + (dy / len) * moveSpd * dt
             end
@@ -773,6 +820,10 @@ function BattleAI.UpdatePlayerFleet(dt)
                 local dx, dy = tx - ship.x, ty - ship.y
                 local len = math.max(0.001, d)
                 local moveSpd = ship.speed * phaseMult
+                -- V2.6 A1: STEALTH 隐身期间移动速度×2
+                if ship.stype == "STEALTH" and ship.stealthTimer and ship.stealthTimer > 0 then
+                    moveSpd = moveSpd * STEALTH_SPEED_MULT
+                end
                 ship.x = ship.x + (dx / len) * moveSpd * dt
                 ship.y = ship.y + (dy / len) * moveSpd * dt
             end
@@ -811,11 +862,15 @@ function BattleAI.UpdatePlayerFleet(dt)
                         cmdMult = vars_.cmdSkillDef.dmgMult or 1.0
                     end
 
-                    -- 先发制人（首次攻击 +50%）
+                    -- 先发制人（首次攻击 +50%，STEALTH 隐身舰 +150%）
                     local firstStrike = 1.0
                     if not ship.hasAttacked then
                         ship.hasAttacked = true
-                        firstStrike = 1.5
+                        if ship.stype == "STEALTH" and ship.stealthFirstStrike then
+                            firstStrike = STEALTH_FIRST_STRIKE
+                        else
+                            firstStrike = 1.5
+                        end
                     end
 
                     -- EXPLORER 标记加成 (+30%)
@@ -828,8 +883,14 @@ function BattleAI.UpdatePlayerFleet(dt)
                         berserkMult = 2.0
                     end
 
+                    -- V2.6 A1: SUPPORT 支援舰攻击力光环加成
+                    local supportMult = 1.0
+                    if ship.supportDmgStack and ship.supportDmgStack > 0 then
+                        supportMult = 1.0 + (ship.supportDmgStack * SUPPORT_DMG_BONUS)
+                    end
+
                     -- 最终伤害
-                    dmg = math.floor(dmg * focusMult * cmdMult * firstStrike * markMult * berserkMult)
+                    dmg = math.floor(dmg * focusMult * cmdMult * firstStrike * markMult * berserkMult * supportMult)
 
                     -- DESTROYER 穿甲弹（每 DESTROYER_PIERCE_COUNT 次射击）
                     local isPierce = false
@@ -962,6 +1023,88 @@ function BattleAI.UpdateEnemyFleet(dt)
         local target, tDist = findNearest(ship, playerFleet_, true)
         ship.target = target
         if not target then goto continue_enemy end
+
+        -- V2.6 A3: Boss阶段转换检查
+        if ship.isBoss and ship.bossPhases then
+            local hpRatio = ship.health / ship.maxHealth
+            local phases = ship.bossPhases
+            local currentPhaseIdx = ship.bossPhaseIndex
+            -- 检查是否需要进入下一个阶段
+            for i = #phases, 1, -1 do
+                if hpRatio <= phases[i].hpThreshold and i > currentPhaseIdx then
+                    -- 进入新阶段
+                    local newPhase = phases[i]
+                    ship.bossPhaseIndex = i
+                    ship.bossPhaseName = newPhase.name
+                    ship.bossPhaseChanged = true
+                    ship.bossPhaseTimer = 0
+
+                    -- 应用阶段属性修改
+                    if newPhase.dmgMult then
+                        local baseDmg = ship.dmg / (phases[currentPhaseIdx] and phases[currentPhaseIdx].dmgMult or 1.0)
+                        ship.dmg = baseDmg * newPhase.dmgMult
+                    end
+                    if newPhase.aoeRadiusMult and ship.aoeRadius then
+                        ship.aoeRadius = ship.aoeRadius * newPhase.aoeRadiusMult
+                    end
+                    if newPhase.speedMult then
+                        ship.speed = ship.speed * newPhase.speedMult
+                    end
+                    if newPhase.shieldMult then
+                        local baseShield = ship.maxShield / (phases[currentPhaseIdx] and phases[currentPhaseIdx].shieldMult or 1.0)
+                        ship.shield = baseShield * newPhase.shieldMult
+                        ship.maxShield = baseShield * newPhase.shieldMult
+                    end
+
+                    -- 虚空Boss阶段特效
+                    if newPhase.stealthPhase then
+                        ship.stealthTimer = 5.0
+                        ship.isVoidStealth = true
+                    end
+                    if newPhase.special == "DARK_ENERGY" then
+                        -- 暗能腐蚀：显示特效
+                        floatTexts_[#floatTexts_ + 1] = {
+                            x = screenW * 0.5, y = screenH * 0.3,
+                            text = "⚠ 暗能腐蚀！",
+                            life = 2.0, maxLife = 2.0, vy = -20, team = "boss_phase"
+                        }
+                    end
+
+                    -- 阶段切换时短暂无敌
+                    ship.invulnTimer = 1.0
+                    print(string.format("[Boss] 进入阶段%d: %s", i, newPhase.name))
+
+                    -- 全屏警告
+                    vars_.bossPhaseWarning = true
+                    vars_.bossPhaseName = newPhase.name
+                    break
+                end
+            end
+            ship.bossPhaseTimer = ship.bossPhaseTimer + dt
+        end
+
+        -- V2.6 A3: 虚空Boss自爆倒计时
+        if ship.isBoss and ship.bossPhaseName == "自爆倒计时" then
+            -- 自爆机制：玩家需要在倒计时内击杀Boss
+            local phase = ship.bossPhases[ship.bossPhaseIndex]
+            if phase and phase.special == "SELF_DESTRUCT" then
+                ship.countdownTimer = (ship.countdownTimer or phase.countdown) - dt
+                if ship.countdownTimer <= 0 then
+                    -- 全屏AOE
+                    for _, ps in ipairs(playerFleet_) do
+                        ps.health = ps.health - 200
+                        ps.hitFlash = 1.0
+                    end
+                    floatTexts_[#floatTexts_ + 1] = {
+                        x = screenW * 0.5, y = screenH * 0.4,
+                        text = "💥 自爆！",
+                        life = 2.0, maxLife = 2.0, vy = -20, team = "boss_phase"
+                    }
+                    -- 清除倒计时
+                    ship.countdownTimer = phase.countdown
+                end
+            end
+        end
 
         -- 移动（受 EMP / slow 影响）
         local moveSpd = ship.speed
@@ -1476,6 +1619,56 @@ function BattleAI.UpdatePassives(dt)
         end
     end
 
+    -- V2.6 A1: SUPPORT 支援舰治疗光环
+    local hasSupport = false
+    for _, ps in ipairs(playerFleet_) do
+        if ps.stype == "SUPPORT" then hasSupport = true; break end
+    end
+    if hasSupport then
+        vars_.supportHealTimer = (vars_.supportHealTimer or 0) + dt
+        if vars_.supportHealTimer >= SUPPORT_HEAL_INTERVAL then
+            vars_.supportHealTimer = 0
+            -- 找到所有支援舰并计算治疗目标
+            for _, support in ipairs(playerFleet_) do
+                if support.stype == "SUPPORT" then
+                    local weakest, minHP = nil, math.huge
+                    for _, ps in ipairs(playerFleet_) do
+                        if ps ~= support and ps.stype ~= "SUPPORT" then
+                            local d = dist(support.x, support.y, ps.x, ps.y)
+                            if d <= SUPPORT_HEAL_RADIUS and ps.health < minHP then
+                                weakest = ps; minHP = ps.health
+                            end
+                        end
+                    end
+                    if weakest and weakest.health < weakest.maxHealth then
+                        weakest.health = math.min(weakest.maxHealth, weakest.health + SUPPORT_HEAL_AMOUNT)
+                        weakest.hitFlash = -0.5
+                        floatTexts_[#floatTexts_ + 1] = {
+                            x = weakest.x, y = weakest.y - 18,
+                            text = "支援+" .. SUPPORT_HEAL_AMOUNT,
+                            life = 1.0, maxLife = 1.0, vy = -28, team = "heal"
+                        }
+                    end
+                end
+            end
+        end
+        -- SUPPORT 攻击力光环（被动，每帧计算）
+        for _, ps in ipairs(playerFleet_) do
+            if ps.stype ~= "SUPPORT" then
+                local stackCount = 0
+                for _, support in ipairs(playerFleet_) do
+                    if support.stype == "SUPPORT" then
+                        local d = dist(support.x, support.y, ps.x, ps.y)
+                        if d <= SUPPORT_DMG_RADIUS then
+                            stackCount = stackCount + 1
+                        end
+                    end
+                end
+                ps.supportDmgStack = math.min(stackCount, SUPPORT_DMG_MAX_STACK)
+            end
+        end
+    end
+
     -- CARRIER 战斗机过期
     for i = #playerFleet_, 1, -1 do
         local ps = playerFleet_[i]
@@ -1500,5 +1693,19 @@ BattleAI.ENGINEER_HEAL_INTERVAL = ENGINEER_HEAL_INTERVAL
 BattleAI.COMBO_RESET_TIME      = COMBO_RESET_TIME
 BattleAI.BOSS_BANNER_DUR       = BOSS_BANNER_DUR
 BattleAI.MILESTONE_BANNER_DUR  = MILESTONE_BANNER_DUR
+-- V2.6 A1: 新舰种常量导出
+BattleAI.SUPPORT_HEAL_INTERVAL  = SUPPORT_HEAL_INTERVAL
+BattleAI.SUPPORT_HEAL_RADIUS   = SUPPORT_HEAL_RADIUS
+BattleAI.SUPPORT_HEAL_AMOUNT   = SUPPORT_HEAL_AMOUNT
+BattleAI.SUPPORT_DMG_BONUS     = SUPPORT_DMG_BONUS
+BattleAI.SUPPORT_DMG_RADIUS    = SUPPORT_DMG_RADIUS
+BattleAI.SUPPORT_DMG_MAX_STACK = SUPPORT_DMG_MAX_STACK
+BattleAI.STEALTH_DURATION      = STEALTH_DURATION
+BattleAI.STEALTH_SPEED_MULT   = STEALTH_SPEED_MULT
+BattleAI.STEALTH_FIRST_STRIKE = STEALTH_FIRST_STRIKE
+BattleAI.DREAD_COUNTER_CHANCE = DREAD_COUNTER_CHANCE
+BattleAI.DREAD_COUNTER_DMG    = DREAD_COUNTER_DMG
+-- V2.6 A3: Boss阶段常量
+BattleAI.BOSS_PHASES = Systems.BOSS_PHASES
 
 return BattleAI
