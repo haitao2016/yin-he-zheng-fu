@@ -154,8 +154,13 @@ end
 ---@param stype string
 ---@return string
 function BattleUtils.shipTypeName(stype)
-    local cfg = SHIP_TYPES and SHIP_TYPES[stype]
-    return cfg and cfg.name or stype
+    -- 显式通过 _G 访问，避免 __newindex 严格模式下访问未定义全局时抛错；
+    -- 同时支持 SHIP_TYPES 全局尚未初始化时（模块加载顺序变化）
+    -- 安全回退到原始 stype 字符串，不中断战斗日志渲染。
+    local globalMap = rawget(_G, "SHIP_TYPES")
+    local cfg = globalMap and globalMap[stype]
+    if cfg and cfg.name then return cfg.name end
+    return stype
 end
 
 --- 记录战斗日志
