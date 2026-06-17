@@ -468,8 +468,11 @@ local ASTEROID_TYPES = {
     minerals = { label="矿石",  color={180,140,90},  res="minerals" },
     energy   = { label="能量块", color={80,220,255}, res="energy"   },
     crystal  = { label="水晶",  color={200,120,255}, res="crystal"  },
+    -- V2.6 C3: 新增小行星类型
+    blueCrystal = { label="蓝晶",  color={60,140,255}, res="crystal",  rareRes="blueCrystal", rareYieldMin=1, rareYieldMax=3 },
+    mixed       = { label="混合",  color={180,160,120}, res="mixed",   mixedYield=true },
 }
-local ASTEROID_TYPE_ORDER = {"minerals","energy","crystal"}
+local ASTEROID_TYPE_ORDER = {"minerals","energy","crystal","blueCrystal","mixed"}
 
 -- 小行星尺寸分级配置
 local ASTEROID_SIZES = {
@@ -1312,7 +1315,22 @@ local function updateFleets(dt)
                                 -- 每次采矿产出 = 该小行星固定产出 × 工程舰数，每采一次耗1点HP
                                 local yield = a.yield * engCount
                                 local dmg   = 1
-                                rm_:add(a.atype, yield)
+                                -- V2.6 C3: 根据小行星类型分配产出资源
+                                local aCfg = ASTEROID_TYPES[a.atype]
+                                if aCfg and aCfg.rareRes then
+                                    -- 蓝晶等小行星：产出稀有资源 + 少量基础资源
+                                    local rareYield = (aCfg.rareYieldMin or 1) + math.random() * ((aCfg.rareYieldMax or 3) - (aCfg.rareYieldMin or 1))
+                                    rm_:addRare(aCfg.rareRes, rareYield * engCount)
+                                    rm_:add(aCfg.res, yield * 0.5)  -- 同时产出50%的基础资源
+                                elseif aCfg and aCfg.mixedYield then
+                                    -- 混合小行星：同时产出矿石/能量/水晶
+                                    rm_:add("minerals", yield * 0.4)
+                                    rm_:add("energy", yield * 0.4)
+                                    rm_:add("crystal", yield * 0.2)
+                                else
+                                    -- 普通小行星：直接产出对应资源
+                                    rm_:add(a.atype, yield)
+                                end
                                 a.health = math.max(0, (a.health or a.hp or 0) - dmg)
                                 print(string.format("[Fleet%d] 采矿 +%.1f %s, 小行星HP %d/%d",
                                     i, yield, a.atype, a.health or a.hp or 0, a.maxHealth or a.maxHP or 1))

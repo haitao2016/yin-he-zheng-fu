@@ -65,4 +65,7 @@ return {
     COMMANDER_NAMES          = COMMANDER_NAMES,
     COMMANDER_SOURCE         = COMMANDER_SOURCE,
     COMMANDER_MARKET_COST    = COMMANDER_MARKET_COST,
+    -- V2.6 新增常量
+    BOSS_PHASES              = BOSS_PHASES,
+    SHIP_TYPES               = SHIP_TYPES,
 }
