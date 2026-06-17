@@ -238,12 +238,17 @@ function M.Init(H)
         end,
         onFleetContactPlanet = function(fleet, planet)
             if H.explorerColonizeMode_ then
-                ClientGalaxy.ColonizePlanet(planet)
+                ClientGalaxy.DoColonize(planet)
                 H.explorerColonizeMode_ = false
             end
         end,
-        onSeedDeploy = function(planet)
-            ClientGalaxy.ColonizePlanet(planet)
+        onSeedDeploy = function(wx, wy, base)
+            Audio.Play(Audio.SFX.FLEET_DEPLOY)
+            -- 种子飞船展开完成：解锁全部 UI 面板
+            GameUI.SetDeployed(true)
+            -- 选中基地，显示模块建造面板（base.colonized 已由 GalaxyScene 设为 true）
+            H.selectedPlanet_ = base
+            GameUI.ShowScene("galaxy", true)
         end,
         onFleetContactPirateBase = function(fleet, base)
             ClientBattle.StartBattle(fleet, base)
