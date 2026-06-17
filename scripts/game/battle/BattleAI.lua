@@ -844,7 +844,9 @@ function BattleAI.UpdatePlayerFleet(dt)
                     end
                     target.health = target.health - actualDmg
                     target.hitFlash = 1.0
-                    battleStats_.dmgDealt = battleStats_.dmgDealt + dmg
+                    -- 盾吸收的部分不计入 dmgDealt，否则总伤害统计会虚高
+                    -- （敌方总生命值损失 == dmgDealt 的不变式被破坏）
+                    battleStats_.dmgDealt = battleStats_.dmgDealt + actualDmg
 
                     -- shock 变异溅射（30% 伤害，半径 40）
                     if ship.affixes and ship.affixes.shock then
