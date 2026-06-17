@@ -2,6 +2,8 @@
 -- game/ui/EndGamePanel.lua  -- 游戏结算面板 + 排行榜子面板
 -- ============================================================================
 local UICommon = require "game.ui.UICommon"
+local LiverySystem = require "game.LiverySystem"  -- P2-3: 排行榜徽章图标
+local BlueprintSystem = require "game.BlueprintSystem"  -- P2-3: 蓝图收藏
 
 local EndGamePanel = {}
 
@@ -26,8 +28,88 @@ local lbAnimT_       = 0
 local LB_ANIM_DUR    = 0.45
 local LB_ROW_STAGGER = 0.06
 
+-- ── P3-1: 排行榜个人主页弹窗私有状态 ──────────────────────────────────────────
+local profileEntry_    = nil    -- 当前展示的 entry（nil = 未打开）
+local profileAnimT_    = 0      -- 弹入动画计时器
+local PROFILE_ANIM_DUR = 0.3    -- 弹入动画时长（秒）
+local profileCareer_   = nil    -- 本玩家生涯数据（由外部 SetCareerStats 注入）
+
+-- ── P3-1: 战斗回放与精彩时刻私有状态 ─────────────────────────────────────────
+local replayData_      = nil    -- {highlights, mvp, duration, frameCount, eventCount}
+local replayBtnCb_     = nil    -- 点击"查看回放"回调（由外部注入）
+
 -- 通知函数（由 GameUI 通过 SetNotifyFn 注入）
 local notifyFn_ = nil
+
+-- P3-2: 战报导出状态
+local reportCopiedT_ = 0   -- 复制成功反馈计时器（>0 时显示"已复制"）
+
+-- P2-2c: 战斗日志标签页状态
+local logTabActive_ = false   -- true=显示日志, false=显示统计
+local logScrollY_   = 0       -- 日志滚动偏移
+
+-- P3-2: 生成结构化战报文本
+local function generateBattleReport()
+    local shipNames = {
+        SCOUT="侦察舰", FRIGATE="护卫舰", DESTROYER="驱逐舰",
+        BATTLECRUISER="战列舰", CARRIER="航母", INTERCEPTOR="拦截机",
+        MINER="采矿舰", ENGINEER="工程舰", EXPLORER="探索舰",
+    }
+    local isWin = (gameType_ == "win")
+    local lines = {}
+    -- 标题
+    lines[#lines+1] = isWin and "🏆 银河征服 · 战报" or "💀 银河征服 · 战报"
+    lines[#lines+1] = string.rep("─", 20)
+    -- 核心数据
+    local m = math.floor((stats_.playTime or 0) / 60)
+    local s = math.floor((stats_.playTime or 0) % 60)
+    lines[#lines+1] = string.format("⏱ 用时 %d分%02d秒 | 🌍 殖民 %d颗", m, s, stats_.colonized or 0)
+    lines[#lines+1] = string.format("⚔ 击败 %d波 / %d艘 | 💥 伤害 %s",
+        stats_.wavesCleared or 0,
+        stats_.enemiesKilled or 0,
+        (stats_.dmgDealt or 0) >= 10000
+            and string.format("%.1fw", (stats_.dmgDealt or 0) / 10000)
+            or tostring(math.floor(stats_.dmgDealt or 0)))
+    -- MVP
+    if stats_.mvpShip then
+        local mvpName = shipNames[stats_.mvpShip] or stats_.mvpShip
+        lines[#lines+1] = string.format("⭐ MVP: %s", mvpName)
+    end
+    -- 存活旗舰
+    if stats_.bestSurvivor then
+        local surv = shipNames[stats_.bestSurvivor] or stats_.bestSurvivor
+        lines[#lines+1] = string.format("🛡 存活旗舰: %s", surv)
+    end
+    -- 连锁反应
+    if (stats_.chainCount or 0) > 0 then
+        lines[#lines+1] = string.format("🔗 连锁反应: %d次", stats_.chainCount)
+    end
+    -- 指挥官
+    lines[#lines+1] = string.format("👤 Lv.%d %s", stats_.level or 1, stats_.rank or "指挥官")
+    -- 精彩时刻
+    if replayData_ and replayData_.highlights and #replayData_.highlights > 0 then
+        lines[#lines+1] = "── 精彩时刻 ──"
+        local maxHL = math.min(3, #replayData_.highlights)
+        for i = 1, maxHL do
+            local hl = replayData_.highlights[i]
+            local tStr = string.format("%d:%02d", math.floor(hl.time / 60), math.floor(hl.time % 60))
+            lines[#lines+1] = string.format("  [%s] %s", tStr, hl.desc or "精彩操作")
+        end
+    end
+    -- 联赛标签
+    if stats_.leagueScore then
+        local rankName = (stats_.leagueRank and stats_.leagueRank.name) or "未定级"
+        lines[#lines+1] = string.format("🏅 联赛 %s · %d分%s",
+            rankName, stats_.leagueScore,
+            stats_.leagueNewBest and " (NEW!)" or "")
+    end
+    -- 星级
+    local starStr = string.rep("⭐", stats_.stars or 1)
+    lines[#lines+1] = "评价: " .. starStr
+    lines[#lines+1] = string.rep("─", 20)
+    lines[#lines+1] = "#银河征服 #TapTap"
+    return table.concat(lines, "\n")
+end
 
 -- ── 排行榜渲染 ────────────────────────────────────────────────────────────────
 local function renderLeaderboard()
@@ -158,6 +240,14 @@ local function renderLeaderboard()
                 and nvgRGBA(220, 200, 255, 255)
                 or  nvgRGBA(180, 170, 210, 220))
             local nameX = entry.rank <= 9 and (px + 46) or (px + 52)
+            -- P2-3: 自己的排行榜条目显示徽章图标
+            if entry.isMe then
+                local emb = LiverySystem.GetEmblem()
+                if emb and emb.icon then
+                    nvgText(vg, nameX, ry + rowH / 2, emb.icon)
+                    nameX = nameX + 16
+                end
+            end
             local name = entry.nickname or ("玩家" .. tostring(entry.userId or "?"))
             nvgText(vg, nameX, ry + rowH / 2, name .. (entry.isMe and " ★" or ""))
 
@@ -166,6 +256,16 @@ local function renderLeaderboard()
             nvgText(vg, px + pw - 16, ry + rowH / 2, tostring(entry.score or 0))
 
             nvgRestore(vg)
+
+            -- P3-1: 点击行 → 打开个人主页弹窗
+            do
+                local capturedEntry = entry
+                addHit(px + 8, ry + 1, pw - 16, rowH - 2, function()
+                    profileEntry_ = capturedEntry
+                    profileAnimT_ = 0
+                end)
+            end
+
             ::continueRow::
         end
     end
@@ -183,7 +283,269 @@ local function renderLeaderboard()
     nvgFillColor(vg, nvgRGBA(160, 140, 220, 240))
     nvgText(vg, screenW / 2, cby + cbh / 2, "关闭")
     addHit(cbx, cby, cbw, cbh, function()
-        lbVisible_ = false
+        lbVisible_    = false
+        profileEntry_ = nil   -- P3-1: 关闭排行榜时同时关闭个人主页弹窗
+    end)
+
+    nvgRestore(vg)
+end
+
+-- ── P3-1: 个人主页弹窗渲染 ───────────────────────────────────────────────────
+--- 点击排行榜任意行后弹出玩家战绩详情卡片（300×260px）
+local function renderProfilePopup()
+    if not profileEntry_ then return end
+
+    local vg      = UICommon.vg
+    local screenW = UICommon.screenW
+    local screenH = UICommon.screenH
+    local addHit  = UICommon.addHit
+
+    local e = profileEntry_
+
+    -- 弹入动画（从下方滑入 + 淡入）
+    local prog = math.min(1.0, profileAnimT_ / PROFILE_ANIM_DUR)
+    local ease = 1 - (1 - prog) ^ 3
+    if ease <= 0.01 then return end
+
+    -- P3-1: 统一卡片高度（P2-3: 增加到 340 以容纳蓝图摘要区）
+    local pw = math.min(300, screenW - 60)
+    local ph = 340
+    local px = (screenW - pw) / 2
+    local slideOff = (1 - ease) * 30
+    local py = (screenH - ph) / 2 + slideOff
+    local ga = ease
+
+    -- P3-1: 难度/舰型显示名映射
+    local DIFF_NAMES = { easy="简单", normal="普通", hard="困难", custom="自定义" }
+    local SHIP_NAMES = {
+        SCOUT="侦察舰", FRIGATE="护卫舰", DESTROYER="驱逐舰",
+        BATTLECRUISER="巡洋舰", ENGINEER="工程舰", EXPLORER="探索舰",
+        CARRIER="母舰", INTERCEPTOR="拦截舰",
+    }
+
+    -- 全屏半透明遮罩（点击遮罩关闭弹窗）
+    nvgBeginPath(vg)
+    nvgRect(vg, 0, 0, screenW, screenH)
+    nvgFillColor(vg, nvgRGBA(0, 0, 0, math.floor(100 * ga)))
+    nvgFill(vg)
+    addHit(0, 0, screenW, screenH, function()
+        profileEntry_ = nil
+    end)
+
+    nvgSave(vg)
+    nvgGlobalAlpha(vg, ga)
+
+    -- 卡片背景
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, px - 2, py - 2, pw + 4, ph + 4, 14)
+    nvgFillColor(vg, nvgRGBA(80, 50, 180, 50))
+    nvgFill(vg)
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, px, py, pw, ph, 12)
+    nvgFillColor(vg, nvgRGBA(8, 5, 28, 252))
+    nvgFill(vg)
+    nvgStrokeColor(vg, nvgRGBA(120, 80, 220, 200))
+    nvgStrokeWidth(vg, 1.5); nvgStroke(vg)
+
+    -- 标题行
+    local rankColors = { {255,215,0}, {192,192,192}, {205,127,50} }
+    local rc = rankColors[e.rank] or {140, 120, 220}
+    local medal = e.rank == 1 and "🥇 " or e.rank == 2 and "🥈 " or e.rank == 3 and "🥉 " or string.format("#%d  ", e.rank)
+    nvgFontFace(vg, "sans")
+    nvgFontSize(vg, 14)
+    nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg, nvgRGBA(rc[1], rc[2], rc[3], 255))
+    nvgText(vg, px + pw / 2, py + 22, medal .. (e.nickname or e.name or ("玩家" .. tostring(e.userId or "?"))))
+
+    -- 分割线
+    local function divider(dy)
+        nvgBeginPath(vg)
+        nvgMoveTo(vg, px + 20, py + dy); nvgLineTo(vg, px + pw - 20, py + dy)
+        nvgStrokeColor(vg, nvgRGBA(80, 60, 160, 80)); nvgStrokeWidth(vg, 1); nvgStroke(vg)
+    end
+    divider(36)
+
+    -- 数据行（3列：得分 / 殖民 / 击杀）
+    local col = pw / 3
+    local labels3 = { "🏆 得分", "🌍 殖民", "⚔️ 击杀" }
+    local values3 = {
+        tostring(e.score     or 0),
+        tostring(e.colonized or 0),
+        tostring(e.kills     or 0),
+    }
+    for ci = 1, 3 do
+        local cx = px + (ci - 1) * col + col / 2
+        nvgFontSize(vg, 9)
+        nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, nvgRGBA(130, 110, 180, 200))
+        nvgText(vg, cx, py + 52, labels3[ci])
+        nvgFontSize(vg, 15)
+        nvgFillColor(vg, nvgRGBA(220, 210, 255, 255))
+        nvgText(vg, cx, py + 70, values3[ci])
+    end
+
+    divider(86)
+
+    -- ── P3-1: 战绩详情区（最佳难度 / 最高连胜 / 最爱舰型）──────────────────
+    -- 节标题
+    nvgFontSize(vg, 9)
+    nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg, nvgRGBA(100, 80, 180, 160))
+    nvgText(vg, px + 16, py + 96, "战绩详情")
+
+    local extra = e.extraReady and e.extra or nil
+    local lineH = 22
+    local lineY = py + 112
+
+    local function statRow(label, val)
+        nvgFontSize(vg, 10)
+        nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, nvgRGBA(140, 120, 190, 200))
+        nvgText(vg, px + 16, lineY, label)
+        nvgTextAlign(vg, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, nvgRGBA(210, 195, 255, 240))
+        nvgText(vg, px + pw - 16, lineY, tostring(val))
+        lineY = lineY + lineH
+    end
+
+    if extra then
+        local diffName  = DIFF_NAMES[extra.bd] or (extra.bd ~= "" and extra.bd or "—")
+        local streak    = (extra.ms or 0) > 0 and (extra.ms .. " 连胜") or "—"
+        local shipName  = SHIP_NAMES[extra.fs] or (extra.fs ~= "" and extra.fs or "—")
+        statRow("最佳难度", diffName)
+        statRow("最高连胜", streak)
+        statRow("最爱舰型", shipName)
+        -- P3-2: 展示战报摘要
+        if extra.br and extra.br ~= "" then
+            statRow("最近战报", extra.br)
+        end
+    else
+        -- 占位：脉冲淡入文字
+        local pulseA = math.floor(120 + 80 * math.abs(math.sin(profileAnimT_ * 2.5)))
+        nvgFontSize(vg, 10)
+        nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, nvgRGBA(120, 100, 180, pulseA))
+        nvgText(vg, px + pw / 2, py + 126, "暂无详细战绩")
+        lineY = py + 112 + lineH * 3
+    end
+
+    -- P3-2: 动态分割线位置（适应可变行数）
+    local secDivY = math.max(lineY + 2, py + 158)
+    divider(secDivY - py)
+
+    -- ── P3-1: 近期胜利简报（最多3场）──────────────────────────────────────────
+    nvgFontSize(vg, 9)
+    nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg, nvgRGBA(100, 80, 180, 160))
+    nvgText(vg, px + 16, secDivY + 10, "近期胜利")
+
+    local recentY = secDivY + 24
+    local recentH = 18
+    local recentWins = (extra and type(extra.rw) == "table") and extra.rw or {}
+
+    if #recentWins > 0 then
+        for ri = 1, math.min(3, #recentWins) do
+            local w = recentWins[ri]
+            local diffStr = DIFF_NAMES[w.diff] or (w.diff or "?")
+            local durStr  = (w.duration or 0) > 0 and (w.duration .. "min") or "<1min"
+            local rowStr  = string.format("波次%d  ·  %s  ·  %s", w.waves or 0, durStr, diffStr)
+            -- 交替底色
+            if ri % 2 == 0 then
+                nvgBeginPath(vg)
+                nvgRoundedRect(vg, px + 12, recentY - recentH / 2, pw - 24, recentH, 3)
+                nvgFillColor(vg, nvgRGBA(50, 35, 100, 60)); nvgFill(vg)
+            end
+            nvgFontSize(vg, 9)
+            nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg, nvgRGBA(180, 165, 230, 200))
+            nvgText(vg, px + pw / 2, recentY, rowStr)
+            recentY = recentY + recentH
+        end
+    else
+        local pulseA2 = math.floor(100 + 60 * math.abs(math.sin(profileAnimT_ * 2.5)))
+        nvgFontSize(vg, 9)
+        nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, nvgRGBA(100, 85, 160, pulseA2))
+        nvgText(vg, px + pw / 2, secDivY + 28, extra and "暂无胜利记录" or "—")
+    end
+
+    -- ── P2-3: 蓝图摘要区 ───────────────────────────────────────────────────────
+    local bpData = extra and extra.bp or nil
+    local bpSecY = math.max(recentY + 4, secDivY + 64)
+    divider(bpSecY - py)
+
+    nvgFontSize(vg, 9)
+    nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg, nvgRGBA(100, 80, 180, 160))
+    nvgText(vg, px + 16, bpSecY + 10, "战术蓝图")
+
+    if bpData and bpData.nm then
+        -- 蓝图名称
+        nvgFontSize(vg, 10)
+        nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, nvgRGBA(200, 180, 255, 230))
+        nvgText(vg, px + 16, bpSecY + 26, "📋 " .. (bpData.nm or "未命名"))
+
+        -- 舰队组成摘要
+        local fleetY = bpSecY + 40
+        if type(bpData.fl) == "table" then
+            for fi = 1, math.min(2, #bpData.fl) do
+                local f = bpData.fl[fi]
+                local fleetStr = (f.n or ("舰队" .. fi)) .. ": " .. (f.s or "—")
+                nvgFontSize(vg, 8)
+                nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+                nvgFillColor(vg, nvgRGBA(150, 135, 200, 180))
+                nvgText(vg, px + 24, fleetY, fleetStr)
+                fleetY = fleetY + 13
+            end
+        end
+
+        -- "收藏蓝图" 按钮（用分享码导入到本地收藏）
+        if bpData.sc then
+            local bmBtnW, bmBtnH = 72, 18
+            local bmBtnX = px + pw - bmBtnW - 14
+            local bmBtnY = bpSecY + 20
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, bmBtnX, bmBtnY, bmBtnW, bmBtnH, 4)
+            nvgFillColor(vg, nvgRGBA(60, 40, 120, 200)); nvgFill(vg)
+            nvgStrokeColor(vg, nvgRGBA(180, 140, 255, 160)); nvgStrokeWidth(vg, 1); nvgStroke(vg)
+            nvgFontSize(vg, 9)
+            nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg, nvgRGBA(220, 200, 255, 240))
+            nvgText(vg, bmBtnX + bmBtnW / 2, bmBtnY + bmBtnH / 2, "⭐ 收藏")
+            addHit(bmBtnX, bmBtnY, bmBtnW, bmBtnH, function()
+                -- 构造收藏数据
+                local bmData = {
+                    name      = bpData.nm or "未命名蓝图",
+                    shareCode = bpData.sc,
+                    fleets    = {},  -- 精简版无完整 fleets，标记来源
+                    _source   = "leaderboard",
+                }
+                local ok, msg = BlueprintSystem.Bookmark(bmData)
+                if notifyFn_ then notifyFn_(msg, ok and "success" or "warning") end
+            end)
+        end
+    else
+        nvgFontSize(vg, 9)
+        nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, nvgRGBA(100, 85, 160, 120))
+        nvgText(vg, px + pw / 2, bpSecY + 28, "暂无蓝图")
+    end
+
+    -- 关闭按钮
+    local cbw2, cbh2 = 80, 24
+    local cbx2 = (screenW - cbw2) / 2
+    local cby2 = py + ph - cbh2 - 8
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, cbx2, cby2, cbw2, cbh2, 6)
+    nvgFillColor(vg, nvgRGBA(30, 20, 60, 220)); nvgFill(vg)
+    nvgStrokeColor(vg, nvgRGBA(80, 60, 140, 160)); nvgStrokeWidth(vg, 1); nvgStroke(vg)
+    nvgFontSize(vg, 11)
+    nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg, nvgRGBA(150, 130, 210, 240))
+    nvgText(vg, screenW / 2, cby2 + cbh2 / 2, "关闭")
+    addHit(cbx2, cby2, cbw2, cbh2, function()
+        profileEntry_ = nil
     end)
 
     nvgRestore(vg)
@@ -336,7 +698,7 @@ local function renderEndGame()
     nvgFillColor(vg, nvgRGBA(0, 0, 0, math.floor(180 * ease)))
     nvgFill(vg)
 
-    local dw, dh = 480, 700  -- P3-2: 扩高以容纳雷达图（+136px）
+    local dw, dh = 480, 748  -- P1-3: 扩高以容纳联赛横幅（+48px）
     local dx = (screenW - dw) / 2
     -- P1-3: 用 easePos 做位置（过冲），用 ease 做 alpha（不过冲）
     local dy = (screenH - dh) / 2 + (1 - easePos) * screenH * 0.3
@@ -432,6 +794,44 @@ local function renderEndGame()
     nvgStrokeColor(vg, nvgRGBA(glowR, glowG, glowB, math.floor(80 * ease)))
     nvgStrokeWidth(vg, 1); nvgStroke(vg)
 
+    -- P2-2c: 统计/日志 标签切换
+    local tabY = ly + 6
+    local tabW = 70
+    local tabH = 22
+    local tab1X = dx + dw / 2 - tabW - 4
+    local tab2X = dx + dw / 2 + 4
+    for ti, tabInfo in ipairs({
+        { x = tab1X, label = "📊 统计", active = not logTabActive_ },
+        { x = tab2X, label = "📜 日志", active = logTabActive_ },
+    }) do
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, tabInfo.x, tabY, tabW, tabH, 4)
+        if tabInfo.active then
+            nvgFillColor(vg, nvgRGBA(30, 50, 100, math.floor(220 * ease)))
+        else
+            nvgFillColor(vg, nvgRGBA(15, 20, 40, math.floor(160 * ease)))
+        end
+        nvgFill(vg)
+        if tabInfo.active then
+            nvgStrokeColor(vg, nvgRGBA(80, 160, 255, math.floor(200 * ease)))
+            nvgStrokeWidth(vg, 1.2); nvgStroke(vg)
+        end
+        nvgFontFace(vg, "sans")
+        nvgFontSize(vg, 11)
+        nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, nvgRGBA(
+            tabInfo.active and 180 or 100,
+            tabInfo.active and 210 or 130,
+            255,
+            math.floor((tabInfo.active and 255 or 160) * ease)))
+        nvgText(vg, tabInfo.x + tabW / 2, tabY + tabH / 2, tabInfo.label)
+    end
+    if ease > 0.8 then
+        addHit(tab1X, tabY, tabW, tabH, function() logTabActive_ = false end)
+        addHit(tab2X, tabY, tabW, tabH, function() logTabActive_ = true; logScrollY_ = 0 end)
+    end
+
+    if not logTabActive_ then
     local function fmtTime(s)
         local m   = math.floor((s or 0) / 60)
         local sec = math.floor((s or 0) % 60)
@@ -488,6 +888,7 @@ local function renderEndGame()
         { label="击落敌舰", value=(stats_.enemiesKilled or 0).." 艘", color={200,180,80} },
         { label="通关波次", value=(stats_.wavesCleared  or 0).." 波", color={120,180,255} },
         { label="存活旗舰", value=survivor,                           color={180,140,255} },
+        { label="连锁反应", value=(stats_.chainCount    or 0).." 次", color={255,160,40}  },  -- P1-3
     }
     -- P1-3: 战斗详情行从 0.75s 开始逐行错开（间隔0.08s）
     for bi, row in ipairs(battleRows) do
@@ -505,17 +906,100 @@ local function renderEndGame()
     end
 
     if stats_.mvpShip then
-        local mvpName = shipNames[stats_.mvpShip] or stats_.mvpShip
-        local mvpT    = seg(1.20, 0.25)
+        local mvpName   = shipNames[stats_.mvpShip] or stats_.mvpShip
+        local mvpReason = stats_.mvpReason or "综合表现最佳"
+        local mvpT    = seg(1.20, 0.30)
         local mvpE    = mvpT * mvpT * (3 - 2 * mvpT)
-        nvgFontSize(vg, 11)
+
+        -- MVP 卡片背景（金色渐变）
+        local mvpCardX = dx + 40
+        local mvpCardW = dw - 80
+        local mvpCardH = 36
+        local mvpCardY = dy + sy - 2
+
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, mvpCardX, mvpCardY, mvpCardW, mvpCardH, 5)
+        local mvpGrad = nvgLinearGradient(vg, mvpCardX, mvpCardY, mvpCardX + mvpCardW, mvpCardY,
+            nvgRGBA(50, 40, 10, math.floor(180 * mvpE)),
+            nvgRGBA(30, 25, 8, math.floor(160 * mvpE)))
+        nvgFillPaint(vg, mvpGrad)
+        nvgFill(vg)
+        nvgStrokeColor(vg, nvgRGBA(220, 180, 40, math.floor(160 * mvpE)))
+        nvgStrokeWidth(vg, 1.0)
+        nvgStroke(vg)
+
+        -- 左侧: MVP标签+舰种
+        nvgFontFace(vg, "sans")
+        nvgFontSize(vg, 12)
         nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
-        nvgFillColor(vg, nvgRGBA(100, 130, 180, math.floor(160 * mvpE)))
-        nvgText(vg, dx + 60, sy + 7, "⭐ MVP舰种")
-        nvgTextAlign(vg, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
-        nvgFillColor(vg, nvgRGBA(255, 200, 80, math.floor(230 * mvpE)))
-        nvgText(vg, dx + dw - 60, sy + 7, mvpName)
-        sy = sy + 20
+        nvgFillColor(vg, nvgRGBA(255, 200, 60, math.floor(240 * mvpE)))
+        nvgText(vg, mvpCardX + 10, mvpCardY + mvpCardH / 2 - 6, "⭐ MVP  " .. mvpName)
+
+        -- 下方: 原因
+        nvgFontSize(vg, 9)
+        nvgFillColor(vg, nvgRGBA(200, 170, 80, math.floor(180 * mvpE)))
+        nvgText(vg, mvpCardX + 28, mvpCardY + mvpCardH / 2 + 8, mvpReason)
+
+        -- 右侧: 评分
+        if stats_.mvpScore and stats_.mvpScore > 0 then
+            nvgFontSize(vg, 11)
+            nvgTextAlign(vg, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg, nvgRGBA(255, 220, 100, math.floor(200 * mvpE)))
+            nvgText(vg, mvpCardX + mvpCardW - 10, mvpCardY + mvpCardH / 2,
+                string.format("%.0f pts", stats_.mvpScore))
+        end
+
+        sy = sy + mvpCardH + 6
+    end
+
+    -- P3-1: 战斗精彩时刻（最多显示3条高光）──────────────────────────────────
+    if replayData_ and replayData_.highlights and #replayData_.highlights > 0 then
+        local hlT = seg(1.40, 0.25)
+        local hlE = hlT * hlT * (3 - 2 * hlT)
+        local maxShow = math.min(3, #replayData_.highlights)
+
+        nvgFontFace(vg, "sans")
+        nvgFontSize(vg, 9)
+        nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, nvgRGBA(130, 160, 220, math.floor(140 * hlE)))
+        nvgText(vg, dx + 50, dy + sy + 4, "精彩时刻")
+        sy = sy + 14
+
+        for hi = 1, maxShow do
+            local hl = replayData_.highlights[hi]
+            local rowT = seg(1.40 + hi * 0.06, 0.20)
+            local rowE = rowT * rowT * (3 - 2 * rowT)
+
+            -- 时间标签
+            local tStr = string.format("%d:%02d", math.floor(hl.time / 60), math.floor(hl.time % 60))
+            nvgFontSize(vg, 9)
+            nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg, nvgRGBA(80, 120, 180, math.floor(160 * rowE)))
+            nvgText(vg, dx + 55, dy + sy + 5, tStr)
+
+            -- 描述
+            local desc = hl.desc or "精彩操作"
+            nvgFillColor(vg, nvgRGBA(180, 200, 240, math.floor(200 * rowE)))
+            nvgText(vg, dx + 90, dy + sy + 5, desc)
+
+            -- 评分条
+            local barX = dx + dw - 90
+            local barW = 40
+            local barH = 4
+            local barY = dy + sy + 3
+            local fillW = barW * math.min(1, (hl.score or 0) / 100)
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, barX, barY, barW, barH, 2)
+            nvgFillColor(vg, nvgRGBA(40, 50, 80, math.floor(120 * rowE)))
+            nvgFill(vg)
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, barX, barY, fillW, barH, 2)
+            nvgFillColor(vg, nvgRGBA(255, 180, 40, math.floor(200 * rowE)))
+            nvgFill(vg)
+
+            sy = sy + 14
+        end
+        sy = sy + 4
     end
 
     -- 分割线3
@@ -564,6 +1048,119 @@ local function renderEndGame()
         sy = sy + RADAR_H + 8
     end
     -- ─────────────────────────────────────────────────────────────────────────
+
+    -- P1-3: 联赛得分横幅 ──────────────────────────────────────────────────────
+    if stats_.leagueScore then
+        local lsT  = seg(1.45, 0.30)
+        local lsE  = lsT * lsT * (3 - 2 * lsT)
+        local lsBW = dw - 60
+        local lsBH = 38
+        local lsBX = dx + (dw - lsBW) / 2
+        local lsBY = dy + sy
+
+        -- 金色渐变背景
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, lsBX, lsBY, lsBW, lsBH, 6)
+        local lsGrad = nvgLinearGradient(vg, lsBX, lsBY, lsBX + lsBW, lsBY,
+            nvgRGBA(40, 30, 10, math.floor(200 * lsE)),
+            nvgRGBA(20, 15, 5, math.floor(200 * lsE)))
+        nvgFillPaint(vg, lsGrad)
+        nvgFill(vg)
+        nvgStrokeColor(vg, nvgRGBA(200, 170, 50, math.floor(180 * lsE)))
+        nvgStrokeWidth(vg, 1.2)
+        nvgStroke(vg)
+
+        -- 左侧: 段位图标+名称
+        local rankIcon = "🏆"
+        local rankName = "未定级"
+        if stats_.leagueRank then
+            rankIcon = stats_.leagueRank.icon or "🏆"
+            rankName = stats_.leagueRank.name or "未定级"
+        end
+        nvgFontFace(vg, "sans")
+        nvgFontSize(vg, 12)
+        nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, nvgRGBA(255, 210, 60, math.floor(230 * lsE)))
+        nvgText(vg, lsBX + 10, lsBY + lsBH / 2, string.format("%s %s", rankIcon, rankName))
+
+        -- 右侧: 联赛得分
+        nvgTextAlign(vg, NVG_ALIGN_RIGHT + NVG_ALIGN_MIDDLE)
+        nvgFontSize(vg, 14)
+        nvgFillColor(vg, nvgRGBA(255, 230, 100, math.floor(255 * lsE)))
+        nvgText(vg, lsBX + lsBW - 10, lsBY + lsBH / 2,
+            string.format("联赛得分  %d", stats_.leagueScore))
+
+        -- 新纪录标记
+        if stats_.leagueNewBest then
+            nvgFontSize(vg, 10)
+            nvgFillColor(vg, nvgRGBA(255, 80, 80, math.floor(220 * lsE)))
+            nvgText(vg, lsBX + lsBW - 10, lsBY + lsBH / 2 + 14, "★ NEW BEST!")
+        end
+
+        sy = sy + lsBH + 8
+    end
+    -- ─────────────────────────────────────────────────────────────────────────
+    else
+        -- P2-2c: 战斗日志渲染
+        local logEntries = stats_.battleLog or {}
+        local logStartY = dy + 210
+        local logEndY   = dy + dh - 120  -- 按钮区域上方留空
+        local logH      = logEndY - logStartY
+        local ROW_H     = 18
+        local maxScroll = math.max(0, #logEntries * ROW_H - logH)
+        logScrollY_ = math.max(0, math.min(logScrollY_, maxScroll))
+
+        -- 裁剪区域
+        nvgSave(vg)
+        nvgScissor(vg, dx + 20, logStartY, dw - 40, logH)
+
+        if #logEntries == 0 then
+            nvgFontFace(vg, "sans")
+            nvgFontSize(vg, 12)
+            nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg, nvgRGBA(100, 120, 160, math.floor(160 * ease)))
+            nvgText(vg, screenW / 2, logStartY + logH / 2, "暂无战斗日志")
+        else
+            for li, entry in ipairs(logEntries) do
+                local ey = logStartY + (li - 1) * ROW_H - logScrollY_
+                if ey > logStartY - ROW_H and ey < logEndY then
+                    local logRowT = seg(0.35 + (li - 1) * 0.03, 0.20)
+                    local logRowE = logRowT * logRowT * (3 - 2 * logRowT)
+
+                    -- 波次标签
+                    nvgFontFace(vg, "sans")
+                    nvgFontSize(vg, 9)
+                    nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+                    nvgFillColor(vg, nvgRGBA(60, 120, 200, math.floor(180 * logRowE)))
+                    nvgText(vg, dx + 30, ey + ROW_H / 2, string.format("[W%d]", entry.wave or 0))
+
+                    -- 日志文本
+                    nvgFontSize(vg, 10)
+                    nvgFillColor(vg, nvgRGBA(170, 190, 230, math.floor(220 * logRowE)))
+                    nvgText(vg, dx + 70, ey + ROW_H / 2, entry.text or "")
+                end
+            end
+        end
+
+        nvgRestore(vg)
+
+        -- 滚动条（超过可见区域时显示）
+        if maxScroll > 0 then
+            local scrollBarH = math.max(20, logH * (logH / (#logEntries * ROW_H)))
+            local scrollBarY = logStartY + (logScrollY_ / maxScroll) * (logH - scrollBarH)
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, dx + dw - 28, scrollBarY, 4, scrollBarH, 2)
+            nvgFillColor(vg, nvgRGBA(80, 120, 180, math.floor(120 * ease)))
+            nvgFill(vg)
+        end
+
+        -- 滚动交互区域（允许鼠标滚轮/拖拽滚动在 Update 中处理）
+        if ease > 0.8 and maxScroll > 0 then
+            addHit(dx + 20, logStartY, dw - 40, logH, function()
+                -- 点击不做什么，滚动在 Update 中处理
+            end)
+        end
+    end
 
     -- 再来一局按钮
     local bw, bh = 200, 44
@@ -653,10 +1250,49 @@ local function renderEndGame()
         end
     end
 
+    -- P3-1: 战斗回放按钮（排行榜上方）
+    local rpw, rph = 160, 34
+    local rpx = (screenW - rpw) / 2
+    local rpy = ady - rph - 8
+
+    if replayData_ and replayData_.frameCount and replayData_.frameCount > 0 then
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, rpx, rpy, rpw, rph, 7)
+        nvgFillColor(vg, nvgRGBA(20, 40, 60, math.floor(200 * ease)))
+        nvgFill(vg)
+        nvgStrokeColor(vg, nvgRGBA(60, 160, 200, math.floor(180 * ease)))
+        nvgStrokeWidth(vg, 1.2); nvgStroke(vg)
+        nvgFontSize(vg, 12)
+        nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, nvgRGBA(100, 200, 240, math.floor(240 * ease)))
+        local durStr = ""
+        if replayData_.duration then
+            durStr = string.format(" (%d:%02d)",
+                math.floor(replayData_.duration / 60),
+                math.floor(replayData_.duration % 60))
+        end
+        nvgText(vg, screenW / 2, rpy + rph / 2, "🎬  战斗回放" .. durStr)
+
+        if ease > 0.8 then
+            addHit(rpx, rpy, rpw, rph, function()
+                if replayBtnCb_ then
+                    replayBtnCb_(replayData_)
+                elseif notifyFn_ then
+                    notifyFn_("回放功能开发中…", "info")
+                end
+            end)
+        end
+        rpy = rpy - rph - 6
+    end
+
     -- 排行榜按钮
     local lbw, lbh = 160, 34
     local lbx = (screenW - lbw) / 2
-    local lby = ady - lbh - 8
+    local lby = rpy - lbh + (rpy == (ady - rph - 8) and 0 or 2)
+    -- 如果没有回放按钮，lby回退到原来的位置
+    if not (replayData_ and replayData_.frameCount and replayData_.frameCount > 0) then
+        lby = ady - lbh - 8
+    end
 
     nvgBeginPath(vg)
     nvgRoundedRect(vg, lbx, lby, lbw, lbh, 7)
@@ -689,6 +1325,43 @@ local function renderEndGame()
             end
         end)
     end
+
+    -- P3-2: 生成战报按钮（排行榜上方）
+    local rprtW, rprtH = 160, 34
+    local rprtX = (screenW - rprtW) / 2
+    local rprtY = lby - rprtH - 6
+
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, rprtX, rprtY, rprtW, rprtH, 7)
+    if reportCopiedT_ > 0 then
+        -- 已复制状态：绿色
+        nvgFillColor(vg, nvgRGBA(20, 60, 30, math.floor(220 * ease)))
+        nvgFill(vg)
+        nvgStrokeColor(vg, nvgRGBA(60, 200, 80, math.floor(200 * ease)))
+    else
+        nvgFillColor(vg, nvgRGBA(20, 40, 50, math.floor(200 * ease)))
+        nvgFill(vg)
+        nvgStrokeColor(vg, nvgRGBA(80, 180, 160, math.floor(180 * ease)))
+    end
+    nvgStrokeWidth(vg, 1.2); nvgStroke(vg)
+    nvgFontSize(vg, 12)
+    nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+    if reportCopiedT_ > 0 then
+        nvgFillColor(vg, nvgRGBA(100, 240, 120, math.floor(255 * ease)))
+        nvgText(vg, screenW / 2, rprtY + rprtH / 2, "✅  已复制到剪贴板")
+    else
+        nvgFillColor(vg, nvgRGBA(140, 220, 200, math.floor(240 * ease)))
+        nvgText(vg, screenW / 2, rprtY + rprtH / 2, "📋  生成战报")
+    end
+
+    if ease > 0.8 and reportCopiedT_ <= 0 then
+        addHit(rprtX, rprtY, rprtW, rprtH, function()
+            local report = generateBattleReport()
+            ui:SetClipboardText(report)
+            reportCopiedT_ = 2.0  -- 2秒反馈
+            if notifyFn_ then notifyFn_("📋 战报已复制到剪贴板", "success") end
+        end)
+    end
 end
 
 -- ============================================================================
@@ -704,6 +1377,26 @@ function EndGamePanel.Update(dt)
     if lbVisible_ and lbAnimT_ < LB_ANIM_DUR + LB_ROW_STAGGER * 15 then
         lbAnimT_ = lbAnimT_ + dt
     end
+    -- P3-1: 个人主页弹窗弹入动画计时（弹入后继续递增供脉冲动画使用）
+    if profileEntry_ then
+        profileAnimT_ = profileAnimT_ + dt
+    end
+    -- P3-2: 战报复制反馈计时器倒计时
+    if reportCopiedT_ > 0 then
+        reportCopiedT_ = reportCopiedT_ - dt
+        if reportCopiedT_ < 0 then reportCopiedT_ = 0 end
+    end
+    -- P2-2c: 日志标签页滚轮滚动
+    if active_ and logTabActive_ then
+        local wheel = input:GetMouseMoveWheel()
+        if wheel ~= 0 then
+            logScrollY_ = logScrollY_ - wheel * 36
+            local logEntries = stats_.battleLog or {}
+            local logH = (748 - 120 - 210)  -- approx visible height
+            local maxScroll = math.max(0, #logEntries * 18 - logH)
+            logScrollY_ = math.max(0, math.min(logScrollY_, maxScroll))
+        end
+    end
 end
 
 --- 渲染结算界面（每帧调用）
@@ -714,6 +1407,7 @@ end
 --- 渲染排行榜（每帧调用，在结算面板之后调用）
 function EndGamePanel.RenderLeaderboard()
     renderLeaderboard()
+    renderProfilePopup()   -- P3-1: 弹出个人主页卡片
 end
 
 --- 显示结算界面
@@ -726,19 +1420,26 @@ function EndGamePanel.Show(gameType, stats, onRetry)
     stats_      = stats or {}
     onRetry_    = onRetry
     animT_      = 0
+    reportCopiedT_ = 0  -- P3-2: 重置战报复制反馈
+    logTabActive_ = false   -- P2-2c: 重置标签页到统计
+    logScrollY_   = 0       -- P2-2c: 重置日志滚动位置
 end
 
 --- 隐藏结算界面并重置状态
 function EndGamePanel.Hide()
-    active_     = false
-    gameType_   = nil
-    stats_      = {}
-    animT_      = 0
-    adWatched_  = false
-    adLoading_  = false
-    lbVisible_  = false
-    lbData_     = nil
-    lbAnimT_    = 0
+    active_        = false
+    gameType_      = nil
+    stats_         = {}
+    animT_         = 0
+    adWatched_     = false
+    adLoading_     = false
+    lbVisible_     = false
+    lbData_        = nil
+    lbAnimT_       = 0
+    profileEntry_  = nil   -- P3-1: 关闭时清除弹窗
+    profileAnimT_  = 0
+    replayData_    = nil   -- P3-1: 清除回放数据
+    reportCopiedT_ = 0    -- P3-2: 重置战报复制反馈
 end
 
 --- 是否当前结算界面可见
@@ -762,6 +1463,24 @@ end
 ---@param fn function  fn(msg, ntype)
 function EndGamePanel.SetNotifyFn(fn)
     notifyFn_ = fn
+end
+
+--- P3-1: 注入本玩家生涯数据，用于个人主页弹窗展示
+---@param career table  { totalGames, totalWins, bestWave, totalKills, totalColonies, playtime, bestMvpShip }
+function EndGamePanel.SetCareerStats(career)
+    profileCareer_ = career
+end
+
+--- P3-1: 注入战斗回放数据（由 GameUI 在结算时从 BattleScene.GetReplayData() 获取后注入）
+---@param data table  {highlights, mvp, duration, frameCount, eventCount}
+function EndGamePanel.SetReplayData(data)
+    replayData_ = data
+end
+
+--- P3-1: 注入"查看回放"按钮的点击回调
+---@param fn function  fn(replayData)
+function EndGamePanel.SetReplayCallback(fn)
+    replayBtnCb_ = fn
 end
 
 return EndGamePanel

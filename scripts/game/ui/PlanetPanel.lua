@@ -11,11 +11,98 @@ local planetBuildPending_   = nil   -- H4: 行星建造待确认（key string）
 local planetUpgradePending_ = nil   -- H4: 行星升级待确认 {idx, key}
 local specModalBld_         = nil   -- P2-3: 当前打开专精选择框的建筑 bldIdx
 
+-- P3-2: 微动画状态表
+-- animStates_[key] = { type, timer, maxTime, ... }
+-- type: "press"(按钮按压), "highlight"(建造完成高亮), "shake"(资源不足抖动), "glow"(光晕扩散)
+local animStates_  = {}
+local lastDt_      = 0  -- 最近一帧 dt（由 Update 写入）
+
+--- P3-2: 更新所有微动画计时器（每帧调用）
+function PlanetPanel.Update(dt)
+    lastDt_ = dt
+    local toRemove = {}
+    for k, anim in pairs(animStates_) do
+        anim.timer = anim.timer - dt
+        if anim.timer <= 0 then toRemove[#toRemove+1] = k end
+    end
+    for _, k in ipairs(toRemove) do animStates_[k] = nil end
+end
+
+--- P3-2: 触发按钮按压动画
+local function triggerPress(key)
+    animStates_[key] = { type="press", timer=0.18, maxTime=0.18 }
+end
+
+--- P3-2: 触发资源不足抖动动画
+local function triggerShake(key)
+    animStates_[key] = { type="shake", timer=0.30, maxTime=0.30 }
+end
+
+--- P3-2: 触发建造完成高亮动画（从 GameUI 调用）
+function PlanetPanel.TriggerHighlight(planetId, bldKey)
+    local key = tostring(planetId) .. "_hl_" .. tostring(bldKey)
+    animStates_[key] = { type="highlight", timer=0.6, maxTime=0.6 }
+end
+
+--- P3-2: 触发专精激活光晕动画（从 GameUI 调用）
+function PlanetPanel.TriggerGlow(planetId, bldIdx)
+    local key = tostring(planetId) .. "_glow_" .. tostring(bldIdx)
+    animStates_[key] = { type="glow", timer=0.45, maxTime=0.45 }
+end
+
+--- P3-2: 获取按钮按压缩放系数 (0.92–1.0)
+local function getPressScale(key)
+    local anim = animStates_[key]
+    if not anim or anim.type ~= "press" then return 1.0 end
+    local t = anim.timer / anim.maxTime   -- 1→0
+    -- spring: 先缩小到 0.92，再弹回 1.0
+    if t > 0.5 then
+        return 1.0 - (1.0 - t) * 2 * 0.08   -- 缩小阶段：1.0→0.92
+    else
+        return 0.92 + t * 2 * 0.08           -- 弹回阶段：0.92→1.0
+    end
+end
+
+--- P3-2: 获取资源不足抖动偏移 X
+local function getShakeOffset(key)
+    local anim = animStates_[key]
+    if not anim or anim.type ~= "shake" then return 0 end
+    local t = anim.timer / anim.maxTime   -- 1→0
+    -- 3次往返抖动，衰减幅度
+    return math.sin(t * math.pi * 6) * 4 * t
+end
+
+--- P3-2: 获取高亮 alpha（0–120）
+local function getHighlightAlpha(planetId, bldKey)
+    local key = tostring(planetId) .. "_hl_" .. tostring(bldKey)
+    local anim = animStates_[key]
+    if not anim or anim.type ~= "highlight" then return 0 end
+    local t = anim.timer / anim.maxTime
+    -- 先亮后暗，峰值在 t=0.7
+    if t > 0.7 then
+        return math.floor((1.0 - t) / 0.3 * 120)
+    else
+        return math.floor(t / 0.7 * 120)
+    end
+end
+
+--- P3-2: 获取光晕扩散半径和 alpha
+local function getGlowParams(planetId, bldIdx)
+    local key = tostring(planetId) .. "_glow_" .. tostring(bldIdx)
+    local anim = animStates_[key]
+    if not anim or anim.type ~= "glow" then return 0, 0 end
+    local t = anim.timer / anim.maxTime  -- 1→0
+    local radius = (1.0 - t) * 22        -- 0→22px 扩散
+    local alpha  = math.floor(t * 180)   -- 淡出
+    return radius, alpha
+end
+
 function PlanetPanel.ResetScroll()
     scrollY_ = 0
     planetBuildPending_   = nil
     planetUpgradePending_ = nil
     specModalBld_         = nil
+    animStates_  = {}
 end
 
 --- 渲染行星面板
@@ -35,6 +122,7 @@ function PlanetPanel.Render(planet, ctx)
     local text     = UICommon.text
     local clr      = UICommon.clr
     local onBuild           = ctx.onBuild
+    local onBatchUpgrade    = ctx.onBatchUpgrade  -- P3-3.3
     local onSpeedUpBuild    = ctx.onSpeedUpBuild
     local onSpeedUpBuildAd  = ctx.onSpeedUpBuildAd  -- 广告免费完成（星币不足时）
     local progressBar       = ctx.progressBar
@@ -42,9 +130,11 @@ function PlanetPanel.Render(planet, ctx)
     local isPriority        = ctx.isPriority        -- P2-1: 当前是否已标记
     local onCancelQueued    = ctx.onCancelQueued    -- P1-3: 取消排队任务回调 function(qIdx)
     local prodHistory       = ctx.prodHistory       -- P3-2: 产量历史 {minerals={}, energy={}, crystal={}}
-    local onSendGift        = ctx.onSendGift        -- P1-1: 外交送礼回调 function(planetId)
-    local diplomacyState    = ctx.diplomacyState    -- P1-1: {factionKey, favor, atWar, military, tradeTimer} or nil
-    local onSetSpec         = ctx.onSetSpec         -- P2-3: 设置建筑专精 function(planetId, bldIdx, specKey)
+    local onSendGift           = ctx.onSendGift           -- P1-1: 外交送礼回调 function(planetId)
+    local diplomacyState       = ctx.diplomacyState       -- P1-1: {factionKey, favor, atWar, military, tradeTimer} or nil
+    local onActivateLongTrade  = ctx.onActivateLongTrade  -- P2-2: 激活长期贸易协议 function(planetId)
+    local onSetSpec            = ctx.onSetSpec            -- P2-3: 设置建筑专精 function(planetId, bldIdx, specKey)
+    local onUpgradePlanetCb = ctx.onUpgradePlanetCb -- P1-2: 升级星球等级 function(planet)
 
     local pw = 275
     local px = screenW - pw - 12
@@ -188,10 +278,22 @@ function PlanetPanel.Render(planet, ctx)
     -- P1-1: 外交区块高度（中立势力行星才显示）
     local diplomacyRowH = 0
     if planet.neutralFaction and not planet.colonized and not planet.isBase then
-        diplomacyRowH = 60  -- 势力行14 + 好感度条14 + 状态标签12 + 礼物按钮18 + 间距
+        -- 基础: 势力行14 + 好感度条14 + 状态标签/礼物按钮行18 + 间距
+        diplomacyRowH = 60
+        -- P2-2: 长期贸易协议按钮/状态行（好感 ≥ 60 且未宣战时显示）
+        local ds_pre = ctx.diplomacyState
+        if ds_pre and not ds_pre.atWar and (ds_pre.favor or 0) >= 60 then
+            diplomacyRowH = diplomacyRowH + 18  -- 额外一行
+        end
     end
 
-    local headerH = 36 + 18 + (planet.constructing and 22 or 16) + queueH + 16 + prodRowH + bonusRowH + colonyAdvRowH + chartRowH + diplomacyRowH
+    -- P1-2: 星球升级区块高度（已殖民非基地，且等级 < 5）
+    local upgradeRowH = 0
+    if planet.colonized and not planet.isBase then
+        upgradeRowH = 32  -- 等级栏14 + 升级按钮/费用行18
+    end
+
+    local headerH = 36 + 18 + (planet.constructing and 22 or 16) + queueH + 16 + prodRowH + bonusRowH + colonyAdvRowH + chartRowH + diplomacyRowH + upgradeRowH
 
     local scrollContentH = 18
         + #BUILD_ORDER * 21
@@ -219,8 +321,11 @@ function PlanetPanel.Render(planet, ctx)
             "已建立  模块槽位:"..#planet.buildings.."/10",
             9, 100,200,255,200, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
     else
+        -- P1-2: 槽位上限基于星球等级
+        local pLvForSlot = planet.level or 1
+        local maxSlotDisp = math.min(8, 4 + (pLvForSlot - 1))
         text(px+pw/2, sy,
-            planet.ptype.."行星  大小:"..string.format("%.1f",planet.size).."  槽位:"..#planet.buildings.."/10",
+            planet.ptype.."行星  大小:"..string.format("%.1f",planet.size).."  槽位:"..#planet.buildings.."/"..maxSlotDisp,
             9, 130,160,220,200, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
     end
     sy = sy + 16
@@ -235,6 +340,67 @@ function PlanetPanel.Render(planet, ctx)
         if ptBonus and ptBonus.label then
             text(px+14, sy, "★ 特产: " .. ptBonus.label, 10, 255,210,80,255)
             sy = sy + 14
+        end
+        -- P1-2: 星球升级区块（已殖民非基地）
+        do
+            local pLv    = planet.level or 1
+            local maxLv  = 5
+            -- 等级进度条（五格）
+            local barX = px + 14
+            local barY = sy + 5
+            local cellW, cellH, cellGap = 28, 8, 3
+            for i = 1, maxLv do
+                local filled = (i <= pLv)
+                nvgBeginPath(vg)
+                nvgRoundedRect(vg, barX + (i-1)*(cellW+cellGap), barY, cellW, cellH, 2)
+                if filled then
+                    nvgFillColor(vg, nvgRGBA(60, 200, 120, 220))
+                else
+                    nvgFillColor(vg, nvgRGBA(40, 60, 80, 160))
+                end
+                nvgFill(vg)
+            end
+            -- 等级文字
+            text(barX + maxLv*(cellW+cellGap) + 4, barY + 4,
+                "Lv."..pLv, 9, 100,220,160,255)
+            sy = sy + 16
+
+            -- 升级按钮 / 满级提示
+            if pLv < maxLv then
+                local COSTS = {
+                    [2]={metal=200},
+                    [3]={metal=500,crystal=200},
+                    [4]={metal=500,crystal=500,esource=500},
+                    [5]={metal=1000,crystal=1000,esource=1000},
+                }
+                local cost   = COSTS[pLv + 1] or {}
+                local costParts = {}
+                local RES_LABEL = {metal="金属",crystal="晶体",esource="能源",nuclear="核能"}
+                for _, res in ipairs({"metal","crystal","esource","nuclear"}) do
+                    if cost[res] then
+                        costParts[#costParts+1] = (RES_LABEL[res] or res).."×"..cost[res]
+                    end
+                end
+                local costStr = table.concat(costParts, " ")
+
+                local btnW, btnH = 72, 14
+                local bx = px + pw - btnW - 8
+                local by = sy - 2
+                panel(bx, by, btnW, btnH, 3, {20,60,30,120}, {50,180,90,200})
+                text(bx + btnW/2, by + btnH/2, "升级 →Lv."..(pLv+1),
+                    8, 120,255,160,255, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+                -- 费用文字
+                text(px+14, by + btnH/2, costStr, 8, 200,200,180,200, NVG_ALIGN_LEFT+NVG_ALIGN_MIDDLE)
+
+                local capPlanet = planet
+                addHit(bx, by, btnW, btnH, function()
+                    if onUpgradePlanetCb then onUpgradePlanetCb(capPlanet) end
+                end)
+                sy = sy + 16
+            else
+                text(px+14, sy, "★ 星球已达最高等级", 9, 255,200,60,220)
+                sy = sy + 16
+            end
         end
     else
         text(px+14, sy, "○ 未探索  (派遣探索舰探索)", 11, 200,160,60,220)
@@ -671,6 +837,56 @@ function PlanetPanel.Render(planet, ctx)
             end
         end
 
+        -- P2-2: 长期贸易协议行（好感 ≥ 60 且未宣战）
+        if not ds.atWar and (favor >= 60) then
+            dy = dy + 4  -- 间距
+            local ltBtnW, ltBtnH = cardW - 14, 14
+            local ltBx = cardX + 7
+            local ltBy = dy
+
+            if ds.longTrade then
+                -- 协议激活中：显示状态 + 自动购入进度条
+                panel(ltBx, ltBy, ltBtnW, ltBtnH, 3, {10, 60, 30, 100}, {30, 160, 80, 160})
+                nvgFontSize(vg, 8); nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+                nvgFillColor(vg, nvgRGBA(100, 255, 160, 230))
+                nvgText(vg, ltBx + 6, ltBy + ltBtnH / 2, "📋 长期协议激活中")
+                -- 小进度条（tradeTimer / LONG_TRADE_INTERVAL）
+                local S = require("game.Systems")
+                local interval = S.LONG_TRADE_INTERVAL or 60
+                local pct = math.min(1.0, (ds.tradeTimer or 0) / interval)
+                local pbW = ltBtnW - 10
+                nvgBeginPath(vg); nvgRoundedRect(vg, ltBx + ltBtnW - pbW - 2, ltBy + 4, pbW, 6, 2)
+                nvgFillColor(vg, nvgRGBA(10, 30, 20, 150)); nvgFill(vg)
+                if pct > 0 then
+                    nvgBeginPath(vg); nvgRoundedRect(vg, ltBx + ltBtnW - pbW - 2, ltBy + 4, math.max(2, pbW * pct), 6, 2)
+                    nvgFillColor(vg, nvgRGBA(60, 220, 120, 200)); nvgFill(vg)
+                end
+            else
+                -- 协议未激活：显示激活按钮
+                local S = require("game.Systems")
+                local cost = S.LONG_TRADE_COST or { crystal = 100 }
+                local maxTrades = S.MAX_LONG_TRADES or 3
+                local crystalCost = cost.crystal or 100
+                local canAffordLT = rm and (rm.resources.crystal or 0) >= crystalCost
+                panel(ltBx, ltBy, ltBtnW, ltBtnH, 3,
+                    canAffordLT and {40, 20, 80, 90} or {50, 50, 70, 50},
+                    canAffordLT and {140, 80, 255, 200} or {80, 80, 100, 120})
+                nvgFontSize(vg, 8); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+                nvgFillColor(vg, nvgRGBA(
+                    canAffordLT and 200 or 120,
+                    canAffordLT and 140 or 120,
+                    canAffordLT and 255 or 160, 240))
+                nvgText(vg, ltBx + ltBtnW / 2, ltBy + ltBtnH / 2,
+                    string.format("📋 长期协议 (晶体×%d)", crystalCost))
+                if canAffordLT and onActivateLongTrade then
+                    local capturedId = planet.id
+                    addHit(ltBx, ltBy, ltBtnW, ltBtnH, function()
+                        onActivateLongTrade(capturedId)
+                    end)
+                end
+            end
+        end
+
         sy = sy + diplomacyRowH
     end
 
@@ -711,13 +927,20 @@ function PlanetPanel.Render(planet, ctx)
 
             -- H4：二次确认逻辑
             if planetBuildPending_ == key then
-                -- 确认行：✓ 确认 / ✗ 取消
+                -- 确认行：✓ 确认 / ✗ 取消（按压缩放）
                 local hbW = (bw - 3) / 2
+                -- P3-2: 确认按钮按压动画
+                local confKey = "bconf_" .. key
+                local csc = getPressScale(confKey)
+                local confCx, confCy = bx + hbW/2, sy2 + bh/2
+                if csc ~= 1.0 then nvgSave(vg); nvgTranslate(vg, confCx, confCy); nvgScale(vg, csc, csc); nvgTranslate(vg, -confCx, -confCy) end
                 panel(bx, sy2, hbW, bh, 4, {30,150,70,100},{50,200,90,220})
                 text(bx+hbW/2, sy2+bh/2, "✓ 确认", 10, 150,255,170,255,
                     NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+                if csc ~= 1.0 then nvgRestore(vg) end
                 local ck = key
                 addHit(bx, sy2, hbW, bh, function()
+                    triggerPress(confKey)
                     planetBuildPending_ = nil
                     if onBuild then onBuild(ck, false, nil) end
                 end)
@@ -727,19 +950,38 @@ function PlanetPanel.Render(planet, ctx)
                     NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
                 addHit(bx2, sy2, hbW, bh, function() planetBuildPending_ = nil end)
             else
-                panel(bx, sy2, bw, bh, 4,
+                -- P3-2: 按压缩放 + 资源不足抖动
+                local sc  = getPressScale(key)
+                local shX = getShakeOffset(key)
+                local rbx = bx + shX
+                local btnCx, btnCy = rbx + bw/2, sy2 + bh/2
+                if sc ~= 1.0 then nvgSave(vg); nvgTranslate(vg, btnCx, btnCy); nvgScale(vg, sc, sc); nvgTranslate(vg, -btnCx, -btnCy) end
+                -- 资源不足红色闪烁叠加（shake 进行中）
+                local shakeAnim = animStates_[key]
+                if shakeAnim and shakeAnim.type == "shake" then
+                    local t = shakeAnim.timer / shakeAnim.maxTime
+                    local flashA = math.floor(t * 60)
+                    nvgBeginPath(vg); nvgRoundedRect(vg, rbx, sy2, bw, bh, 4)
+                    nvgFillColor(vg, nvgRGBA(220, 60, 60, flashA)); nvgFill(vg)
+                end
+                panel(rbx, sy2, bw, bh, 4,
                     {canB and 50 or 50, canB and 120 or 80, canB and 255 or 140, 60},
                     {canB and 50 or 50, canB and 120 or 80, canB and 255 or 140, 180})
-                text(bx+bw/2, sy2+bh/2, bd.name.."  ["..costStr.."]", 10,
+                text(rbx+bw/2, sy2+bh/2, bd.name.."  ["..costStr.."]", 10,
                     canB and 110 or 110, canB and 180 or 140, canB and 255 or 200, 240,
                     NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
-                if canB then
-                    local ck = key
-                    addHit(bx, sy2, bw, bh, function()
+                if sc ~= 1.0 then nvgRestore(vg) end
+                -- 始终注册点击区（可建→进入确认；不可建→抖动提示）
+                local ck = key
+                addHit(rbx, sy2, bw, bh, function()
+                    if canB then
+                        triggerPress(ck)
                         planetBuildPending_   = ck
                         planetUpgradePending_ = nil
-                    end)
-                end
+                    else
+                        triggerShake(ck)
+                    end
+                end)
             end
         end
         vy = vy + 21
@@ -765,12 +1007,29 @@ function PlanetPanel.Render(planet, ctx)
         for bldIdx, b in ipairs(planet.buildings) do
             local sy2 = vy2sy(vy)
             if sy2 + 20 > clipY1 and sy2 < clipY2 then
+                -- P3-2: 建造完成高亮背景叠加
+                local hlA = getHighlightAlpha(planet.id, b.key)
+                if hlA > 0 then
+                    nvgBeginPath(vg)
+                    nvgRoundedRect(vg, px+8, sy2-1, pw-16, 20, 3)
+                    nvgFillColor(vg, nvgRGBA(80, 220, 130, hlA))
+                    nvgFill(vg)
+                end
+
                 text(px+14, sy2+8, "▸ " .. b.name .. " Lv." .. b.level, 10, 140,175,230,220)
                 -- P2-3: 专精槽图标（Lv.3+ 才显示，在升级按钮左侧）
                 local bx, bw, bh = px+pw-88, 84, 16
                 if b.level >= 3 then
                     local sx, sr = bx - 22, 8
                     local hasSp = b.spec ~= nil
+                    -- P3-2: 专精激活光晕扩散（在圆圈之前绘制，靠后层）
+                    local glowR, glowA = getGlowParams(planet.id, bldIdx)
+                    if glowA > 0 then
+                        nvgBeginPath(vg)
+                        nvgCircle(vg, sx, sy2+bh/2, sr + glowR)
+                        nvgFillColor(vg, nvgRGBA(80, 255, 180, glowA))
+                        nvgFill(vg)
+                    end
                     nvgBeginPath(vg)
                     nvgCircle(vg, sx, sy2+bh/2, sr)
                     if hasSp then
@@ -806,34 +1065,71 @@ function PlanetPanel.Render(planet, ctx)
                     planetUpgradePending_.idx == bldIdx and
                     planetUpgradePending_.key == b.key
                 if isPending then
-                    local hbW = (bw - 3) / 2
+                    local gap = 2
+                    local hbW = math.floor((bw - gap * 2) / 3)
+                    -- P3-2: 确认按钮按压动画
+                    local uconfKey = "uconf_" .. bldIdx
+                    local ucsc = getPressScale(uconfKey)
+                    local ucCx, ucCy = bx + hbW/2, sy2 + bh/2
+                    if ucsc ~= 1.0 then nvgSave(vg); nvgTranslate(vg, ucCx, ucCy); nvgScale(vg, ucsc, ucsc); nvgTranslate(vg, -ucCx, -ucCy) end
                     panel(bx, sy2, hbW, bh, 4, {30,150,70,100},{50,200,90,220})
                     text(bx+hbW/2, sy2+bh/2, "✓", 10, 150,255,170,255,
                         NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+                    if ucsc ~= 1.0 then nvgRestore(vg) end
                     local ci, ck = bldIdx, b.key
                     addHit(bx, sy2, hbW, bh, function()
+                        triggerPress(uconfKey)
                         planetUpgradePending_ = nil
                         if onBuild then onBuild(ck, true, ci) end
                     end)
-                    local bx2 = bx + hbW + 3
-                    panel(bx2, sy2, hbW, bh, 4, {150,40,40,100},{200,70,70,220})
-                    text(bx2+hbW/2, sy2+bh/2, "✗", 10, 255,140,140,255,
+                    -- P3-3.3: 批量升级按钮
+                    local bx2 = bx + hbW + gap
+                    panel(bx2, sy2, hbW, bh, 4, {30,100,160,100},{50,140,220,220})
+                    text(bx2+hbW/2, sy2+bh/2, "⏫全", 9, 120,200,255,255,
                         NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
-                    addHit(bx2, sy2, hbW, bh, function() planetUpgradePending_ = nil end)
+                    addHit(bx2, sy2, hbW, bh, function()
+                        planetUpgradePending_ = nil
+                        if onBatchUpgrade then onBatchUpgrade(ci) end
+                    end)
+                    -- 取消按钮
+                    local bx3 = bx2 + hbW + gap
+                    panel(bx3, sy2, hbW, bh, 4, {150,40,40,100},{200,70,70,220})
+                    text(bx3+hbW/2, sy2+bh/2, "✗", 10, 255,140,140,255,
+                        NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+                    addHit(bx3, sy2, hbW, bh, function() planetUpgradePending_ = nil end)
                 else
-                    panel(bx, sy2, bw, bh, 4,
+                    -- P3-2: 升级按钮按压缩放 + 资源不足抖动
+                    local upKey = "up_" .. tostring(bldIdx)
+                    local usc  = getPressScale(upKey)
+                    local ushX = getShakeOffset(upKey)
+                    local ubx  = bx + ushX
+                    local ubtnCx, ubtnCy = ubx + bw/2, sy2 + bh/2
+                    if usc ~= 1.0 then nvgSave(vg); nvgTranslate(vg, ubtnCx, ubtnCy); nvgScale(vg, usc, usc); nvgTranslate(vg, -ubtnCx, -ubtnCy) end
+                    -- 资源不足红色闪烁
+                    local ushakeAnim = animStates_[upKey]
+                    if ushakeAnim and ushakeAnim.type == "shake" then
+                        local t = ushakeAnim.timer / ushakeAnim.maxTime
+                        nvgBeginPath(vg); nvgRoundedRect(vg, ubx, sy2, bw, bh, 4)
+                        nvgFillColor(vg, nvgRGBA(220, 60, 60, math.floor(t * 60))); nvgFill(vg)
+                    end
+                    panel(ubx, sy2, bw, bh, 4,
                         {canUp and 220 or 100, canUp and 160 or 100, canUp and 50 or 60, 60},
                         {canUp and 220 or 100, canUp and 160 or 100, canUp and 50 or 60, 180})
-                    text(bx+bw/2, sy2+bh/2, "升级["..costStr.."]", 10,
+                    text(ubx+bw/2, sy2+bh/2, "升级["..costStr.."]", 10,
                         canUp and 255 or 160, canUp and 220 or 160, canUp and 110 or 120, 240,
                         NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
-                    if canUp then
-                        local ci, ck = bldIdx, b.key
-                        addHit(bx, sy2, bw, bh, function()
+                    if usc ~= 1.0 then nvgRestore(vg) end
+                    -- 始终注册点击区
+                    local ci, ck = bldIdx, b.key
+                    addHit(ubx, sy2, bw, bh, function()
+                        if canUp then
+                            triggerPress(upKey)
                             planetUpgradePending_ = { idx=ci, key=ck }
                             planetBuildPending_   = nil
-                        end)
-                    end
+                        else
+                            triggerShake(upKey)
+                        end
+                    end)
                 end
             end
             vy = vy + 20

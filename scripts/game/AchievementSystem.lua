@@ -1,3 +1,4 @@
+---@diagnostic disable: assign-type-mismatch
 -- ============================================================================
 -- game/AchievementSystem.lua  -- 银河征服 成就系统
 -- 轻量级成就模块：定义成就 → 触发检查 → Toast 通知
@@ -151,6 +152,15 @@ local ACHIEVEMENTS = {
         check  = function(s) return (s.endlessWave or 0) >= 10 end,
     },
     {
+        id     = "hidden_endless_conqueror",
+        name   = "无尽征服者",
+        desc   = "在无尽模式中通过第 20 层",
+        hint   = "证明你是真正的星际霸主",
+        event  = "endless_wave",
+        hidden = true,
+        check  = function(s) return (s.endlessWave or 0) >= 20 end,
+    },
+    {
         id     = "hidden_card5",
         name   = "卡组大师",
         desc   = "在无尽模式中累计选取 5 张强化卡",
@@ -185,6 +195,25 @@ local ACHIEVEMENTS = {
         event  = "focus_kill",
         hidden = true,
         check  = function(s) return s.focusBossKill == true end,
+    },
+    -- P1-3: 连锁反应成就
+    {
+        id     = "hidden_chain_master",
+        name   = "连锁大师",
+        desc   = "在一场战斗中触发 3 次以上连锁反应",
+        hint   = "一次消灭 3 艘敌舰，让爆炸蔓延",
+        event  = "battle_result",
+        hidden = true,
+        check  = function(s) return (s.chainCount or 0) >= 3 end,
+    },
+    {
+        id     = "hidden_adversity_fighter",
+        name   = "逆境奋战",
+        desc   = "在波次中途全歼海盗增援部队",
+        hint   = "当增援来袭时，不要让任何一艘逃走",
+        event  = "battle_result",
+        hidden = true,
+        check  = function(s) return s.reinforceWin == true end,
     },
     {
         id     = "hidden_explore20",
@@ -233,6 +262,253 @@ local ACHIEVEMENTS = {
             return (s.unlockedTechs and s.unlockedTechs["NOVA_CANNON"] and s.unlockedTechs["FORTRESS_PROTOCOL"]) == true
         end,
     },
+
+    -- ══ P2-2: 夹击模式成就（1个）════════════════════════════════════════════
+    {
+        id    = "pincer_defender",
+        name  = "两线作战",
+        desc  = "成功防守一次上下夹击波次",
+        event = "pincer_wave",
+        check = function(s) return s.defended == true end,
+    },
+
+    -- ══ P1-3: 专精路线成就（2个）════════════════════════════════════════════
+    {
+        id    = "route_guardian",
+        name  = "路径坚守者",
+        desc  = "选定专精路线并完成 Tier3+Tier4 深度研究后赢得战役",
+        event = "victory",
+        check = function(s)
+            if s.victory ~= true then return false end
+            local ut = s.unlockedTechs or {}
+            -- 曲速路线：WARP_DRIVE + PHASE_DRIVE（或 QUANTUM_CORE）
+            local speedChain = ut["WARP_DRIVE"] and (ut["PHASE_DRIVE"] or ut["QUANTUM_CORE"])
+            -- 虚空路线：VOID_ANCHOR + STELLAR_SYNC
+            local voidChain  = ut["VOID_ANCHOR"] and ut["STELLAR_SYNC"]
+            return speedChain or voidChain
+        end,
+    },
+    {
+        id    = "all_routes",
+        name  = "全路线探索者",
+        desc  = "走虚空锚定专精路线并赢得战役",
+        event = "victory",
+        check = function(s)
+            return s.victory == true and (s.unlockedTechs or {})["VOID_ANCHOR"] == true
+        end,
+    },
+
+    -- ══ P2-1: 每日挑战成就（4个）═══════════════════════════════════════════
+    {
+        id    = "daily_3",
+        name  = "挑战先驱",
+        desc  = "连续完成每日星际挑战 3 天",
+        event = "daily_challenge",
+        check = function(s) return (s.streak or 0) >= 3 end,
+    },
+    {
+        id    = "daily_7",
+        name  = "星际挑战者",
+        desc  = "连续完成每日星际挑战 7 天",
+        event = "daily_challenge",
+        check = function(s) return (s.streak or 0) >= 7 end,
+    },
+    {
+        id    = "daily_15",
+        name  = "宇宙精英",
+        desc  = "连续完成每日星际挑战 15 天",
+        event = "daily_challenge",
+        check = function(s) return (s.streak or 0) >= 15 end,
+    },
+    {
+        id    = "daily_30",
+        name  = "永恒征服者",
+        desc  = "连续完成每日星际挑战 30 天",
+        event = "daily_challenge",
+        check = function(s) return (s.streak or 0) >= 30 end,
+    },
+
+    -- ══ P1-1: 传承系统成就（2个）════════════════════════════════════════════
+    {
+        id    = "heritage_first",
+        name  = "文明传承",
+        desc  = "首次解锁一项星际传承节点",
+        event = "heritage_points",
+        check = function(s) return (s.unlockedCount or 0) >= 1 end,
+    },
+    {
+        id    = "heritage_master",
+        name  = "传承大师",
+        desc  = "解锁全部 12 项传承节点，达成文明进化完成",
+        event = "heritage_points",
+        check = function(s) return (s.unlockedCount or 0) >= 12 end,
+    },
+
+    -- ══ P2-2: 黑市走私网络成就（6个）════════════════════════════════════════
+    {
+        id    = "smuggler_first",
+        name  = "初次走私",
+        desc  = "完成第一次黑市走私交易",
+        event = "smuggle_trade",
+        check = function(s) return (s.totalTrades or 0) >= 1 end,
+    },
+    {
+        id    = "smuggler_veteran",
+        name  = "走私老手",
+        desc  = "累计完成 10 次走私交易",
+        event = "smuggle_trade",
+        check = function(s) return (s.totalTrades or 0) >= 10 end,
+    },
+    {
+        id    = "smuggler_king",
+        name  = "走私之王",
+        desc  = "累计走私利润达到 10000 星币",
+        event = "smuggle_trade",
+        check = function(s) return (s.totalProfit or 0) >= 10000 end,
+    },
+    {
+        id     = "smuggler_lucky",
+        name   = "幸运走私犯",
+        desc   = "连续 5 次走私未被截获",
+        hint   = "连续成功避开巡逻队",
+        event  = "smuggle_trade",
+        hidden = true,
+        check  = function(s) return (s.maxConsecutive or 0) >= 5 end,
+    },
+    {
+        id     = "smuggler_danger",
+        name   = "深渊行者",
+        desc   = "完成 3 次虫巢禁区走私",
+        hint   = "在最危险的航道上生存下来",
+        event  = "smuggle_trade",
+        hidden = true,
+        check  = function(s) return (s.dangerCompleted or 0) >= 3 end,
+    },
+    {
+        id     = "smuggler_epic",
+        name   = "暗物质商人",
+        desc   = "成功出售 3 件 Epic 级走私品",
+        hint   = "贩卖宇宙中最珍贵的禁品",
+        event  = "smuggle_trade",
+        hidden = true,
+        check  = function(s) return (s.epicSold or 0) >= 3 end,
+    },
+
+    -- ══ P1-2 V2.4: 终局危机成就（4个）══════════════════════════════════════
+    {
+        id    = "crisis_survivor",
+        name  = "危机幸存者",
+        desc  = "成功化解一次终局危机（任意评级）",
+        event = "endgame_crisis",
+        check = function(s) return s.tier ~= nil end,
+    },
+    {
+        id    = "crisis_perfect",
+        name  = "完美应对",
+        desc  = "以「完美」评级化解终局危机",
+        event = "endgame_crisis",
+        check = function(s) return s.tier == "perfect" end,
+    },
+    {
+        id     = "crisis_all_types",
+        name   = "全面防御",
+        desc   = "化解全部 3 种终局危机",
+        hint   = "虚空虫群、AI叛乱、维度裂缝",
+        event  = "endgame_crisis",
+        hidden = true,
+        check  = function(s)
+            -- 需要在 state 中累积所有已化解的危机类型
+            local ct = s.crisisTypesResolved or {}
+            return ct["VOID_SWARM"] and ct["AI_REBELLION"] and ct["DIMENSIONAL_RIFT"]
+        end,
+    },
+    {
+        id     = "crisis_speedrun",
+        name   = "雷厉风行",
+        desc   = "在任何阶段超时之前完成全部 3 阶段决策",
+        hint   = "迅速果断，绝不拖延",
+        event  = "endgame_crisis",
+        hidden = true,
+        check  = function(s) return s.tier ~= nil and (s.score or 0) >= 7 end,
+    },
+    -- P1-2 V2.5: 变异舰船成就
+    {
+        id     = "mutant_first",
+        name   = "基因突变",
+        desc   = "获得第一艘变异舰船",
+        hint   = "击败Boss或完成异象事件有概率获得",
+        event  = "mutant_ship",
+        check  = function(s) return (s.totalOwned or 0) >= 1 end,
+    },
+    {
+        id     = "mutant_collector",
+        name   = "基因收藏家",
+        desc   = "收集 6 种不同词缀的变异舰船",
+        hint   = "词缀种类越多越好",
+        event  = "mutant_ship",
+        check  = function(s) return (s.uniqueAffixes or 0) >= 6 end,
+    },
+    {
+        id     = "mutant_full_fleet",
+        name   = "变异舰队",
+        desc   = "在同一编队中部署 2 艘变异舰船",
+        hint   = "每支编队最多部署2艘变异舰船",
+        event  = "mutant_ship",
+        check  = function(s) return (s.fleetMutantCount or 0) >= 2 end,
+    },
+    -- ── P2-1 V2.5: 自定义阵型成就 ──────────────────────────────────────────────
+    {
+        id    = "tactician",
+        name  = "战术家",
+        desc  = "使用自定义阵型赢得 10 场战斗",
+        event = "custom_formation_win",
+        check = function(s) return (s.customFormationWins or 0) >= 10 end,
+    },
+    {
+        id    = "tactician_first",
+        name  = "阵型设计师",
+        desc  = "使用自定义阵型首次赢得战斗",
+        event = "custom_formation_win",
+        check = function(s) return (s.customFormationWins or 0) >= 1 end,
+    },
+    -- ── P2-3 V2.5: 蓝图系统成就 ────────────────────────────────────────────────
+    {
+        id    = "blueprint_first",
+        name  = "蓝图设计师",
+        desc  = "保存第一份战术蓝图",
+        event = "blueprint_save",
+        check = function(s) return (s.totalBlueprints or 0) >= 1 end,
+    },
+    {
+        id    = "blueprint_5",
+        name  = "蓝图大师",
+        desc  = "累计保存 5 份战术蓝图",
+        event = "blueprint_save",
+        check = function(s) return (s.totalBlueprints or 0) >= 5 end,
+    },
+    {
+        id    = "blueprint_share",
+        name  = "战术分享家",
+        desc  = "生成蓝图分享码并分享给其他玩家",
+        event = "blueprint_share",
+        check = function(s) return (s.shared or 0) >= 1 end,
+    },
+    {
+        id    = "blueprint_bookmark",
+        name  = "战术收藏家",
+        desc  = "从排行榜收藏 3 份其他玩家的蓝图",
+        event = "blueprint_bookmark",
+        check = function(s) return (s.bookmarks or 0) >= 3 end,
+    },
+    {
+        id     = "blueprint_import",
+        name   = "密码破译者",
+        desc   = "通过分享码成功导入一份蓝图",
+        hint   = "输入其他玩家的分享码",
+        event  = "blueprint_import",
+        hidden = true,
+        check  = function(s) return (s.imported or 0) >= 1 end,
+    },
 }
 
 -- ─── P2-3: 成就奖励定义 ────────────────────────────────────────────────────────
@@ -263,7 +539,8 @@ local ACHIEVEMENT_REWARDS = {
     -- 隐藏成就
     hidden_overkill       = { desc = "开局 +500 金属",           type = "resource",    value = { metal = 500 } },
     hidden_no_damage      = { desc = "技能「集火」初始 Lv2",     type = "skill_level", value = { skill = 1, level = 2 } },
-    hidden_wave10         = { desc = "开局 +400 能源",           type = "resource",    value = { esource = 400 } },
+    hidden_wave10             = { desc = "开局 +400 能源",           type = "resource",    value = { esource = 400 } },
+    hidden_endless_conqueror  = { desc = "储备增加 1 艘旗舰战列舰", type = "reserve_ship", value = { shipType = "BATTLECRUISER", count = 1 } },
     hidden_card5          = { desc = "首场战斗 +2 技能点",       type = "skill_point", value = 2 },
     hidden_epic_card      = { desc = "开局 +300 核燃料",         type = "resource",    value = { nuclear = 300 } },
     hidden_focus_kill     = { desc = "技能「EMP冲击」初始 Lv2",  type = "skill_level", value = { skill = 3, level = 2 } },
@@ -273,6 +550,44 @@ local ACHIEVEMENT_REWARDS = {
     hidden_no_loss_campaign = { desc = "储备增加 1 艘旗舰",      type = "reserve_ship",value = { shipType = "DESTROYER", count = 1 } },
     hidden_dda_hard       = { desc = "开局 +200 金属 +100 核燃料", type = "resource",  value = { metal = 200, nuclear = 100 } },
     hidden_full_tech      = { desc = "开局 +500 核燃料",         type = "resource",    value = { nuclear = 500 } },
+    -- P2-2: 夹击模式成就奖励
+    pincer_defender       = { desc = "开局 +150 金属 +100 能源",  type = "resource",    value = { metal = 150, esource = 100 } },
+    -- P1-3: 专精路线成就奖励
+    route_guardian        = { desc = "开局 +300 核燃料 +200 能源", type = "resource",   value = { nuclear = 300, esource = 200 } },
+    all_routes            = { desc = "储备增加 1 艘驱逐舰",       type = "reserve_ship",value = { shipType = "DESTROYER", count = 1 } },
+    -- P1-1: 传承系统成就奖励
+    heritage_first        = { desc = "开局 +150 金属 +100 能源",  type = "resource",    value = { metal = 150, esource = 100 } },
+    heritage_master       = { desc = "开局 +500 金属 +500 能源 +300 核燃料", type = "resource", value = { metal = 500, esource = 500, nuclear = 300 } },
+    -- P2-1: 每日挑战成就奖励
+    daily_3               = { desc = "开局 +200 金属 +150 能源",  type = "resource",    value = { metal = 200, esource = 150 } },
+    daily_7               = { desc = "开局 +400 金属 +300 能源 +100 核燃料", type = "resource", value = { metal = 400, esource = 300, nuclear = 100 } },
+    daily_15              = { desc = "开局 +600 金属 +400 能源 +200 核燃料", type = "resource", value = { metal = 600, esource = 400, nuclear = 200 } },
+    daily_30              = { desc = "储备增加 1 艘旗舰战列舰",   type = "reserve_ship",value = { shipType = "BATTLECRUISER", count = 1 } },
+    -- P2-2: 黑市走私网络成就奖励
+    smuggler_first        = { desc = "开局 +200 星币",            type = "resource",    value = { credits = 200 } },
+    smuggler_veteran      = { desc = "开局 +500 星币",            type = "resource",    value = { credits = 500 } },
+    smuggler_king         = { desc = "开局 +300 金属 +300 能源 +200 核燃料", type = "resource", value = { metal = 300, esource = 300, nuclear = 200 } },
+    smuggler_lucky        = { desc = "开局 +400 星币",            type = "resource",    value = { credits = 400 } },
+    smuggler_danger       = { desc = "储备增加 1 艘拦截舰",       type = "reserve_ship",value = { shipType = "INTERCEPTOR", count = 1 } },
+    smuggler_epic         = { desc = "开局 +600 星币 +200 核燃料", type = "resource",   value = { credits = 600, nuclear = 200 } },
+    -- P1-2 V2.4: 终局危机成就奖励
+    crisis_survivor       = { desc = "开局 +400 金属 +300 能源",  type = "resource",    value = { metal = 400, esource = 300 } },
+    crisis_perfect        = { desc = "开局 +600 金属 +400 能源 +300 核燃料", type = "resource", value = { metal = 600, esource = 400, nuclear = 300 } },
+    crisis_all_types      = { desc = "储备增加 1 艘旗舰战列舰",   type = "reserve_ship",value = { shipType = "BATTLECRUISER", count = 1 } },
+    crisis_speedrun       = { desc = "首场战斗 +3 技能点",        type = "skill_point", value = 3 },
+    -- P1-2 V2.5: 变异舰船成就奖励
+    mutant_first          = { desc = "开局 +200 金属 +100 能源",  type = "resource",    value = { metal = 200, esource = 100 } },
+    mutant_collector      = { desc = "储备增加 1 艘拦截舰",       type = "reserve_ship",value = { shipType = "INTERCEPTOR", count = 1 } },
+    mutant_full_fleet     = { desc = "首场战斗 +2 技能点",        type = "skill_point", value = 2 },
+    -- P2-1 V2.5: 自定义阵型成就奖励
+    tactician_first       = { desc = "开局 +200 金属 +100 能源",  type = "resource",    value = { metal = 200, esource = 100 } },
+    tactician             = { desc = "首场战斗 +2 技能点",        type = "skill_point", value = 2 },
+    -- P2-3 V2.5: 蓝图系统成就奖励
+    blueprint_first       = { desc = "开局 +150 金属 +100 能源",  type = "resource",    value = { metal = 150, esource = 100 } },
+    blueprint_5           = { desc = "开局 +300 金属 +200 核燃料", type = "resource",   value = { metal = 300, nuclear = 200 } },
+    blueprint_share       = { desc = "开局 +200 星币",            type = "resource",    value = { credits = 200 } },
+    blueprint_bookmark    = { desc = "开局 +100 金属 +100 能源 +100 核燃料", type = "resource", value = { metal = 100, esource = 100, nuclear = 100 } },
+    blueprint_import      = { desc = "首场战斗 +2 技能点",        type = "skill_point", value = 2 },
 }
 
 -- ─── 内部状态 ─────────────────────────────────────────────────────────────────

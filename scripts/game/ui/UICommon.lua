@@ -131,14 +131,22 @@ UICommon.addHit    = nil   -- 注册点击区域
 ---@type fun(x:number,y:number,w:number,h:number,fn:function)
 UICommon.addScroll = nil   -- 注册滚动区域
 
+---@type fun(x:number,y:number,w:number,h:number,label:string,r:number,g:number,b:number,onClick?:function):number
+UICommon.drawButton = nil  -- 绘制小按钮，返回底部 y
+
+---@type fun(x:number,y:number,w:number,h:number,pct:number,label?:string,barR:number,barG:number,barB:number)
+UICommon.progressBar = nil -- 进度条
+
 --- 由 GameUI 在初始化后调用，将工具函数绑定到 UICommon
 function UICommon.bindFns(fns)
-    UICommon.clr       = fns.clr
-    UICommon.clrC      = fns.clrC
-    UICommon.panel     = fns.panel
-    UICommon.text      = fns.text
-    UICommon.addHit    = fns.addHit
-    UICommon.addScroll = fns.addScroll
+    UICommon.clr         = fns.clr
+    UICommon.clrC        = fns.clrC
+    UICommon.panel       = fns.panel
+    UICommon.text        = fns.text
+    UICommon.addHit      = fns.addHit
+    UICommon.addScroll   = fns.addScroll
+    UICommon.drawButton  = fns.drawButton
+    UICommon.progressBar = fns.progressBar
 end
 
 return UICommon

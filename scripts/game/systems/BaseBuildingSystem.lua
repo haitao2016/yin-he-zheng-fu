@@ -1,0 +1,144 @@
+---@diagnostic disable: assign-type-mismatch, return-type-mismatch
+--- BaseBuildingSystem — 星航基地独立建造系统
+--- 从 Systems.lua 机械拆分，无逻辑修改
+require("game.GameConstants")
+
+local BaseBuildingSystem = {}
+BaseBuildingSystem.__index = BaseBuildingSystem
+
+function BaseBuildingSystem.new(rm)
+    return setmetatable({ rm = rm }, BaseBuildingSystem)
+end
+
+function BaseBuildingSystem:getUpgradeCost(key, level)
+    local mod = BASE_MODULES[key]
+    if not mod then return {} end
+    local k = mod.upgradeK or 1.5
+    local cost = {}
+    for res, base in pairs(mod.cost) do
+        cost[res] = math.floor(base * (k ^ level))
+    end
+    return cost
+end
+
+function BaseBuildingSystem:canBuild(key, base)
+    if base.constructing            then return false, "队列忙碌" end
+    local maxSlots = BaseModuleSlots(base.coreLevel)
+    if #base.buildings >= maxSlots  then return false, "槽位已满" end
+    -- 同类模块只能建一个
+    for _, b in ipairs(base.buildings) do
+        if b.key == key then return false, "已安装" end
+    end
+    -- 核心等级校验
+    local reqLv = BASE_MODULE_UNLOCK_LEVEL[key] or 1
+    local curLv = base.coreLevel or 1
+    if curLv < reqLv then
+        return false, "需核心 Lv." .. reqLv
+    end
+    if not self.rm:canAfford(BASE_MODULES[key].cost) then return false, "资源不足" end
+    return true, ""
+end
+
+--- 检查是否可升级核心等级
+function BaseBuildingSystem:canUpgradeCore(base)
+    local lv = base.coreLevel or 1
+    if lv >= BASE_CORE_MAX_LEVEL then return false, "已达最高等级" end
+    if base.constructing          then return false, "队列忙碌" end
+    local cost = BASE_CORE_UPGRADE_COSTS[lv]
+    if not cost                   then return false, "无升级配置" end
+    -- S1 QUANTUM_CORE: 核心升级费用折扣
+    local costMult = (self.rm.baseBonus and self.rm.baseBonus.coreUpgradeCostMult) or 1.0
+    -- 提取资源部分（排除 buildTime），并应用折扣
+    local resCost = {}
+    for k, v in pairs(cost) do
+        if k ~= "buildTime" then resCost[k] = math.max(1, math.floor(v * costMult)) end
+    end
+    if not self.rm:canAfford(resCost) then return false, "资源不足" end
+    return true, "", resCost
+end
+
+--- 执行核心等级升级（进入建造队列）
+function BaseBuildingSystem:upgradeCore(base)
+    local ok, reason, resCost = self:canUpgradeCore(base)
+    if not ok then return false, reason end
+    local lv   = base.coreLevel or 1
+    local cost = BASE_CORE_UPGRADE_COSTS[lv]
+    self.rm:spend(resCost)
+    base.constructing = {
+        key       = "__CORE_UPGRADE__",
+        progress  = 0,
+        totalTime = cost.buildTime,
+        remaining = cost.buildTime,
+        level     = lv + 1,
+        isUpgrade = false,
+        isCoreUpgrade = true,
+    }
+    return true, ""
+end
+
+function BaseBuildingSystem:canUpgrade(bldIdx, base)
+    local b = base.buildings[bldIdx]
+    if not b then return false, "无效模块" end
+    if base.constructing then return false, "队列忙碌" end
+    local cost = self:getUpgradeCost(b.key, b.level)
+    if not self.rm:canAfford(cost) then return false, "资源不足" end
+    return true, ""
+end
+
+function BaseBuildingSystem:build(key, base)
+    local ok, reason = self:canBuild(key, base)
+    if not ok then return false, reason end
+    self.rm:spend(BASE_MODULES[key].cost)
+    local mod = BASE_MODULES[key]
+    local bm  = (self.rm.baseBonus and self.rm.baseBonus.buildMult) or 1.0
+    local bt  = math.max(1, math.floor(mod.buildTime * bm))
+    base.constructing = {
+        key = key, progress = 0,
+        totalTime = bt, remaining = bt,
+        level = 1, isUpgrade = false
+    }
+    return true, ""
+end
+
+function BaseBuildingSystem:upgrade(bldIdx, base)
+    local ok, reason = self:canUpgrade(bldIdx, base)
+    if not ok then return false, reason end
+    local b    = base.buildings[bldIdx]
+    local cost = self:getUpgradeCost(b.key, b.level)
+    self.rm:spend(cost)
+    local mod  = BASE_MODULES[b.key]
+    local bm   = (self.rm.baseBonus and self.rm.baseBonus.buildMult) or 1.0
+    local bt   = math.max(1, math.floor(mod.buildTime * (mod.upgradeK ^ b.level) * bm))
+    base.constructing = {
+        key = b.key, progress = 0,
+        totalTime = bt, remaining = bt,
+        level = b.level + 1, isUpgrade = true, targetIdx = bldIdx
+    }
+    return true, ""
+end
+
+--- 返回完成的模块 key（完成时），否则返回 nil
+function BaseBuildingSystem:update(dt, base)
+    if not base.constructing then return nil end
+    local job = base.constructing
+    job.remaining = job.remaining - dt
+    job.progress  = 1 - math.max(0, job.remaining / job.totalTime)
+    if job.remaining <= 0 then
+        local doneKey = job.key
+        if job.isCoreUpgrade then
+            -- 核心等级升级完成
+            base.coreLevel = job.level
+        elseif job.isUpgrade then
+            base.buildings[job.targetIdx].level = job.level
+        else
+            base.buildings[#base.buildings + 1] = {
+                key = job.key, name = BASE_MODULES[job.key].name, level = 1
+            }
+        end
+        base.constructing = nil
+        return doneKey
+    end
+    return nil
+end
+
+return BaseBuildingSystem
