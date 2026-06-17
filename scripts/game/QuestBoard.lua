@@ -192,7 +192,9 @@ local function checkCondition(quest, rm, diplo, fm)
     elseif c == "colonize" then
         return quest.progress >= t
     elseif c == "total_colonies" then
-        return rm and (rm.colonizedCount or 0) >= t
+        local GalaxyScene = require("game.GalaxyScene")
+        local planets = GalaxyScene.GetColonizedPlanets and GalaxyScene.GetColonizedPlanets() or {}
+        return #planets >= t
     elseif c == "anomaly_battle_win" then
         return quest.progress >= t
     elseif c == "explore_planet" then
