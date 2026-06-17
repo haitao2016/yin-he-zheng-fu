@@ -143,6 +143,9 @@ local BS = {
     -- 战斗统计
     battleStats = nil,
     initialPlayerCount = 0,  -- 本波开始时我方舰队数量
+    
+    -- P1-10: 暂停状态
+    paused = false,
 
     -- 战败按钮
     loseBtn1 = nil,

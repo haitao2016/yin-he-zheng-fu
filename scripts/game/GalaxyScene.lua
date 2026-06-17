@@ -4,6 +4,7 @@
 -- ============================================================================
 
 require "game.Systems"   -- 加载全局常量 SHIP_TYPES, SHIP_COSTS 等
+local Systems = require("game.Systems")  -- P1-8: 用于访问 HIDDEN_LEVELS
 local UICommon       = require("game.ui.UICommon")
 local GalaxyEvents   = require("game.GalaxyEvents")
 local AnomalySystem  = require("game.AnomalySystem")  -- P2-1: 星域异象
@@ -2320,6 +2321,46 @@ end
 function GalaxyScene.ClearGarrisons()
     garrisonedFleets_ = {}
     diploRelData_ = nil
+end
+
+-- ============================================================================
+-- P1-8: 隐藏关卡触发检测
+-- ============================================================================
+--- 检查隐藏关卡触发条件并通知玩家
+---@param playerState table  玩家状态（包含 achievementStats 和 hiddenLevelsCompleted）
+---@return table|nil  触发的隐藏关卡信息
+function GalaxyScene.checkHiddenLevels(playerState)
+    if not playerState then return nil end
+    -- 使用全局 HIDDEN_LEVELS（由 GameConstants.lua 定义）
+    local hiddenLevels = HIDDEN_LEVELS or (Systems and Systems.HIDDEN_LEVELS) or {}
+    
+    for _, level in ipairs(hiddenLevels) do
+        -- 检查是否已完成该隐藏关卡
+        if not playerState.hiddenLevelsCompleted or not playerState.hiddenLevelsCompleted[level.id] then
+            local triggered = true
+            -- 检查所有触发条件
+            for cond, value in pairs(level.triggerCondition) do
+                local statValue = (playerState.achievementStats and playerState.achievementStats[cond]) or 0
+                if statValue < value then
+                    triggered = false
+                    break
+                end
+            end
+            
+            if triggered then
+                -- 触发隐藏关卡
+                if notifyFn_ then
+                    notifyFn_("🔓 发现隐藏关卡: " .. level.name, "legendary")
+                end
+                -- 标记为可用
+                playerState.hiddenLevelAvailable = level.id
+                print("[P1-8] 隐藏关卡触发: " .. level.id .. " - " .. level.name)
+                return level
+            end
+        end
+    end
+    
+    return nil
 end
 
 -- ============================================================================

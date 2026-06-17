@@ -40,6 +40,7 @@ local drawFormationBar      = RenderHUD.drawFormationBar
 local drawRetreatReinforce  = RenderHUD.drawRetreatReinforce
 local drawSkillUpgrade      = RenderHUD.drawSkillUpgrade
 local drawSpeedControl      = RenderHUD.drawSpeedControl
+local drawPauseScreen       = RenderHUD.drawPauseScreen  -- P1-10: 暂停界面
 
 local drawBossDestroyedEffect  = RenderOverlays.drawBossDestroyedEffect
 local drawFireworks            = RenderOverlays.drawFireworks
@@ -105,6 +106,7 @@ function BattleRender.Render()
     drawStateOverlay()
     drawWaveSummary()
     drawSkillUpgrade()
+    drawPauseScreen()  -- P1-10: 暂停界面（最上层）
 end
 
 return BattleRender

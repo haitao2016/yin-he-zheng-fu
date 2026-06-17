@@ -907,6 +907,55 @@ local function drawSpeedControl()
     nvgText(BS.vg, startX, y + btnSize + 10, "1-4:速度 A:自动")
 end
 
+-- ============================================================================
+-- P1-10: 暂停界面渲染
+-- ============================================================================
+local function drawPauseScreen()
+    if not BS.paused then return end
+    
+    local screenW, screenH = BS.screenW or 800, BS.screenH or 600
+    local vg = BS.vg
+    
+    -- 半透明遮罩
+    nvgBeginPath(vg)
+    nvgRect(vg, 0, 0, screenW, screenH)
+    nvgFillColor(vg, nvgRGBA(0, 0, 0, 150))
+    nvgFill(vg)
+    
+    -- 暂停文字
+    nvgFontFace(vg, "sans")
+    nvgFontSize(vg, 36)
+    nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+    nvgText(vg, screenW/2, screenH/2 - 50, "⏸ 游戏暂停")
+    
+    -- 提示
+    nvgFontSize(vg, 14)
+    nvgFillColor(vg, nvgRGBA(200, 200, 200, 200))
+    nvgText(vg, screenW/2, screenH/2, "按 P 或 ESC 继续")
+    
+    -- 继续按钮
+    local btnW, btnH = 120, 40
+    local btnX, btnY = screenW/2 - btnW/2, screenH/2 + 50
+    
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, btnX, btnY, btnW, btnH, 8)
+    nvgFillColor(vg, nvgRGBA(80, 120, 80, 220))
+    nvgFill(vg)
+    nvgStrokeColor(vg, nvgRGBA(100, 180, 100, 255))
+    nvgStrokeWidth(vg, 2)
+    nvgStroke(vg)
+    
+    nvgFontSize(vg, 16)
+    nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+    nvgText(vg, btnX + btnW/2, btnY + btnH/2, "▶ 继续")
+    
+    addHit(btnX, btnY, btnW, btnH, function()
+        BS.paused = false
+    end)
+end
+
 RenderHUD.drawBossPhaseBanner = drawBossPhaseBanner
 RenderHUD.drawSuperBossHealthBar = drawSuperBossHealthBar
 RenderHUD.drawWaveHUD          = drawWaveHUD
@@ -918,5 +967,6 @@ RenderHUD.drawFormationBar     = drawFormationBar
 RenderHUD.drawRetreatReinforce = drawRetreatReinforce
 RenderHUD.drawSkillUpgrade     = drawSkillUpgrade
 RenderHUD.drawSpeedControl     = drawSpeedControl
+RenderHUD.drawPauseScreen      = drawPauseScreen  -- P1-10: 暂停界面
 
 return RenderHUD

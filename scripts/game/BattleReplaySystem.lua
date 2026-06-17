@@ -40,6 +40,12 @@ local shipTracker_  = {}         -- 舰船累计统计 {[shipId] = {dmg, kills, 
 local nextShipId_   = 1          -- 舰船唯一ID分配器
 local highlights_   = {}         -- 精彩时刻列表（战斗结束后计算）
 local mvpResult_    = nil        -- MVP 结果缓存
+-- P1-9: 回放播放状态
+local playback_     = false      -- 是否正在播放回放
+local playbackData_ = nil        -- 当前播放的回放数据
+local playbackIndex_= 0          -- 当前播放帧索引
+local playbackTime_ = 0          -- 当前播放时间
+local playbackPaused_= false     -- 回放是否暂停
 
 -- ============================================================================
 -- 公共 API
@@ -259,6 +265,190 @@ end
 ---@return boolean
 function BattleReplaySystem.IsRecording()
     return recording_
+end
+
+-- ============================================================================
+-- P1-9: 回放保存与播放功能
+-- ============================================================================
+
+--- 结束录制并保存回放到玩家存档
+---@param result string  战斗结果 ("win" | "lose" | "retreat")
+---@param playerState table  玩家状态（用于保存回放）
+---@return string|nil  回放ID
+function BattleReplaySystem.endRecording(result, playerState)
+    if not recording_ then return nil end
+    
+    BattleReplaySystem.StopRecording()
+    
+    -- 生成回放ID
+    local replayId = "replay_" .. os.time()
+    
+    -- 构建回放数据
+    local replayData = {
+        version     = 1,
+        timestamp   = os.time(),
+        duration    = timer_,
+        result      = result,
+        frames      = frames_,
+        events      = events_,
+        highlights  = highlights_,
+        mvp         = mvpResult_,
+    }
+    
+    -- 保存到玩家存档
+    if playerState then
+        playerState.replays = playerState.replays or {}
+        playerState.replays[replayId] = replayData
+        
+        -- 限制保存数量（最多10个）
+        local replayList = {}
+        for id, data in pairs(playerState.replays) do
+            table.insert(replayList, { id = id, time = data.timestamp })
+        end
+        table.sort(replayList, function(a, b) return a.time > b.time end)
+        
+        if #replayList > 10 then
+            for i = 11, #replayList do
+                playerState.replays[replayList[i].id] = nil
+            end
+        end
+    end
+    
+    print(string.format("[P1-9 Replay] 回放已保存: %s, 结果=%s, 时长=%.1fs",
+        replayId, result or "unknown", timer_))
+    
+    return replayId
+end
+
+--- 开始播放回放
+---@param replayId string  回放ID
+---@param playerState table  玩家状态（用于读取回放）
+---@return boolean, string  是否成功, 错误消息
+function BattleReplaySystem.startPlayback(replayId, playerState)
+    if not playerState or not playerState.replays then
+        return false, "无玩家存档"
+    end
+    
+    local replayData = playerState.replays[replayId]
+    if not replayData then
+        return false, "回放不存在"
+    end
+    
+    -- 进入播放模式
+    playback_        = true
+    playbackData_    = replayData
+    playbackIndex_   = 1
+    playbackTime_    = 0
+    playbackPaused_  = false
+    
+    print(string.format("[P1-9 Replay] 开始播放: %s, 时长=%.1fs",
+        replayId, replayData.duration or 0))
+    
+    return true, ""
+end
+
+--- 更新回放播放
+---@param dt number  帧间隔
+---@return table|nil  当前帧数据
+function BattleReplaySystem.updatePlayback(dt)
+    if not playback_ or not playbackData_ then return nil end
+    if playbackPaused_ then return nil end
+    
+    playbackTime_ = playbackTime_ + dt
+    
+    -- 找到当前帧
+    local frames = playbackData_.frames or {}
+    local currentFrame = nil
+    
+    for i, frame in ipairs(frames) do
+        if frame.t <= playbackTime_ then
+            currentFrame = frame
+            playbackIndex_ = i
+        else
+            break
+        end
+    end
+    
+    -- 检查是否播放完毕
+    if playbackTime_ >= (playbackData_.duration or 0) then
+        BattleReplaySystem.endPlayback()
+    end
+    
+    return currentFrame
+end
+
+--- 结束回放播放
+function BattleReplaySystem.endPlayback()
+    playback_        = false
+    playbackData_    = nil
+    playbackIndex_   = 0
+    playbackTime_    = 0
+    playbackPaused_  = false
+    print("[P1-9 Replay] 回放播放结束")
+end
+
+--- 暂停/继续回放
+function BattleReplaySystem.togglePlaybackPause()
+    if playback_ then
+        playbackPaused_ = not playbackPaused_
+    end
+end
+
+--- 获取回放播放进度
+---@return number  进度百分比 (0-1)
+function BattleReplaySystem.getPlaybackProgress()
+    if not playback_ or not playbackData_ then return 0 end
+    local duration = playbackData_.duration or 0
+    if duration <= 0 then return 0 end
+    return math.min(1.0, playbackTime_ / duration)
+end
+
+--- 获取回放播放状态
+---@return table  {playing, paused, time, duration, index}
+function BattleReplaySystem.getPlaybackState()
+    return {
+        playing   = playback_ or false,
+        paused    = playbackPaused_ or false,
+        time      = playbackTime_ or 0,
+        duration  = playbackData_ and playbackData_.duration or 0,
+        index     = playbackIndex_ or 0,
+        result    = playbackData_ and playbackData_.result or nil,
+    }
+end
+
+--- 获取回放列表（按时间降序）
+---@param playerState table  玩家状态
+---@return table[]  [{id, timestamp, duration, result}]
+function BattleReplaySystem.getReplayList(playerState)
+    local list = {}
+    if not playerState or not playerState.replays then return list end
+    
+    for id, data in pairs(playerState.replays) do
+        table.insert(list, {
+            id        = id,
+            timestamp = data.timestamp or 0,
+            duration  = data.duration or 0,
+            result    = data.result or "unknown",
+            mvp       = data.mvp,
+        })
+    end
+    
+    table.sort(list, function(a, b) return a.timestamp > b.timestamp end)
+    return list
+end
+
+--- 删除指定回放
+---@param replayId string
+---@param playerState table
+---@return boolean
+function BattleReplaySystem.deleteReplay(replayId, playerState)
+    if not playerState or not playerState.replays then return false end
+    if playerState.replays[replayId] then
+        playerState.replays[replayId] = nil
+        print("[P1-9 Replay] 已删除: " .. replayId)
+        return true
+    end
+    return false
 end
 
 -- ============================================================================

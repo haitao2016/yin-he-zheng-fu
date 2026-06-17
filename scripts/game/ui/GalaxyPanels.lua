@@ -22,6 +22,11 @@ local blackMarketCollapsed_= true
 local exchangeCollapsed_   = true
 local shipyardCollapsed_   = false
 
+-- P2-5: 批量建造状态
+local batchBuildMode_      = false
+local batchBuildCount_     = 1
+local batchBuildCounts_    = { 1, 3, 5, 10 }
+
 local signalCooldown_ = 0
 local SIGNAL_CD       = 5
 
@@ -1297,7 +1302,9 @@ function M.RenderShipyard(planet)
     -- 展开态
     local numShips  = #SHIP_QUEUE_ORDER
     local queueSize = spq and #spq.items or 0
-    local ph = titleH + 4 + (queueSize > 0 and 16 or 18)
+    -- P2-5: 批量建造增加面板高度
+    local batchH = batchBuildMode_ and 28 or 0
+    local ph = titleH + 4 + batchH + (queueSize > 0 and 16 or 18)
              + (queueSize > 1 and (10 + (queueSize - 1) * 16) or 0)
              + 8 + numShips * 22
 
@@ -1307,7 +1314,61 @@ function M.RenderShipyard(planet)
     text(px + 10, sy, "◀", 9, 100,160,255,180, NVG_ALIGN_LEFT+NVG_ALIGN_MIDDLE)
     addHit(px, py, 28, titleH, function() shipyardCollapsed_ = true end)
     text(px+pw/2, sy, "[ 造船厂 ]", 13, 100,170,255,255, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+    
+    -- P2-5: 批量建造按钮
+    local batchBtnX, batchBtnY, batchBtnW, batchBtnH = px + pw - 65, py + 4, 55, 18
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, batchBtnX, batchBtnY, batchBtnW, batchBtnH, 4)
+    nvgFillColor(vg, batchBuildMode_ and nvgRGBA(80, 140, 80, 200) or nvgRGBA(50, 70, 100, 180))
+    nvgFill(vg)
+    nvgStrokeColor(vg, batchBuildMode_ and nvgRGBA(120, 200, 120, 180) or nvgRGBA(80, 100, 140, 120))
+    nvgStrokeWidth(vg, 1)
+    nvgStroke(vg)
+    nvgFontFace(vg, "sans")
+    nvgFontSize(vg, 9)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+    local batchLabel = batchBuildMode_ and ("批量×" .. batchBuildCount_) or "批量"
+    nvgText(vg, batchBtnX + batchBtnW/2, batchBtnY + batchBtnH/2, batchLabel)
+    addHit(batchBtnX, batchBtnY, batchBtnW, batchBtnH, function()
+        batchBuildMode_ = not batchBuildMode_
+        if batchBuildMode_ then
+            batchBuildCount_ = 1
+        end
+    end)
+    
     sy = py + titleH + 4
+    
+    -- P2-5: 批量数量选择器
+    if batchBuildMode_ then
+        local countY = sy
+        nvgFontFace(vg, "sans")
+        nvgFontSize(vg, 9)
+        nvgTextAlign(vg, NVG_ALIGN.LEFT + NVG_ALIGN.MIDDLE)
+        nvgFillColor(vg, nvgRGBA(180, 200, 220, 200))
+        nvgText(vg, px + 10, countY + 10, "数量:")
+        
+        for i, count in ipairs(batchBuildCounts_) do
+            local cx = px + 50 + (i - 1) * 28
+            local isSelected = batchBuildCount_ == count
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, cx, countY + 2, 24, 16, 3)
+            nvgFillColor(vg, isSelected and nvgRGBA(80, 140, 80, 200) or nvgRGBA(40, 50, 70, 160))
+            nvgFill(vg)
+            nvgStrokeColor(vg, isSelected and nvgRGBA(120, 200, 120, 180) or nvgRGBA(60, 80, 100, 100))
+            nvgStrokeWidth(vg, 1)
+            nvgStroke(vg)
+            nvgFontSize(vg, 10)
+            nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+            nvgFillColor(vg, nvgRGBA(255, 255, 255, 230))
+            nvgText(vg, cx + 12, countY + 10, tostring(count))
+            
+            addHit(cx, countY + 2, 24, 16, function()
+                batchBuildCount_ = count
+            end)
+        end
+        sy = sy + 24
+    end
 
     -- 队列状态
     if spq and #spq.items > 0 then
@@ -1418,11 +1479,50 @@ function M.RenderShipyard(planet)
         end
 
         if isUnlocked then
+            -- P2-5: 批量建造模式下显示批量数量
+            local displayCostStr = costStr
+            if batchBuildMode_ and batchBuildCount_ > 1 then
+                -- 计算批量总成本
+                local totalCost = {}
+                for res, amt in pairs(cost) do
+                    totalCost[res] = amt * batchBuildCount_
+                end
+                displayCostStr = rm:fmtCost(totalCost) .. "(×" .. batchBuildCount_ .. ")"
+            end
+            
             sy = drawButton(px+8, sy, pw-16, 18,
-                hkPrefix..st.name.." ["..costStr.."]"..timeStr,
+                hkPrefix..st.name.." ["..displayCostStr.."]"..timeStr,
                 60, 100, 220,
                 function()
-                    if onShipQueueCb_ then onShipQueueCb_(capturedType) end
+                    -- P2-5: 执行批量建造
+                    if not batchBuildMode_ then
+                        -- 单次建造
+                        if onShipQueueCb_ then onShipQueueCb_(capturedType) end
+                    else
+                        -- 批量建造
+                        local successCount = 0
+                        for i = 1, batchBuildCount_ do
+                            if onShipQueueCb_ then
+                                -- 检查资源是否足够（每次建造前检查）
+                                local canBuild = true
+                                for res, amt in pairs(cost) do
+                                    if (rm.resources[res] or 0) < amt * (successCount + 1) then
+                                        canBuild = false
+                                        break
+                                    end
+                                end
+                                if canBuild then
+                                    onShipQueueCb_(capturedType)
+                                    successCount = successCount + 1
+                                else
+                                    break
+                                end
+                            end
+                        end
+                        if successCount > 0 and notifyFn_ then
+                            notifyFn_("批量建造 " .. successCount .. " 艘 " .. st.name, "success")
+                        end
+                    end
                 end)
         else
             -- 锁定舰船：灰色显示，不可点击

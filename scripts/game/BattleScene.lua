@@ -74,6 +74,9 @@ local battleSpeed_      = 1.0
 local battleSpeedId_    = "NORMAL"
 local autoBattleEnabled_ = false
 local autoBattleKeyDown_ = false
+-- P1-10: 暂停功能
+local paused_           = false      -- 游戏是否暂停
+local pauseKeyDown_     = false      -- 暂停键是否按下（防止重复触发）
 local player_       = nil
 local rm_           = nil  -- ResourceManager 引用（用于波次奖励）
 local rs_           = nil  -- ResearchSystem 引用（技能解锁判断）
@@ -1783,6 +1786,24 @@ end
 function BattleScene.Update(dt)
     pushToCtx()
 
+    -- P1-10: 暂停检测（键盘快捷键 P/ESC）
+    if love and love.keyboard then
+        if love.keyboard.isDown("p") or love.keyboard.isDown("P") or love.keyboard.isDown("escape") then
+            if not pauseKeyDown_ then
+                BattleScene.togglePause()
+                pauseKeyDown_ = true
+            end
+        else
+            pauseKeyDown_ = false
+        end
+    end
+    
+    -- P1-10: 暂停时不更新游戏逻辑
+    if paused_ then
+        pullFromCtx()
+        return
+    end
+
     -- P0-7: 应用战斗速度
     local scaledDt = dt * battleSpeed_
 
@@ -2001,6 +2022,9 @@ function BattleScene.Render()
     BS.battleSpeed = battleSpeed_
     BS.battleSpeedId = battleSpeedId_
     BS.autoBattleEnabled = autoBattleEnabled_
+    
+    -- P1-10: 暂停状态同步到 BattleState
+    BS.paused = paused_
 
     -- 模块/函数引用（仅首次或变化时需要，但每帧赋值开销极低）
     BS.LiverySystem  = LiverySystem
@@ -2494,6 +2518,34 @@ end
 --- 是否处于 Boss Rush 模式
 function BattleScene.IsBossRushMode()
     return bossRushMode_
+end
+
+-- ============================================================================
+-- P1-10: 暂停功能
+-- ============================================================================
+
+--- 暂停/恢复游戏
+function BattleScene.togglePause()
+    paused_ = not paused_
+    if paused_ then
+        if notifyFn_ then notifyFn_("⏸ 游戏暂停", "info") end
+        print("[P1-10] 游戏暂停")
+    else
+        if notifyFn_ then notifyFn_("▶ 游戏继续", "info") end
+        print("[P1-10] 游戏继续")
+    end
+end
+
+--- 获取暂停状态
+---@return boolean
+function BattleScene.IsPaused()
+    return paused_
+end
+
+--- 设置暂停状态（外部调用）
+---@param value boolean
+function BattleScene.SetPaused(value)
+    paused_ = value or false
 end
 
 return BattleScene

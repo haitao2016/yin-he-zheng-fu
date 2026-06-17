@@ -724,3 +724,34 @@ BOSS_RUSH = {
     timeBonus = 100,  -- 每节省 10 秒 +100 分
     healthBonus = 50, -- 每 10% 剩余生命 +50 分
 }
+
+-- P1-8: 隐藏关卡定义
+HIDDEN_LEVELS = {
+    {
+        id = "VOID_REALM",
+        name = "虚空领域",
+        desc = "虚空领主的巢穴",
+        triggerCondition = { voidBossDefeated = 3 },
+        enemies = { VOID_LORD = 1 },
+        rewards = { rainbowCrystal = 30, rareItem = "VOID_KEY" },
+        difficulty = "extreme",
+    },
+    {
+        id = "ANCIENT_TEMPLE",
+        name = "远古遗迹",
+        desc = "古老文明的遗迹",
+        triggerCondition = { planetsExplored = 25, techsResearched = 15 },
+        enemies = { GUARDIAN = 5, ANCIENT_BOSS = 1 },
+        rewards = { purpleCrystal = 100, rareItem = "ANCIENT_ARTIFACT" },
+        difficulty = "hard",
+    },
+    {
+        id = "INFINITE_TOWER",
+        name = "无尽塔",
+        desc = "无限挑战",
+        triggerCondition = { endlessWave = 100 },
+        enemies = { randomBosses = true, count = 10 },
+        rewards = { rainbowCrystal = 50 },
+        difficulty = "extreme",
+    },
+}
