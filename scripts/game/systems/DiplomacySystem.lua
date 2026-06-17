@@ -321,6 +321,18 @@ function DiplomacySystem.getFactionDef(factionKey)
     return NEUTRAL_FACTIONS[factionKey]
 end
 
+--- 获取所有势力的最高好感值（用于任务条件检测）
+---@return number
+function DiplomacySystem:getMaxFavor()
+    local maxFavor = 0
+    for _, st in pairs(self.planets) do
+        if not st.atWar and st.favor > maxFavor then
+            maxFavor = st.favor
+        end
+    end
+    return maxFavor
+end
+
 --- 玩家送出外交礼物：扣资源、增好感
 ---@param planetId number
 ---@param rm       table

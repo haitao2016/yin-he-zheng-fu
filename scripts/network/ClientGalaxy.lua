@@ -316,6 +316,8 @@ function M.DoColonize(planet)
     -- 成就检查：殖民类
     do
         local colonized = #(GalaxyScene.GetColonizedPlanets and GalaxyScene.GetColonizedPlanets() or {})
+        -- 更新 FleetManager 的殖民计数（供任务检测使用）
+        S.fm.colonizedCount = colonized
         Achievement.Check("colonize", { totalColonized = colonized })
         if colonized == 2 then
             local TutorialSystem = require("game.ui.TutorialSystem")

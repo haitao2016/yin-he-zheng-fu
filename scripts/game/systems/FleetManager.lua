@@ -18,6 +18,7 @@ function FleetManager.new()
     -- P1-1: 改装系统
     self.salvageParts = 0                -- 残骸零件（改装货币）
     self.moduleInventory = {}            -- 已拥有模块 { [moduleKey]=count }
+    self.colonizedCount = 0              -- 已殖民星球数量（由 Client 更新，供任务检测）
     -- modules per (fleetId, shipType): self.fleets[i].modules[shipType] = moduleKey
     for i = 1, INIT_FLEET_COUNT do
         self.fleets[i] = {
@@ -213,6 +214,7 @@ function FleetManager:serialize()
         maxFleets = self.maxFleets, fleets = fleets, reserve = reserve,
         salvageParts = self.salvageParts,
         moduleInventory = self.moduleInventory,
+        colonizedCount = self.colonizedCount,
     }
 end
 
@@ -245,6 +247,7 @@ function FleetManager:deserialize(data)
     -- P1-1: 恢复改装数据
     self.salvageParts = data.salvageParts or 0
     self.moduleInventory = data.moduleInventory or {}
+    self.colonizedCount = data.colonizedCount or 0
 end
 
 return FleetManager

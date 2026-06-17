@@ -192,7 +192,9 @@ local function checkCondition(quest, rm, diplo, fm)
     elseif c == "colonize" then
         return quest.progress >= t
     elseif c == "total_colonies" then
-        return rm and (rm.colonizedCount or 0) >= t
+        -- 殖民数量：从 fm 获取（fm 有 colonizedCount 字段由 Client 更新）
+        -- 或直接计算：fm.salvageParts 存在时 fm 有效
+        return fm and (fm.colonizedCount or 0) >= t
     elseif c == "anomaly_battle_win" then
         return quest.progress >= t
     elseif c == "explore_planet" then
