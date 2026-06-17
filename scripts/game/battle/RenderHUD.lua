@@ -4,6 +4,7 @@
 -- ============================================================================
 local BS = require("game.battle.BattleState")
 local FormationEditor = require("game.ui.FormationEditor")
+local Systems = require("game.Systems")
 
 local FORMATION_ORDER = {"wedge", "circle", "scatter", "charge", "custom"}
 
@@ -764,7 +765,150 @@ end
 
 --- P3-2: Boss击破全屏闪光 + BOSS DESTROYED 横幅
 
+--- P0-1: 超级 Boss 特殊血条渲染
+local function drawSuperBossHealthBar()
+    -- 遍历敌舰查找超级 Boss
+    local superBoss = nil
+    if BS.enemyFleet then
+        for _, ship in ipairs(BS.enemyFleet) do
+            if ship.isSuperBoss then superBoss = ship; break end
+        end
+    end
+    if not superBoss then return end
+
+    local def = BS.SUPER_BOSSES and BS.SUPER_BOSSES[superBoss.superBossType]
+    local bx, by, bw = BS.screenW - 160, 50, 300
+
+    -- 血条背景
+    nvgFillColor(BS.vg, nvgRGBA(40, 10, 10, 220))
+    nvgBeginPath(BS.vg); nvgRoundedRect(BS.vg, bx, by, bw, 18, 3); nvgFill(BS.vg)
+
+    -- 当前阶段血条
+    local phaseHpRatio = superBoss.health > 0 and superBoss.health / superBoss.maxHealth or 0
+    nvgFillColor(BS.vg, nvgRGBA(220, 30, 30, 255))
+    nvgBeginPath(BS.vg); nvgRoundedRect(BS.vg, bx, by, bw * math.max(0, phaseHpRatio), 18, 3); nvgFill(BS.vg)
+
+    -- 阶段标记线
+    if def and def.phases then
+        for _, phase in ipairs(def.phases) do
+            if phase.hpThreshold < 1.0 then
+                local px = bx + bw * phase.hpThreshold
+                nvgStrokeColor(BS.vg, nvgRGBA(255, 200, 0, 200))
+                nvgStrokeWidth(BS.vg, 2)
+                nvgBeginPath(BS.vg)
+                nvgMoveTo(BS.vg, px, by)
+                nvgLineTo(BS.vg, px, by + 18)
+                nvgStroke(BS.vg)
+            end
+        end
+    end
+
+    -- 超级 Boss 名字
+    nvgFontFace(BS.vg, "sans")
+    nvgFontSize(BS.vg, 14)
+    nvgTextAlign(BS.vg, NVG_ALIGN.CENTER)
+    nvgFillColor(BS.vg, nvgRGBA(255, 100, 100, 255))
+    nvgText(BS.vg, bx + bw/2, by - 10, "⚠ " .. (def and def.name or "??") .. " ⚠")
+
+    -- 阶段名
+    if superBoss.currentPhase and superBoss.currentPhase.name then
+        nvgFontSize(BS.vg, 11)
+        nvgFillColor(BS.vg, nvgRGBA(255, 180, 80, 220))
+        nvgText(BS.vg, bx + bw/2, by + 32, superBoss.currentPhase.name)
+    end
+
+    -- 轰炸区域指示（如果正在轰炸）
+    if BS.bombardZones and #BS.bombardZones > 0 then
+        for _, zone in ipairs(BS.bombardZones) do
+            local alpha = math.floor((zone.timer / zone.maxTimer) * 200)
+            nvgBeginPath(BS.vg)
+            nvgCircle(BS.vg, zone.x, zone.y, zone.radius)
+            nvgFillColor(BS.vg, nvgRGBA(255, 60, 60, alpha))
+            nvgFill(BS.vg)
+        end
+    end
+end
+
+-- P0-7: 速度切换按钮和自动战斗开关
+local function drawSpeedControl()
+    if not BS then return end
+    local screenW, screenH = BS.screenW or 800, BS.screenH or 600
+
+    local btnSize = 32
+    local startX = screenW - 170
+    local y = screenH - 50
+
+    -- 获取当前速度显示
+    local speedLabel = "▶ 1x"
+    local BATTLE_SPEEDS = Systems.BATTLE_SPEEDS
+    for _, spd in ipairs(BATTLE_SPEEDS) do
+        if spd.id == BS.battleSpeedId then
+            speedLabel = spd.icon .. " " .. spd.name
+        end
+    end
+
+    -- 速度按钮
+    nvgBeginPath(BS.vg)
+    nvgRoundedRect(BS.vg, startX, y, 60, btnSize, 6)
+    nvgFillColor(BS.vg, nvgRGBA(60, 60, 100, 200)); nvgFill(BS.vg)
+    nvgStrokeColor(BS.vg, nvgRGBA(150, 150, 200, 150)); nvgStrokeWidth(BS.vg, 1); nvgStroke(BS.vg)
+    nvgFontFace(BS.vg, "sans"); nvgFontSize(BS.vg, 11)
+    nvgTextAlign(BS.vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(BS.vg, nvgRGBA(255, 255, 255, 255))
+    nvgText(BS.vg, startX + 30, y + btnSize/2, speedLabel)
+
+    addHit(startX, y, 60, btnSize, function()
+        -- 循环切换速度
+        local currentIdx = 1
+        for i, spd in ipairs(BATTLE_SPEEDS) do
+            if spd.id == BS.battleSpeedId then currentIdx = i; break end
+        end
+        local nextIdx = (currentIdx % #BATTLE_SPEEDS) + 1
+        local nextSpeed = BATTLE_SPEEDS[nextIdx]
+        BS.battleSpeed = nextSpeed.mult
+        BS.battleSpeedId = nextSpeed.id
+        if BS.notifyFn then BS.notifyFn("战斗速度: " .. nextSpeed.name, "info") end
+    end)
+
+    -- 自动战斗开关
+    local autoX = startX + 70
+    local autoColor = BS.autoBattleEnabled and nvgRGBA(80, 160, 80, 200) or nvgRGBA(80, 60, 60, 200)
+    local autoStrokeColor = BS.autoBattleEnabled and nvgRGBA(100, 255, 100, 200) or nvgRGBA(150, 100, 100, 150)
+
+    nvgBeginPath(BS.vg)
+    nvgRoundedRect(BS.vg, autoX, y, 60, btnSize, 6)
+    nvgFillColor(BS.vg, autoColor); nvgFill(BS.vg)
+    nvgStrokeColor(BS.vg, autoStrokeColor); nvgStrokeWidth(BS.vg, 1); nvgStroke(BS.vg)
+    nvgFontSize(BS.vg, 11)
+    nvgTextAlign(BS.vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(BS.vg, nvgRGBA(255, 255, 255, 255))
+    nvgText(BS.vg, autoX + 30, y + btnSize/2, BS.autoBattleEnabled and "ON" or "OFF")
+
+    addHit(autoX, y, 60, btnSize, function()
+        BS.autoBattleEnabled = not BS.autoBattleEnabled
+        if BS.notifyFn then
+            BS.notifyFn(BS.autoBattleEnabled and "自动战斗: 开启" or "自动战斗: 关闭", "info")
+        end
+    end)
+
+    -- 自动战斗状态指示
+    if BS.autoBattleEnabled then
+        nvgFontFace(BS.vg, "sans")
+        nvgFontSize(BS.vg, 10)
+        nvgTextAlign(BS.vg, NVG_ALIGN.CENTER)
+        nvgFillColor(BS.vg, nvgRGBA(100, 255, 100, 200))
+        nvgText(BS.vg, autoX + 30, y - 12, "AUTO")
+    end
+
+    -- 快捷键提示
+    nvgFontSize(BS.vg, 8)
+    nvgTextAlign(BS.vg, NVG_ALIGN.LEFT)
+    nvgFillColor(BS.vg, nvgRGBA(150, 150, 150, 150))
+    nvgText(BS.vg, startX, y + btnSize + 10, "1-4:速度 A:自动")
+end
+
 RenderHUD.drawBossPhaseBanner = drawBossPhaseBanner
+RenderHUD.drawSuperBossHealthBar = drawSuperBossHealthBar
 RenderHUD.drawWaveHUD          = drawWaveHUD
 RenderHUD.drawComboHUD         = drawComboHUD
 RenderHUD.drawShipInfoPanel    = drawShipInfoPanel
@@ -773,5 +917,6 @@ RenderHUD.drawFocusHUD         = drawFocusHUD
 RenderHUD.drawFormationBar     = drawFormationBar
 RenderHUD.drawRetreatReinforce = drawRetreatReinforce
 RenderHUD.drawSkillUpgrade     = drawSkillUpgrade
+RenderHUD.drawSpeedControl     = drawSpeedControl
 
 return RenderHUD

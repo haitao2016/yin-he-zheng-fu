@@ -747,6 +747,8 @@ function GameUI.RenderHUD(dt)
             GalaxyPanels.RenderMarket()
             GalaxyPanels.RenderBlackMarket()
             GalaxyPanels.RenderDiploRel()
+            -- P0-2: 无尽挑战和每日挑战按钮
+            GalaxyPanels.RenderChallengeButtons()
             -- P2-1: 查询当前活动编队的驻守信息
             local garrisonInfo_ = getGarrisonInfoCb_ and getGarrisonInfoCb_(FleetPanel.GetActiveId()) or {}
             FleetPanel.Render({
@@ -1249,6 +1251,8 @@ function GameUI.Init(opts)
     if spq_ and rs_ then spq_.techUnlocked = rs_.unlocked or {} end
     UICommon.pirateAI      = pirateAI_   -- P1-3
     UICommon.resIcons      = resIcons_
+    -- P0-5: 共享 GalaxyScene 引用供 GalaxyPanels 访问贸易状态
+    UICommon.galaxyScene   = GalaxyScene
     UICommon.bindFns({
         clr         = clr,
         clrC        = clrC,
@@ -1275,6 +1279,9 @@ function GameUI.Init(opts)
         onActivateMediationCb = onActivateMediationCb_,
         onSendSignalCb        = onSendSignalCb_,
         notifyFn              = GameUI.Notify,
+        -- P0-2: 无尽/每日挑战回调
+        onEndlessChallengeCb  = GameUI.OpenEndlessModePanel,
+        onDailyChallengeCb     = GameUI.OpenDailyChallengePanel,
     })
     Overlays.Init({
         onCampaignDialogueDone = onCampaignDialogueDone_,
@@ -1494,6 +1501,19 @@ function GameUI.ShowEndgameCrisisPanel(crisis, onChoice)
 end
 
 function GameUI.RenderProgressBars(selectedPlanet)
+end
+
+-- P0-2: 打开无尽模式选择面板
+function GameUI.OpenEndlessModePanel()
+    local EndlessPanel = require("game.ui.EndlessPanel")
+    EndlessPanel.Show()
+end
+
+-- P0-3: 打开每日挑战面板
+function GameUI.OpenDailyChallengePanel()
+    local ChallengePanel = require("game.ui.ChallengePanel")
+    local panel = ChallengePanel.open()
+    registerOverlay("dailyChallenge", function(vg) panel.draw(vg) end)
 end
 
 return GameUI

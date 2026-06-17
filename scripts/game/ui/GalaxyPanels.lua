@@ -60,6 +60,9 @@ local onActivateBlockadeCb_   = nil
 local onActivateMediationCb_  = nil
 local onSendSignalCb_         = nil
 local notifyFn_               = nil
+-- P0-2: 无尽/每日挑战按钮回调
+local onEndlessChallengeCb_   = nil
+local onDailyChallengeCb_     = nil
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- 公共 API
@@ -80,6 +83,9 @@ function M.Init(cfg)
     onActivateMediationCb_ = cfg.onActivateMediationCb
     onSendSignalCb_        = cfg.onSendSignalCb
     notifyFn_              = cfg.notifyFn
+    -- P0-2: 无尽/每日挑战回调
+    onEndlessChallengeCb_  = cfg.onEndlessChallengeCb
+    onDailyChallengeCb_    = cfg.onDailyChallengeCb
 end
 
 function M.Update(dt)
@@ -1427,6 +1433,247 @@ function M.RenderShipyard(planet)
             sy = sy + 20
         end
     end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- P0-5: 星际贸易面板
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- P0-5: 贸易路线面板状态
+local tradePanelVisible_ = false
+local tradePanelTarget_  = nil
+
+-- P0-5: 贸易路线按钮
+function M.RenderTradeButton(planet)
+    if not planet then return end
+
+    local vg      = UICommon.vg
+    local screenW = UICommon.screenW
+    local addHit  = UICommon.addHit
+
+    -- 检查是否有星际交易所
+    local hasTradeHub = false
+    if planet.buildings then
+        for _, b in ipairs(planet.buildings) do
+            if b.key == "TRADE_HUB" then hasTradeHub = true; break end
+        end
+    end
+    if not hasTradeHub then return end
+
+    -- 按钮位置（在行星信息面板旁边）
+    local px, py = 12, 200
+    local btnW, btnH = 60, 22
+
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, px, py, btnW, btnH, 4)
+    nvgFillColor(vg, nvgRGBA(80, 60, 40, 200))
+    nvgFill(vg)
+    nvgStrokeColor(vg, nvgRGBA(200, 150, 100, 150))
+    nvgStrokeWidth(vg, 1)
+    nvgStroke(vg)
+
+    nvgFontFace(vg, "sans")
+    nvgFontSize(vg, 10)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 220, 180, 255))
+    nvgText(vg, px + btnW/2, py + btnH/2, "📦 贸易")
+
+    addHit(px, py, btnW, btnH, function()
+        tradePanelTarget_ = planet
+        tradePanelVisible_ = true
+    end)
+end
+
+-- P0-5: 贸易面板
+function M.RenderTradePanel()
+    if not tradePanelVisible_ then return end
+
+    local vg      = UICommon.vg
+    local screenW = UICommon.screenW
+    local screenH = UICommon.screenH
+    local addHit  = UICommon.addHit
+
+    local TS = require("game.systems.TradeSystem")
+
+    -- 尝试获取玩家贸易状态（从 GalaxyScene 共享状态）
+    local playerState = nil
+    if UICommon.galaxyScene and UICommon.galaxyScene.GetTradeState then
+        playerState = UICommon.galaxyScene.GetTradeState()
+    end
+
+    local routes = playerState and TS.getAllRoutes(playerState) or {}
+
+    local cx = (screenW or 800) / 2
+    local cy = (screenH or 600) / 2
+    local pw, ph = 400, 320
+    local panelX, panelY = cx - pw/2, cy - ph/2
+
+    -- 面板背景
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, panelX, panelY, pw, ph, 10)
+    nvgFillColor(vg, nvgRGBA(30, 20, 40, 250))
+    nvgFill(vg)
+    nvgStrokeColor(vg, nvgRGBA(200, 150, 100, 180))
+    nvgStrokeWidth(vg, 2)
+    nvgStroke(vg)
+
+    -- 标题
+    nvgFontFace(vg, "sans")
+    nvgFontSize(vg, 18)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER)
+    nvgFillColor(vg, nvgRGBA(255, 200, 150, 255))
+    nvgText(vg, cx, panelY + 30, "📦 星际贸易")
+
+    -- 当前路线状态
+    local yStart = panelY + 60
+    if #routes == 0 then
+        nvgFontSize(vg, 12)
+        nvgTextAlign(vg, NVG_ALIGN.CENTER)
+        nvgFillColor(vg, nvgRGBA(180, 180, 180, 200))
+        nvgText(vg, cx, yStart + 20, "暂无贸易路线")
+    else
+        for i, route in ipairs(routes) do
+            local status = TS.getRouteStatus(route.id, playerState)
+            local by = yStart + (i - 1) * 50
+
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, panelX + 20, by, pw - 40, 40, 6)
+            nvgFillColor(vg, nvgRGBA(50, 40, 60, 200))
+            nvgFill(vg)
+
+            nvgFontSize(vg, 11)
+            nvgTextAlign(vg, NVG_ALIGN.LEFT + NVG_ALIGN.MIDDLE)
+            nvgFillColor(vg, nvgRGBA(255, 220, 180, 255))
+            nvgText(vg, panelX + 30, by + 15, (route.from or "?") .. " → " .. (route.to or "?"))
+
+            -- 进度条
+            local barW = pw - 80
+            local barX = panelX + 30
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, barX, by + 25, barW, 8, 3)
+            nvgFillColor(vg, nvgRGBA(60, 60, 80, 200))
+            nvgFill(vg)
+
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, barX, by + 25, barW * (status and status.progress or 0), 8, 3)
+            nvgFillColor(vg, nvgRGBA(100, 200, 100, 200))
+            nvgFill(vg)
+
+            nvgFontSize(vg, 9)
+            nvgTextAlign(vg, NVG_ALIGN.LEFT)
+            nvgFillColor(vg, nvgRGBA(200, 200, 200, 200))
+            nvgText(vg, barX + barW + 5, by + 28, "+" .. (status and status.nextReward or 0) .. " " .. (route.resource or "?"))
+
+            -- 取消按钮
+            local cancelX = panelX + pw - 55
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, cancelX, by + 10, 30, 20, 3)
+            nvgFillColor(vg, nvgRGBA(180, 60, 60, 180))
+            nvgFill(vg)
+            nvgFontSize(vg, 9)
+            nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+            nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+            nvgText(vg, cancelX + 15, by + 20, "取消")
+            addHit(cancelX, by + 10, 30, 20, function()
+                if playerState then
+                    TS.cancelRoute(route.id, playerState)
+                end
+            end)
+        end
+    end
+
+    -- 建立新路线
+    local yBtn = panelY + ph - 80
+    if #routes < (TRADE_ROUTE_REQUIREMENTS and TRADE_ROUTE_REQUIREMENTS.maxRoutes or 3) then
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, cx - 80, yBtn, 160, 32, 6)
+        nvgFillColor(vg, nvgRGBA(80, 120, 80, 200))
+        nvgFill(vg)
+        nvgFontSize(vg, 12)
+        nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+        nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+        nvgText(vg, cx, yBtn + 16, "建立新路线")
+
+        addHit(cx - 80, yBtn, 160, 32, function()
+            -- TODO: 打开星球选择器建立路线
+            if notifyFn_ then
+                notifyFn_("选择目标星球建立贸易路线", "info")
+            end
+        end)
+    end
+
+    -- 关闭按钮
+    local closeX, closeY = panelX + pw - 30, panelY + 10
+    nvgBeginPath(vg)
+    nvgCircle(vg, closeX, closeY, 10)
+    nvgFillColor(vg, nvgRGBA(80, 80, 100, 200))
+    nvgFill(vg)
+    nvgFontSize(vg, 10)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+    nvgText(vg, closeX, closeY, "×")
+    addHit(closeX - 10, closeY - 10, 20, 20, function()
+        tradePanelVisible_ = false
+        tradePanelTarget_ = nil
+    end)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- P0-2: 无尽挑战和每日挑战按钮
+-- ═══════════════════════════════════════════════════════════════════════════════
+function M.RenderChallengeButtons()
+    local vg      = UICommon.vg
+    local screenW = UICommon.screenW
+    local screenH = UICommon.screenH
+    local cursorX = UICommon.cursorX
+    local cursorY = UICommon.cursorY
+    local addHit  = UICommon.addHit
+
+    -- P0-2: 无尽挑战按钮（屏幕中央下方）
+    local btnW, btnH = 140, 36
+    local btnX = screenW/2 - btnW/2
+    local btnY = screenH/2 + 80
+
+    local endlessHover = cursorX >= btnX and cursorX <= btnX + btnW
+                     and cursorY >= btnY and cursorY <= btnY + btnH
+
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, btnX, btnY, btnW, btnH, 6)
+    nvgFillColor(vg, endlessHover and nvgRGBA(140, 30, 100, 220) or nvgRGBA(120, 20, 80, 200))
+    nvgFill(vg)
+    nvgStrokeColor(vg, nvgRGBA(255, 100, 200, endlessHover and 200 or 150))
+    nvgStrokeWidth(vg, 2)
+    nvgStroke(vg)
+    nvgFontFace(vg, "sans")
+    nvgFontSize(vg, 13)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 200, 255, 255))
+    nvgText(vg, btnX + btnW/2, btnY + btnH/2, "∞ 无尽挑战")
+
+    addHit(btnX, btnY, btnW, btnH, function()
+        if onEndlessChallengeCb_ then onEndlessChallengeCb_() end
+    end)
+
+    -- P0-3: 每日挑战按钮（右上角）
+    local dailyBtnX, dailyBtnY, dailyBtnW, dailyBtnH = screenW - 130, 15, 115, 28
+    local dailyHover = cursorX >= dailyBtnX and cursorX <= dailyBtnX + dailyBtnW
+                    and cursorY >= dailyBtnY and cursorY <= dailyBtnY + dailyBtnH
+
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, dailyBtnX, dailyBtnY, dailyBtnW, dailyBtnH, 6)
+    nvgFillColor(vg, dailyHover and nvgRGBA(100, 60, 140, 220) or nvgRGBA(80, 40, 120, 200))
+    nvgFill(vg)
+    nvgStrokeColor(vg, nvgRGBA(200, 150, 255, dailyHover and 200 or 150))
+    nvgStrokeWidth(vg, 1)
+    nvgStroke(vg)
+    nvgFontSize(vg, 11)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 220, 255, 255))
+    nvgText(vg, dailyBtnX + dailyBtnW/2, dailyBtnY + dailyBtnH/2, "📅 今日挑战")
+
+    addHit(dailyBtnX, dailyBtnY, dailyBtnW, dailyBtnH, function()
+        if onDailyChallengeCb_ then onDailyChallengeCb_() end
+    end)
 end
 
 return M

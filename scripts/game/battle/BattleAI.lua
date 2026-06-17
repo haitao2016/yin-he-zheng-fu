@@ -9,6 +9,7 @@ local Audio = require("game.AudioManager")
 local BattleSkills = require("game.BattleSkills")
 local Systems = require("game.Systems")
 local SHIP_TYPES = Systems.SHIP_TYPES
+local SUPER_BOSSES = Systems.SUPER_BOSSES
 local NemesisSystem = require("game.NemesisSystem")
 local BattleReplaySystem = require("game.BattleReplaySystem")
 local Commander = require("game.CommanderSystem")
@@ -1882,5 +1883,164 @@ BattleAI.BOSS_DRONE_COUNT     = BOSS_DRONE_COUNT
 BattleAI.BOSS_DRONE_DMG       = BOSS_DRONE_DMG
 BattleAI.BOSS_VOID_DMG        = BOSS_VOID_DMG
 BattleAI.BOSS_PHANTOM_COUNT   = BOSS_PHANTOM_COUNT
+
+-- P0-1: 超级 Boss AI 特殊行为
+function BattleAI.UpdateSuperBoss(ship, dt, ctx)
+    if not ship.isSuperBoss then return end
+
+    local bossDef = SUPER_BOSSES[ship.superBossType]
+    if not bossDef then return end
+
+    local phase = ship.currentPhase
+    if not phase then return end
+
+    -- 超级 Boss 基础移动（比普通 Boss 更慢，更具压迫感）
+    if not ship.isStatic then
+        ship.x = ship.x + math.cos(ship.moveAngle or 0) * (ship.speed or 15) * dt
+        ship.y = ship.y + math.sin(ship.moveAngle or 0) * (ship.speed or 15) * dt
+        ship.moveAngle = (ship.moveAngle or 0) + 0.2 * dt
+    end
+
+    -- 阶段特殊行为
+    if phase.special == "BOMBARDMENT" then
+        -- 毁灭轰炸：每 N 秒对随机位置发射范围炸弹
+        ship.bombardTimer = (ship.bombardTimer or phase.skillInterval) - dt
+        if ship.bombardTimer <= 0 then
+            ship.bombardTimer = phase.skillInterval
+            local targetX, targetY
+            if ctx.playerFleet and #ctx.playerFleet > 0 then
+                local target = ctx.playerFleet[math.random(#ctx.playerFleet)]
+                targetX, targetY = target.x, target.y
+            else
+                targetX = (ctx.screenW and ctx.screenW/2) or 400
+                targetY = (ctx.screenH and ctx.screenH/2) or 300
+            end
+            -- 创建炸弹区域效果（给 RenderHUD 使用）
+            if ctx.bombardZones then
+                ctx.bombardZones[#ctx.bombardZones + 1] = {
+                    x = targetX, y = targetY,
+                    radius = phase.aoeRadius,
+                    timer = 0.8,
+                    maxTimer = 0.8,
+                    damage = phase.skillDmg,
+                }
+            end
+            if ctx.SK then
+                ctx.SK.strength = math.max(ctx.SK.strength, 6)
+                ctx.SK.dur = math.max(ctx.SK.dur, 0.2)
+                ctx.SK.timer = math.max(ctx.SK.timer, 0.2)
+            end
+            if ctx.floatTexts then
+                ctx.floatTexts[#ctx.floatTexts + 1] = {
+                    x = targetX, y = targetY,
+                    text = "💣 轰炸!", life = 1.0, maxLife = 1.0,
+                    vy = -25, team = "enemy"
+                }
+            end
+        end
+    end
+
+    if phase.special == "VOID_FIELD" then
+        -- 虚空领域：全场持续伤害，越靠近 Boss 伤害越高
+        if ctx.playerFleet then
+            for _, ally in ipairs(ctx.playerFleet) do
+                local dx, dy = ally.x - ship.x, ally.y - ship.y
+                local dist = math.sqrt(dx*dx + dy*dy)
+                local dmgMult = 1.0 + math.max(0, 1.0 - dist / 500)
+                ally.health = ally.health - phase.fieldDmgPerSec * dmgMult * dt
+            end
+        end
+        ship.voidFieldRadius = (ship.voidFieldRadius or 400) - phase.shrinkRate * dt
+    end
+
+    if phase.special == "TIME_WARP" then
+        -- 时间扭曲：所有友军减速 50%
+        if ctx.playerFleet then
+            for _, ally in ipairs(ctx.playerFleet) do
+                ally.speedMult = (ally.speedMult or 1.0) * (1.0 - phase.slowAllies)
+                ally.timeWarpTimer = phase.duration
+            end
+        end
+    end
+
+    if phase.special == "ANNIHILATION" then
+        -- 湮灭：召唤 N 个从属
+        ship.annihilTimer = (ship.annihilTimer or 8.0) - dt
+        if ship.annihilTimer <= 0 then
+            ship.annihilTimer = 8.0
+            for i = 1, phase.minionCount do
+                local angle = (i / phase.minionCount) * math.pi * 2
+                local dist = 80
+                if ctx.enemyFleet and makeShip_ then
+                    local minion = makeShip_("DESTROYER",
+                        ship.x + math.cos(angle) * dist,
+                        ship.y + math.sin(angle) * dist,
+                        "enemy")
+                    minion.health = 100
+                    minion.maxHealth = 100
+                    minion.dmg = 15
+                    minion.isMinion = true
+                    ctx.enemyFleet[#ctx.enemyFleet + 1] = minion
+                end
+            end
+            if ctx.floatTexts then
+                ctx.floatTexts[#ctx.floatTexts + 1] = {
+                    x = ship.x, y = ship.y - 40,
+                    text = "👹 湮灭召唤!", life = 1.0, maxLife = 1.0,
+                    vy = -20, team = "enemy"
+                }
+            end
+        end
+    end
+
+    if phase.special == "INFECTION" then
+        -- 感染蔓延：持续召唤小型敌舰
+        ship.infectionTimer = (ship.infectionTimer or 5.0) - dt
+        if ship.infectionTimer <= 0 and (ctx.enemyFleet and #ctx.enemyFleet < 20) then
+            ship.infectionTimer = 5.0 / phase.enemySpawnRate
+            if ctx.enemyFleet and makeShip_ then
+                local minion = makeShip_("INTERCEPTOR",
+                    ship.x + math.random(-100, 100),
+                    ship.y + math.random(-100, 100),
+                    "enemy")
+                minion.health = 30
+                minion.isInfected = true
+                ctx.enemyFleet[#ctx.enemyFleet + 1] = minion
+            end
+        end
+    end
+
+    if phase.special == "FINAL_BURST" then
+        -- 最终爆发：每 N 秒全队伤害
+        ship.burstTimer = (ship.burstTimer or 3.0) - dt
+        if ship.burstTimer <= 0 then
+            ship.burstTimer = 3.0
+            if ctx.playerFleet then
+                for _, ally in ipairs(ctx.playerFleet) do
+                    ally.health = ally.health - phase.dmg
+                end
+            end
+            if ctx.SK then
+                ctx.SK.strength = math.max(ctx.SK.strength, 15)
+                ctx.SK.dur = math.max(ctx.SK.dur, 0.5)
+                ctx.SK.timer = math.max(ctx.SK.timer, 0.5)
+            end
+            if ctx.floatTexts then
+                ctx.floatTexts[#ctx.floatTexts + 1] = {
+                    x = (ctx.screenW or 800) / 2,
+                    y = (ctx.screenH or 600) / 2,
+                    text = "💥 最终爆发!", life = 1.5, maxLife = 1.5,
+                    vy = -30, team = "enemy"
+                }
+            end
+        end
+    end
+
+    -- FRENZY 阶段：加速 + 增伤
+    if phase.special == "FRENZY" then
+        ship.speedMult = (ship.speedMult or 1.0) * phase.speedMult
+        ship.dmgMult = (ship.dmgMult or 1.0) * phase.dmgMult
+    end
+end
 
 return BattleAI

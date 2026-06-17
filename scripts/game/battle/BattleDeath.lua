@@ -6,6 +6,9 @@
 local Audio              = require("game.AudioManager")
 local BattleReplaySystem = require("game.BattleReplaySystem")
 local BattleUtils        = require("game.battle.BattleUtils")
+local Systems = require("game.Systems")
+local SUPER_BOSSES = Systems.SUPER_BOSSES
+local SUPER_BOSS_ITEMS = Systems.SUPER_BOSS_ITEMS
 
 local BattleDeath = {}
 
@@ -228,6 +231,52 @@ function BattleDeath.Update(dt, ctx, makeShip)
                     end
                     print(string.format("[P2-3] 里程碑Boss击败！层=%d  核能+%d 水晶+%d 金属+%d 蓝晶石+%d",
                         ctx.endlessRound, nucBonus, crystalBonus, metalBonus, blueCrystalBonus))
+                -- P0-1: 超级 Boss 掉落处理
+                elseif ship.isSuperBoss then
+                    local def = SUPER_BOSSES[ship.superBossType]
+                    -- 额外爆炸特效（比里程碑 Boss 更多）
+                    for _ = 1, 10 do BattleUtils.spawnExplosion(ctx, ship) end
+                    -- 极强烈屏幕震动
+                    ctx.SK.strength = 25
+                    ctx.SK.dur      = 1.0
+                    ctx.SK.timer    = ctx.SK.dur
+                    -- P2-2b: 战斗日志 — 超级 Boss 击破
+                    BattleUtils.logBattleEvent(ctx, string.format("%s 击破超级 Boss %s！", ctx.fleetName, def and def.name or "???"))
+                    -- 全屏闪光 + 超级 BOSS DESTROYED 横幅
+                    ctx.bossFlashAlpha = 255
+                    ctx.bossFlashTimer = ctx.BOSS_BANNER_DUR
+                    -- 超级 Boss 专属资源奖励
+                    if def and def.rewards then
+                        local nucBonus     = 200 + ctx.waveNum * 50
+                        local crystalBonus = 100 + ctx.waveNum * 30
+                        if ctx.rm then
+                            ctx.rm:add("nuclear", nucBonus)
+                            ctx.rm:add("crystal", crystalBonus)
+                            if def.rewards.blueCrystal then
+                                ctx.rm:addRare("BLUE_CRYSTAL", def.rewards.blueCrystal)
+                            end
+                            if def.rewards.purpleCrystal then
+                                ctx.rm:addRare("PURPLE_CRYSTAL", def.rewards.purpleCrystal)
+                            end
+                            if def.rewards.rainbowCrystal then
+                                ctx.rm:addRare("RAINBOW_CRYSTAL", def.rewards.rainbowCrystal)
+                            end
+                        end
+                        -- 发放专属物品
+                        if def.rewards.rareItem and SUPER_BOSS_ITEMS[def.rewards.rareItem] then
+                            ctx.playerState = ctx.playerState or {}
+                            ctx.playerState.superBossItems = ctx.playerState.superBossItems or {}
+                            ctx.playerState.superBossItems[def.rewards.rareItem] = true
+                            if ctx.notifyFn then
+                                ctx.notifyFn("获得传说物品: " .. SUPER_BOSS_ITEMS[def.rewards.rareItem].name .. "！", "legendary")
+                            end
+                        end
+                    end
+                    if ctx.notifyFn then
+                        ctx.notifyFn("💀 超级 Boss " .. (def and def.name or "") .. " 被击败！", "legendary")
+                    end
+                    print(string.format("[P0-1] 超级 Boss 击败！类型=%s  核能+%d 水晶+%d",
+                        ship.superBossType, nucBonus or 0, crystalBonus or 0))
                 else
                     -- 普通 Boss 奖励
                     local nucBonus    = 80  + ctx.waveNum * 20

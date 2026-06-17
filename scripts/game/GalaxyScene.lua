@@ -126,6 +126,8 @@ local garrisonedFleets_   = {}   -- P2-1: 驻守关系 {[fleetId]=planet}
 local colonyRipples_      = {}   -- P3-1: 殖民涟漪动画列表 [{wx,wy,t,dur}]
 local stargateCooldown_   = 0    -- P2-4: 星门瞬移冷却（秒）
 local diploRelData_       = nil  -- P1-1: 外交关系数据 {rels=[{fk1,fk2,rel}], agreements={...}}
+-- P0-5: 星际贸易系统状态
+local tradeState_         = nil  -- { tradeRoutes={}, tradeCooldowns={}, tradeRewards={} }
 
 -- ============================================================================
 -- P3-1: 快捷信号通信系统
@@ -964,6 +966,8 @@ function GalaxyScene.Init(opts)
     rm_           = opts.rm
     fm_           = opts.fm
     player_       = opts.player
+    -- P0-5: 初始化贸易系统状态
+    tradeState_   = { tradeRoutes = {}, tradeCooldowns = {}, tradeRewards = {} }
     notifyFn_     = opts.notifyFn
     onPlanetSelect_       = opts.onPlanetSelect
     onFleetSelect_            = opts.onFleetSelect
@@ -1622,6 +1626,9 @@ function GalaxyScene.Update(dt)
     if pirateAI_ then pirateAI_:update(dt) end
     -- 随机事件更新
     GalaxyEvents.Update(dt, seedShip_.colonized, seedShip_.x, seedShip_.y)
+    -- P0-5: 贸易系统更新
+    local TS = require("game.systems.TradeSystem")
+    TS.update(dt, tradeState_, rm_)
     -- 耗尽的小行星定期重生
     for _, a in ipairs(asteroids_) do
         if not a.health or a.health <= 0 then
@@ -1957,6 +1964,11 @@ end
 --- 返回基地对象（展开后可用于建造模块，兼容 planet 接口）
 function GalaxyScene.GetBase()
     return seedShip_
+end
+
+-- P0-5: 返回贸易系统状态（供 GalaxyPanels 调用）
+function GalaxyScene.GetTradeState()
+    return tradeState_
 end
 
 --- 外部同步选中编队（UI 面板点击编队 tab 后调用）

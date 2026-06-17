@@ -515,3 +515,182 @@ COMMANDER_SOURCE = {
 }
 
 COMMANDER_MARKET_COST = 2000
+
+-- ============================================================================
+-- P0-2: 无尽模式定义
+-- ============================================================================
+ENDLESS_MODES = {
+    CLASSIC = { name = "经典无尽", startWave = 1, difficultyCurve = "linear", 
+                desc = "难度线性递增，适合长期挑战" },
+    SURVIVAL = { name = "生存模式", startWave = 20, difficultyCurve = "exponential",
+                desc = "难度指数递增，更具挑战性" },
+    SPEEDRUN = { name = "速通模式", startWave = 1, difficultyCurve = "linear",
+                desc = "10分钟内到达波次50", timeLimit = 600, goalWave = 50 },
+}
+
+-- 难度递增曲线计算
+function getEndlessDifficulty(waveNum, mode)
+    local baseMultiplier = 1.0
+    local endlessMode = ENDLESS_MODES[mode] or ENDLESS_MODES.CLASSIC
+    
+    if endlessMode.difficultyCurve == "linear" then
+        baseMultiplier = 1.0 + (waveNum - 1) * 0.08  -- 每波 +8%
+    elseif endlessMode.difficultyCurve == "exponential" then
+        baseMultiplier = math.pow(1.1, math.min(waveNum - 1, 30))  -- 每波 ×1.1
+    end
+    
+    return math.min(10.0, baseMultiplier)  -- 硬上限 10x
+end
+
+-- 无尽模式奖励表
+ENDLESS_REWARDS = {
+    every10Wave = { blueCrystal = {30, 50} },  -- 每10波奖励范围
+    every25Wave = { purpleCrystal = 10 },       -- 每25波稀有材料
+    milestone = {
+        [50] = { blueCrystal = 100, purpleCrystal = 30 },
+        [100] = { blueCrystal = 200, purpleCrystal = 80, rainbowCrystal = 10 },
+        [200] = { blueCrystal = 500, purpleCrystal = 200, rainbowCrystal = 50 },
+    },
+}
+
+-- ============================================================================
+-- P0-3: 每日挑战定义
+-- ============================================================================
+DAILY_CHALLENGES = {
+    { type = "ONLY_DESTROYER", desc = "只能建造驱逐舰", icon = "🚀", reward = 50 },
+    { type = "ONLY_STEALTH", desc = "只能建造隐形舰", icon = "👻", reward = 60, prereq = "PHASE_DRIVE" },
+    { type = "NO_SUPPORT", desc = "禁止建造支援舰", icon = "🚫", reward = 40 },
+    { type = "LOW_RESOURCE", metalMult = 0.5, esourceMult = 0.5, desc = "资源产量减半", icon = "📉", reward = 45 },
+    { type = "NO_SKILLS", desc = "禁止使用主动技能", icon = "❌", reward = 70 },
+    { type = "BOSS_FROM_WAVE1", desc = "第1波就是Boss", icon = "💀", reward = 100, difficulty = "hard" },
+    { type = "SPEED_BATTLE", timeLimitPerWave = 30, desc = "每波限时30秒", icon = "⏱️", reward = 80 },
+    { type = "NO_HEALING", desc = "禁止治疗", icon = "🩹", reward = 65 },
+}
+
+-- 挑战积分商店
+CHALLENGE_SHOP = {
+    { id = "SKILL_RESET", name = "技能点重置券", cost = 100, desc = "重置所有技能点", icon = "🔄" },
+    { id = "GOLD_CHEST", name = "黄金宝箱", cost = 200, desc = "随机稀有道具", icon = "📦" },
+    { id = "SPEED_UP", name = "全局加速", cost = 150, desc = "所有建筑速度+50%", icon = "⚡" },
+    { id = "REPAIR_KIT", name = "维修套件", cost = 80, desc = "恢复舰队50%血量", icon = "🔧" },
+    { id = "BOSS_KEY", name = "Boss钥匙", cost = 500, desc = "直接召唤一个Boss", icon = "🗝️" },
+}
+
+-- P0-1: 超级 Boss 定义（里程碑波次触发）
+SUPER_BOSSES = {
+    -- 毁灭者：波次 50 首次出现
+    DEVASTATOR = {
+        name = "毁灭者",
+        health = 50000,
+        phases = {
+            { hpThreshold = 0.8, name = "常规形态", special = nil },
+            { hpThreshold = 0.5, name = "毁灭轰炸", special = "BOMBARDMENT",
+              skillInterval = 4, skillDmg = 80, aoeRadius = 120 },
+            { hpThreshold = 0.2, name = "最终形态", special = "FRENZY",
+              speedMult = 2, dmgMult = 1.5, skillInterval = 2 },
+        },
+        rewards = { blueCrystal = 200, purpleCrystal = 50, rareItem = "DEVASTATOR_CORE" },
+        mechanics = "范围轰炸 · 全屏AOE · 移动加速",
+    },
+    -- 虚空泰坦：波次 100 首次出现
+    VOID_TITAN = {
+        name = "虚空泰坦",
+        health = 100000,
+        phases = {
+            { hpThreshold = 0.7, name = "虚空领域", special = "VOID_FIELD",
+              fieldDmgPerSec = 5, shrinkRate = 0.1 },
+            { hpThreshold = 0.4, name = "时间扭曲", special = "TIME_WARP",
+              slowAllies = 0.5, duration = 10 },
+            { hpThreshold = 0.1, name = "湮灭", special = "ANNIHILATION",
+              summonMinions = true, minionCount = 8 },
+        },
+        rewards = { blueCrystal = 300, purpleCrystal = 100, rainbowCrystal = 20, rareItem = "VOID_TITAN_HEART" },
+        mechanics = "虚空领域 · 时间扭曲 · 召唤从属",
+    },
+    -- 母巢意识：波次 200 首次出现
+    HIVE_MIND = {
+        name = "母巢意识",
+        health = 200000,
+        phases = {
+            { hpThreshold = 0.6, name = "感染蔓延", special = "INFECTION",
+              enemySpawnRate = 0.5, alliesTakeDmg = 2 },
+            { hpThreshold = 0.3, name = "意识控制", special = "MIND_CONTROL",
+              chanceToControl = 0.1, controlDuration = 5 },
+            { hpThreshold = 0, name = "最终爆发", special = "FINAL_BURST",
+              allAlliesTakeDmg = true, dmg = 50 },
+        },
+        rewards = { blueCrystal = 500, purpleCrystal = 200, rainbowCrystal = 50, rareItem = "HIVE_QUEEN_FRAGMENT" },
+        mechanics = "持续召唤 · 意识控制 · 全队伤害",
+    },
+}
+
+-- 超级 Boss 触发波次
+SUPER_BOSS_WAVES = { 50, 100, 200 }
+
+-- 超级 Boss 掉落物品定义
+SUPER_BOSS_ITEMS = {
+    DEVASTATOR_CORE = { name = "毁灭者核心", desc = "用于旗舰强化", rarity = "epic" },
+    VOID_TITAN_HEART = { name = "虚空泰坦之心", desc = "用于传说装备", rarity = "legendary" },
+    HIVE_QUEEN_FRAGMENT = { name = "母巢意识碎片", desc = "终极材料", rarity = "mythic" },
+}
+
+-- P0-4: 舰船强化材料
+ENHANCEMENT_MATERIALS = {
+    BASIC_REPAIR_KIT    = { name = "初级修复剂",    cost = { metal = 100 },      effect = { health = 10 } },
+    ADVANCED_REPAIR_KIT = { name = "高级修复剂",    cost = { metal = 300 },      effect = { health = 35 } },
+    WEAPON_MODULE       = { name = "武器模组",       cost = { metal = 200 },      effect = { dmg = 8 } },
+    SHIELD_CAPACITOR    = { name = "护盾电容",      cost = { metal = 250 },      effect = { shield = 15 } },
+    ENGINE_BOOSTER      = { name = "引擎增强器",    cost = { metal = 200 },      effect = { speed = 5 } },
+    TITANIUM_ALLOY      = { name = "钛合金",        cost = { blueCrystal = 5 },  effect = { all = 5 } },
+    DARK_MATTER         = { name = "暗物质",        cost = { purpleCrystal = 5 }, effect = { dmg = 15, health = 10 } },
+}
+
+-- 每艘舰船强化等级上限
+SHIP_ENHANCE_MAX = {
+    DESTROYER = 20, BATTLECRUISER = 15, CARRIER = 10,
+    STEALTH = 25, SUPPORT = 15, DREADNOUGHT = 8,
+}
+
+-- 强化效果倍率（每级）
+ENHANCE_EFFECT_SCALE = {
+    health = 1.0,   -- 每级 +10% 基础值
+    dmg = 0.08,    -- 每级 +8% 基础值
+    shield = 0.06, -- 每级 +6% 基础值
+    speed = 0.05,  -- 每级 +5% 基础值
+    all = 0.10,    -- 每级 +10% 全部属性
+}
+
+-- P0-5: 星际贸易路线定义
+TRADE_ROUTES = {
+    { from = "INDUSTRIAL_PLANET", to = "HOME_BASE", resource = "metal", amount = 50, cooldown = 60, profit = 1.2 },
+    { from = "RESOURCE_RICH", to = "HOME_BASE", resource = "esource", amount = 30, cooldown = 90, profit = 1.3 },
+    { from = "HOME_BASE", to = "FRONTIER", resource = "metal", amount = 40, cooldown = 120, profit = 1.5 },
+}
+
+-- 贸易路线建立条件
+TRADE_ROUTE_REQUIREMENTS = {
+    minDistance = 200,
+    hasTradeHub = true,
+    fleetAvailable = true,
+    maxRoutes = 3,  -- 最多同时建立 3 条贸易路线
+}
+
+-- 贸易路线奖励产出间隔（秒）
+TRADE_REWARD_INTERVAL = 300  -- 5 分钟
+
+-- P0-6/7: 自动战斗与加速配置
+AUTO_BATTLE = {
+    enabled = false,
+    retreatThreshold = 0.2,      -- 20% HP 时后撤
+    healerPriority = true,        -- 治疗舰优先治疗低血量友舰
+    stealthWhenIdle = true,       -- 隐形舰空闲时自动隐身
+    useSkillsAutomatically = true, -- 自动使用技能
+}
+
+BATTLE_SPEEDS = {
+    { id = "NORMAL",   name = "1x",   mult = 1.0, icon = "▶" },
+    { id = "FAST",     name = "1.5x", mult = 1.5, icon = "▶▶" },
+    { id = "FASTER",   name = "2x",   mult = 2.0, icon = "▶▶▶" },
+    { id = "FASTEST",  name = "3x",   mult = 3.0, icon = "⏩" },
+}
+CURRENT_BATTLE_SPEED = "NORMAL"

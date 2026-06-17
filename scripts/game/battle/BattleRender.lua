@@ -31,6 +31,7 @@ local drawShockRings        = RenderEntities.drawShockRings
 
 local drawWaveHUD           = RenderHUD.drawWaveHUD
 local drawBossPhaseBanner   = RenderHUD.drawBossPhaseBanner
+local drawSuperBossHealthBar = RenderHUD.drawSuperBossHealthBar
 local drawComboHUD          = RenderHUD.drawComboHUD
 local drawShipInfoPanel     = RenderHUD.drawShipInfoPanel
 local drawFocusRing         = RenderHUD.drawFocusRing
@@ -38,6 +39,7 @@ local drawFocusHUD          = RenderHUD.drawFocusHUD
 local drawFormationBar      = RenderHUD.drawFormationBar
 local drawRetreatReinforce  = RenderHUD.drawRetreatReinforce
 local drawSkillUpgrade      = RenderHUD.drawSkillUpgrade
+local drawSpeedControl      = RenderHUD.drawSpeedControl
 
 local drawBossDestroyedEffect  = RenderOverlays.drawBossDestroyedEffect
 local drawFireworks            = RenderOverlays.drawFireworks
@@ -89,8 +91,10 @@ function BattleRender.Render()
     drawComboHUD()
     drawFormationBar()
     drawRetreatReinforce()
+    drawSpeedControl()
     BS.BattleSkills.Draw({ vg = BS.vg, state = BS.state, rs = BS.rs, screenW = BS.screenW, screenH = BS.screenH })
     drawBossPhaseBanner()
+    drawSuperBossHealthBar()
     drawBossWarning()
     drawPincerBanner()
     drawNemesisOverlay()
