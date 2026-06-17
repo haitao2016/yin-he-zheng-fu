@@ -116,7 +116,7 @@ end
 -- ============================================================================
 -- 辅助函数
 -- ============================================================================
-local function dist2(x1, y1, x2, y2)
+local function dist(x1, y1, x2, y2)
     local dx, dy = x2 - x1, y2 - y1
     return math.sqrt(dx * dx + dy * dy)
 end
@@ -129,7 +129,7 @@ local function findNearest(ship, fleet, skipStealth)
         if skipStealth and s.stealthTimer and s.stealthTimer > 0 then
             -- skip
         else
-            local d = dist2(ship.x, ship.y, s.x, s.y)
+            local d = dist(ship.x, ship.y, s.x, s.y)
             if d < bd then best = s; bd = d end
         end
     end
@@ -744,7 +744,7 @@ function BattleAI.UpdatePlayerFleet(dt)
         if ship.target then
             local tx, ty = ship.target.x, ship.target.y
             local range = ship.range or 180
-            local d = dist2(ship.x, ship.y, tx, ty)
+            local d = dist(ship.x, ship.y, tx, ty)
             if d > range then
                 local dx, dy = tx - ship.x, ty - ship.y
                 local len = math.max(0.001, d)
@@ -755,7 +755,7 @@ function BattleAI.UpdatePlayerFleet(dt)
         elseif vars_.moveTarget then
             -- 移向指定目标点
             local tx, ty = vars_.moveTarget.x, vars_.moveTarget.y
-            local d = dist2(ship.x, ship.y, tx, ty)
+            local d = dist(ship.x, ship.y, tx, ty)
             if d > 15 then
                 local dx, dy = tx - ship.x, ty - ship.y
                 local len = math.max(0.001, d)
@@ -777,7 +777,7 @@ function BattleAI.UpdatePlayerFleet(dt)
 
         -- 射击
         if ship.target and ship.target.health > 0 then
-            local d = dist2(ship.x, ship.y, ship.target.x, ship.target.y)
+            local d = dist(ship.x, ship.y, ship.target.x, ship.target.y)
             local range = ship.range or 180
             if d <= range then
                 ship.lastShot = (ship.lastShot or 0) + dt
@@ -851,7 +851,7 @@ function BattleAI.UpdatePlayerFleet(dt)
                         local splashDmg = math.floor(dmg * 0.3)
                         for _, es in ipairs(enemyFleet_) do
                             if es ~= target then
-                                local sd = dist2(target.x, target.y, es.x, es.y)
+                                local sd = dist(target.x, target.y, es.x, es.y)
                                 if sd <= 40 then
                                     es.health = es.health - splashDmg
                                     es.hitFlash = 0.5
@@ -871,7 +871,7 @@ function BattleAI.UpdatePlayerFleet(dt)
                         local aoeDmg = math.floor(dmg * 0.5)
                         for _, es in ipairs(enemyFleet_) do
                             if es ~= target then
-                                local ad = dist2(target.x, target.y, es.x, es.y)
+                                local ad = dist(target.x, target.y, es.x, es.y)
                                 if ad <= ship.aoeRadius then
                                     es.health = es.health - aoeDmg
                                     es.hitFlash = 0.6
@@ -1001,7 +1001,7 @@ function BattleAI.UpdateEnemyFleet(dt)
                 local guardianReduction = 1.0
                 for _, ally in ipairs(enemyFleet_) do
                     if ally ~= ship and ally.affixes and ally.affixes.guardian then
-                        if dist2(ship.x, ship.y, ally.x, ally.y) <= 80 then
+                        if dist(ship.x, ship.y, ally.x, ally.y) <= 80 then
                             guardianReduction = 0.85
                             goto guardian_applied
                         end
@@ -1099,7 +1099,7 @@ function BattleAI.UpdateEnemyFleet(dt)
                     local aoeDmg = math.floor(dmg * 0.4 * aoeMult)
                     for _, ps in ipairs(playerFleet_) do
                         if ps ~= target then
-                            local ad = dist2(target.x, target.y, ps.x, ps.y)
+                            local ad = dist(target.x, target.y, ps.x, ps.y)
                             if ad <= ship.aoeRadius then
                                 ps.health = ps.health - aoeDmg
                                 ps.hitFlash = 0.5

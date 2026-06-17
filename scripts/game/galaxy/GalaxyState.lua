@@ -176,7 +176,7 @@ function GS.nvgColor(c, a)
 end
 
 --- 两点距离
-function GS.dist2(x1, y1, x2, y2)
+function GS.dist(x1, y1, x2, y2)
     local dx, dy = x2 - x1, y2 - y1
     return math.sqrt(dx * dx + dy * dy)
 end
