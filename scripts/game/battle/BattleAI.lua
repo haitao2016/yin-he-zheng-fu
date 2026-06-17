@@ -13,6 +13,7 @@ local NemesisSystem = require("game.NemesisSystem")
 local BattleReplaySystem = require("game.BattleReplaySystem")
 local Commander = require("game.CommanderSystem")
 local FormationEditor = require("game.ui.FormationEditor")
+local BattleUtils = require("game.battle.BattleUtils")
 
 local BattleAI = {}
 
@@ -141,13 +142,6 @@ local function getComboLevel()
         if vars_.comboCount >= lv.min then return lv end
     end
     return nil
-end
-
-local function shipTypeName(stype)
-    local labels = { SCOUT="侦察舰", FRIGATE="护卫舰", DESTROYER="驱逐舰",
-        BATTLECRUISER="战列巡洋舰", MINER="采矿船", ENGINEER="工程舰",
-        EXPLORER="探索舰", CARRIER="航母", INTERCEPTOR="拦截舰" }
-    return labels[stype] or stype
 end
 
 local function logBattleEvent(text)
@@ -1153,7 +1147,7 @@ function BattleAI.ProcessDeaths(dt)
                 stype = ship.stype, wave = vars_.waveNum
             })
             -- 战斗日志
-            logBattleEvent(shipTypeName(ship.stype) .. " 被击毁")
+            logBattleEvent((SHIP_TYPES_[ship.stype] and SHIP_TYPES_[ship.stype].name or ship.stype) .. " 被击毁")
             -- fission 变异：分裂为 2 个小型克隆
             if ship.affixes and ship.affixes.fission and not ship.isFissionClone then
                 for ci = 1, 2 do
@@ -1274,7 +1268,7 @@ function BattleAI.ProcessDeaths(dt)
                 SK_.dur = 0.5
                 SK_.timer = 0.5
                 -- 日志
-                logBattleEvent("⚔️ BOSS " .. shipTypeName(ship.stype) .. " 击败！")
+                logBattleEvent("⚔️ BOSS " .. (SHIP_TYPES_[ship.stype] and SHIP_TYPES_[ship.stype].name or ship.stype) .. " 击败！")
                 -- 全屏闪光
                 vars_.bossFlashAlpha = 220
                 vars_.bossFlashTimer = BOSS_BANNER_DUR
