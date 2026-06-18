@@ -286,13 +286,13 @@ end
 function M.DdaEvaluateBattle(isWin, lossRatio)
     local dda = S.dda
     -- 滚动窗口记录（最近 5 场）
-    dda.history[#dda.history + 1] = { win = isWin, lr = lossRatio }
-    if #dda.history > 5 then table.remove(dda.history, 1) end
+    dda.recentResults[#dda.recentResults + 1] = { win = isWin, lr = lossRatio }
+    if #dda.recentResults > 5 then table.remove(dda.recentResults, 1) end
 
     -- 统计连续失败次数
     local consecLoss = 0
-    for i = #dda.history, 1, -1 do
-        if not dda.history[i].win then consecLoss = consecLoss + 1
+    for i = #dda.recentResults, 1, -1 do
+        if not dda.recentResults[i].win then consecLoss = consecLoss + 1
         else break end
     end
 
@@ -566,10 +566,10 @@ end
 function M.SwitchScene(name)
     S.currentScene = name
     if name == "galaxy" then
-        Audio.SwitchBGM("galaxy")
+        Audio.PlayBGM(Audio.BGM.GALAXY_MAIN)
         Audio.ResetBGMPitch()
     elseif name == "battle" then
-        Audio.SwitchBGM("battle")
+        Audio.PlayBGM(Audio.BGM.BATTLE_THEME)
     end
 end
 
@@ -1190,8 +1190,9 @@ function M.TriggerEndGame(gameType)
         stats.replayId  = BattleReplaySystem.GetLatestId()
     end
 
-    -- 显示结算面板
-    GameUI.ShowEndGame(gameType, stats, scoreVal, function()
+    -- 显示结算面板（scoreVal 并入 stats）
+    stats.score = scoreVal
+    GameUI.ShowEndGame(gameType, stats, function()
         -- 结算面板关闭后：softReset
         if S.softReset then S.softReset() end
     end)

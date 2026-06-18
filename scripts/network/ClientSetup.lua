@@ -251,7 +251,7 @@ function M.Init(H)
             GameUI.ShowScene("galaxy", true)
         end,
         onFleetContactPirateBase = function(fleet, base)
-            ClientBattle.StartBattle(fleet, base)
+            ClientBattle.OnFleetSiegeBase(fleet.id, base.id)
         end,
         onFleetMove = function(fid, dest)
             Audio.Play(Audio.SFX.FLEET_MOVE)
