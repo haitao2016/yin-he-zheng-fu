@@ -285,7 +285,7 @@ function M.Init(H)
             end
             -- 选择事件
             if ev.choices then
-                GameUI.ShowEventChoices(ev, function(choiceIdx)
+                GameUI.ShowEventPopup(ev, function(choiceIdx)
                     local choice = ev.choices[choiceIdx]
                     if not choice then return end
                     -- 花费
@@ -315,9 +315,11 @@ function M.Init(H)
                             end)
                         end
                     end
-                    -- 链式事件
+                    -- 链式事件（延迟调度，坐标取事件位置或随机）
                     if choice.chainEvent then
-                        GalaxyEvents.TriggerChain(choice.chainEvent)
+                        local wx = ev.wx or math.random() * 800
+                        local wy = ev.wy or math.random() * 600
+                        GalaxyEvents.ScheduleChain(choice.chainEvent, wx, wy)
                     end
                     -- 特殊行动
                     if choice.action then
@@ -431,12 +433,13 @@ function M.Init(H)
         onShipCancelCb      = function(...) ClientGalaxy.OnShipCancel(...) end,
         onShipPromoteCb     = function(...) ClientGalaxy.OnShipPromote(...) end,
         onExplorerColonizeCb= function(...) ClientGalaxy.OnExplorerColonize(...) end,
-        onExplorerTaskCb    = function(...) ClientGalaxy.OnExplorerTask(...) end,
+        onExplorerTaskCb    = function(...) ClientBattle.StartExplorerTask(...) end,
 
         -- Fleet select
         onFleetSelectCb = function(selectedFid)
             H.activeFleetId_ = selectedFid
-            GameUI.ShowFleetPanel(selectedFid)
+            GameUI.RefreshFleetPanel(fm_, selectedFid)
+            GameUI.SetMapSelectedFleet(selectedFid)
         end,
 
         -- Fleet move ship
@@ -532,12 +535,12 @@ function M.Init(H)
             return GalaxyScene.GetColonizedPlanets and GalaxyScene.GetColonizedPlanets() or {}
         end,
 
-        -- Batch build
-        onBatchBuild = function(...) ClientGalaxy.OnBatchBuild(...) end,
+        -- Batch build（实际为批量升级）
+        onBatchBuild = function(...) ClientGalaxy.OnBatchUpgrade(...) end,
 
-        -- Planet jump
+        -- Planet jump（选中星球，即时模式渲染自动聚焦）
         onPlanetJump = function(planet)
-            GalaxyScene.JumpToPlanet(planet)
+            GalaxyScene.SelectPlanet(planet)
         end,
 
         -- Leaderboard
