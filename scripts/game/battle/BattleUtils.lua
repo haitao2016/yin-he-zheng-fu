@@ -60,6 +60,7 @@ end
 ---@param dmg number
 ---@param team string "player"|"enemy"
 function BattleUtils.spawnHitSparks(ctx, x, y, dmg, team)
+    if not ctx or not ctx.hitSparks then return end
     local count = dmg >= 80 and 6 or (dmg >= 30 and 4 or 2)
     for _ = 1, count do
         local angle = math.random() * math.pi * 2
@@ -93,6 +94,7 @@ end
 ---@param g number
 ---@param b number
 function BattleUtils.spawnShockRing(ctx, x, y, maxR, dur, r, g, b)
+    if not ctx or not ctx.shockRings then return end
     ctx.shockRings[#ctx.shockRings + 1] = {
         x = x, y = y,
         radius = 0, maxRadius = maxR,
@@ -105,56 +107,61 @@ end
 ---@param ctx table BattleContext
 ---@param ship table
 function BattleUtils.spawnExplosion(ctx, ship)
+    if not ctx or not ship then return end
     local st = ship.stype
     local isBig = (st == "BATTLECRUISER" or st == "DESTROYER" or st == "CARRIER")
     local count = isBig and 22 or 10
     local speed = isBig and 90 or 50
     local life  = isBig and 0.7 or 0.45
 
-    -- 核心白光闪
-    ctx.explParticles[#ctx.explParticles + 1] = {
-        x = ship.x, y = ship.y, vx = 0, vy = 0,
-        life = 0.18, maxLife = 0.18,
-        r = 255, g = 255, b = 255, size = isBig and 22 or 12,
-        ptype = "flash"
-    }
-    -- 碎片
-    for _ = 1, count do
-        local angle = math.random() * math.pi * 2
-        local spd   = speed * (0.5 + math.random() * 0.8)
-        local r, g, b
-        if ship.team == "player" then
-            r, g, b = 80 + math.random(60), 160 + math.random(60), 255
-        else
-            r, g, b = 255, 80 + math.random(80), math.random(40)
-        end
+    if ctx.explParticles then
         ctx.explParticles[#ctx.explParticles + 1] = {
-            x    = ship.x + (math.random() - 0.5) * 8,
-            y    = ship.y + (math.random() - 0.5) * 8,
-            vx   = math.cos(angle) * spd,
-            vy   = math.sin(angle) * spd,
-            life = life * (0.6 + math.random() * 0.6),
-            maxLife = life,
-            r = r, g = g, b = b,
-            size = isBig and (3 + math.random() * 4) or (1.5 + math.random() * 2),
-            ptype = "shard"
+            x = ship.x, y = ship.y, vx = 0, vy = 0,
+            life = 0.18, maxLife = 0.18,
+            r = 255, g = 255, b = 255, size = isBig and 22 or 12,
+            ptype = "flash"
         }
+        for _ = 1, count do
+            local angle = math.random() * math.pi * 2
+            local spd   = speed * (0.5 + math.random() * 0.8)
+            local r, g, b
+            if ship.team == "player" then
+                r, g, b = 80 + math.random(60), 160 + math.random(60), 255
+            else
+                r, g, b = 255, 80 + math.random(80), math.random(40)
+            end
+            ctx.explParticles[#ctx.explParticles + 1] = {
+                x    = ship.x + (math.random() - 0.5) * 8,
+                y    = ship.y + (math.random() - 0.5) * 8,
+                vx   = math.cos(angle) * spd,
+                vy   = math.sin(angle) * spd,
+                life = life * (0.6 + math.random() * 0.6),
+                maxLife = life,
+                r = r, g = g, b = b,
+                size = isBig and (3 + math.random() * 4) or (1.5 + math.random() * 2),
+                ptype = "shard"
+            }
+        end
     end
-    -- 屏幕震动（叠加，取较大值）
-    local str = isBig and 6.0 or 2.5
-    local dur = isBig and 0.28 or 0.14
-    if str > ctx.SK.strength or ctx.SK.timer <= 0 then
-        ctx.SK.strength = str
-        ctx.SK.dur      = dur
-        ctx.SK.timer    = dur
+
+    if ctx.SK then
+        local str = isBig and 6.0 or 2.5
+        local dur = isBig and 0.28 or 0.14
+        if str > ctx.SK.strength or ctx.SK.timer <= 0 then
+            ctx.SK.strength = str
+            ctx.SK.dur      = dur
+            ctx.SK.timer    = dur
+        end
     end
 end
 
---- 舰型中文名（取自全局 SHIP_TYPES.name，与 BattleScene 原行为一致）
+--- 舰型中文名（取自 ctx.SHIP_TYPES.name，与 BattleScene 原行为一致）
+---@param ctx table BattleContext
 ---@param stype string
 ---@return string
-function BattleUtils.shipTypeName(stype)
-    local cfg = SHIP_TYPES and SHIP_TYPES[stype]
+function BattleUtils.shipTypeName(ctx, stype)
+    local shipTypes = ctx and ctx.SHIP_TYPES
+    local cfg = shipTypes and shipTypes[stype]
     return cfg and cfg.name or stype
 end
 
@@ -162,11 +169,12 @@ end
 ---@param ctx table BattleContext
 ---@param text string
 function BattleUtils.logBattleEvent(ctx, text)
+    if not ctx or not ctx.battleLog then return end
     ctx.battleLog[#ctx.battleLog + 1] = {
         wave = ctx.waveNum,
         text = text,
     }
-    if #ctx.battleLog > ctx.BATTLE_LOG_MAX then
+    if ctx.BATTLE_LOG_MAX and #ctx.battleLog > ctx.BATTLE_LOG_MAX then
         table.remove(ctx.battleLog, 1)
     end
 end
@@ -188,20 +196,20 @@ end
 ---@param explParticles table[] 爆炸粒子数组
 ---@param SK table 屏幕震动状态
 function BattleUtils.spawnExplosionFull(ctx, ship, explParticles, SK)
+    if not ship or not explParticles then return end
     local st = ship.stype
     local isBig = (st == "BATTLECRUISER" or st == "DESTROYER" or st == "CARRIER")
     local count = isBig and 22 or 10
     local speed = isBig and 90 or 50
     local life  = isBig and 0.7 or 0.45
 
-    -- 核心白光闪
     explParticles[#explParticles + 1] = {
         x = ship.x, y = ship.y, vx = 0, vy = 0,
         life = 0.18, maxLife = 0.18,
         r = 255, g = 255, b = 255, size = isBig and 22 or 12,
         ptype = "flash"
     }
-    -- 碎片
+
     for _ = 1, count do
         local angle = math.random() * math.pi * 2
         local spd   = speed * (0.5 + math.random() * 0.8)
@@ -223,13 +231,15 @@ function BattleUtils.spawnExplosionFull(ctx, ship, explParticles, SK)
             ptype = "shard"
         }
     end
-    -- 屏幕震动（叠加，取较大值）
-    local str = isBig and 6.0 or 2.5
-    local dur = isBig and 0.28 or 0.14
-    if str > SK.strength or SK.timer <= 0 then
-        SK.strength = str
-        SK.dur      = dur
-        SK.timer    = dur
+
+    if SK then
+        local str = isBig and 6.0 or 2.5
+        local dur = isBig and 0.28 or 0.14
+        if str > SK.strength or SK.timer <= 0 then
+            SK.strength = str
+            SK.dur      = dur
+            SK.timer    = dur
+        end
     end
 end
 
@@ -237,19 +247,21 @@ end
 ---@param ctx table BattleContext
 ---@param ship table
 ---@param isBig boolean
+---@param explParticles table[] 爆炸粒子数组
+---@param SK table 屏幕震动状态
 function BattleUtils.spawnExplosionSimple(ctx, ship, isBig, explParticles, SK)
+    if not ship or not explParticles then return end
     local count = isBig and 22 or 10
     local speed = isBig and 90 or 50
     local life  = isBig and 0.7 or 0.45
 
-    -- 核心白光闪
     explParticles[#explParticles + 1] = {
         x = ship.x, y = ship.y, vx = 0, vy = 0,
         life = 0.18, maxLife = 0.18,
         r = 255, g = 255, b = 255, size = isBig and 22 or 12,
         ptype = "flash"
     }
-    -- 碎片
+
     for _ = 1, count do
         local angle = math.random() * math.pi * 2
         local spd   = speed * (0.5 + math.random() * 0.8)
@@ -271,13 +283,15 @@ function BattleUtils.spawnExplosionSimple(ctx, ship, isBig, explParticles, SK)
             ptype = "shard"
         }
     end
-    -- 屏幕震动
-    local str = isBig and 6.0 or 2.5
-    local dur = isBig and 0.28 or 0.14
-    if str > SK.strength or SK.timer <= 0 then
-        SK.strength = str
-        SK.dur      = dur
-        SK.timer    = dur
+
+    if SK then
+        local str = isBig and 6.0 or 2.5
+        local dur = isBig and 0.28 or 0.14
+        if str > SK.strength or SK.timer <= 0 then
+            SK.strength = str
+            SK.dur      = dur
+            SK.timer    = dur
+        end
     end
 end
 

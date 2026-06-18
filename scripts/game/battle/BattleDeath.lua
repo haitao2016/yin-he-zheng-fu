@@ -34,7 +34,7 @@ function BattleDeath.Update(dt, ctx, makeShip)
                 shipId = ship._replayId, stype = ship.stype, x = ship.x, y = ship.y,
             })
             -- P2-2b: 战斗日志 — 己方舰船损失
-            BattleUtils.logBattleEvent(ctx, string.format("%s 损失一艘%s", ctx.fleetName, BattleUtils.shipTypeName(ship.stype)))
+            BattleUtils.logBattleEvent(ctx, string.format("%s 损失一艘%s", ctx.fleetName, BattleUtils.shipTypeName(ctx, ship.stype)))
             -- P1-2 V2.5: fission 词缀 — 死亡时生成2艘微型副本
             if ship.mutantAffixes then
                 for _, aKey in ipairs(ship.mutantAffixes) do
