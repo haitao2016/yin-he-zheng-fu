@@ -1122,6 +1122,18 @@ end
 -- 点击处理（供 main.lua 转发鼠标事件）
 -- ============================================================================
 function GameUI.OnClick(mx, my)
+    -- P3 V2.5: 阵型编辑器打开时拦截所有底层点击
+    if FormationEditor.IsOpen() then
+        -- 仅处理编辑器自己注册的 hit areas（最顶层）
+        for i = #hitAreas_, 1, -1 do
+            local h = hitAreas_[i]
+            if h.modal and mx >= h.x and mx <= h.x+h.w and my >= h.y and my <= h.y+h.h then
+                if h.fn then h.fn() end
+                return true
+            end
+        end
+        return true  -- 吞掉事件，不传底层
+    end
     for i = #hitAreas_, 1, -1 do   -- 后绘制的优先（最顶层）
         local h = hitAreas_[i]
         if mx >= h.x and mx <= h.x+h.w and my >= h.y and my <= h.y+h.h then

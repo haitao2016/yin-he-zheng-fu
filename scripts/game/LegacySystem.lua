@@ -256,4 +256,8 @@ function LegacySystem.Save()
     saveToFile()
 end
 
+-- 导出常量供 UI 面板共享
+LegacySystem.UPGRADE_COST = UPGRADE_COST
+LegacySystem.RESET_COST   = RESET_COST
+
 return LegacySystem

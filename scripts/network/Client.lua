@@ -2091,10 +2091,12 @@ softReset = function()
     end
     if legacyBonus.agreementCdReduction > 0 then
         evBonus_._legacyAgreementCdReduction = legacyBonus.agreementCdReduction
+        if ds_ then ds_._legacyAgreementCdReduction = legacyBonus.agreementCdReduction end
         print(string.format("[Legacy] 外交L2: 协议CD -%d%%", legacyBonus.agreementCdReduction * 100))
     end
     if legacyBonus.diploPositiveBonus > 0 then
         evBonus_._legacyDiploPositiveBonus = legacyBonus.diploPositiveBonus
+        if ds_ then ds_._legacyDiploPositiveBonus = legacyBonus.diploPositiveBonus end
         print(string.format("[Legacy] 外交L3: 正面事件 +%d%%", legacyBonus.diploPositiveBonus * 100))
     end
     if legacyBonus.questRefreshReduction > 0 then

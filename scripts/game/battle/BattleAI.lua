@@ -267,6 +267,20 @@ function BattleAI.MakeBossShip(baseType, x, y)
     local shieldVal = math.floor(ship.maxHealth * 0.5)
     ship.shield = shieldVal
     ship.maxShield = shieldVal
+
+    -- V2.5 P3: Boss 随机附带 1 个正面变异词缀
+    local MSys = require("game.MutantShipSystem")
+    local allAffixes = MSys.GetAllAffixes()
+    local positiveKeys = {}
+    for k, a in pairs(allAffixes) do
+        if a.positive then positiveKeys[#positiveKeys + 1] = k end
+    end
+    if #positiveKeys > 0 then
+        local picked = positiveKeys[math.random(#positiveKeys)]
+        ship.mutantAffixes = { picked }
+        ship.affixSet = { [picked] = true }
+    end
+
     return ship
 end
 
