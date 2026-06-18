@@ -1591,7 +1591,12 @@ function BattleScene.OnClick(mx, my)
     for _, btn in ipairs(formationBtn_) do
         if mx >= btn.x and mx <= btn.x+btn.w and my >= btn.y and my <= btn.y+btn.h then
             if btn.locked then return end  -- P2-1: 锁定状态不响应点击
-            BattleScene.SetFormation(btn.key)
+            if btn.key == "custom" then
+                -- P2-1 V2.5: 自定义阵型 → 打开编辑器
+                FormationEditor.Open(playerFleet_)
+            else
+                BattleScene.SetFormation(btn.key)
+            end
             return
         end
     end

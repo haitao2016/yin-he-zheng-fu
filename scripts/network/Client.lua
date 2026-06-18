@@ -1434,9 +1434,15 @@ local function handleUpdate(eventType, eventData)
         local completed = MegastructureSystem.Update(dt, buildMult)
         if completed then
             Audio.Play(Audio.SFX.RESEARCH_COMPLETE)
-            GameUI.Notify("🏗️ 巨构工程阶段完工: " .. completed, "success")
+            local megaKey = type(completed) == "table" and completed.key or tostring(completed)
+            GameUI.Notify("🏗️ 巨构工程阶段完工: " .. megaKey, "success")
             applyBaseModuleEffects()  -- 刷新加成
-            Achievement.Check("megastructure_phase", { id = completed })
+            Achievement.Check("megastructure_phase", { id = megaKey })
+            -- V2.5: 标记巨构建成（供文明遗产 LP 计分）
+            local isFullComplete = type(completed) == "table" and completed.isComplete or false
+            if isFullComplete then
+                battleStatsCache_.builtMegastructure = true
+            end
             saveGame()
         end
     end

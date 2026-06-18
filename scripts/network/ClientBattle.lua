@@ -1156,9 +1156,13 @@ function M.TriggerEndGame(gameType)
     end
 
     -- 联赛模式
+    local leagueRankIdx = 0
     if S.leagueMode then
         local LeagueSystem = require("game.LeagueSystem")
         LeagueSystem.SubmitGame(scoreVal, gameType == "win", stars)
+        -- V2.5: 获取联赛段位索引（1-5），供文明遗产 LP 计分
+        local rank = LeagueSystem.GetRank()
+        leagueRankIdx = rank and rank.idx or 0
     end
 
     -- P1-3 V2.5: 文明遗产（构造 stats 表匹配 LegacySystem 期望）
@@ -1167,7 +1171,7 @@ function M.TriggerEndGame(gameType)
         kills             = stats.enemiesKilled or 0,
         builtMegastructure = S.battleStatsCache.builtMegastructure or false,
         survivedCrisis     = S.battleStatsCache.survivedCrisis or false,
-        leagueRank         = S.leagueMode and (S.battleStatsCache.leagueRank or 0) or 0,
+        leagueRank         = leagueRankIdx,
     }
     LegacySystem.AwardEndOfGame(legacyStats)
 

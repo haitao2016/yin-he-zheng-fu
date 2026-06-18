@@ -180,6 +180,23 @@ function MutantShipSystem.GetById(id)
     return nil
 end
 
+--- Get mutant ships equipped for a fleet, keyed by baseType.
+--- Currently returns all inventory ships (max 2 per fleet rule enforced by caller).
+--- Future: add per-fleet assignment UI.
+---@param fleetId any  (reserved for future fleet assignment)
+---@return table  { [shipType] = { id, baseType, affixes={key,...} } }
+function MutantShipSystem.GetEquippedForFleet(fleetId)
+    local map = {}
+    local count = 0
+    for _, ship in ipairs(inventory_) do
+        if not map[ship.baseType] and count < MAX_PER_FLEET then
+            map[ship.baseType] = ship
+            count = count + 1
+        end
+    end
+    return map
+end
+
 --- Get affix definition by key.
 ---@param key string
 ---@return MutantAffix|nil

@@ -376,6 +376,8 @@ function M.Init(H)
             if crisis.reward then
                 for res, amt in pairs(crisis.reward) do rm_:add(res, amt) end
             end
+            -- V2.5: 标记危机存活（供文明遗产 LP 计分）
+            battleStatsCache_.survivedCrisis = true
         else
             GameUI.Notify("❌ 危机失败: " .. (crisis.title or "?"), "error")
         end
