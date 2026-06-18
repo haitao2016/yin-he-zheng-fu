@@ -175,19 +175,23 @@ local function spawnExplosion(ship)
     -- 碎片
     for _ = 1, count do
         local ang = math.random() * math.pi * 2
-        local spd = speed * (0.3 + math.random() * 0.9)
-        local r = 200 + math.random(55)
-        local g = 80 + math.random(120)
-        local b = math.random(60)
+        local spd = speed * (0.5 + math.random() * 0.8)
+        local r, g, b
+        if ship.team == "player" then
+            r, g, b = 80 + math.random(60), 160 + math.random(60), 255
+        else
+            r, g, b = 255, 80 + math.random(80), math.random(40)
+        end
         explParticles_[#explParticles_ + 1] = {
-            x = ship.x + (math.random() - 0.5) * 6,
-            y = ship.y + (math.random() - 0.5) * 6,
+            x = ship.x + (math.random() - 0.5) * 8,
+            y = ship.y + (math.random() - 0.5) * 8,
             vx = math.cos(ang) * spd,
             vy = math.sin(ang) * spd,
-            life = life * (0.5 + math.random() * 0.6),
+            life = life * (0.6 + math.random() * 0.6),
             maxLife = life,
             r = r, g = g, b = b,
-            size = 2 + math.random() * (isBig and 4 or 2),
+            size = isBig and (3 + math.random() * 4) or (1.5 + math.random() * 2),
+            ptype = "shard"
         }
     end
     -- 屏幕震动
