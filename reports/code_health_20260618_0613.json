@@ -1,0 +1,8110 @@
+{
+  "scan_time": "2026-06-18T06:13:49.671203",
+  "target_directory": "/workspace/scripts",
+  "files": {
+    "code_health_check.py": {
+      "path": "code_health_check.py",
+      "extension": ".py",
+      "lines": 686,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "__init__",
+          "start": 37,
+          "end": 55,
+          "lines": 19
+        },
+        {
+          "name": "scan_files",
+          "start": 56,
+          "end": 68,
+          "lines": 13
+        },
+        {
+          "name": "count_lines",
+          "start": 69,
+          "end": 76,
+          "lines": 8
+        },
+        {
+          "name": "detect_functions",
+          "start": 77,
+          "end": 149,
+          "lines": 73
+        },
+        {
+          "name": "detect_duplicates",
+          "start": 150,
+          "end": 236,
+          "lines": 87
+        },
+        {
+          "name": "detect_redundant_logic",
+          "start": 237,
+          "end": 312,
+          "lines": 76
+        },
+        {
+          "name": "detect_todo_markers",
+          "start": 313,
+          "end": 330,
+          "lines": 18
+        },
+        {
+          "name": "analyze_file",
+          "start": 331,
+          "end": 366,
+          "lines": 36
+        },
+        {
+          "name": "calculate_score",
+          "start": 367,
+          "end": 396,
+          "lines": 30
+        },
+        {
+          "name": "generate_recommendations",
+          "start": 397,
+          "end": 451,
+          "lines": 55
+        },
+        {
+          "name": "run",
+          "start": 452,
+          "end": 515,
+          "lines": 64
+        },
+        {
+          "name": "generate_markdown_report",
+          "start": 516,
+          "end": 640,
+          "lines": 125
+        },
+        {
+          "name": "main",
+          "start": 641,
+          "end": 684,
+          "lines": 44
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "detect_duplicates",
+          "start": 150,
+          "end": 236,
+          "lines": 87
+        },
+        {
+          "name": "generate_markdown_report",
+          "start": 516,
+          "end": 640,
+          "lines": 125
+        }
+      ],
+      "todo_markers": [
+        {
+          "line": 314,
+          "type": "BUG ",
+          "content": "\"\"\"检测 TODO/FIXME/BUG 等遗留标记\"\"\""
+        },
+        {
+          "line": 446,
+          "type": "TODO",
+          "content": "'description': f\"发现 TODO: {todo_count}, FIXME: {fixme_count}, BUG: {bug_count} 个遗留标记\","
+        }
+      ],
+      "redundant_logic": []
+    },
+    "game/AchievementSystem.lua": {
+      "path": "game/AchievementSystem.lua",
+      "extension": ".lua",
+      "lines": 815,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "AchievementSystem.Init",
+          "start": 607,
+          "end": 618,
+          "lines": 12
+        },
+        {
+          "name": "AchievementSystem.Check",
+          "start": 631,
+          "end": 644,
+          "lines": 14
+        },
+        {
+          "name": "AchievementSystem.Update",
+          "start": 651,
+          "end": 672,
+          "lines": 22
+        },
+        {
+          "name": "AchievementSystem.GetUnlocked",
+          "start": 679,
+          "end": 683,
+          "lines": 5
+        },
+        {
+          "name": "AchievementSystem.SetUnlocked",
+          "start": 686,
+          "end": 690,
+          "lines": 5
+        },
+        {
+          "name": "AchievementSystem.GetTotal",
+          "start": 694,
+          "end": 696,
+          "lines": 3
+        },
+        {
+          "name": "AchievementSystem.Redeem",
+          "start": 702,
+          "end": 710,
+          "lines": 9
+        },
+        {
+          "name": "AchievementSystem.GetRedeemed",
+          "start": 713,
+          "end": 717,
+          "lines": 5
+        },
+        {
+          "name": "AchievementSystem.SetRedeemed",
+          "start": 720,
+          "end": 724,
+          "lines": 5
+        },
+        {
+          "name": "AchievementSystem.GetRedeemableCount",
+          "start": 728,
+          "end": 733,
+          "lines": 6
+        },
+        {
+          "name": "AchievementSystem.GetActiveRewards",
+          "start": 739,
+          "end": 745,
+          "lines": 7
+        },
+        {
+          "name": "AchievementSystem.GetReward",
+          "start": 751,
+          "end": 753,
+          "lines": 3
+        },
+        {
+          "name": "AchievementSystem.IsRedeemed",
+          "start": 756,
+          "end": 758,
+          "lines": 3
+        },
+        {
+          "name": "AchievementSystem.GetAll",
+          "start": 762,
+          "end": 787,
+          "lines": 26
+        },
+        {
+          "name": "AchievementSystem.GetHiddenProgress",
+          "start": 803,
+          "end": 809,
+          "lines": 7
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/AnomalySystem.lua": {
+      "path": "game/AnomalySystem.lua",
+      "extension": ".lua",
+      "lines": 332,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "AnomalySystem.Init",
+          "start": 129,
+          "end": 137,
+          "lines": 9
+        },
+        {
+          "name": "AnomalySystem.OnWaveEnd",
+          "start": 142,
+          "end": 155,
+          "lines": 14
+        },
+        {
+          "name": "AnomalySystem.GetActive",
+          "start": 219,
+          "end": 233,
+          "lines": 15
+        },
+        {
+          "name": "AnomalySystem.GetBattleModifiers",
+          "start": 237,
+          "end": 267,
+          "lines": 31
+        },
+        {
+          "name": "AnomalySystem.GetAllTypes",
+          "start": 275,
+          "end": 279,
+          "lines": 5
+        },
+        {
+          "name": "AnomalySystem.GetHistory",
+          "start": 285,
+          "end": 287,
+          "lines": 3
+        },
+        {
+          "name": "AnomalySystem.Serialize",
+          "start": 293,
+          "end": 305,
+          "lines": 13
+        },
+        {
+          "name": "AnomalySystem.Deserialize",
+          "start": 307,
+          "end": 311,
+          "lines": 5
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/AudioManager.lua": {
+      "path": "game/AudioManager.lua",
+      "extension": ".lua",
+      "lines": 296,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "AudioManager.Init",
+          "start": 93,
+          "end": 112,
+          "lines": 20
+        },
+        {
+          "name": "AudioManager.PlayBGM",
+          "start": 115,
+          "end": 131,
+          "lines": 17
+        },
+        {
+          "name": "AudioManager.StopBGM",
+          "start": 134,
+          "end": 138,
+          "lines": 5
+        },
+        {
+          "name": "AudioManager.Play",
+          "start": 141,
+          "end": 157,
+          "lines": 17
+        },
+        {
+          "name": "AudioManager.PlayNotify",
+          "start": 177,
+          "end": 183,
+          "lines": 7
+        },
+        {
+          "name": "AudioManager.SetBGMVolume",
+          "start": 186,
+          "end": 189,
+          "lines": 4
+        },
+        {
+          "name": "AudioManager.SetSFXVolume",
+          "start": 191,
+          "end": 194,
+          "lines": 4
+        },
+        {
+          "name": "AudioManager.SetMute",
+          "start": 196,
+          "end": 200,
+          "lines": 5
+        },
+        {
+          "name": "AudioManager.SetBGMPitch",
+          "start": 205,
+          "end": 208,
+          "lines": 4
+        },
+        {
+          "name": "AudioManager.ResetBGMPitch",
+          "start": 211,
+          "end": 216,
+          "lines": 6
+        },
+        {
+          "name": "AudioManager.SetAdaptivePitchTarget",
+          "start": 220,
+          "end": 222,
+          "lines": 3
+        },
+        {
+          "name": "AudioManager.GetAdaptivePitch",
+          "start": 225,
+          "end": 227,
+          "lines": 3
+        },
+        {
+          "name": "AudioManager.SilenceThen",
+          "start": 231,
+          "end": 237,
+          "lines": 7
+        },
+        {
+          "name": "AudioManager.PauseAll",
+          "start": 240,
+          "end": 243,
+          "lines": 4
+        },
+        {
+          "name": "AudioManager.ResumeAll",
+          "start": 245,
+          "end": 248,
+          "lines": 4
+        },
+        {
+          "name": "AudioManager.Update",
+          "start": 251,
+          "end": 266,
+          "lines": 16
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/BattleReplaySystem.lua": {
+      "path": "game/BattleReplaySystem.lua",
+      "extension": ".lua",
+      "lines": 417,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "BattleReplaySystem.StartRecording",
+          "start": 49,
+          "end": 60,
+          "lines": 12
+        },
+        {
+          "name": "BattleReplaySystem.StopRecording",
+          "start": 63,
+          "end": 71,
+          "lines": 9
+        },
+        {
+          "name": "BattleReplaySystem.RecordFrame",
+          "start": 77,
+          "end": 86,
+          "lines": 10
+        },
+        {
+          "name": "BattleReplaySystem.RegisterShip",
+          "start": 132,
+          "end": 145,
+          "lines": 14
+        },
+        {
+          "name": "BattleReplaySystem.RecordEvent",
+          "start": 150,
+          "end": 158,
+          "lines": 9
+        },
+        {
+          "name": "BattleReplaySystem.AddShipDamage",
+          "start": 163,
+          "end": 167,
+          "lines": 5
+        },
+        {
+          "name": "BattleReplaySystem.AddShipKill",
+          "start": 171,
+          "end": 175,
+          "lines": 5
+        },
+        {
+          "name": "BattleReplaySystem.UpdateShipCombo",
+          "start": 180,
+          "end": 184,
+          "lines": 5
+        },
+        {
+          "name": "BattleReplaySystem.GetFrames",
+          "start": 192,
+          "end": 194,
+          "lines": 3
+        },
+        {
+          "name": "BattleReplaySystem.GetEvents",
+          "start": 198,
+          "end": 200,
+          "lines": 3
+        },
+        {
+          "name": "BattleReplaySystem.GetHighlights",
+          "start": 204,
+          "end": 206,
+          "lines": 3
+        },
+        {
+          "name": "BattleReplaySystem.GetMVP",
+          "start": 210,
+          "end": 212,
+          "lines": 3
+        },
+        {
+          "name": "BattleReplaySystem.GetDuration",
+          "start": 216,
+          "end": 218,
+          "lines": 3
+        },
+        {
+          "name": "BattleReplaySystem.GetFrameAt",
+          "start": 223,
+          "end": 233,
+          "lines": 11
+        },
+        {
+          "name": "BattleReplaySystem.GetEventsInRange",
+          "start": 242,
+          "end": 247,
+          "lines": 6
+        },
+        {
+          "name": "BattleReplaySystem.GetShipTracker",
+          "start": 254,
+          "end": 256,
+          "lines": 3
+        },
+        {
+          "name": "BattleReplaySystem.IsRecording",
+          "start": 260,
+          "end": 262,
+          "lines": 3
+        },
+        {
+          "name": "BattleReplaySystem._computeHighlights",
+          "start": 269,
+          "end": 300,
+          "lines": 32
+        },
+        {
+          "name": "BattleReplaySystem._computeMVP",
+          "start": 342,
+          "end": 367,
+          "lines": 26
+        },
+        {
+          "name": "BattleReplaySystem._describeEvent",
+          "start": 390,
+          "end": 413,
+          "lines": 24
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/BattleScene.lua": {
+      "path": "game/BattleScene.lua",
+      "extension": ".lua",
+      "lines": 1627,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "getComboLevel",
+          "start": 402,
+          "end": 405,
+          "lines": 4
+        },
+        {
+          "name": "logBattleEvent",
+          "start": 435,
+          "end": 439,
+          "lines": 5
+        },
+        {
+          "name": "makeShip",
+          "start": 445,
+          "end": 453,
+          "lines": 9
+        },
+        {
+          "name": "syncAIVars",
+          "start": 548,
+          "end": 562,
+          "lines": 15
+        },
+        {
+          "name": "syncAIVarsBack",
+          "start": 565,
+          "end": 570,
+          "lines": 6
+        },
+        {
+          "name": "syncAIRefs",
+          "start": 573,
+          "end": 584,
+          "lines": 12
+        },
+        {
+          "name": "BattleScene.Init",
+          "start": 589,
+          "end": 643,
+          "lines": 55
+        },
+        {
+          "name": "BattleScene.Reset",
+          "start": 673,
+          "end": 688,
+          "lines": 16
+        },
+        {
+          "name": "selectEnv",
+          "start": 846,
+          "end": 852,
+          "lines": 7
+        },
+        {
+          "name": "BattleScene.AddProductionShip",
+          "start": 865,
+          "end": 867,
+          "lines": 3
+        },
+        {
+          "name": "BattleScene.StartNextWave",
+          "start": 870,
+          "end": 879,
+          "lines": 10
+        },
+        {
+          "name": "pushToCtx",
+          "start": 1069,
+          "end": 1176,
+          "lines": 108
+        },
+        {
+          "name": "pullFromCtx",
+          "start": 1180,
+          "end": 1243,
+          "lines": 64
+        },
+        {
+          "name": "BattleScene.Update",
+          "start": 1246,
+          "end": 1255,
+          "lines": 10
+        },
+        {
+          "name": "BattleScene.Render",
+          "start": 1276,
+          "end": 1393,
+          "lines": 118
+        },
+        {
+          "name": "BattleScene.GetStats",
+          "start": 1403,
+          "end": 1413,
+          "lines": 11
+        },
+        {
+          "name": "BattleScene.GetEnemyCount",
+          "start": 1402,
+          "end": 1441,
+          "lines": 40
+        },
+        {
+          "name": "BattleScene.GetBattleLog",
+          "start": 1445,
+          "end": 1447,
+          "lines": 3
+        },
+        {
+          "name": "BattleScene.GetReplayData",
+          "start": 1451,
+          "end": 1459,
+          "lines": 9
+        },
+        {
+          "name": "BattleScene.OnClick",
+          "start": 1464,
+          "end": 1474,
+          "lines": 11
+        },
+        {
+          "name": "BattleScene.GetPlayerCount",
+          "start": 1401,
+          "end": 1478,
+          "lines": 78
+        },
+        {
+          "name": "BattleScene.GetWave",
+          "start": 1400,
+          "end": 1479,
+          "lines": 80
+        },
+        {
+          "name": "BattleScene.GetState",
+          "start": 1399,
+          "end": 1481,
+          "lines": 83
+        },
+        {
+          "name": "inBtn",
+          "start": 1485,
+          "end": 1487,
+          "lines": 3
+        },
+        {
+          "name": "inBtn",
+          "start": 1600,
+          "end": 1602,
+          "lines": 3
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "pushToCtx",
+          "start": 1069,
+          "end": 1176,
+          "lines": 108
+        },
+        {
+          "name": "BattleScene.Render",
+          "start": 1276,
+          "end": 1393,
+          "lines": 118
+        },
+        {
+          "name": "BattleScene.GetState",
+          "start": 1399,
+          "end": 1481,
+          "lines": 83
+        }
+      ],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/BattleSkills.lua": {
+      "path": "game/BattleSkills.lua",
+      "extension": ".lua",
+      "lines": 550,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "BattleSkills.Reset",
+          "start": 63,
+          "end": 69,
+          "lines": 7
+        },
+        {
+          "name": "BattleSkills.FullReset",
+          "start": 72,
+          "end": 83,
+          "lines": 12
+        },
+        {
+          "name": "BattleSkills.GetLevel",
+          "start": 90,
+          "end": 92,
+          "lines": 3
+        },
+        {
+          "name": "BattleSkills.GetEffectMult",
+          "start": 95,
+          "end": 99,
+          "lines": 5
+        },
+        {
+          "name": "BattleSkills.GetCDMult",
+          "start": 104,
+          "end": 107,
+          "lines": 4
+        },
+        {
+          "name": "BattleSkills.GetPoints",
+          "start": 110,
+          "end": 112,
+          "lines": 3
+        },
+        {
+          "name": "BattleSkills.AddPoint",
+          "start": 115,
+          "end": 117,
+          "lines": 3
+        },
+        {
+          "name": "BattleSkills.UpgradeSkill",
+          "start": 120,
+          "end": 127,
+          "lines": 8
+        },
+        {
+          "name": "BattleSkills.SetLevel",
+          "start": 130,
+          "end": 133,
+          "lines": 4
+        },
+        {
+          "name": "BattleSkills.AddPoints",
+          "start": 137,
+          "end": 139,
+          "lines": 3
+        },
+        {
+          "name": "BattleSkills.GetName",
+          "start": 142,
+          "end": 144,
+          "lines": 3
+        },
+        {
+          "name": "BattleSkills.GetIcon",
+          "start": 147,
+          "end": 149,
+          "lines": 3
+        },
+        {
+          "name": "BattleSkills.PreChargeOnWaveStart",
+          "start": 153,
+          "end": 158,
+          "lines": 6
+        },
+        {
+          "name": "BattleSkills.IsActive",
+          "start": 163,
+          "end": 168,
+          "lines": 6
+        },
+        {
+          "name": "BattleSkills.Update",
+          "start": 175,
+          "end": 192,
+          "lines": 18
+        },
+        {
+          "name": "drawBtn",
+          "start": 268,
+          "end": 280,
+          "lines": 13
+        },
+        {
+          "name": "BattleSkills.Draw",
+          "start": 245,
+          "end": 291,
+          "lines": 47
+        },
+        {
+          "name": "drawLvBadge",
+          "start": 352,
+          "end": 364,
+          "lines": 13
+        },
+        {
+          "name": "inBtn",
+          "start": 396,
+          "end": 398,
+          "lines": 3
+        },
+        {
+          "name": "BattleSkills.OnClick",
+          "start": 395,
+          "end": 416,
+          "lines": 22
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/BlackMarketSystem.lua": {
+      "path": "game/BlackMarketSystem.lua",
+      "extension": ".lua",
+      "lines": 372,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "BlackMarketSystem.new",
+          "start": 56,
+          "end": 77,
+          "lines": 22
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/BlueprintSystem.lua": {
+      "path": "game/BlueprintSystem.lua",
+      "extension": ".lua",
+      "lines": 523,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "saveToFile",
+          "start": 32,
+          "end": 38,
+          "lines": 7
+        },
+        {
+          "name": "loadFromFile",
+          "start": 48,
+          "end": 59,
+          "lines": 12
+        },
+        {
+          "name": "packBlueprint",
+          "start": 72,
+          "end": 84,
+          "lines": 13
+        },
+        {
+          "name": "unpackBlueprint",
+          "start": 89,
+          "end": 99,
+          "lines": 11
+        },
+        {
+          "name": "base62Encode",
+          "start": 104,
+          "end": 116,
+          "lines": 13
+        },
+        {
+          "name": "base62Decode",
+          "start": 139,
+          "end": 153,
+          "lines": 15
+        },
+        {
+          "name": "generateShareCode",
+          "start": 174,
+          "end": 182,
+          "lines": 9
+        },
+        {
+          "name": "BlueprintSystem.Init",
+          "start": 202,
+          "end": 206,
+          "lines": 5
+        },
+        {
+          "name": "BlueprintSystem.GetAll",
+          "start": 210,
+          "end": 212,
+          "lines": 3
+        },
+        {
+          "name": "BlueprintSystem.Count",
+          "start": 216,
+          "end": 218,
+          "lines": 3
+        },
+        {
+          "name": "BlueprintSystem.CanSave",
+          "start": 222,
+          "end": 224,
+          "lines": 3
+        },
+        {
+          "name": "BlueprintSystem.SaveCurrent",
+          "start": 232,
+          "end": 235,
+          "lines": 4
+        },
+        {
+          "name": "BlueprintSystem.Delete",
+          "start": 285,
+          "end": 290,
+          "lines": 6
+        },
+        {
+          "name": "BlueprintSystem.Overwrite",
+          "start": 299,
+          "end": 302,
+          "lines": 4
+        },
+        {
+          "name": "BlueprintSystem.Apply",
+          "start": 321,
+          "end": 333,
+          "lines": 13
+        },
+        {
+          "name": "BlueprintSystem.GetShareCode",
+          "start": 392,
+          "end": 400,
+          "lines": 9
+        },
+        {
+          "name": "BlueprintSystem.ImportFromCode",
+          "start": 409,
+          "end": 412,
+          "lines": 4
+        },
+        {
+          "name": "BlueprintSystem.Bookmark",
+          "start": 447,
+          "end": 455,
+          "lines": 9
+        },
+        {
+          "name": "BlueprintSystem.GetBookmarks",
+          "start": 472,
+          "end": 474,
+          "lines": 3
+        },
+        {
+          "name": "BlueprintSystem.RemoveBookmark",
+          "start": 478,
+          "end": 482,
+          "lines": 5
+        },
+        {
+          "name": "BlueprintSystem.ExportForLeaderboard",
+          "start": 488,
+          "end": 499,
+          "lines": 12
+        },
+        {
+          "name": "BlueprintSystem.Serialize",
+          "start": 503,
+          "end": 505,
+          "lines": 3
+        },
+        {
+          "name": "BlueprintSystem.Deserialize",
+          "start": 509,
+          "end": 514,
+          "lines": 6
+        },
+        {
+          "name": "BlueprintSystem.GetMaxSlots",
+          "start": 518,
+          "end": 520,
+          "lines": 3
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/CampaignSystem.lua": {
+      "path": "game/CampaignSystem.lua",
+      "extension": ".lua",
+      "lines": 288,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "CampaignSystem.GetLevels",
+          "start": 156,
+          "end": 158,
+          "lines": 3
+        },
+        {
+          "name": "CampaignSystem.GetState",
+          "start": 161,
+          "end": 163,
+          "lines": 3
+        },
+        {
+          "name": "CampaignSystem.IsActive",
+          "start": 166,
+          "end": 168,
+          "lines": 3
+        },
+        {
+          "name": "CampaignSystem.GetCurrentLevel",
+          "start": 171,
+          "end": 174,
+          "lines": 4
+        },
+        {
+          "name": "CampaignSystem.StartLevel",
+          "start": 178,
+          "end": 189,
+          "lines": 12
+        },
+        {
+          "name": "CampaignSystem.CompleteLevel",
+          "start": 193,
+          "end": 202,
+          "lines": 10
+        },
+        {
+          "name": "CampaignSystem.Abort",
+          "start": 205,
+          "end": 211,
+          "lines": 7
+        },
+        {
+          "name": "CampaignSystem.IsLevelCompleted",
+          "start": 214,
+          "end": 216,
+          "lines": 3
+        },
+        {
+          "name": "CampaignSystem.GetCompletedCount",
+          "start": 219,
+          "end": 223,
+          "lines": 5
+        },
+        {
+          "name": "CampaignSystem.TriggerDialogue",
+          "start": 231,
+          "end": 243,
+          "lines": 13
+        },
+        {
+          "name": "CampaignSystem.AdvanceDialogue",
+          "start": 247,
+          "end": 255,
+          "lines": 9
+        },
+        {
+          "name": "CampaignSystem.GetCurrentDialogueLine",
+          "start": 260,
+          "end": 263,
+          "lines": 4
+        },
+        {
+          "name": "CampaignSystem.IsShowingDialogue",
+          "start": 266,
+          "end": 268,
+          "lines": 3
+        },
+        {
+          "name": "CampaignSystem.GetSaveData",
+          "start": 275,
+          "end": 279,
+          "lines": 5
+        },
+        {
+          "name": "CampaignSystem.LoadSaveData",
+          "start": 282,
+          "end": 285,
+          "lines": 4
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/CommanderSystem.lua": {
+      "path": "game/CommanderSystem.lua",
+      "extension": ".lua",
+      "lines": 344,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "randomName",
+          "start": 32,
+          "end": 34,
+          "lines": 3
+        },
+        {
+          "name": "expToNext",
+          "start": 39,
+          "end": 41,
+          "lines": 3
+        },
+        {
+          "name": "CommanderSystem.GetAll",
+          "start": 49,
+          "end": 51,
+          "lines": 3
+        },
+        {
+          "name": "CommanderSystem.GetByFleet",
+          "start": 56,
+          "end": 59,
+          "lines": 4
+        },
+        {
+          "name": "CommanderSystem.GetById",
+          "start": 66,
+          "end": 69,
+          "lines": 4
+        },
+        {
+          "name": "CommanderSystem.GetSkillCooldown",
+          "start": 76,
+          "end": 80,
+          "lines": 5
+        },
+        {
+          "name": "CommanderSystem.Count",
+          "start": 84,
+          "end": 86,
+          "lines": 3
+        },
+        {
+          "name": "CommanderSystem.CanRecruit",
+          "start": 90,
+          "end": 92,
+          "lines": 3
+        },
+        {
+          "name": "CommanderSystem.Recruit",
+          "start": 98,
+          "end": 101,
+          "lines": 4
+        },
+        {
+          "name": "CommanderSystem.AddExp",
+          "start": 122,
+          "end": 132,
+          "lines": 11
+        },
+        {
+          "name": "CommanderSystem.ChooseSpec",
+          "start": 143,
+          "end": 153,
+          "lines": 11
+        },
+        {
+          "name": "CommanderSystem.AssignToFleet",
+          "start": 159,
+          "end": 167,
+          "lines": 9
+        },
+        {
+          "name": "CommanderSystem.Retire",
+          "start": 178,
+          "end": 187,
+          "lines": 10
+        },
+        {
+          "name": "CommanderSystem.GetPassiveBonus",
+          "start": 196,
+          "end": 212,
+          "lines": 17
+        },
+        {
+          "name": "CommanderSystem.GetFleetBonus",
+          "start": 220,
+          "end": 224,
+          "lines": 5
+        },
+        {
+          "name": "CommanderSystem.ActivateSkill",
+          "start": 231,
+          "end": 243,
+          "lines": 13
+        },
+        {
+          "name": "CommanderSystem.Update",
+          "start": 247,
+          "end": 251,
+          "lines": 5
+        },
+        {
+          "name": "CommanderSystem.OnBattleEnd",
+          "start": 260,
+          "end": 268,
+          "lines": 9
+        },
+        {
+          "name": "CommanderSystem.GetSalvageMult",
+          "start": 273,
+          "end": 279,
+          "lines": 7
+        },
+        {
+          "name": "CommanderSystem.Serialize",
+          "start": 287,
+          "end": 299,
+          "lines": 13
+        },
+        {
+          "name": "CommanderSystem.Deserialize",
+          "start": 305,
+          "end": 323,
+          "lines": 19
+        },
+        {
+          "name": "CommanderSystem.ResetBattleState",
+          "start": 331,
+          "end": 334,
+          "lines": 4
+        },
+        {
+          "name": "CommanderSystem.FullReset",
+          "start": 338,
+          "end": 341,
+          "lines": 4
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/GalactopediaSystem.lua": {
+      "path": "game/GalactopediaSystem.lua",
+      "extension": ".lua",
+      "lines": 241,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "GalactopediaSystem.Init",
+          "start": 117,
+          "end": 124,
+          "lines": 8
+        },
+        {
+          "name": "GalactopediaSystem.TryUnlock",
+          "start": 132,
+          "end": 140,
+          "lines": 9
+        },
+        {
+          "name": "GalactopediaSystem.TryUnlockBatch",
+          "start": 149,
+          "end": 154,
+          "lines": 6
+        },
+        {
+          "name": "GalactopediaSystem.IsUnlocked",
+          "start": 161,
+          "end": 163,
+          "lines": 3
+        },
+        {
+          "name": "GalactopediaSystem.GetCategories",
+          "start": 166,
+          "end": 168,
+          "lines": 3
+        },
+        {
+          "name": "GalactopediaSystem.GetEntries",
+          "start": 173,
+          "end": 185,
+          "lines": 13
+        },
+        {
+          "name": "GalactopediaSystem.GetProgress",
+          "start": 190,
+          "end": 197,
+          "lines": 8
+        },
+        {
+          "name": "GalactopediaSystem.GetCategoryProgress",
+          "start": 203,
+          "end": 210,
+          "lines": 8
+        },
+        {
+          "name": "GalactopediaSystem.Serialize",
+          "start": 217,
+          "end": 221,
+          "lines": 5
+        },
+        {
+          "name": "GalactopediaSystem.Deserialize",
+          "start": 225,
+          "end": 230,
+          "lines": 6
+        },
+        {
+          "name": "GalactopediaSystem.Reset",
+          "start": 233,
+          "end": 235,
+          "lines": 3
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/GalaxyEvents.lua": {
+      "path": "game/GalaxyEvents.lua",
+      "extension": ".lua",
+      "lines": 1505,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "spawnChain",
+          "start": 486,
+          "end": 501,
+          "lines": 16
+        },
+        {
+          "name": "spawn",
+          "start": 524,
+          "end": 549,
+          "lines": 26
+        },
+        {
+          "name": "GalaxyEvents.ScheduleChain",
+          "start": 578,
+          "end": 587,
+          "lines": 10
+        },
+        {
+          "name": "GalaxyEvents.Reset",
+          "start": 590,
+          "end": 597,
+          "lines": 8
+        },
+        {
+          "name": "GalaxyEvents.Update",
+          "start": 604,
+          "end": 611,
+          "lines": 8
+        },
+        {
+          "name": "GalaxyEvents.onCrisisExpired",
+          "start": 673,
+          "end": 676,
+          "lines": 4
+        },
+        {
+          "name": "GalaxyEvents.AddBuff",
+          "start": 687,
+          "end": 695,
+          "lines": 9
+        },
+        {
+          "name": "GalaxyEvents.RemoveBuff",
+          "start": 709,
+          "end": 715,
+          "lines": 7
+        },
+        {
+          "name": "GalaxyEvents.HasBuff",
+          "start": 722,
+          "end": 726,
+          "lines": 5
+        },
+        {
+          "name": "GalaxyEvents.GetActiveBuffs",
+          "start": 733,
+          "end": 735,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyEvents.Draw",
+          "start": 739,
+          "end": 749,
+          "lines": 11
+        },
+        {
+          "name": "GalaxyEvents.GetList",
+          "start": 872,
+          "end": 874,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyEvents.GetType",
+          "start": 879,
+          "end": 881,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyEvents.Serialize",
+          "start": 885,
+          "end": 904,
+          "lines": 20
+        },
+        {
+          "name": "GalaxyEvents.Deserialize",
+          "start": 922,
+          "end": 931,
+          "lines": 10
+        },
+        {
+          "name": "GalaxyEvents.SetPlanetProvider",
+          "start": 1025,
+          "end": 1027,
+          "lines": 3
+        },
+        {
+          "name": "spawnDisaster",
+          "start": 1030,
+          "end": 1036,
+          "lines": 7
+        },
+        {
+          "name": "GalaxyEvents.UpdateDisasters",
+          "start": 1090,
+          "end": 1096,
+          "lines": 7
+        },
+        {
+          "name": "GalaxyEvents.GetDisasterType",
+          "start": 1102,
+          "end": 1104,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyEvents.ResetDisasters",
+          "start": 1107,
+          "end": 1109,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyEvents.TriggerEndgameCrisis",
+          "start": 1293,
+          "end": 1315,
+          "lines": 23
+        },
+        {
+          "name": "GalaxyEvents.GetEndgameCrisis",
+          "start": 1322,
+          "end": 1341,
+          "lines": 20
+        },
+        {
+          "name": "GalaxyEvents.AdvanceCrisisPhase",
+          "start": 1346,
+          "end": 1349,
+          "lines": 4
+        },
+        {
+          "name": "crisisPhaseTimeout",
+          "start": 1394,
+          "end": 1410,
+          "lines": 17
+        },
+        {
+          "name": "GalaxyEvents.UpdateEndgameCrisis",
+          "start": 1439,
+          "end": 1444,
+          "lines": 6
+        },
+        {
+          "name": "GalaxyEvents.GetCrisisRewards",
+          "start": 1449,
+          "end": 1461,
+          "lines": 13
+        },
+        {
+          "name": "GalaxyEvents.IsEndgameCrisisActive",
+          "start": 1467,
+          "end": 1469,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyEvents.HasEndgameCrisisTriggered",
+          "start": 1473,
+          "end": 1475,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyEvents.onCrisisPhaseTimeout",
+          "start": 1478,
+          "end": 1480,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyEvents.onCrisisResolved",
+          "start": 1483,
+          "end": 1485,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyEvents.SerializeEndgameCrisis",
+          "start": 1489,
+          "end": 1491,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyEvents.DeserializeEndgameCrisis",
+          "start": 1495,
+          "end": 1497,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyEvents.ResetEndgameCrisis",
+          "start": 1500,
+          "end": 1502,
+          "lines": 3
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/GalaxyGenerator.lua": {
+      "path": "game/GalaxyGenerator.lua",
+      "extension": ".lua",
+      "lines": 479,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "randItem",
+          "start": 67,
+          "end": 69,
+          "lines": 3
+        },
+        {
+          "name": "clamp",
+          "start": 76,
+          "end": 78,
+          "lines": 3
+        },
+        {
+          "name": "jitterColor",
+          "start": 84,
+          "end": 90,
+          "lines": 7
+        },
+        {
+          "name": "buildSatellites",
+          "start": 96,
+          "end": 113,
+          "lines": 18
+        },
+        {
+          "name": "buildPlanet",
+          "start": 123,
+          "end": 156,
+          "lines": 34
+        },
+        {
+          "name": "buildSystem",
+          "start": 166,
+          "end": 182,
+          "lines": 17
+        },
+        {
+          "name": "shapeSPIRAL",
+          "start": 192,
+          "end": 207,
+          "lines": 16
+        },
+        {
+          "name": "shapeCLUSTER",
+          "start": 214,
+          "end": 221,
+          "lines": 8
+        },
+        {
+          "name": "shapeCORRIDOR",
+          "start": 227,
+          "end": 234,
+          "lines": 8
+        },
+        {
+          "name": "shapeTWIN",
+          "start": 240,
+          "end": 248,
+          "lines": 9
+        },
+        {
+          "name": "shapeRING",
+          "start": 263,
+          "end": 273,
+          "lines": 11
+        },
+        {
+          "name": "GalaxyGenerator.SeedToNumber",
+          "start": 303,
+          "end": 310,
+          "lines": 8
+        },
+        {
+          "name": "GalaxyGenerator.NumberToSeed",
+          "start": 317,
+          "end": 324,
+          "lines": 8
+        },
+        {
+          "name": "GalaxyGenerator.RandomSeed",
+          "start": 330,
+          "end": 337,
+          "lines": 8
+        },
+        {
+          "name": "GalaxyGenerator.GetShape",
+          "start": 344,
+          "end": 350,
+          "lines": 7
+        },
+        {
+          "name": "GalaxyGenerator.Generate",
+          "start": 356,
+          "end": 377,
+          "lines": 22
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/GalaxyScene.lua": {
+      "path": "game/GalaxyScene.lua",
+      "extension": ".lua",
+      "lines": 2252,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "dist2",
+          "start": 168,
+          "end": 171,
+          "lines": 4
+        },
+        {
+          "name": "randItem",
+          "start": 173,
+          "end": 175,
+          "lines": 3
+        },
+        {
+          "name": "nvgColor",
+          "start": 177,
+          "end": 179,
+          "lines": 3
+        },
+        {
+          "name": "w2s",
+          "start": 182,
+          "end": 187,
+          "lines": 6
+        },
+        {
+          "name": "s2w",
+          "start": 190,
+          "end": 195,
+          "lines": 6
+        },
+        {
+          "name": "generateBgStars",
+          "start": 200,
+          "end": 210,
+          "lines": 11
+        },
+        {
+          "name": "generateFixedStarSystems",
+          "start": 216,
+          "end": 257,
+          "lines": 42
+        },
+        {
+          "name": "generateStarSystems",
+          "start": 272,
+          "end": 289,
+          "lines": 18
+        },
+        {
+          "name": "generateAsteroids",
+          "start": 464,
+          "end": 488,
+          "lines": 25
+        },
+        {
+          "name": "countEngineersInFleet",
+          "start": 535,
+          "end": 541,
+          "lines": 7
+        },
+        {
+          "name": "fleetHasExplorer",
+          "start": 546,
+          "end": 552,
+          "lines": 7
+        },
+        {
+          "name": "findNearbyUncolonizedPlanet",
+          "start": 558,
+          "end": 566,
+          "lines": 9
+        },
+        {
+          "name": "updatePlanets",
+          "start": 576,
+          "end": 580,
+          "lines": 5
+        },
+        {
+          "name": "updateHover",
+          "start": 590,
+          "end": 599,
+          "lines": 10
+        },
+        {
+          "name": "GalaxyScene.Colonize",
+          "start": 632,
+          "end": 643,
+          "lines": 12
+        },
+        {
+          "name": "tryClickAsteroid",
+          "start": 661,
+          "end": 680,
+          "lines": 20
+        },
+        {
+          "name": "handleClick",
+          "start": 698,
+          "end": 710,
+          "lines": 13
+        },
+        {
+          "name": "GalaxyScene.Init",
+          "start": 915,
+          "end": 934,
+          "lines": 20
+        },
+        {
+          "name": "GalaxyScene.GetAllPlanets",
+          "start": 1048,
+          "end": 1050,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.GetColonizedPlanets",
+          "start": 1053,
+          "end": 1055,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.GetSelected",
+          "start": 1057,
+          "end": 1059,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.SelectPlanet",
+          "start": 1062,
+          "end": 1064,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.GetMapVariant",
+          "start": 1067,
+          "end": 1069,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.GetSeed",
+          "start": 1072,
+          "end": 1074,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.GetGalaxyShape",
+          "start": 1076,
+          "end": 1078,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.GetSpecialPlanets",
+          "start": 1080,
+          "end": 1082,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.TogglePriority",
+          "start": 1085,
+          "end": 1092,
+          "lines": 8
+        },
+        {
+          "name": "GalaxyScene.IsPriority",
+          "start": 1095,
+          "end": 1098,
+          "lines": 4
+        },
+        {
+          "name": "GalaxyScene.GetPriorityPlanetCount",
+          "start": 1100,
+          "end": 1104,
+          "lines": 5
+        },
+        {
+          "name": "GalaxyScene.WarpFleetToPlanet",
+          "start": 1109,
+          "end": 1112,
+          "lines": 4
+        },
+        {
+          "name": "getFleetSpeed",
+          "start": 1158,
+          "end": 1167,
+          "lines": 10
+        },
+        {
+          "name": "updateFleets",
+          "start": 1178,
+          "end": 1202,
+          "lines": 25
+        },
+        {
+          "name": "invalidateFleetColor",
+          "start": 1314,
+          "end": 1316,
+          "lines": 3
+        },
+        {
+          "name": "getFleetColor",
+          "start": 1319,
+          "end": 1327,
+          "lines": 9
+        },
+        {
+          "name": "updateSeedShip",
+          "start": 1369,
+          "end": 1395,
+          "lines": 27
+        },
+        {
+          "name": "GalaxyScene.Update",
+          "start": 1432,
+          "end": 1447,
+          "lines": 16
+        },
+        {
+          "name": "GalaxyScene.Render",
+          "start": 1541,
+          "end": 1590,
+          "lines": 50
+        },
+        {
+          "name": "GalaxyScene.OnMouseDown",
+          "start": 1595,
+          "end": 1606,
+          "lines": 12
+        },
+        {
+          "name": "GalaxyScene.OnMouseMove",
+          "start": 1608,
+          "end": 1625,
+          "lines": 18
+        },
+        {
+          "name": "minimapRect",
+          "start": 1628,
+          "end": 1632,
+          "lines": 5
+        },
+        {
+          "name": "teleportToMinimap",
+          "start": 1635,
+          "end": 1649,
+          "lines": 15
+        },
+        {
+          "name": "GalaxyScene.OnMouseUp",
+          "start": 1652,
+          "end": 1665,
+          "lines": 14
+        },
+        {
+          "name": "GalaxyScene.OnMouseWheel",
+          "start": 1672,
+          "end": 1686,
+          "lines": 15
+        },
+        {
+          "name": "touchCount",
+          "start": 1693,
+          "end": 1697,
+          "lines": 5
+        },
+        {
+          "name": "pinchInfo",
+          "start": 1700,
+          "end": 1710,
+          "lines": 11
+        },
+        {
+          "name": "GalaxyScene.OnTouchBegin",
+          "start": 1712,
+          "end": 1737,
+          "lines": 26
+        },
+        {
+          "name": "GalaxyScene.OnTouchMove",
+          "start": 1740,
+          "end": 1763,
+          "lines": 24
+        },
+        {
+          "name": "GalaxyScene.OnTouchEnd",
+          "start": 1782,
+          "end": 1792,
+          "lines": 11
+        },
+        {
+          "name": "GalaxyScene.OnKeyDown",
+          "start": 1821,
+          "end": 1837,
+          "lines": 17
+        },
+        {
+          "name": "GalaxyScene.OnKeyUp",
+          "start": 1841,
+          "end": 1846,
+          "lines": 6
+        },
+        {
+          "name": "GalaxyScene.IsDeployed",
+          "start": 1849,
+          "end": 1851,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.GetSeedState",
+          "start": 1854,
+          "end": 1856,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.GetBase",
+          "start": 1859,
+          "end": 1861,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.SelectFleet",
+          "start": 1866,
+          "end": 1868,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.GetSelectedFleetId",
+          "start": 1871,
+          "end": 1873,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.InvalidateFleetColor",
+          "start": 1876,
+          "end": 1878,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.GetSaveData",
+          "start": 1887,
+          "end": 1898,
+          "lines": 12
+        },
+        {
+          "name": "GalaxyScene.LoadSaveData",
+          "start": 1999,
+          "end": 2007,
+          "lines": 9
+        },
+        {
+          "name": "GalaxyScene.ShowSignalBanner",
+          "start": 2150,
+          "end": 2157,
+          "lines": 8
+        },
+        {
+          "name": "GalaxyScene.GarrisonFleet",
+          "start": 2167,
+          "end": 2170,
+          "lines": 4
+        },
+        {
+          "name": "GalaxyScene.RecallGarrison",
+          "start": 2178,
+          "end": 2180,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.GetGarrisonedPlanet",
+          "start": 2185,
+          "end": 2187,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.GetGarrisonFleetId",
+          "start": 2192,
+          "end": 2195,
+          "lines": 4
+        },
+        {
+          "name": "GalaxyScene.GetAllGarrisons",
+          "start": 2200,
+          "end": 2204,
+          "lines": 5
+        },
+        {
+          "name": "GalaxyScene.ClearGarrisons",
+          "start": 2209,
+          "end": 2212,
+          "lines": 4
+        },
+        {
+          "name": "GalaxyScene.SetExpeditions",
+          "start": 2220,
+          "end": 2222,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.SetDiploRelations",
+          "start": 2227,
+          "end": 2229,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.GetFleetSpeed",
+          "start": 2234,
+          "end": 2236,
+          "lines": 3
+        },
+        {
+          "name": "GalaxyScene.Shutdown",
+          "start": 2238,
+          "end": 2243,
+          "lines": 6
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/GameConstants.lua": {
+      "path": "game/GameConstants.lua",
+      "extension": ".lua",
+      "lines": 386,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "BaseModuleSlots",
+          "start": 95,
+          "end": 97,
+          "lines": 3
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/GameUI.lua": {
+      "path": "game/GameUI.lua",
+      "extension": ".lua",
+      "lines": 1504,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "GameUI.Notify",
+          "start": 298,
+          "end": 301,
+          "lines": 4
+        },
+        {
+          "name": "GameUI.RenderNotifications",
+          "start": 305,
+          "end": 307,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.SetPirateWarning",
+          "start": 309,
+          "end": 311,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.UpdateNotifications",
+          "start": 313,
+          "end": 325,
+          "lines": 13
+        },
+        {
+          "name": "GameUI.TriggerTechComplete",
+          "start": 438,
+          "end": 440,
+          "lines": 3
+        },
+        {
+          "name": "panel",
+          "start": 449,
+          "end": 462,
+          "lines": 14
+        },
+        {
+          "name": "clrC",
+          "start": 447,
+          "end": 463,
+          "lines": 17
+        },
+        {
+          "name": "text",
+          "start": 465,
+          "end": 471,
+          "lines": 7
+        },
+        {
+          "name": "addHit",
+          "start": 474,
+          "end": 485,
+          "lines": 12
+        },
+        {
+          "name": "clr",
+          "start": 445,
+          "end": 489,
+          "lines": 45
+        },
+        {
+          "name": "addScroll",
+          "start": 492,
+          "end": 494,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.OnScroll",
+          "start": 497,
+          "end": 503,
+          "lines": 7
+        },
+        {
+          "name": "GameUI.OnTouchBegin",
+          "start": 509,
+          "end": 517,
+          "lines": 9
+        },
+        {
+          "name": "GameUI.OnTouchMove",
+          "start": 533,
+          "end": 537,
+          "lines": 5
+        },
+        {
+          "name": "GameUI.OnTouchEnd",
+          "start": 550,
+          "end": 558,
+          "lines": 9
+        },
+        {
+          "name": "drawButton",
+          "start": 582,
+          "end": 588,
+          "lines": 7
+        },
+        {
+          "name": "progressBar",
+          "start": 591,
+          "end": 602,
+          "lines": 12
+        },
+        {
+          "name": "GameUI.RenderTopBar",
+          "start": 621,
+          "end": 659,
+          "lines": 39
+        },
+        {
+          "name": "GameUI.RenderSceneTitle",
+          "start": 664,
+          "end": 674,
+          "lines": 11
+        },
+        {
+          "name": "GameUI.ShowEventPopup",
+          "start": 688,
+          "end": 690,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.ShowDiploEvent",
+          "start": 694,
+          "end": 696,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.RenderHUD",
+          "start": 701,
+          "end": 823,
+          "lines": 123
+        },
+        {
+          "name": "GameUI.RefreshResourceBar",
+          "start": 1003,
+          "end": 1005,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.RefreshBlackMarketPanel",
+          "start": 1007,
+          "end": 1009,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.RefreshPlanetPanel",
+          "start": 1011,
+          "end": 1017,
+          "lines": 7
+        },
+        {
+          "name": "GameUI.ForceRefreshPanel",
+          "start": 1022,
+          "end": 1026,
+          "lines": 5
+        },
+        {
+          "name": "GameUI.RefreshShipyardPanel",
+          "start": 1029,
+          "end": 1031,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.SetExplorerColonizeMode",
+          "start": 1034,
+          "end": 1036,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.SetAchievements",
+          "start": 1041,
+          "end": 1043,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.SetRedeemCallback",
+          "start": 1046,
+          "end": 1048,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.GetRedeemableCount",
+          "start": 1051,
+          "end": 1053,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.SetEndlessRound",
+          "start": 1057,
+          "end": 1059,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.ShowDailyChallengeHint",
+          "start": 1063,
+          "end": 1067,
+          "lines": 5
+        },
+        {
+          "name": "GameUI.SetLeagueHud",
+          "start": 1070,
+          "end": 1072,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.ShowCardDraft",
+          "start": 1075,
+          "end": 1077,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.HideCardDraft",
+          "start": 1080,
+          "end": 1082,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.RefreshExplorerTasks",
+          "start": 1085,
+          "end": 1087,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.PushExploreLog",
+          "start": 1091,
+          "end": 1095,
+          "lines": 5
+        },
+        {
+          "name": "GameUI.SetCompletedGoals",
+          "start": 1100,
+          "end": 1102,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.SetCareerStats",
+          "start": 1105,
+          "end": 1110,
+          "lines": 6
+        },
+        {
+          "name": "GameUI.ShowScene",
+          "start": 1115,
+          "end": 1119,
+          "lines": 5
+        },
+        {
+          "name": "GameUI.OnClick",
+          "start": 1124,
+          "end": 1130,
+          "lines": 7
+        },
+        {
+          "name": "GameUI.Init",
+          "start": 1138,
+          "end": 1200,
+          "lines": 63
+        },
+        {
+          "name": "GameUI.Shutdown",
+          "start": 1291,
+          "end": 1298,
+          "lines": 8
+        },
+        {
+          "name": "GameUI.SetShipyardBuilt",
+          "start": 1301,
+          "end": 1303,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.RefreshFleetPanel",
+          "start": 1306,
+          "end": 1311,
+          "lines": 6
+        },
+        {
+          "name": "GameUI.SetExpeditions",
+          "start": 1315,
+          "end": 1319,
+          "lines": 5
+        },
+        {
+          "name": "GameUI.SetMapSelectedFleet",
+          "start": 1322,
+          "end": 1324,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.RefreshReservePanel",
+          "start": 1327,
+          "end": 1329,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.SetDeployed",
+          "start": 1332,
+          "end": 1337,
+          "lines": 6
+        },
+        {
+          "name": "GameUI.SetFleetOverview",
+          "start": 1347,
+          "end": 1350,
+          "lines": 4
+        },
+        {
+          "name": "GameUI.ShowEndGame",
+          "start": 1356,
+          "end": 1358,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.HideEndGame",
+          "start": 1361,
+          "end": 1368,
+          "lines": 8
+        },
+        {
+          "name": "GameUI.SetAdCallback",
+          "start": 1372,
+          "end": 1374,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.SetSpeedUpAdCallback",
+          "start": 1378,
+          "end": 1380,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.SetTechSpeedAdCallback",
+          "start": 1384,
+          "end": 1386,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.SetTopBarAdCallback",
+          "start": 1390,
+          "end": 1392,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.TutorialDeserialize",
+          "start": 1398,
+          "end": 1400,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.TutorialSerialize",
+          "start": 1403,
+          "end": 1405,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.TutorialTriggerStart",
+          "start": 1408,
+          "end": 1410,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.SetDeployCallback",
+          "start": 1413,
+          "end": 1415,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.SetRemainingTime",
+          "start": 1418,
+          "end": 1420,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.ShowTimeoutScreen",
+          "start": 1425,
+          "end": 1427,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.UpdateTimeoutAdCount",
+          "start": 1430,
+          "end": 1432,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.HideTimeoutScreen",
+          "start": 1435,
+          "end": 1437,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.SetVg",
+          "start": 1442,
+          "end": 1444,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.ShowCareerPage",
+          "start": 1447,
+          "end": 1450,
+          "lines": 4
+        },
+        {
+          "name": "GameUI.HideCareerPage",
+          "start": 1452,
+          "end": 1454,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.ToggleEmpirePanel",
+          "start": 1457,
+          "end": 1459,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.ToggleLegacyPanel",
+          "start": 1462,
+          "end": 1464,
+          "lines": 3
+        },
+        {
+          "name": "GameUI.ShowEndgameCrisisPanel",
+          "start": 1469,
+          "end": 1484,
+          "lines": 16
+        },
+        {
+          "name": "GameUI.RefreshTechPanel",
+          "start": 1440,
+          "end": 1486,
+          "lines": 47
+        },
+        {
+          "name": "GameUI.OnFleetNamingEnter",
+          "start": 1344,
+          "end": 1488,
+          "lines": 145
+        },
+        {
+          "name": "GameUI.OnFleetNamingBackspace",
+          "start": 1343,
+          "end": 1498,
+          "lines": 156
+        },
+        {
+          "name": "GameUI.RenderProgressBars",
+          "start": 1500,
+          "end": 1501,
+          "lines": 2
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "GameUI.RenderHUD",
+          "start": 701,
+          "end": 823,
+          "lines": 123
+        },
+        {
+          "name": "GameUI.OnFleetNamingEnter",
+          "start": 1344,
+          "end": 1488,
+          "lines": 145
+        },
+        {
+          "name": "GameUI.OnFleetNamingBackspace",
+          "start": 1343,
+          "end": 1498,
+          "lines": 156
+        }
+      ],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/LeagueSystem.lua": {
+      "path": "game/LeagueSystem.lua",
+      "extension": ".lua",
+      "lines": 299,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "getCurrentWeekKey",
+          "start": 42,
+          "end": 49,
+          "lines": 8
+        },
+        {
+          "name": "weekKeyToSeed",
+          "start": 52,
+          "end": 57,
+          "lines": 6
+        },
+        {
+          "name": "getRankByPoints",
+          "start": 62,
+          "end": 68,
+          "lines": 7
+        },
+        {
+          "name": "getNextRank",
+          "start": 74,
+          "end": 78,
+          "lines": 5
+        },
+        {
+          "name": "getWeekModIndex",
+          "start": 84,
+          "end": 86,
+          "lines": 3
+        },
+        {
+          "name": "LeagueSystem.Init",
+          "start": 91,
+          "end": 103,
+          "lines": 13
+        },
+        {
+          "name": "LeagueSystem.CheckWeekRollover",
+          "start": 106,
+          "end": 120,
+          "lines": 15
+        },
+        {
+          "name": "LeagueSystem.GetWeekSeed",
+          "start": 138,
+          "end": 140,
+          "lines": 3
+        },
+        {
+          "name": "LeagueSystem.GetWeekModifier",
+          "start": 143,
+          "end": 145,
+          "lines": 3
+        },
+        {
+          "name": "LeagueSystem.GetWeekKey",
+          "start": 148,
+          "end": 150,
+          "lines": 3
+        },
+        {
+          "name": "LeagueSystem.CalcScore",
+          "start": 155,
+          "end": 175,
+          "lines": 21
+        },
+        {
+          "name": "LeagueSystem.SubmitGame",
+          "start": 182,
+          "end": 192,
+          "lines": 11
+        },
+        {
+          "name": "LeagueSystem.GetRank",
+          "start": 199,
+          "end": 201,
+          "lines": 3
+        },
+        {
+          "name": "LeagueSystem.GetRankProgress",
+          "start": 204,
+          "end": 212,
+          "lines": 9
+        },
+        {
+          "name": "LeagueSystem.GetStatus",
+          "start": 222,
+          "end": 238,
+          "lines": 17
+        },
+        {
+          "name": "LeagueSystem.GetLeaderboardKey",
+          "start": 241,
+          "end": 243,
+          "lines": 3
+        },
+        {
+          "name": "LeagueSystem.MarkSubmitted",
+          "start": 246,
+          "end": 248,
+          "lines": 3
+        },
+        {
+          "name": "LeagueSystem.NeedsSubmit",
+          "start": 250,
+          "end": 252,
+          "lines": 3
+        },
+        {
+          "name": "LeagueSystem.GetWeekBest",
+          "start": 255,
+          "end": 257,
+          "lines": 3
+        },
+        {
+          "name": "LeagueSystem.Serialize",
+          "start": 261,
+          "end": 270,
+          "lines": 10
+        },
+        {
+          "name": "LeagueSystem.Deserialize",
+          "start": 272,
+          "end": 276,
+          "lines": 5
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/LegacySystem.lua": {
+      "path": "game/LegacySystem.lua",
+      "extension": ".lua",
+      "lines": 260,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "newData",
+          "start": 65,
+          "end": 75,
+          "lines": 11
+        },
+        {
+          "name": "saveToFile",
+          "start": 77,
+          "end": 83,
+          "lines": 7
+        },
+        {
+          "name": "loadFromFile",
+          "start": 87,
+          "end": 90,
+          "lines": 4
+        },
+        {
+          "name": "LegacySystem.Init",
+          "start": 118,
+          "end": 120,
+          "lines": 3
+        },
+        {
+          "name": "LegacySystem.GetLP",
+          "start": 124,
+          "end": 126,
+          "lines": 3
+        },
+        {
+          "name": "LegacySystem.GetTree",
+          "start": 130,
+          "end": 136,
+          "lines": 7
+        },
+        {
+          "name": "LegacySystem.GetTotalSpent",
+          "start": 140,
+          "end": 142,
+          "lines": 3
+        },
+        {
+          "name": "LegacySystem.CanUpgrade",
+          "start": 147,
+          "end": 153,
+          "lines": 7
+        },
+        {
+          "name": "LegacySystem.Upgrade",
+          "start": 159,
+          "end": 162,
+          "lines": 4
+        },
+        {
+          "name": "LegacySystem.Reset",
+          "start": 176,
+          "end": 179,
+          "lines": 4
+        },
+        {
+          "name": "LegacySystem.AwardLP",
+          "start": 198,
+          "end": 201,
+          "lines": 4
+        },
+        {
+          "name": "LegacySystem.AwardEndOfGame",
+          "start": 208,
+          "end": 217,
+          "lines": 10
+        },
+        {
+          "name": "LegacySystem.GetBonuses",
+          "start": 225,
+          "end": 252,
+          "lines": 28
+        },
+        {
+          "name": "LegacySystem.Save",
+          "start": 255,
+          "end": 257,
+          "lines": 3
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/LiverySystem.lua": {
+      "path": "game/LiverySystem.lua",
+      "extension": ".lua",
+      "lines": 245,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "checkUnlockCondition",
+          "start": 89,
+          "end": 93,
+          "lines": 5
+        },
+        {
+          "name": "LiverySystem.RefreshUnlocks",
+          "start": 119,
+          "end": 129,
+          "lines": 11
+        },
+        {
+          "name": "LiverySystem.SetPrimary",
+          "start": 146,
+          "end": 150,
+          "lines": 5
+        },
+        {
+          "name": "LiverySystem.SetAccent",
+          "start": 154,
+          "end": 158,
+          "lines": 5
+        },
+        {
+          "name": "LiverySystem.SetEmblem",
+          "start": 162,
+          "end": 166,
+          "lines": 5
+        },
+        {
+          "name": "LiverySystem.GetPrimary",
+          "start": 170,
+          "end": 173,
+          "lines": 4
+        },
+        {
+          "name": "LiverySystem.GetAccent",
+          "start": 177,
+          "end": 180,
+          "lines": 4
+        },
+        {
+          "name": "LiverySystem.GetEmblem",
+          "start": 184,
+          "end": 187,
+          "lines": 4
+        },
+        {
+          "name": "LiverySystem.IsUnlocked",
+          "start": 191,
+          "end": 196,
+          "lines": 6
+        },
+        {
+          "name": "LiverySystem.GetBattleColors",
+          "start": 200,
+          "end": 209,
+          "lines": 10
+        },
+        {
+          "name": "LiverySystem.Serialize",
+          "start": 214,
+          "end": 223,
+          "lines": 10
+        },
+        {
+          "name": "LiverySystem.Deserialize",
+          "start": 225,
+          "end": 233,
+          "lines": 9
+        },
+        {
+          "name": "LiverySystem.Reset",
+          "start": 235,
+          "end": 242,
+          "lines": 8
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/MegastructureSystem.lua": {
+      "path": "game/MegastructureSystem.lua",
+      "extension": ".lua",
+      "lines": 329,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "initStates",
+          "start": 84,
+          "end": 93,
+          "lines": 10
+        },
+        {
+          "name": "MegastructureSystem.GetState",
+          "start": 105,
+          "end": 107,
+          "lines": 3
+        },
+        {
+          "name": "MegastructureSystem.GetAllStates",
+          "start": 110,
+          "end": 112,
+          "lines": 3
+        },
+        {
+          "name": "MegastructureSystem.IsUnlocked",
+          "start": 117,
+          "end": 121,
+          "lines": 5
+        },
+        {
+          "name": "MegastructureSystem.GetCurrentPhaseCost",
+          "start": 124,
+          "end": 131,
+          "lines": 8
+        },
+        {
+          "name": "MegastructureSystem.CanStartPhase",
+          "start": 138,
+          "end": 146,
+          "lines": 9
+        },
+        {
+          "name": "MegastructureSystem.StartPhase",
+          "start": 168,
+          "end": 175,
+          "lines": 8
+        },
+        {
+          "name": "MegastructureSystem.Update",
+          "start": 181,
+          "end": 197,
+          "lines": 17
+        },
+        {
+          "name": "MegastructureSystem.GetProgress",
+          "start": 208,
+          "end": 215,
+          "lines": 8
+        },
+        {
+          "name": "MegastructureSystem.CalcBonuses",
+          "start": 219,
+          "end": 240,
+          "lines": 22
+        },
+        {
+          "name": "MegastructureSystem.Serialize",
+          "start": 290,
+          "end": 301,
+          "lines": 12
+        },
+        {
+          "name": "MegastructureSystem.Deserialize",
+          "start": 306,
+          "end": 318,
+          "lines": 13
+        },
+        {
+          "name": "MegastructureSystem.Reset",
+          "start": 323,
+          "end": 326,
+          "lines": 4
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/MutantShipSystem.lua": {
+      "path": "game/MutantShipSystem.lua",
+      "extension": ".lua",
+      "lines": 393,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "generateId",
+          "start": 86,
+          "end": 89,
+          "lines": 4
+        },
+        {
+          "name": "rollAffixes",
+          "start": 94,
+          "end": 107,
+          "lines": 14
+        },
+        {
+          "name": "rollBaseType",
+          "start": 123,
+          "end": 126,
+          "lines": 4
+        },
+        {
+          "name": "saveToFile",
+          "start": 132,
+          "end": 138,
+          "lines": 7
+        },
+        {
+          "name": "loadFromFile",
+          "start": 141,
+          "end": 144,
+          "lines": 4
+        },
+        {
+          "name": "MutantShipSystem.Init",
+          "start": 163,
+          "end": 165,
+          "lines": 3
+        },
+        {
+          "name": "MutantShipSystem.GetInventory",
+          "start": 169,
+          "end": 171,
+          "lines": 3
+        },
+        {
+          "name": "MutantShipSystem.GetById",
+          "start": 176,
+          "end": 179,
+          "lines": 4
+        },
+        {
+          "name": "MutantShipSystem.GetAffix",
+          "start": 186,
+          "end": 188,
+          "lines": 3
+        },
+        {
+          "name": "MutantShipSystem.GetAllAffixes",
+          "start": 192,
+          "end": 194,
+          "lines": 3
+        },
+        {
+          "name": "MutantShipSystem.TryBossDrop",
+          "start": 200,
+          "end": 214,
+          "lines": 15
+        },
+        {
+          "name": "MutantShipSystem.TryAnomalyDrop",
+          "start": 219,
+          "end": 233,
+          "lines": 15
+        },
+        {
+          "name": "MutantShipSystem.AwardFromQuest",
+          "start": 238,
+          "end": 250,
+          "lines": 13
+        },
+        {
+          "name": "MutantShipSystem.Remove",
+          "start": 255,
+          "end": 261,
+          "lines": 7
+        },
+        {
+          "name": "MutantShipSystem.CanAddToFleet",
+          "start": 269,
+          "end": 271,
+          "lines": 3
+        },
+        {
+          "name": "MutantShipSystem.GetMaxPerFleet",
+          "start": 275,
+          "end": 277,
+          "lines": 3
+        },
+        {
+          "name": "MutantShipSystem.GetDisplayName",
+          "start": 282,
+          "end": 289,
+          "lines": 8
+        },
+        {
+          "name": "MutantShipSystem.GetAffixSummary",
+          "start": 297,
+          "end": 304,
+          "lines": 8
+        },
+        {
+          "name": "MutantShipSystem.CountUniqueAffixes",
+          "start": 311,
+          "end": 316,
+          "lines": 6
+        },
+        {
+          "name": "MutantShipSystem.CountShipsWithDistinctAffixes",
+          "start": 325,
+          "end": 330,
+          "lines": 6
+        },
+        {
+          "name": "MutantShipSystem.ApplyAffixStats",
+          "start": 341,
+          "end": 353,
+          "lines": 13
+        },
+        {
+          "name": "MutantShipSystem.IsOnKillAffix",
+          "start": 362,
+          "end": 364,
+          "lines": 3
+        },
+        {
+          "name": "MutantShipSystem.IsOnDeathAffix",
+          "start": 369,
+          "end": 371,
+          "lines": 3
+        },
+        {
+          "name": "MutantShipSystem.IsAuraAffix",
+          "start": 376,
+          "end": 378,
+          "lines": 3
+        },
+        {
+          "name": "MutantShipSystem.IsPeriodicAffix",
+          "start": 383,
+          "end": 385,
+          "lines": 3
+        },
+        {
+          "name": "MutantShipSystem.Save",
+          "start": 388,
+          "end": 390,
+          "lines": 3
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/NemesisSystem.lua": {
+      "path": "game/NemesisSystem.lua",
+      "extension": ".lua",
+      "lines": 502,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "NemesisSystem.Init",
+          "start": 92,
+          "end": 104,
+          "lines": 13
+        },
+        {
+          "name": "NemesisSystem.RecordPlayerTactics",
+          "start": 116,
+          "end": 126,
+          "lines": 11
+        },
+        {
+          "name": "NemesisSystem.BuildNemesisFleet",
+          "start": 147,
+          "end": 151,
+          "lines": 5
+        },
+        {
+          "name": "NemesisSystem.CheckEncounter",
+          "start": 233,
+          "end": 249,
+          "lines": 17
+        },
+        {
+          "name": "NemesisSystem.StartEncounter",
+          "start": 271,
+          "end": 280,
+          "lines": 10
+        },
+        {
+          "name": "NemesisSystem.OnPlayerWin",
+          "start": 287,
+          "end": 294,
+          "lines": 8
+        },
+        {
+          "name": "NemesisSystem.OnPlayerLose",
+          "start": 330,
+          "end": 337,
+          "lines": 8
+        },
+        {
+          "name": "NemesisSystem.GetActiveCaptain",
+          "start": 363,
+          "end": 368,
+          "lines": 6
+        },
+        {
+          "name": "NemesisSystem.GetAllCaptains",
+          "start": 383,
+          "end": 398,
+          "lines": 16
+        },
+        {
+          "name": "NemesisSystem.GetEvolutionDesc",
+          "start": 403,
+          "end": 406,
+          "lines": 4
+        },
+        {
+          "name": "NemesisSystem.GetEvolutionConfig",
+          "start": 409,
+          "end": 411,
+          "lines": 3
+        },
+        {
+          "name": "NemesisSystem.IsFinaleWave",
+          "start": 414,
+          "end": 418,
+          "lines": 5
+        },
+        {
+          "name": "NemesisSystem.GetDefeatedCount",
+          "start": 422,
+          "end": 426,
+          "lines": 5
+        },
+        {
+          "name": "NemesisSystem.AllDefeated",
+          "start": 428,
+          "end": 432,
+          "lines": 5
+        },
+        {
+          "name": "NemesisSystem.Serialize",
+          "start": 439,
+          "end": 456,
+          "lines": 18
+        },
+        {
+          "name": "NemesisSystem.Deserialize",
+          "start": 463,
+          "end": 467,
+          "lines": 5
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/PirateAI.lua": {
+      "path": "game/PirateAI.lua",
+      "extension": ".lua",
+      "lines": 732,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "PirateAI.new",
+          "start": 39,
+          "end": 56,
+          "lines": 18
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/QuestBoard.lua": {
+      "path": "game/QuestBoard.lua",
+      "extension": ".lua",
+      "lines": 401,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "pickWeighted",
+          "start": 90,
+          "end": 96,
+          "lines": 7
+        },
+        {
+          "name": "pickTarget",
+          "start": 100,
+          "end": 103,
+          "lines": 4
+        },
+        {
+          "name": "formatDesc",
+          "start": 107,
+          "end": 110,
+          "lines": 4
+        },
+        {
+          "name": "generateQuest",
+          "start": 117,
+          "end": 147,
+          "lines": 31
+        },
+        {
+          "name": "checkCondition",
+          "start": 157,
+          "end": 200,
+          "lines": 44
+        },
+        {
+          "name": "QuestBoard.Update",
+          "start": 214,
+          "end": 220,
+          "lines": 7
+        },
+        {
+          "name": "QuestBoard.OnBattleWin",
+          "start": 246,
+          "end": 264,
+          "lines": 19
+        },
+        {
+          "name": "QuestBoard.OnMarketTrade",
+          "start": 269,
+          "end": 274,
+          "lines": 6
+        },
+        {
+          "name": "QuestBoard.OnCreditsEarned",
+          "start": 280,
+          "end": 285,
+          "lines": 6
+        },
+        {
+          "name": "QuestBoard.OnTradeAgreement",
+          "start": 290,
+          "end": 295,
+          "lines": 6
+        },
+        {
+          "name": "QuestBoard.OnMilitaryAlliance",
+          "start": 300,
+          "end": 305,
+          "lines": 6
+        },
+        {
+          "name": "QuestBoard.OnMediation",
+          "start": 310,
+          "end": 315,
+          "lines": 6
+        },
+        {
+          "name": "QuestBoard.OnColonize",
+          "start": 320,
+          "end": 325,
+          "lines": 6
+        },
+        {
+          "name": "QuestBoard.OnAnomalyBattleWin",
+          "start": 330,
+          "end": 335,
+          "lines": 6
+        },
+        {
+          "name": "QuestBoard.OnExplorePlanet",
+          "start": 340,
+          "end": 345,
+          "lines": 6
+        },
+        {
+          "name": "QuestBoard.GetQuests",
+          "start": 351,
+          "end": 353,
+          "lines": 3
+        },
+        {
+          "name": "QuestBoard.GetSpawnTimer",
+          "start": 357,
+          "end": 359,
+          "lines": 3
+        },
+        {
+          "name": "QuestBoard.Serialize",
+          "start": 362,
+          "end": 369,
+          "lines": 8
+        },
+        {
+          "name": "QuestBoard.Deserialize",
+          "start": 372,
+          "end": 378,
+          "lines": 7
+        },
+        {
+          "name": "QuestBoard.GetCompletedCount",
+          "start": 382,
+          "end": 384,
+          "lines": 3
+        },
+        {
+          "name": "QuestBoard.Reset",
+          "start": 387,
+          "end": 398,
+          "lines": 12
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/StarWeather.lua": {
+      "path": "game/StarWeather.lua",
+      "extension": ".lua",
+      "lines": 394,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "weightedRandom",
+          "start": 67,
+          "end": 75,
+          "lines": 9
+        },
+        {
+          "name": "StarWeather.Init",
+          "start": 84,
+          "end": 89,
+          "lines": 6
+        },
+        {
+          "name": "StarWeather.Update",
+          "start": 93,
+          "end": 105,
+          "lines": 13
+        },
+        {
+          "name": "StarWeather.GetCurrent",
+          "start": 120,
+          "end": 132,
+          "lines": 13
+        },
+        {
+          "name": "StarWeather.GetSpeedMod",
+          "start": 136,
+          "end": 140,
+          "lines": 5
+        },
+        {
+          "name": "StarWeather.Render",
+          "start": 151,
+          "end": 161,
+          "lines": 11
+        },
+        {
+          "name": "StarWeather.Serialize",
+          "start": 175,
+          "end": 180,
+          "lines": 6
+        },
+        {
+          "name": "StarWeather.Deserialize",
+          "start": 183,
+          "end": 187,
+          "lines": 5
+        },
+        {
+          "name": "initWeatherVisuals",
+          "start": 203,
+          "end": 215,
+          "lines": 13
+        },
+        {
+          "name": "updateParticles",
+          "start": 227,
+          "end": 234,
+          "lines": 8
+        },
+        {
+          "name": "newMeteor",
+          "start": 251,
+          "end": 263,
+          "lines": 13
+        },
+        {
+          "name": "newRiftPoint",
+          "start": 265,
+          "end": 273,
+          "lines": 9
+        },
+        {
+          "name": "renderNebula",
+          "start": 278,
+          "end": 295,
+          "lines": 18
+        },
+        {
+          "name": "renderMeteors",
+          "start": 301,
+          "end": 321,
+          "lines": 21
+        },
+        {
+          "name": "renderIonStorm",
+          "start": 328,
+          "end": 355,
+          "lines": 28
+        },
+        {
+          "name": "renderRift",
+          "start": 365,
+          "end": 390,
+          "lines": 26
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/Systems.lua": {
+      "path": "game/Systems.lua",
+      "extension": ".lua",
+      "lines": 69,
+      "is_large": false,
+      "functions": [],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/battle/BattleAI.lua": {
+      "path": "game/battle/BattleAI.lua",
+      "extension": ".lua",
+      "lines": 1486,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "BattleAI.Init",
+          "start": 73,
+          "end": 90,
+          "lines": 18
+        },
+        {
+          "name": "BattleAI.SyncRefs",
+          "start": 94,
+          "end": 103,
+          "lines": 10
+        },
+        {
+          "name": "BattleAI.SyncVarsIn",
+          "start": 107,
+          "end": 109,
+          "lines": 3
+        },
+        {
+          "name": "BattleAI.GetVarsOut",
+          "start": 113,
+          "end": 115,
+          "lines": 3
+        },
+        {
+          "name": "dist2",
+          "start": 120,
+          "end": 123,
+          "lines": 4
+        },
+        {
+          "name": "findNearest",
+          "start": 127,
+          "end": 135,
+          "lines": 9
+        },
+        {
+          "name": "clamp",
+          "start": 125,
+          "end": 136,
+          "lines": 12
+        },
+        {
+          "name": "getComboLevel",
+          "start": 140,
+          "end": 143,
+          "lines": 4
+        },
+        {
+          "name": "logBattleEvent",
+          "start": 147,
+          "end": 157,
+          "lines": 11
+        },
+        {
+          "name": "spawnExplosion",
+          "start": 162,
+          "end": 192,
+          "lines": 31
+        },
+        {
+          "name": "spawnHitSparks",
+          "start": 204,
+          "end": 212,
+          "lines": 9
+        },
+        {
+          "name": "spawnShockRing",
+          "start": 229,
+          "end": 237,
+          "lines": 9
+        },
+        {
+          "name": "BattleAI.MakeBossShip",
+          "start": 244,
+          "end": 263,
+          "lines": 20
+        },
+        {
+          "name": "BattleAI.MakeNemesisShip",
+          "start": 271,
+          "end": 289,
+          "lines": 19
+        },
+        {
+          "name": "BattleAI.BuildNemesisWave",
+          "start": 295,
+          "end": 324,
+          "lines": 30
+        },
+        {
+          "name": "BattleAI.BuildEnemyWave",
+          "start": 344,
+          "end": 370,
+          "lines": 27
+        },
+        {
+          "name": "BattleAI.GetNextWavePreview",
+          "start": 422,
+          "end": 436,
+          "lines": 15
+        },
+        {
+          "name": "BattleAI.ApplyWaveStartPassives",
+          "start": 462,
+          "end": 471,
+          "lines": 10
+        },
+        {
+          "name": "BattleAI.ApplyFormationPositions",
+          "start": 554,
+          "end": 575,
+          "lines": 22
+        },
+        {
+          "name": "BattleAI.UpdatePlayerFleet",
+          "start": 665,
+          "end": 674,
+          "lines": 10
+        },
+        {
+          "name": "BattleAI.UpdateEnemyFleet",
+          "start": 926,
+          "end": 940,
+          "lines": 15
+        },
+        {
+          "name": "BattleAI.ProcessDeaths",
+          "start": 1133,
+          "end": 1164,
+          "lines": 32
+        },
+        {
+          "name": "BattleAI.UpdatePassives",
+          "start": 1419,
+          "end": 1426,
+          "lines": 8
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/battle/BattleCombatEnemy.lua": {
+      "path": "game/battle/BattleCombatEnemy.lua",
+      "extension": ".lua",
+      "lines": 223,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "BattleCombatEnemy.Update",
+          "start": 14,
+          "end": 29,
+          "lines": 16
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/battle/BattleCombatPlayer.lua": {
+      "path": "game/battle/BattleCombatPlayer.lua",
+      "extension": ".lua",
+      "lines": 337,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "BattleCombatPlayer.Update",
+          "start": 16,
+          "end": 31,
+          "lines": 16
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/battle/BattleContext.lua": {
+      "path": "game/battle/BattleContext.lua",
+      "extension": ".lua",
+      "lines": 244,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "BattleContext.Reset",
+          "start": 10,
+          "end": 241,
+          "lines": 232
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "BattleContext.Reset",
+          "start": 10,
+          "end": 241,
+          "lines": 232
+        }
+      ],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/battle/BattleDeath.lua": {
+      "path": "game/battle/BattleDeath.lua",
+      "extension": ".lua",
+      "lines": 344,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "BattleDeath.Update",
+          "start": 16,
+          "end": 53,
+          "lines": 38
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/battle/BattleRender.lua": {
+      "path": "game/battle/BattleRender.lua",
+      "extension": ".lua",
+      "lines": 105,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "BattleRender.Render",
+          "start": 58,
+          "end": 63,
+          "lines": 6
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/battle/BattleState.lua": {
+      "path": "game/battle/BattleState.lua",
+      "extension": ".lua",
+      "lines": 175,
+      "is_large": false,
+      "functions": [],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/battle/BattleTimers.lua": {
+      "path": "game/battle/BattleTimers.lua",
+      "extension": ".lua",
+      "lines": 318,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "BattleTimers.Update",
+          "start": 22,
+          "end": 29,
+          "lines": 8
+        },
+        {
+          "name": "BattleTimers._updateEnvParticles",
+          "start": 191,
+          "end": 244,
+          "lines": 54
+        },
+        {
+          "name": "BattleTimers._updateCombo",
+          "start": 293,
+          "end": 307,
+          "lines": 15
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/battle/BattleUtils.lua": {
+      "path": "game/battle/BattleUtils.lua",
+      "extension": ".lua",
+      "lines": 285,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "BattleUtils.dist2",
+          "start": 16,
+          "end": 20,
+          "lines": 5
+        },
+        {
+          "name": "BattleUtils.clamp",
+          "start": 27,
+          "end": 31,
+          "lines": 5
+        },
+        {
+          "name": "BattleUtils.findNearest",
+          "start": 40,
+          "end": 50,
+          "lines": 11
+        },
+        {
+          "name": "BattleUtils.spawnHitSparks",
+          "start": 62,
+          "end": 72,
+          "lines": 11
+        },
+        {
+          "name": "BattleUtils.spawnShockRing",
+          "start": 95,
+          "end": 102,
+          "lines": 8
+        },
+        {
+          "name": "BattleUtils.spawnExplosion",
+          "start": 107,
+          "end": 130,
+          "lines": 24
+        },
+        {
+          "name": "BattleUtils.shipTypeName",
+          "start": 156,
+          "end": 159,
+          "lines": 4
+        },
+        {
+          "name": "BattleUtils.logBattleEvent",
+          "start": 164,
+          "end": 171,
+          "lines": 8
+        },
+        {
+          "name": "BattleUtils.getComboLevel",
+          "start": 177,
+          "end": 181,
+          "lines": 5
+        },
+        {
+          "name": "BattleUtils.spawnExplosionFull",
+          "start": 190,
+          "end": 213,
+          "lines": 24
+        },
+        {
+          "name": "BattleUtils.spawnExplosionSimple",
+          "start": 240,
+          "end": 261,
+          "lines": 22
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/battle/BattleVFX.lua": {
+      "path": "game/battle/BattleVFX.lua",
+      "extension": ".lua",
+      "lines": 229,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "BattleVFX.Update",
+          "start": 16,
+          "end": 25,
+          "lines": 10
+        },
+        {
+          "name": "spawnFire",
+          "start": 91,
+          "end": 113,
+          "lines": 23
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/battle/BattleWinLose.lua": {
+      "path": "game/battle/BattleWinLose.lua",
+      "extension": ".lua",
+      "lines": 241,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "BattleWinLose.UpdateGuard",
+          "start": 23,
+          "end": 29,
+          "lines": 7
+        },
+        {
+          "name": "BattleWinLose.Detect",
+          "start": 93,
+          "end": 111,
+          "lines": 19
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/battle/RenderEntities.lua": {
+      "path": "game/battle/RenderEntities.lua",
+      "extension": ".lua",
+      "lines": 537,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "drawShip",
+          "start": 19,
+          "end": 28,
+          "lines": 10
+        },
+        {
+          "name": "drawProjectile",
+          "start": 228,
+          "end": 239,
+          "lines": 12
+        },
+        {
+          "name": "drawFloatTexts",
+          "start": 265,
+          "end": 411,
+          "lines": 147
+        },
+        {
+          "name": "drawMoveTarget",
+          "start": 429,
+          "end": 440,
+          "lines": 12
+        },
+        {
+          "name": "drawFireParticles",
+          "start": 443,
+          "end": 452,
+          "lines": 10
+        },
+        {
+          "name": "drawExplParticles",
+          "start": 456,
+          "end": 475,
+          "lines": 20
+        },
+        {
+          "name": "drawHitSparks",
+          "start": 480,
+          "end": 494,
+          "lines": 15
+        },
+        {
+          "name": "drawShockRings",
+          "start": 498,
+          "end": 520,
+          "lines": 23
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "drawFloatTexts",
+          "start": 265,
+          "end": 411,
+          "lines": 147
+        }
+      ],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/battle/RenderEnv.lua": {
+      "path": "game/battle/RenderEnv.lua",
+      "extension": ".lua",
+      "lines": 213,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "drawEnvParticles",
+          "start": 9,
+          "end": 57,
+          "lines": 49
+        },
+        {
+          "name": "drawEnvHUD",
+          "start": 63,
+          "end": 81,
+          "lines": 19
+        },
+        {
+          "name": "drawEnvAnnounce",
+          "start": 99,
+          "end": 129,
+          "lines": 31
+        },
+        {
+          "name": "drawBgStars",
+          "start": 132,
+          "end": 157,
+          "lines": 26
+        },
+        {
+          "name": "drawGrid",
+          "start": 185,
+          "end": 200,
+          "lines": 16
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/battle/RenderHUD.lua": {
+      "path": "game/battle/RenderHUD.lua",
+      "extension": ".lua",
+      "lines": 667,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "drawWaveHUD",
+          "start": 12,
+          "end": 38,
+          "lines": 27
+        },
+        {
+          "name": "drawComboHUD",
+          "start": 140,
+          "end": 146,
+          "lines": 7
+        },
+        {
+          "name": "drawShipInfoPanel",
+          "start": 196,
+          "end": 204,
+          "lines": 9
+        },
+        {
+          "name": "statLine",
+          "start": 281,
+          "end": 290,
+          "lines": 10
+        },
+        {
+          "name": "drawFocusRing",
+          "start": 311,
+          "end": 338,
+          "lines": 28
+        },
+        {
+          "name": "drawFocusHUD",
+          "start": 348,
+          "end": 412,
+          "lines": 65
+        },
+        {
+          "name": "drawFormationBar",
+          "start": 415,
+          "end": 419,
+          "lines": 5
+        },
+        {
+          "name": "drawRetreatReinforce",
+          "start": 494,
+          "end": 499,
+          "lines": 6
+        },
+        {
+          "name": "drawSkillUpgrade",
+          "start": 582,
+          "end": 643,
+          "lines": 62
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/battle/RenderOverlays.lua": {
+      "path": "game/battle/RenderOverlays.lua",
+      "extension": ".lua",
+      "lines": 975,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "drawBossDestroyedEffect",
+          "start": 9,
+          "end": 15,
+          "lines": 7
+        },
+        {
+          "name": "drawFireworks",
+          "start": 50,
+          "end": 60,
+          "lines": 11
+        },
+        {
+          "name": "drawMilestoneBanner",
+          "start": 64,
+          "end": 70,
+          "lines": 7
+        },
+        {
+          "name": "drawBossWarning",
+          "start": 128,
+          "end": 139,
+          "lines": 12
+        },
+        {
+          "name": "drawPincerBanner",
+          "start": 175,
+          "end": 189,
+          "lines": 15
+        },
+        {
+          "name": "drawNemesisOverlay",
+          "start": 256,
+          "end": 267,
+          "lines": 12
+        },
+        {
+          "name": "drawAnomalyBanner",
+          "start": 360,
+          "end": 370,
+          "lines": 11
+        },
+        {
+          "name": "drawAnomalyHUD",
+          "start": 406,
+          "end": 435,
+          "lines": 30
+        },
+        {
+          "name": "drawReinforcementWarning",
+          "start": 438,
+          "end": 450,
+          "lines": 13
+        },
+        {
+          "name": "drawWaveSummary",
+          "start": 508,
+          "end": 577,
+          "lines": 70
+        },
+        {
+          "name": "drawStateOverlay",
+          "start": 623,
+          "end": 667,
+          "lines": 45
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/galaxy/GalaxyRender.lua": {
+      "path": "game/galaxy/GalaxyRender.lua",
+      "extension": ".lua",
+      "lines": 96,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "M.Draw",
+          "start": 15,
+          "end": 34,
+          "lines": 20
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/galaxy/GalaxyState.lua": {
+      "path": "game/galaxy/GalaxyState.lua",
+      "extension": ".lua",
+      "lines": 210,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "GS.w2s",
+          "start": 158,
+          "end": 163,
+          "lines": 6
+        },
+        {
+          "name": "GS.s2w",
+          "start": 166,
+          "end": 171,
+          "lines": 6
+        },
+        {
+          "name": "GS.nvgColor",
+          "start": 174,
+          "end": 176,
+          "lines": 3
+        },
+        {
+          "name": "GS.dist2",
+          "start": 179,
+          "end": 182,
+          "lines": 4
+        },
+        {
+          "name": "GS.seededRand",
+          "start": 185,
+          "end": 188,
+          "lines": 4
+        },
+        {
+          "name": "GS.seededRandF",
+          "start": 189,
+          "end": 191,
+          "lines": 3
+        },
+        {
+          "name": "GS.getFleetColor",
+          "start": 194,
+          "end": 202,
+          "lines": 9
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/galaxy/RenderFleets.lua": {
+      "path": "game/galaxy/RenderFleets.lua",
+      "extension": ".lua",
+      "lines": 564,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "M.drawAsteroids",
+          "start": 13,
+          "end": 30,
+          "lines": 18
+        },
+        {
+          "name": "M.drawFleets",
+          "start": 99,
+          "end": 121,
+          "lines": 23
+        },
+        {
+          "name": "M.drawSeedShip",
+          "start": 230,
+          "end": 258,
+          "lines": 29
+        },
+        {
+          "name": "M.drawAsteroidSummary",
+          "start": 461,
+          "end": 479,
+          "lines": 19
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/galaxy/RenderHUD.lua": {
+      "path": "game/galaxy/RenderHUD.lua",
+      "extension": ".lua",
+      "lines": 713,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "drawTooltipBox",
+          "start": 15,
+          "end": 48,
+          "lines": 34
+        },
+        {
+          "name": "M.drawTooltip",
+          "start": 56,
+          "end": 73,
+          "lines": 18
+        },
+        {
+          "name": "M.drawAsteroidTooltip",
+          "start": 93,
+          "end": 111,
+          "lines": 19
+        },
+        {
+          "name": "M.drawPirateWarningHUD",
+          "start": 116,
+          "end": 170,
+          "lines": 55
+        },
+        {
+          "name": "M.drawAnomalyIndicator",
+          "start": 176,
+          "end": 209,
+          "lines": 34
+        },
+        {
+          "name": "M.drawWeatherHUD",
+          "start": 214,
+          "end": 249,
+          "lines": 36
+        },
+        {
+          "name": "M.drawSeedLabel",
+          "start": 254,
+          "end": 278,
+          "lines": 25
+        },
+        {
+          "name": "M.drawMinimap",
+          "start": 283,
+          "end": 332,
+          "lines": 50
+        },
+        {
+          "name": "M.drawPirateThreatHeatmap",
+          "start": 448,
+          "end": 464,
+          "lines": 17
+        },
+        {
+          "name": "M.drawColonyRipples",
+          "start": 506,
+          "end": 536,
+          "lines": 31
+        },
+        {
+          "name": "M.drawSignalButton",
+          "start": 559,
+          "end": 628,
+          "lines": 70
+        },
+        {
+          "name": "M.drawSignalBanners",
+          "start": 671,
+          "end": 709,
+          "lines": 39
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/galaxy/RenderStarmap.lua": {
+      "path": "game/galaxy/RenderStarmap.lua",
+      "extension": ".lua",
+      "lines": 949,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "M.drawBackground",
+          "start": 30,
+          "end": 45,
+          "lines": 16
+        },
+        {
+          "name": "drawOrbitRing",
+          "start": 48,
+          "end": 55,
+          "lines": 8
+        },
+        {
+          "name": "drawPlanetDetails",
+          "start": 61,
+          "end": 83,
+          "lines": 23
+        },
+        {
+          "name": "drawPlanet",
+          "start": 185,
+          "end": 203,
+          "lines": 19
+        },
+        {
+          "name": "M.drawStarSystem",
+          "start": 409,
+          "end": 424,
+          "lines": 16
+        },
+        {
+          "name": "M.drawDiploRelLines",
+          "start": 464,
+          "end": 479,
+          "lines": 16
+        },
+        {
+          "name": "M.drawTradeRoutes",
+          "start": 548,
+          "end": 562,
+          "lines": 15
+        },
+        {
+          "name": "M.drawExpeditionPaths",
+          "start": 674,
+          "end": 719,
+          "lines": 46
+        },
+        {
+          "name": "M.drawDeepSpaceSystem",
+          "start": 755,
+          "end": 764,
+          "lines": 10
+        },
+        {
+          "name": "M.drawPirateThreatHeatmap",
+          "start": 844,
+          "end": 857,
+          "lines": 14
+        },
+        {
+          "name": "M.drawColonyRipples",
+          "start": 900,
+          "end": 928,
+          "lines": 29
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/systems/BaseBuildingSystem.lua": {
+      "path": "game/systems/BaseBuildingSystem.lua",
+      "extension": ".lua",
+      "lines": 145,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "BaseBuildingSystem.new",
+          "start": 9,
+          "end": 11,
+          "lines": 3
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/systems/BuildingSystem.lua": {
+      "path": "game/systems/BuildingSystem.lua",
+      "extension": ".lua",
+      "lines": 272,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "BuildingSystem.new",
+          "start": 10,
+          "end": 12,
+          "lines": 3
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/systems/DiplomacySystem.lua": {
+      "path": "game/systems/DiplomacySystem.lua",
+      "extension": ".lua",
+      "lines": 699,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "DiplomacySystem.new",
+          "start": 53,
+          "end": 66,
+          "lines": 14
+        },
+        {
+          "name": "DiplomacySystem.getFactionDef",
+          "start": 320,
+          "end": 322,
+          "lines": 3
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/systems/FleetManager.lua": {
+      "path": "game/systems/FleetManager.lua",
+      "extension": ".lua",
+      "lines": 251,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "FleetManager.new",
+          "start": 13,
+          "end": 30,
+          "lines": 18
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/systems/MarketSystem.lua": {
+      "path": "game/systems/MarketSystem.lua",
+      "extension": ".lua",
+      "lines": 106,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "MarketSystem.new",
+          "start": 16,
+          "end": 25,
+          "lines": 10
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/systems/PlayerProfile.lua": {
+      "path": "game/systems/PlayerProfile.lua",
+      "extension": ".lua",
+      "lines": 82,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "PlayerProfile.new",
+          "start": 9,
+          "end": 22,
+          "lines": 14
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/systems/ResearchSystem.lua": {
+      "path": "game/systems/ResearchSystem.lua",
+      "extension": ".lua",
+      "lines": 177,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "ResearchSystem.new",
+          "start": 10,
+          "end": 15,
+          "lines": 6
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/systems/ResourceManager.lua": {
+      "path": "game/systems/ResourceManager.lua",
+      "extension": ".lua",
+      "lines": 176,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "ResourceManager.new",
+          "start": 10,
+          "end": 26,
+          "lines": 17
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/systems/ShipProductionQueue.lua": {
+      "path": "game/systems/ShipProductionQueue.lua",
+      "extension": ".lua",
+      "lines": 115,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "ShipProductionQueue.new",
+          "start": 9,
+          "end": 11,
+          "lines": 3
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/AchievementPanel.lua": {
+      "path": "game/ui/AchievementPanel.lua",
+      "extension": ".lua",
+      "lines": 558,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "render",
+          "start": 45,
+          "end": 74,
+          "lines": 30
+        },
+        {
+          "name": "AchievementPanel.Show",
+          "start": 498,
+          "end": 501,
+          "lines": 4
+        },
+        {
+          "name": "AchievementPanel.Hide",
+          "start": 504,
+          "end": 507,
+          "lines": 4
+        },
+        {
+          "name": "AchievementPanel.IsVisible",
+          "start": 510,
+          "end": 512,
+          "lines": 3
+        },
+        {
+          "name": "AchievementPanel.Toggle",
+          "start": 515,
+          "end": 518,
+          "lines": 4
+        },
+        {
+          "name": "AchievementPanel.GetUnlockCount",
+          "start": 521,
+          "end": 525,
+          "lines": 5
+        },
+        {
+          "name": "AchievementPanel.SetData",
+          "start": 532,
+          "end": 535,
+          "lines": 4
+        },
+        {
+          "name": "AchievementPanel.SetRedeemCallback",
+          "start": 539,
+          "end": 541,
+          "lines": 3
+        },
+        {
+          "name": "AchievementPanel.GetRedeemableCount",
+          "start": 544,
+          "end": 548,
+          "lines": 5
+        },
+        {
+          "name": "AchievementPanel.Render",
+          "start": 553,
+          "end": 555,
+          "lines": 3
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/BasePanel.lua": {
+      "path": "game/ui/BasePanel.lua",
+      "extension": ".lua",
+      "lines": 595,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "BasePanel.ResetScroll",
+          "start": 14,
+          "end": 16,
+          "lines": 3
+        },
+        {
+          "name": "BasePanel.Render",
+          "start": 21,
+          "end": 100,
+          "lines": 80
+        },
+        {
+          "name": "isVis",
+          "start": 288,
+          "end": 291,
+          "lines": 4
+        },
+        {
+          "name": "vy2sy",
+          "start": 287,
+          "end": 314,
+          "lines": 28
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/CareerPanel.lua": {
+      "path": "game/ui/CareerPanel.lua",
+      "extension": ".lua",
+      "lines": 295,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "CareerPanel.Show",
+          "start": 30,
+          "end": 32,
+          "lines": 3
+        },
+        {
+          "name": "CareerPanel.Hide",
+          "start": 34,
+          "end": 36,
+          "lines": 3
+        },
+        {
+          "name": "CareerPanel.SetStats",
+          "start": 40,
+          "end": 49,
+          "lines": 10
+        },
+        {
+          "name": "CareerPanel.Render",
+          "start": 57,
+          "end": 66,
+          "lines": 10
+        },
+        {
+          "name": "fmtTime",
+          "start": 129,
+          "end": 133,
+          "lines": 5
+        },
+        {
+          "name": "CareerPanel.GetAnim",
+          "start": 28,
+          "end": 192,
+          "lines": 165
+        },
+        {
+          "name": "CareerPanel.IsOpen",
+          "start": 27,
+          "end": 229,
+          "lines": 203
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "CareerPanel.GetAnim",
+          "start": 28,
+          "end": 192,
+          "lines": 165
+        },
+        {
+          "name": "CareerPanel.IsOpen",
+          "start": 27,
+          "end": 229,
+          "lines": 203
+        }
+      ],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/EmpirePanel.lua": {
+      "path": "game/ui/EmpirePanel.lua",
+      "extension": ".lua",
+      "lines": 364,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "EmpirePanel.Toggle",
+          "start": 21,
+          "end": 25,
+          "lines": 5
+        },
+        {
+          "name": "EmpirePanel.Show",
+          "start": 27,
+          "end": 30,
+          "lines": 4
+        },
+        {
+          "name": "EmpirePanel.Hide",
+          "start": 32,
+          "end": 36,
+          "lines": 5
+        },
+        {
+          "name": "EmpirePanel.Reset",
+          "start": 39,
+          "end": 43,
+          "lines": 5
+        },
+        {
+          "name": "EmpirePanel.Render",
+          "start": 53,
+          "end": 61,
+          "lines": 9
+        },
+        {
+          "name": "EmpirePanel.IsVisible",
+          "start": 19,
+          "end": 149,
+          "lines": 131
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "EmpirePanel.IsVisible",
+          "start": 19,
+          "end": 149,
+          "lines": 131
+        }
+      ],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/EndGamePanel.lua": {
+      "path": "game/ui/EndGamePanel.lua",
+      "extension": ".lua",
+      "lines": 1487,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "generateBattleReport",
+          "start": 52,
+          "end": 77,
+          "lines": 26
+        },
+        {
+          "name": "renderLeaderboard",
+          "start": 115,
+          "end": 177,
+          "lines": 63
+        },
+        {
+          "name": "divider",
+          "start": 361,
+          "end": 365,
+          "lines": 5
+        },
+        {
+          "name": "renderProfilePopup",
+          "start": 295,
+          "end": 385,
+          "lines": 91
+        },
+        {
+          "name": "statRow",
+          "start": 400,
+          "end": 409,
+          "lines": 10
+        },
+        {
+          "name": "renderRadarChart",
+          "start": 562,
+          "end": 568,
+          "lines": 7
+        },
+        {
+          "name": "easeOutBack",
+          "start": 674,
+          "end": 677,
+          "lines": 4
+        },
+        {
+          "name": "easeOutElastic",
+          "start": 678,
+          "end": 683,
+          "lines": 6
+        },
+        {
+          "name": "seg",
+          "start": 685,
+          "end": 687,
+          "lines": 3
+        },
+        {
+          "name": "renderEndGame",
+          "start": 662,
+          "end": 761,
+          "lines": 100
+        },
+        {
+          "name": "fmtTime",
+          "start": 835,
+          "end": 839,
+          "lines": 5
+        },
+        {
+          "name": "fmtNum",
+          "start": 880,
+          "end": 883,
+          "lines": 4
+        },
+        {
+          "name": "EndGamePanel.Update",
+          "start": 1373,
+          "end": 1376,
+          "lines": 4
+        },
+        {
+          "name": "EndGamePanel.Render",
+          "start": 1403,
+          "end": 1405,
+          "lines": 3
+        },
+        {
+          "name": "EndGamePanel.RenderLeaderboard",
+          "start": 1408,
+          "end": 1411,
+          "lines": 4
+        },
+        {
+          "name": "EndGamePanel.Show",
+          "start": 1417,
+          "end": 1426,
+          "lines": 10
+        },
+        {
+          "name": "EndGamePanel.Hide",
+          "start": 1429,
+          "end": 1443,
+          "lines": 15
+        },
+        {
+          "name": "EndGamePanel.IsActive",
+          "start": 1446,
+          "end": 1448,
+          "lines": 3
+        },
+        {
+          "name": "EndGamePanel.SetAdCallback",
+          "start": 1452,
+          "end": 1454,
+          "lines": 3
+        },
+        {
+          "name": "EndGamePanel.SetLeaderboardCallback",
+          "start": 1458,
+          "end": 1460,
+          "lines": 3
+        },
+        {
+          "name": "EndGamePanel.SetNotifyFn",
+          "start": 1464,
+          "end": 1466,
+          "lines": 3
+        },
+        {
+          "name": "EndGamePanel.SetCareerStats",
+          "start": 1470,
+          "end": 1472,
+          "lines": 3
+        },
+        {
+          "name": "EndGamePanel.SetReplayData",
+          "start": 1476,
+          "end": 1478,
+          "lines": 3
+        },
+        {
+          "name": "EndGamePanel.SetReplayCallback",
+          "start": 1482,
+          "end": 1484,
+          "lines": 3
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "renderProfilePopup",
+          "start": 295,
+          "end": 385,
+          "lines": 91
+        },
+        {
+          "name": "renderEndGame",
+          "start": 662,
+          "end": 761,
+          "lines": 100
+        }
+      ],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/FleetPanel.lua": {
+      "path": "game/ui/FleetPanel.lua",
+      "extension": ".lua",
+      "lines": 1691,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "randomFleetName",
+          "start": 69,
+          "end": 71,
+          "lines": 3
+        },
+        {
+          "name": "openNaming",
+          "start": 74,
+          "end": 80,
+          "lines": 7
+        },
+        {
+          "name": "closeNaming",
+          "start": 83,
+          "end": 87,
+          "lines": 5
+        },
+        {
+          "name": "confirmNaming",
+          "start": 90,
+          "end": 96,
+          "lines": 7
+        },
+        {
+          "name": "FleetPanel.OnTextInput",
+          "start": 101,
+          "end": 108,
+          "lines": 8
+        },
+        {
+          "name": "FleetPanel.OnBackspace",
+          "start": 112,
+          "end": 122,
+          "lines": 11
+        },
+        {
+          "name": "FleetPanel.OnEnter",
+          "start": 129,
+          "end": 132,
+          "lines": 4
+        },
+        {
+          "name": "FleetPanel.SetMapSelected",
+          "start": 139,
+          "end": 144,
+          "lines": 6
+        },
+        {
+          "name": "FleetPanel.GetActiveId",
+          "start": 138,
+          "end": 145,
+          "lines": 8
+        },
+        {
+          "name": "FleetPanel.ClearMove",
+          "start": 147,
+          "end": 150,
+          "lines": 4
+        },
+        {
+          "name": "saveToPreset",
+          "start": 153,
+          "end": 159,
+          "lines": 7
+        },
+        {
+          "name": "FleetPanel.GetMapSelected",
+          "start": 146,
+          "end": 162,
+          "lines": 17
+        },
+        {
+          "name": "applyPreset",
+          "start": 165,
+          "end": 180,
+          "lines": 16
+        },
+        {
+          "name": "FleetPanel.SetActiveId",
+          "start": 137,
+          "end": 181,
+          "lines": 45
+        },
+        {
+          "name": "FleetPanel.IsNaming",
+          "start": 135,
+          "end": 182,
+          "lines": 48
+        },
+        {
+          "name": "FleetPanel.Render",
+          "start": 193,
+          "end": 245,
+          "lines": 53
+        },
+        {
+          "name": "addRow",
+          "start": 311,
+          "end": 316,
+          "lines": 6
+        },
+        {
+          "name": "FleetPanel.RenderNamingModal",
+          "start": 1531,
+          "end": 1589,
+          "lines": 59
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/FormationEditor.lua": {
+      "path": "game/ui/FormationEditor.lua",
+      "extension": ".lua",
+      "lines": 575,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "saveToFile",
+          "start": 44,
+          "end": 51,
+          "lines": 8
+        },
+        {
+          "name": "loadFromFile",
+          "start": 54,
+          "end": 57,
+          "lines": 4
+        },
+        {
+          "name": "clearGrid",
+          "start": 83,
+          "end": 89,
+          "lines": 7
+        },
+        {
+          "name": "copyGrid",
+          "start": 94,
+          "end": 100,
+          "lines": 7
+        },
+        {
+          "name": "validateGrid",
+          "start": 107,
+          "end": 115,
+          "lines": 9
+        },
+        {
+          "name": "countPlaced",
+          "start": 127,
+          "end": 132,
+          "lines": 6
+        },
+        {
+          "name": "gridToList",
+          "start": 138,
+          "end": 144,
+          "lines": 7
+        },
+        {
+          "name": "listToGrid",
+          "start": 151,
+          "end": 155,
+          "lines": 5
+        },
+        {
+          "name": "FormationEditor.GridToPixel",
+          "start": 170,
+          "end": 179,
+          "lines": 10
+        },
+        {
+          "name": "FormationEditor.Init",
+          "start": 184,
+          "end": 189,
+          "lines": 6
+        },
+        {
+          "name": "FormationEditor.Save",
+          "start": 192,
+          "end": 194,
+          "lines": 3
+        },
+        {
+          "name": "FormationEditor.AddCustomWin",
+          "start": 197,
+          "end": 200,
+          "lines": 4
+        },
+        {
+          "name": "FormationEditor.GetCustomWins",
+          "start": 203,
+          "end": 205,
+          "lines": 3
+        },
+        {
+          "name": "FormationEditor.Open",
+          "start": 209,
+          "end": 220,
+          "lines": 12
+        },
+        {
+          "name": "FormationEditor.IsOpen",
+          "start": 207,
+          "end": 221,
+          "lines": 15
+        },
+        {
+          "name": "FormationEditor.Close",
+          "start": 236,
+          "end": 239,
+          "lines": 4
+        },
+        {
+          "name": "FormationEditor.LoadSlots",
+          "start": 243,
+          "end": 249,
+          "lines": 7
+        },
+        {
+          "name": "FormationEditor.GetSlots",
+          "start": 255,
+          "end": 257,
+          "lines": 3
+        },
+        {
+          "name": "FormationEditor.GetSlotData",
+          "start": 262,
+          "end": 264,
+          "lines": 3
+        },
+        {
+          "name": "FormationEditor.HasSaved",
+          "start": 267,
+          "end": 270,
+          "lines": 4
+        },
+        {
+          "name": "FormationEditor.GetFirstSavedSlot",
+          "start": 275,
+          "end": 279,
+          "lines": 5
+        },
+        {
+          "name": "FormationEditor.Render",
+          "start": 286,
+          "end": 334,
+          "lines": 49
+        },
+        {
+          "name": "FormationEditor.Update",
+          "start": 565,
+          "end": 570,
+          "lines": 6
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/GalactopediaPanel.lua": {
+      "path": "game/ui/GalactopediaPanel.lua",
+      "extension": ".lua",
+      "lines": 295,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "GalactopediaPanel.Show",
+          "start": 20,
+          "end": 25,
+          "lines": 6
+        },
+        {
+          "name": "GalactopediaPanel.Hide",
+          "start": 27,
+          "end": 29,
+          "lines": 3
+        },
+        {
+          "name": "GalactopediaPanel.IsVisible",
+          "start": 31,
+          "end": 33,
+          "lines": 3
+        },
+        {
+          "name": "GalactopediaPanel.Toggle",
+          "start": 35,
+          "end": 37,
+          "lines": 3
+        },
+        {
+          "name": "render",
+          "start": 40,
+          "end": 115,
+          "lines": 76
+        },
+        {
+          "name": "GalactopediaPanel.Render",
+          "start": 290,
+          "end": 292,
+          "lines": 3
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/GalaxyHud.lua": {
+      "path": "game/ui/GalaxyHud.lua",
+      "extension": ".lua",
+      "lines": 406,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "renderDeployHint",
+          "start": 19,
+          "end": 99,
+          "lines": 81
+        },
+        {
+          "name": "renderFleetOverview",
+          "start": 105,
+          "end": 150,
+          "lines": 46
+        },
+        {
+          "name": "renderResourceCrisisFlash",
+          "start": 187,
+          "end": 191,
+          "lines": 5
+        },
+        {
+          "name": "renderPirateWarning",
+          "start": 232,
+          "end": 266,
+          "lines": 35
+        },
+        {
+          "name": "renderDailyChallengeBanner",
+          "start": 273,
+          "end": 279,
+          "lines": 7
+        },
+        {
+          "name": "renderLeagueHud",
+          "start": 342,
+          "end": 370,
+          "lines": 29
+        },
+        {
+          "name": "GalaxyHud.Render",
+          "start": 390,
+          "end": 394,
+          "lines": 5
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "renderDeployHint",
+          "start": 19,
+          "end": 99,
+          "lines": 81
+        }
+      ],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/GalaxyPanels.lua": {
+      "path": "game/ui/GalaxyPanels.lua",
+      "extension": ".lua",
+      "lines": 1395,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "M.Init",
+          "start": 69,
+          "end": 83,
+          "lines": 15
+        },
+        {
+          "name": "M.Update",
+          "start": 85,
+          "end": 89,
+          "lines": 5
+        },
+        {
+          "name": "M.ToggleSignal",
+          "start": 101,
+          "end": 104,
+          "lines": 4
+        },
+        {
+          "name": "M.ToggleQuest",
+          "start": 100,
+          "end": 105,
+          "lines": 6
+        },
+        {
+          "name": "ic",
+          "start": 134,
+          "end": 167,
+          "lines": 34
+        },
+        {
+          "name": "M.RenderIntel",
+          "start": 116,
+          "end": 219,
+          "lines": 104
+        },
+        {
+          "name": "M.IsDiploVisible",
+          "start": 111,
+          "end": 220,
+          "lines": 110
+        },
+        {
+          "name": "M.RenderCareerStats",
+          "start": 225,
+          "end": 303,
+          "lines": 79
+        },
+        {
+          "name": "M.IsQuestVisible",
+          "start": 110,
+          "end": 336,
+          "lines": 227
+        },
+        {
+          "name": "M.RenderQuest",
+          "start": 341,
+          "end": 412,
+          "lines": 72
+        },
+        {
+          "name": "M.IsStatsVisible",
+          "start": 109,
+          "end": 417,
+          "lines": 309
+        },
+        {
+          "name": "M.IsSignalOpen",
+          "start": 108,
+          "end": 439,
+          "lines": 332
+        },
+        {
+          "name": "M.ToggleDiploRel",
+          "start": 106,
+          "end": 463,
+          "lines": 358
+        },
+        {
+          "name": "M.ToggleStats",
+          "start": 99,
+          "end": 464,
+          "lines": 366
+        },
+        {
+          "name": "M.SetBlackMarket",
+          "start": 96,
+          "end": 475,
+          "lines": 380
+        },
+        {
+          "name": "M.RenderSignal",
+          "start": 480,
+          "end": 531,
+          "lines": 52
+        },
+        {
+          "name": "M.SetCareerStats",
+          "start": 95,
+          "end": 547,
+          "lines": 453
+        },
+        {
+          "name": "M.SetGameTime",
+          "start": 94,
+          "end": 563,
+          "lines": 470
+        },
+        {
+          "name": "M.SetSelectedPlanet",
+          "start": 93,
+          "end": 564,
+          "lines": 472
+        },
+        {
+          "name": "M.RenderMarket",
+          "start": 574,
+          "end": 590,
+          "lines": 17
+        },
+        {
+          "name": "drawSparkline",
+          "start": 620,
+          "end": 626,
+          "lines": 7
+        },
+        {
+          "name": "M.RenderDiploRel",
+          "start": 698,
+          "end": 748,
+          "lines": 51
+        },
+        {
+          "name": "getRelBetween",
+          "start": 749,
+          "end": 752,
+          "lines": 4
+        },
+        {
+          "name": "M.RenderBlackMarket",
+          "start": 895,
+          "end": 910,
+          "lines": 16
+        },
+        {
+          "name": "M.RenderExchange",
+          "start": 1083,
+          "end": 1098,
+          "lines": 16
+        },
+        {
+          "name": "M.RenderShipyard",
+          "start": 1236,
+          "end": 1253,
+          "lines": 18
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "M.RenderIntel",
+          "start": 116,
+          "end": 219,
+          "lines": 104
+        },
+        {
+          "name": "M.IsDiploVisible",
+          "start": 111,
+          "end": 220,
+          "lines": 110
+        },
+        {
+          "name": "M.IsQuestVisible",
+          "start": 110,
+          "end": 336,
+          "lines": 227
+        },
+        {
+          "name": "M.IsStatsVisible",
+          "start": 109,
+          "end": 417,
+          "lines": 309
+        },
+        {
+          "name": "M.IsSignalOpen",
+          "start": 108,
+          "end": 439,
+          "lines": 332
+        },
+        {
+          "name": "M.ToggleDiploRel",
+          "start": 106,
+          "end": 463,
+          "lines": 358
+        },
+        {
+          "name": "M.ToggleStats",
+          "start": 99,
+          "end": 464,
+          "lines": 366
+        },
+        {
+          "name": "M.SetBlackMarket",
+          "start": 96,
+          "end": 475,
+          "lines": 380
+        },
+        {
+          "name": "M.SetCareerStats",
+          "start": 95,
+          "end": 547,
+          "lines": 453
+        },
+        {
+          "name": "M.SetGameTime",
+          "start": 94,
+          "end": 563,
+          "lines": 470
+        },
+        {
+          "name": "M.SetSelectedPlanet",
+          "start": 93,
+          "end": 564,
+          "lines": 472
+        }
+      ],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/LegacyPanel.lua": {
+      "path": "game/ui/LegacyPanel.lua",
+      "extension": ".lua",
+      "lines": 317,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "LegacyPanel.Toggle",
+          "start": 70,
+          "end": 73,
+          "lines": 4
+        },
+        {
+          "name": "LegacyPanel.Render",
+          "start": 79,
+          "end": 199,
+          "lines": 121
+        },
+        {
+          "name": "LegacyPanel.Close",
+          "start": 69,
+          "end": 202,
+          "lines": 134
+        },
+        {
+          "name": "LegacyPanel.Open",
+          "start": 68,
+          "end": 220,
+          "lines": 153
+        },
+        {
+          "name": "LegacyPanel.IsOpen",
+          "start": 67,
+          "end": 232,
+          "lines": 166
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "LegacyPanel.Render",
+          "start": 79,
+          "end": 199,
+          "lines": 121
+        },
+        {
+          "name": "LegacyPanel.Close",
+          "start": 69,
+          "end": 202,
+          "lines": 134
+        },
+        {
+          "name": "LegacyPanel.Open",
+          "start": 68,
+          "end": 220,
+          "lines": 153
+        },
+        {
+          "name": "LegacyPanel.IsOpen",
+          "start": 67,
+          "end": 232,
+          "lines": 166
+        }
+      ],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/LiveryPanel.lua": {
+      "path": "game/ui/LiveryPanel.lua",
+      "extension": ".lua",
+      "lines": 381,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "render",
+          "start": 18,
+          "end": 88,
+          "lines": 71
+        },
+        {
+          "name": "renderColorTab",
+          "start": 119,
+          "end": 180,
+          "lines": 62
+        },
+        {
+          "name": "renderEmblemTab",
+          "start": 263,
+          "end": 304,
+          "lines": 42
+        },
+        {
+          "name": "LiveryPanel.Show",
+          "start": 347,
+          "end": 353,
+          "lines": 7
+        },
+        {
+          "name": "LiveryPanel.Hide",
+          "start": 355,
+          "end": 357,
+          "lines": 3
+        },
+        {
+          "name": "LiveryPanel.IsVisible",
+          "start": 359,
+          "end": 361,
+          "lines": 3
+        },
+        {
+          "name": "LiveryPanel.Toggle",
+          "start": 363,
+          "end": 368,
+          "lines": 6
+        },
+        {
+          "name": "LiveryPanel.Render",
+          "start": 371,
+          "end": 373,
+          "lines": 3
+        },
+        {
+          "name": "LiveryPanel.SetContext",
+          "start": 376,
+          "end": 378,
+          "lines": 3
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/LogPanel.lua": {
+      "path": "game/ui/LogPanel.lua",
+      "extension": ".lua",
+      "lines": 301,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "LogPanel.Toggle",
+          "start": 21,
+          "end": 24,
+          "lines": 4
+        },
+        {
+          "name": "LogPanel.Show",
+          "start": 26,
+          "end": 29,
+          "lines": 4
+        },
+        {
+          "name": "LogPanel.Hide",
+          "start": 31,
+          "end": 34,
+          "lines": 4
+        },
+        {
+          "name": "LogPanel.Reset",
+          "start": 37,
+          "end": 41,
+          "lines": 5
+        },
+        {
+          "name": "LogPanel.Render",
+          "start": 50,
+          "end": 125,
+          "lines": 76
+        },
+        {
+          "name": "LogPanel.IsVisible",
+          "start": 19,
+          "end": 186,
+          "lines": 168
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "LogPanel.IsVisible",
+          "start": 19,
+          "end": 186,
+          "lines": 168
+        }
+      ],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/MegaPanel.lua": {
+      "path": "game/ui/MegaPanel.lua",
+      "extension": ".lua",
+      "lines": 261,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "MegaPanel.Toggle",
+          "start": 22,
+          "end": 25,
+          "lines": 4
+        },
+        {
+          "name": "MegaPanel.Render",
+          "start": 33,
+          "end": 153,
+          "lines": 121
+        },
+        {
+          "name": "MegaPanel.Close",
+          "start": 21,
+          "end": 183,
+          "lines": 163
+        },
+        {
+          "name": "MegaPanel.Open",
+          "start": 20,
+          "end": 200,
+          "lines": 181
+        },
+        {
+          "name": "MegaPanel.IsOpen",
+          "start": 19,
+          "end": 219,
+          "lines": 201
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "MegaPanel.Render",
+          "start": 33,
+          "end": 153,
+          "lines": 121
+        },
+        {
+          "name": "MegaPanel.Close",
+          "start": 21,
+          "end": 183,
+          "lines": 163
+        },
+        {
+          "name": "MegaPanel.Open",
+          "start": 20,
+          "end": 200,
+          "lines": 181
+        },
+        {
+          "name": "MegaPanel.IsOpen",
+          "start": 19,
+          "end": 219,
+          "lines": 201
+        }
+      ],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/NemesisRenderPanel.lua": {
+      "path": "game/ui/NemesisRenderPanel.lua",
+      "extension": ".lua",
+      "lines": 196,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "NemesisRenderPanel.Toggle",
+          "start": 20,
+          "end": 22,
+          "lines": 3
+        },
+        {
+          "name": "NemesisRenderPanel.Reset",
+          "start": 28,
+          "end": 30,
+          "lines": 3
+        },
+        {
+          "name": "NemesisRenderPanel.Render",
+          "start": 36,
+          "end": 116,
+          "lines": 81
+        },
+        {
+          "name": "NemesisRenderPanel.Hide",
+          "start": 25,
+          "end": 132,
+          "lines": 108
+        },
+        {
+          "name": "NemesisRenderPanel.Show",
+          "start": 24,
+          "end": 152,
+          "lines": 129
+        },
+        {
+          "name": "NemesisRenderPanel.IsVisible",
+          "start": 18,
+          "end": 154,
+          "lines": 137
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "NemesisRenderPanel.Render",
+          "start": 36,
+          "end": 116,
+          "lines": 81
+        },
+        {
+          "name": "NemesisRenderPanel.Hide",
+          "start": 25,
+          "end": 132,
+          "lines": 108
+        },
+        {
+          "name": "NemesisRenderPanel.Show",
+          "start": 24,
+          "end": 152,
+          "lines": 129
+        },
+        {
+          "name": "NemesisRenderPanel.IsVisible",
+          "start": 18,
+          "end": 154,
+          "lines": 137
+        }
+      ],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/NotifyPanel.lua": {
+      "path": "game/ui/NotifyPanel.lua",
+      "extension": ".lua",
+      "lines": 275,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "NotifyPanel.Push",
+          "start": 39,
+          "end": 66,
+          "lines": 28
+        },
+        {
+          "name": "NotifyPanel.Update",
+          "start": 72,
+          "end": 78,
+          "lines": 7
+        },
+        {
+          "name": "NotifyPanel.Toggle",
+          "start": 83,
+          "end": 87,
+          "lines": 5
+        },
+        {
+          "name": "NotifyPanel.Close",
+          "start": 91,
+          "end": 93,
+          "lines": 3
+        },
+        {
+          "name": "NotifyPanel.IsOpen",
+          "start": 97,
+          "end": 99,
+          "lines": 3
+        },
+        {
+          "name": "NotifyPanel.GetUnread",
+          "start": 103,
+          "end": 105,
+          "lines": 3
+        },
+        {
+          "name": "NotifyPanel.SetGameTime",
+          "start": 109,
+          "end": 111,
+          "lines": 3
+        },
+        {
+          "name": "NotifyPanel.RenderCenter",
+          "start": 116,
+          "end": 212,
+          "lines": 97
+        },
+        {
+          "name": "NotifyPanel.RenderToasts",
+          "start": 246,
+          "end": 271,
+          "lines": 26
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "NotifyPanel.RenderCenter",
+          "start": 116,
+          "end": 212,
+          "lines": 97
+        }
+      ],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/Overlays.lua": {
+      "path": "game/ui/Overlays.lua",
+      "extension": ".lua",
+      "lines": 478,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "M.Init",
+          "start": 41,
+          "end": 44,
+          "lines": 4
+        },
+        {
+          "name": "M.Update",
+          "start": 48,
+          "end": 52,
+          "lines": 5
+        },
+        {
+          "name": "M.SetEndlessRound",
+          "start": 59,
+          "end": 61,
+          "lines": 3
+        },
+        {
+          "name": "M.ShowCardDraft",
+          "start": 69,
+          "end": 76,
+          "lines": 8
+        },
+        {
+          "name": "M.HideCardDraft",
+          "start": 79,
+          "end": 83,
+          "lines": 5
+        },
+        {
+          "name": "M.ShowEventPopup",
+          "start": 92,
+          "end": 94,
+          "lines": 3
+        },
+        {
+          "name": "M.ShowDiploEvent",
+          "start": 98,
+          "end": 129,
+          "lines": 32
+        },
+        {
+          "name": "M.ClearEventPopup",
+          "start": 151,
+          "end": 153,
+          "lines": 3
+        },
+        {
+          "name": "M.RenderCampaignDialogue",
+          "start": 158,
+          "end": 211,
+          "lines": 54
+        },
+        {
+          "name": "M.RenderEventPopup",
+          "start": 218,
+          "end": 307,
+          "lines": 90
+        },
+        {
+          "name": "M.RenderCardDraft",
+          "start": 327,
+          "end": 375,
+          "lines": 49
+        },
+        {
+          "name": "M.IsCardDraftVisible",
+          "start": 469,
+          "end": 471,
+          "lines": 3
+        },
+        {
+          "name": "M.IsEventPopupVisible",
+          "start": 473,
+          "end": 475,
+          "lines": 3
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "M.RenderEventPopup",
+          "start": 218,
+          "end": 307,
+          "lines": 90
+        }
+      ],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/PlanetPanel.lua": {
+      "path": "game/ui/PlanetPanel.lua",
+      "extension": ".lua",
+      "lines": 1228,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "PlanetPanel.Update",
+          "start": 21,
+          "end": 27,
+          "lines": 7
+        },
+        {
+          "name": "triggerPress",
+          "start": 32,
+          "end": 34,
+          "lines": 3
+        },
+        {
+          "name": "triggerShake",
+          "start": 37,
+          "end": 39,
+          "lines": 3
+        },
+        {
+          "name": "PlanetPanel.TriggerHighlight",
+          "start": 42,
+          "end": 45,
+          "lines": 4
+        },
+        {
+          "name": "PlanetPanel.TriggerGlow",
+          "start": 48,
+          "end": 51,
+          "lines": 4
+        },
+        {
+          "name": "getPressScale",
+          "start": 54,
+          "end": 63,
+          "lines": 10
+        },
+        {
+          "name": "getShakeOffset",
+          "start": 67,
+          "end": 73,
+          "lines": 7
+        },
+        {
+          "name": "getHighlightAlpha",
+          "start": 76,
+          "end": 86,
+          "lines": 11
+        },
+        {
+          "name": "getGlowParams",
+          "start": 90,
+          "end": 98,
+          "lines": 9
+        },
+        {
+          "name": "PlanetPanel.ResetScroll",
+          "start": 100,
+          "end": 106,
+          "lines": 7
+        },
+        {
+          "name": "PlanetPanel.Render",
+          "start": 111,
+          "end": 150,
+          "lines": 40
+        },
+        {
+          "name": "isVis",
+          "start": 908,
+          "end": 911,
+          "lines": 4
+        },
+        {
+          "name": "vy2sy",
+          "start": 907,
+          "end": 917,
+          "lines": 11
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/ReplayPlayer.lua": {
+      "path": "game/ui/ReplayPlayer.lua",
+      "extension": ".lua",
+      "lines": 666,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "easeOutCubic",
+          "start": 46,
+          "end": 49,
+          "lines": 4
+        },
+        {
+          "name": "easeOutBack",
+          "start": 51,
+          "end": 55,
+          "lines": 5
+        },
+        {
+          "name": "lerp",
+          "start": 57,
+          "end": 59,
+          "lines": 3
+        },
+        {
+          "name": "formatTime",
+          "start": 61,
+          "end": 65,
+          "lines": 5
+        },
+        {
+          "name": "renderBattleMap",
+          "start": 70,
+          "end": 89,
+          "lines": 20
+        },
+        {
+          "name": "worldToMap",
+          "start": 111,
+          "end": 116,
+          "lines": 6
+        },
+        {
+          "name": "renderTimeline",
+          "start": 184,
+          "end": 211,
+          "lines": 28
+        },
+        {
+          "name": "renderEventPopups",
+          "start": 354,
+          "end": 377,
+          "lines": 24
+        },
+        {
+          "name": "renderMVPBanner",
+          "start": 384,
+          "end": 403,
+          "lines": 20
+        },
+        {
+          "name": "renderHighlightList",
+          "start": 408,
+          "end": 441,
+          "lines": 34
+        },
+        {
+          "name": "renderReplayPlayer",
+          "start": 484,
+          "end": 553,
+          "lines": 70
+        },
+        {
+          "name": "ReplayPlayer.Update",
+          "start": 561,
+          "end": 567,
+          "lines": 7
+        },
+        {
+          "name": "ReplayPlayer.Render",
+          "start": 612,
+          "end": 614,
+          "lines": 3
+        },
+        {
+          "name": "ReplayPlayer.Show",
+          "start": 617,
+          "end": 628,
+          "lines": 12
+        },
+        {
+          "name": "ReplayPlayer.Hide",
+          "start": 645,
+          "end": 652,
+          "lines": 8
+        },
+        {
+          "name": "ReplayPlayer.IsActive",
+          "start": 655,
+          "end": 657,
+          "lines": 3
+        },
+        {
+          "name": "ReplayPlayer.SetOnClose",
+          "start": 661,
+          "end": 663,
+          "lines": 3
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/SettingsPanel.lua": {
+      "path": "game/ui/SettingsPanel.lua",
+      "extension": ".lua",
+      "lines": 629,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "saveSettings",
+          "start": 50,
+          "end": 64,
+          "lines": 15
+        },
+        {
+          "name": "loadSettings",
+          "start": 66,
+          "end": 86,
+          "lines": 21
+        },
+        {
+          "name": "render",
+          "start": 90,
+          "end": 110,
+          "lines": 21
+        },
+        {
+          "name": "drawSlider",
+          "start": 154,
+          "end": 179,
+          "lines": 26
+        },
+        {
+          "name": "SettingsPanel.SetAudio",
+          "start": 453,
+          "end": 455,
+          "lines": 3
+        },
+        {
+          "name": "SettingsPanel.Load",
+          "start": 458,
+          "end": 460,
+          "lines": 3
+        },
+        {
+          "name": "SettingsPanel.Show",
+          "start": 463,
+          "end": 465,
+          "lines": 3
+        },
+        {
+          "name": "SettingsPanel.Hide",
+          "start": 468,
+          "end": 470,
+          "lines": 3
+        },
+        {
+          "name": "SettingsPanel.IsVisible",
+          "start": 473,
+          "end": 475,
+          "lines": 3
+        },
+        {
+          "name": "SettingsPanel.Toggle",
+          "start": 478,
+          "end": 480,
+          "lines": 3
+        },
+        {
+          "name": "SettingsPanel.Render",
+          "start": 483,
+          "end": 485,
+          "lines": 3
+        },
+        {
+          "name": "SettingsPanel.GetSliderRects",
+          "start": 488,
+          "end": 490,
+          "lines": 3
+        },
+        {
+          "name": "SettingsPanel.GetVolumes",
+          "start": 493,
+          "end": 495,
+          "lines": 3
+        },
+        {
+          "name": "SettingsPanel.GetQualityLevel",
+          "start": 500,
+          "end": 502,
+          "lines": 3
+        },
+        {
+          "name": "SettingsPanel.GetColorblindMode",
+          "start": 505,
+          "end": 507,
+          "lines": 3
+        },
+        {
+          "name": "SettingsPanel.IsFPSVisible",
+          "start": 510,
+          "end": 512,
+          "lines": 3
+        },
+        {
+          "name": "SettingsPanel.GetAutoPause",
+          "start": 515,
+          "end": 517,
+          "lines": 3
+        },
+        {
+          "name": "SettingsPanel.UpdateFPS",
+          "start": 520,
+          "end": 527,
+          "lines": 8
+        },
+        {
+          "name": "SettingsPanel.RenderFPS",
+          "start": 531,
+          "end": 551,
+          "lines": 21
+        },
+        {
+          "name": "SettingsPanel.TransformColor",
+          "start": 562,
+          "end": 578,
+          "lines": 17
+        },
+        {
+          "name": "SettingsPanel.GetQualityScale",
+          "start": 583,
+          "end": 586,
+          "lines": 4
+        },
+        {
+          "name": "SettingsPanel.OnTouchBegin",
+          "start": 590,
+          "end": 601,
+          "lines": 12
+        },
+        {
+          "name": "SettingsPanel.OnTouchMove",
+          "start": 608,
+          "end": 612,
+          "lines": 5
+        },
+        {
+          "name": "SettingsPanel.OnTouchEnd",
+          "start": 618,
+          "end": 624,
+          "lines": 7
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/TechPanel.lua": {
+      "path": "game/ui/TechPanel.lua",
+      "extension": ".lua",
+      "lines": 857,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "TechPanel.ResetScroll",
+          "start": 16,
+          "end": 19,
+          "lines": 4
+        },
+        {
+          "name": "getDownstream",
+          "start": 82,
+          "end": 90,
+          "lines": 9
+        },
+        {
+          "name": "getExclusivePeers",
+          "start": 98,
+          "end": 105,
+          "lines": 8
+        },
+        {
+          "name": "computeRecommendedPath",
+          "start": 112,
+          "end": 119,
+          "lines": 8
+        },
+        {
+          "name": "drawConnection",
+          "start": 164,
+          "end": 193,
+          "lines": 30
+        },
+        {
+          "name": "TechPanel.Render",
+          "start": 201,
+          "end": 226,
+          "lines": 26
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/TimeoutPanel.lua": {
+      "path": "game/ui/TimeoutPanel.lua",
+      "extension": ".lua",
+      "lines": 142,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "render",
+          "start": 14,
+          "end": 99,
+          "lines": 86
+        },
+        {
+          "name": "TimeoutPanel.Show",
+          "start": 115,
+          "end": 119,
+          "lines": 5
+        },
+        {
+          "name": "TimeoutPanel.UpdateAdCount",
+          "start": 122,
+          "end": 124,
+          "lines": 3
+        },
+        {
+          "name": "TimeoutPanel.Hide",
+          "start": 127,
+          "end": 129,
+          "lines": 3
+        },
+        {
+          "name": "TimeoutPanel.IsActive",
+          "start": 132,
+          "end": 134,
+          "lines": 3
+        },
+        {
+          "name": "TimeoutPanel.Render",
+          "start": 137,
+          "end": 139,
+          "lines": 3
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "render",
+          "start": 14,
+          "end": 99,
+          "lines": 86
+        }
+      ],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/TopBar.lua": {
+      "path": "game/ui/TopBar.lua",
+      "extension": ".lua",
+      "lines": 637,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "TopBar.Render",
+          "start": 48,
+          "end": 70,
+          "lines": 23
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/TutorialSystem.lua": {
+      "path": "game/ui/TutorialSystem.lua",
+      "extension": ".lua",
+      "lines": 656,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "TutorialSystem.SetEnabled",
+          "start": 175,
+          "end": 183,
+          "lines": 9
+        },
+        {
+          "name": "TutorialSystem.IsEnabled",
+          "start": 187,
+          "end": 189,
+          "lines": 3
+        },
+        {
+          "name": "TutorialSystem.Reset",
+          "start": 192,
+          "end": 200,
+          "lines": 9
+        },
+        {
+          "name": "TutorialSystem.TriggerPhase",
+          "start": 204,
+          "end": 216,
+          "lines": 13
+        },
+        {
+          "name": "TutorialSystem.TriggerStart",
+          "start": 232,
+          "end": 234,
+          "lines": 3
+        },
+        {
+          "name": "TutorialSystem.TriggerDeployed",
+          "start": 237,
+          "end": 239,
+          "lines": 3
+        },
+        {
+          "name": "TutorialSystem.Skip",
+          "start": 242,
+          "end": 250,
+          "lines": 9
+        },
+        {
+          "name": "TutorialSystem.IsActive",
+          "start": 255,
+          "end": 257,
+          "lines": 3
+        },
+        {
+          "name": "TutorialSystem.Update",
+          "start": 260,
+          "end": 264,
+          "lines": 5
+        },
+        {
+          "name": "TutorialSystem._ShowNext",
+          "start": 269,
+          "end": 275,
+          "lines": 7
+        },
+        {
+          "name": "TutorialSystem._OnConfirm",
+          "start": 281,
+          "end": 287,
+          "lines": 7
+        },
+        {
+          "name": "renderPulseHighlight",
+          "start": 294,
+          "end": 324,
+          "lines": 31
+        },
+        {
+          "name": "getHighlightRect",
+          "start": 330,
+          "end": 347,
+          "lines": 18
+        },
+        {
+          "name": "TutorialSystem.Render",
+          "start": 355,
+          "end": 389,
+          "lines": 35
+        },
+        {
+          "name": "TutorialSystem.Serialize",
+          "start": 605,
+          "end": 609,
+          "lines": 5
+        },
+        {
+          "name": "TutorialSystem.Deserialize",
+          "start": 622,
+          "end": 630,
+          "lines": 9
+        },
+        {
+          "name": "TutorialSystem.IsDone",
+          "start": 651,
+          "end": 653,
+          "lines": 3
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "game/ui/UICommon.lua": {
+      "path": "game/ui/UICommon.lua",
+      "extension": ".lua",
+      "lines": 153,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "UICommon.getVirtualSize",
+          "start": 81,
+          "end": 88,
+          "lines": 8
+        },
+        {
+          "name": "UICommon.bindFns",
+          "start": 141,
+          "end": 150,
+          "lines": 10
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "main.lua": {
+      "path": "main.lua",
+      "extension": ".lua",
+      "lines": 13,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "Start",
+          "start": 6,
+          "end": 8,
+          "lines": 3
+        },
+        {
+          "name": "Stop",
+          "start": 10,
+          "end": 12,
+          "lines": 3
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "network/Client.lua": {
+      "path": "network/Client.lua",
+      "extension": ".lua",
+      "lines": 2429,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "getAdCount",
+          "start": 63,
+          "end": 65,
+          "lines": 3
+        },
+        {
+          "name": "getRemainingTime",
+          "start": 68,
+          "end": 70,
+          "lines": 3
+        },
+        {
+          "name": "buildEvolutionBonus",
+          "start": 240,
+          "end": 245,
+          "lines": 6
+        },
+        {
+          "name": "getEvolutionUnlockedCount",
+          "start": 251,
+          "end": 255,
+          "lines": 5
+        },
+        {
+          "name": "getTodayStr",
+          "start": 274,
+          "end": 277,
+          "lines": 4
+        },
+        {
+          "name": "getDailyCountdown",
+          "start": 280,
+          "end": 284,
+          "lines": 5
+        },
+        {
+          "name": "generateDailyChallenge",
+          "start": 313,
+          "end": 318,
+          "lines": 6
+        },
+        {
+          "name": "lcgRand",
+          "start": 320,
+          "end": 336,
+          "lines": 17
+        },
+        {
+          "name": "getDpr",
+          "start": 426,
+          "end": 428,
+          "lines": 3
+        },
+        {
+          "name": "getScreenSize",
+          "start": 430,
+          "end": 434,
+          "lines": 5
+        },
+        {
+          "name": "markBaseEffectsDirty",
+          "start": 440,
+          "end": 442,
+          "lines": 3
+        },
+        {
+          "name": "applyBaseModuleEffects",
+          "start": 446,
+          "end": 462,
+          "lines": 17
+        },
+        {
+          "name": "handleLevelUp",
+          "start": 727,
+          "end": 740,
+          "lines": 14
+        },
+        {
+          "name": "buildSaveData",
+          "start": 805,
+          "end": 811,
+          "lines": 7
+        },
+        {
+          "name": "restoreGame",
+          "start": 831,
+          "end": 847,
+          "lines": 17
+        },
+        {
+          "name": "menuCtx",
+          "start": 913,
+          "end": 927,
+          "lines": 15
+        },
+        {
+          "name": "getCustomPanelVisible",
+          "start": 929,
+          "end": 931,
+          "lines": 3
+        },
+        {
+          "name": "getCustomPanelLayout",
+          "start": 933,
+          "end": 935,
+          "lines": 3
+        },
+        {
+          "name": "getCustomSliderRects",
+          "start": 937,
+          "end": 939,
+          "lines": 3
+        },
+        {
+          "name": "getEndlessBtnLayout",
+          "start": 941,
+          "end": 943,
+          "lines": 3
+        },
+        {
+          "name": "getDifficultyHit",
+          "start": 945,
+          "end": 947,
+          "lines": 3
+        },
+        {
+          "name": "getMainMenuHit",
+          "start": 949,
+          "end": 951,
+          "lines": 3
+        },
+        {
+          "name": "renderMainMenu",
+          "start": 953,
+          "end": 974,
+          "lines": 22
+        },
+        {
+          "name": "renderDifficultyScreen",
+          "start": 1022,
+          "end": 1024,
+          "lines": 3
+        },
+        {
+          "name": "onLeagueModeSelect",
+          "start": 1027,
+          "end": 1058,
+          "lines": 32
+        },
+        {
+          "name": "onMainMenuSelect",
+          "start": 1062,
+          "end": 1087,
+          "lines": 26
+        },
+        {
+          "name": "onDifficultySelect",
+          "start": 1123,
+          "end": 1135,
+          "lines": 13
+        },
+        {
+          "name": "onEndlessModeSelect",
+          "start": 1169,
+          "end": 1184,
+          "lines": 16
+        },
+        {
+          "name": "renderStatsPanel",
+          "start": 1191,
+          "end": 1202,
+          "lines": 12
+        },
+        {
+          "name": "handleNanoVGRender",
+          "start": 1206,
+          "end": 1222,
+          "lines": 17
+        },
+        {
+          "name": "showRewardAd",
+          "start": 1285,
+          "end": 1289,
+          "lines": 5
+        },
+        {
+          "name": "onWatchAdClicked",
+          "start": 1293,
+          "end": 1314,
+          "lines": 22
+        },
+        {
+          "name": "handleCrisisChoice_",
+          "start": 1322,
+          "end": 1336,
+          "lines": 15
+        },
+        {
+          "name": "handleUpdate",
+          "start": 1364,
+          "end": 1375,
+          "lines": 12
+        },
+        {
+          "name": "handleMouseButtonDown",
+          "start": 1790,
+          "end": 1792,
+          "lines": 3
+        },
+        {
+          "name": "handleMouseButtonUp",
+          "start": 1793,
+          "end": 1795,
+          "lines": 3
+        },
+        {
+          "name": "handleMouseMove",
+          "start": 1796,
+          "end": 1798,
+          "lines": 3
+        },
+        {
+          "name": "handleMouseWheel",
+          "start": 1799,
+          "end": 1801,
+          "lines": 3
+        },
+        {
+          "name": "handleKeyDown",
+          "start": 1802,
+          "end": 1804,
+          "lines": 3
+        },
+        {
+          "name": "handleKeyUp",
+          "start": 1805,
+          "end": 1807,
+          "lines": 3
+        },
+        {
+          "name": "buildSetupHost",
+          "start": 1810,
+          "end": 1902,
+          "lines": 93
+        },
+        {
+          "name": "buildInputHost",
+          "start": 1907,
+          "end": 1972,
+          "lines": 66
+        },
+        {
+          "name": "Client.Start",
+          "start": 2210,
+          "end": 2250,
+          "lines": 41
+        },
+        {
+          "name": "Client.Stop",
+          "start": 2412,
+          "end": 2416,
+          "lines": 5
+        },
+        {
+          "name": "Client.GetCareerStats",
+          "start": 2419,
+          "end": 2421,
+          "lines": 3
+        },
+        {
+          "name": "Client.GetPlayerName",
+          "start": 2424,
+          "end": 2426,
+          "lines": 3
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "buildSetupHost",
+          "start": 1810,
+          "end": 1902,
+          "lines": 93
+        }
+      ],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "network/ClientBattle.lua": {
+      "path": "network/ClientBattle.lua",
+      "extension": ".lua",
+      "lines": 1206,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "M.Init",
+          "start": 208,
+          "end": 210,
+          "lines": 3
+        },
+        {
+          "name": "M.DrawEndlessCards",
+          "start": 218,
+          "end": 225,
+          "lines": 8
+        },
+        {
+          "name": "M.ApplyEndlessCard",
+          "start": 249,
+          "end": 253,
+          "lines": 5
+        },
+        {
+          "name": "M.DdaApply",
+          "start": 281,
+          "end": 283,
+          "lines": 3
+        },
+        {
+          "name": "M.DdaEvaluateBattle",
+          "start": 286,
+          "end": 297,
+          "lines": 12
+        },
+        {
+          "name": "M.DdaPeriodicCheck",
+          "start": 311,
+          "end": 320,
+          "lines": 10
+        },
+        {
+          "name": "M.StartExplorerTask",
+          "start": 329,
+          "end": 334,
+          "lines": 6
+        },
+        {
+          "name": "M.UpdateExplorerTasks",
+          "start": 375,
+          "end": 384,
+          "lines": 10
+        },
+        {
+          "name": "M.DoStartEndlessRound",
+          "start": 435,
+          "end": 445,
+          "lines": 11
+        },
+        {
+          "name": "M.StartEndlessNextRound",
+          "start": 454,
+          "end": 460,
+          "lines": 7
+        },
+        {
+          "name": "M.CheckVictory",
+          "start": 531,
+          "end": 537,
+          "lines": 7
+        },
+        {
+          "name": "M.CheckDefeat",
+          "start": 553,
+          "end": 559,
+          "lines": 7
+        },
+        {
+          "name": "M.SwitchScene",
+          "start": 566,
+          "end": 573,
+          "lines": 8
+        },
+        {
+          "name": "M.GetPlayerTargets",
+          "start": 577,
+          "end": 586,
+          "lines": 10
+        },
+        {
+          "name": "M.OnPirateAttack",
+          "start": 601,
+          "end": 612,
+          "lines": 12
+        },
+        {
+          "name": "M.CalcFleetPower",
+          "start": 745,
+          "end": 755,
+          "lines": 11
+        },
+        {
+          "name": "M.CalcBaseThreat",
+          "start": 760,
+          "end": 762,
+          "lines": 3
+        },
+        {
+          "name": "M.LaunchExpedition",
+          "start": 765,
+          "end": 781,
+          "lines": 17
+        },
+        {
+          "name": "M.SettleExpedition",
+          "start": 800,
+          "end": 810,
+          "lines": 11
+        },
+        {
+          "name": "M.OnFleetSiegeBase",
+          "start": 846,
+          "end": 853,
+          "lines": 8
+        },
+        {
+          "name": "M.TriggerEndGame",
+          "start": 1040,
+          "end": 1049,
+          "lines": 10
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "network/ClientGalaxy.lua": {
+      "path": "network/ClientGalaxy.lua",
+      "extension": ".lua",
+      "lines": 484,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "M.Init",
+          "start": 23,
+          "end": 25,
+          "lines": 3
+        },
+        {
+          "name": "M.OnBuild",
+          "start": 31,
+          "end": 36,
+          "lines": 6
+        },
+        {
+          "name": "M.OnBatchUpgrade",
+          "start": 54,
+          "end": 62,
+          "lines": 9
+        },
+        {
+          "name": "M.OnBaseBuild",
+          "start": 74,
+          "end": 78,
+          "lines": 5
+        },
+        {
+          "name": "M.OnCoreUpgrade",
+          "start": 95,
+          "end": 99,
+          "lines": 5
+        },
+        {
+          "name": "M.OnResearch",
+          "start": 114,
+          "end": 120,
+          "lines": 7
+        },
+        {
+          "name": "M.OnMarket",
+          "start": 133,
+          "end": 136,
+          "lines": 4
+        },
+        {
+          "name": "M.OnBlackMarket",
+          "start": 159,
+          "end": 204,
+          "lines": 46
+        },
+        {
+          "name": "M.ApplyPlanetTypeBonus",
+          "start": 229,
+          "end": 239,
+          "lines": 11
+        },
+        {
+          "name": "M.ReapplyAllPlanetBonuses",
+          "start": 286,
+          "end": 289,
+          "lines": 4
+        },
+        {
+          "name": "M.DoColonize",
+          "start": 306,
+          "end": 312,
+          "lines": 7
+        },
+        {
+          "name": "M.UpgradePlanet",
+          "start": 355,
+          "end": 358,
+          "lines": 4
+        },
+        {
+          "name": "M.FleetHasExplorer",
+          "start": 383,
+          "end": 389,
+          "lines": 7
+        },
+        {
+          "name": "M.OnExplorerColonize",
+          "start": 393,
+          "end": 397,
+          "lines": 5
+        },
+        {
+          "name": "M.OnShipCancel",
+          "start": 414,
+          "end": 418,
+          "lines": 5
+        },
+        {
+          "name": "M.OnShipPromote",
+          "start": 421,
+          "end": 424,
+          "lines": 4
+        },
+        {
+          "name": "M.OnShipQueue",
+          "start": 426,
+          "end": 431,
+          "lines": 6
+        },
+        {
+          "name": "M.OnPlanetSelect",
+          "start": 452,
+          "end": 463,
+          "lines": 12
+        },
+        {
+          "name": "M.RegisterBlackMarketCallback",
+          "start": 477,
+          "end": 480,
+          "lines": 4
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "network/ClientInput.lua": {
+      "path": "network/ClientInput.lua",
+      "extension": ".lua",
+      "lines": 376,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "ClientInput.Init",
+          "start": 20,
+          "end": 22,
+          "lines": 3
+        },
+        {
+          "name": "ClientInput.OnMouseButtonDown",
+          "start": 27,
+          "end": 46,
+          "lines": 20
+        },
+        {
+          "name": "ClientInput.OnMouseButtonUp",
+          "start": 99,
+          "end": 128,
+          "lines": 30
+        },
+        {
+          "name": "ClientInput.OnMouseMove",
+          "start": 200,
+          "end": 216,
+          "lines": 17
+        },
+        {
+          "name": "ClientInput.OnMouseWheel",
+          "start": 249,
+          "end": 259,
+          "lines": 11
+        },
+        {
+          "name": "ClientInput.OnKeyDown",
+          "start": 264,
+          "end": 274,
+          "lines": 11
+        },
+        {
+          "name": "ClientInput.OnKeyUp",
+          "start": 364,
+          "end": 371,
+          "lines": 8
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "network/ClientMenus.lua": {
+      "path": "network/ClientMenus.lua",
+      "extension": ".lua",
+      "lines": 1001,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "drawParticleBackground",
+          "start": 14,
+          "end": 42,
+          "lines": 29
+        },
+        {
+          "name": "ClientMenus.GetMainMenuBtnLayout",
+          "start": 102,
+          "end": 119,
+          "lines": 18
+        },
+        {
+          "name": "ClientMenus.GetMainMenuHit",
+          "start": 122,
+          "end": 128,
+          "lines": 7
+        },
+        {
+          "name": "ClientMenus.RenderMainMenu",
+          "start": 135,
+          "end": 205,
+          "lines": 71
+        },
+        {
+          "name": "ClientMenus.GetDifficultyBtnLayout",
+          "start": 314,
+          "end": 332,
+          "lines": 19
+        },
+        {
+          "name": "ClientMenus.GetCustomPanelVisible",
+          "start": 337,
+          "end": 339,
+          "lines": 3
+        },
+        {
+          "name": "ClientMenus.GetCustomPanelLayout",
+          "start": 342,
+          "end": 350,
+          "lines": 9
+        },
+        {
+          "name": "ClientMenus.GetCustomSliderRects",
+          "start": 354,
+          "end": 397,
+          "lines": 44
+        },
+        {
+          "name": "ClientMenus.GetEndlessBtnLayout",
+          "start": 401,
+          "end": 408,
+          "lines": 8
+        },
+        {
+          "name": "ClientMenus.GetNicknameInputLayout",
+          "start": 411,
+          "end": 414,
+          "lines": 4
+        },
+        {
+          "name": "ClientMenus.GetDifficultyHit",
+          "start": 418,
+          "end": 423,
+          "lines": 6
+        },
+        {
+          "name": "ClientMenus.RenderDifficultyScreen",
+          "start": 447,
+          "end": 523,
+          "lines": 77
+        },
+        {
+          "name": "getHeritageNodeRects",
+          "start": 706,
+          "end": 728,
+          "lines": 23
+        },
+        {
+          "name": "getHeritageClosePos",
+          "start": 735,
+          "end": 740,
+          "lines": 6
+        },
+        {
+          "name": "ClientMenus.GetHeritagePanelHit",
+          "start": 744,
+          "end": 748,
+          "lines": 5
+        },
+        {
+          "name": "ClientMenus.RenderHeritagePanel",
+          "start": 760,
+          "end": 786,
+          "lines": 27
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "network/ClientSave.lua": {
+      "path": "network/ClientSave.lua",
+      "extension": ".lua",
+      "lines": 277,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "ClientSave.BuildSaveData",
+          "start": 27,
+          "end": 65,
+          "lines": 39
+        },
+        {
+          "name": "ClientSave.SaveGame",
+          "start": 72,
+          "end": 82,
+          "lines": 11
+        },
+        {
+          "name": "ClientSave.SaveCareer",
+          "start": 96,
+          "end": 107,
+          "lines": 12
+        },
+        {
+          "name": "ClientSave.RestoreGame",
+          "start": 136,
+          "end": 140,
+          "lines": 5
+        },
+        {
+          "name": "ClientSave.ResetProgress",
+          "start": 272,
+          "end": 274,
+          "lines": 3
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "network/ClientSetup.lua": {
+      "path": "network/ClientSetup.lua",
+      "extension": ".lua",
+      "lines": 1139,
+      "is_large": true,
+      "functions": [
+        {
+          "name": "M.Init",
+          "start": 49,
+          "end": 157,
+          "lines": 109
+        },
+        {
+          "name": "buildSelfExtra",
+          "start": 548,
+          "end": 555,
+          "lines": 8
+        },
+        {
+          "name": "tryAssemble",
+          "start": 557,
+          "end": 571,
+          "lines": 15
+        }
+      ],
+      "long_functions": [
+        {
+          "name": "M.Init",
+          "start": 49,
+          "end": 157,
+          "lines": 109
+        }
+      ],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "network/ClientStats.lua": {
+      "path": "network/ClientStats.lua",
+      "extension": ".lua",
+      "lines": 234,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "ClientStats.Render",
+          "start": 28,
+          "end": 84,
+          "lines": 57
+        },
+        {
+          "name": "fmtTime",
+          "start": 114,
+          "end": 120,
+          "lines": 7
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "network/Server.lua": {
+      "path": "network/Server.lua",
+      "extension": ".lua",
+      "lines": 256,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "connKey",
+          "start": 29,
+          "end": 31,
+          "lines": 3
+        },
+        {
+          "name": "broadcastPlayerList",
+          "start": 36,
+          "end": 51,
+          "lines": 16
+        },
+        {
+          "name": "handleClientConnected",
+          "start": 62,
+          "end": 68,
+          "lines": 7
+        },
+        {
+          "name": "handleClientDisconnected",
+          "start": 70,
+          "end": 76,
+          "lines": 7
+        },
+        {
+          "name": "handleClientIdentity",
+          "start": 79,
+          "end": 88,
+          "lines": 10
+        },
+        {
+          "name": "handleClientReady",
+          "start": 110,
+          "end": 116,
+          "lines": 7
+        },
+        {
+          "name": "getUid",
+          "start": 123,
+          "end": 128,
+          "lines": 6
+        },
+        {
+          "name": "handleSaveRequest",
+          "start": 131,
+          "end": 140,
+          "lines": 10
+        },
+        {
+          "name": "handleLoadRequest",
+          "start": 176,
+          "end": 185,
+          "lines": 10
+        },
+        {
+          "name": "handleUpdate",
+          "start": 217,
+          "end": 223,
+          "lines": 7
+        },
+        {
+          "name": "Server.Start",
+          "start": 229,
+          "end": 249,
+          "lines": 21
+        },
+        {
+          "name": "Server.Stop",
+          "start": 251,
+          "end": 253,
+          "lines": 3
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    },
+    "network/Shared.lua": {
+      "path": "network/Shared.lua",
+      "extension": ".lua",
+      "lines": 43,
+      "is_large": false,
+      "functions": [
+        {
+          "name": "Shared.RegisterServerEvents",
+          "start": 30,
+          "end": 33,
+          "lines": 4
+        },
+        {
+          "name": "Shared.RegisterClientEvents",
+          "start": 36,
+          "end": 39,
+          "lines": 4
+        }
+      ],
+      "long_functions": [],
+      "todo_markers": [],
+      "redundant_logic": []
+    }
+  },
+  "summary": {
+    "total_files": 92,
+    "total_lines": 49471,
+    "large_files": [
+      {
+        "file": "code_health_check.py",
+        "lines": 686
+      },
+      {
+        "file": "game/AchievementSystem.lua",
+        "lines": 815
+      },
+      {
+        "file": "game/BattleScene.lua",
+        "lines": 1627
+      },
+      {
+        "file": "game/GalaxyEvents.lua",
+        "lines": 1505
+      },
+      {
+        "file": "game/GalaxyScene.lua",
+        "lines": 2252
+      },
+      {
+        "file": "game/GameUI.lua",
+        "lines": 1504
+      },
+      {
+        "file": "game/PirateAI.lua",
+        "lines": 732
+      },
+      {
+        "file": "game/battle/BattleAI.lua",
+        "lines": 1486
+      },
+      {
+        "file": "game/battle/RenderHUD.lua",
+        "lines": 667
+      },
+      {
+        "file": "game/battle/RenderOverlays.lua",
+        "lines": 975
+      },
+      {
+        "file": "game/galaxy/RenderHUD.lua",
+        "lines": 713
+      },
+      {
+        "file": "game/galaxy/RenderStarmap.lua",
+        "lines": 949
+      },
+      {
+        "file": "game/systems/DiplomacySystem.lua",
+        "lines": 699
+      },
+      {
+        "file": "game/ui/EndGamePanel.lua",
+        "lines": 1487
+      },
+      {
+        "file": "game/ui/FleetPanel.lua",
+        "lines": 1691
+      },
+      {
+        "file": "game/ui/GalaxyPanels.lua",
+        "lines": 1395
+      },
+      {
+        "file": "game/ui/PlanetPanel.lua",
+        "lines": 1228
+      },
+      {
+        "file": "game/ui/ReplayPlayer.lua",
+        "lines": 666
+      },
+      {
+        "file": "game/ui/SettingsPanel.lua",
+        "lines": 629
+      },
+      {
+        "file": "game/ui/TechPanel.lua",
+        "lines": 857
+      },
+      {
+        "file": "game/ui/TopBar.lua",
+        "lines": 637
+      },
+      {
+        "file": "game/ui/TutorialSystem.lua",
+        "lines": 656
+      },
+      {
+        "file": "network/Client.lua",
+        "lines": 2429
+      },
+      {
+        "file": "network/ClientBattle.lua",
+        "lines": 1206
+      },
+      {
+        "file": "network/ClientMenus.lua",
+        "lines": 1001
+      },
+      {
+        "file": "network/ClientSetup.lua",
+        "lines": 1139
+      }
+    ],
+    "long_functions": [
+      {
+        "file": "code_health_check.py",
+        "name": "detect_duplicates",
+        "start": 150,
+        "end": 236,
+        "lines": 87
+      },
+      {
+        "file": "code_health_check.py",
+        "name": "generate_markdown_report",
+        "start": 516,
+        "end": 640,
+        "lines": 125
+      },
+      {
+        "file": "game/BattleScene.lua",
+        "name": "pushToCtx",
+        "start": 1069,
+        "end": 1176,
+        "lines": 108
+      },
+      {
+        "file": "game/BattleScene.lua",
+        "name": "BattleScene.Render",
+        "start": 1276,
+        "end": 1393,
+        "lines": 118
+      },
+      {
+        "file": "game/BattleScene.lua",
+        "name": "BattleScene.GetState",
+        "start": 1399,
+        "end": 1481,
+        "lines": 83
+      },
+      {
+        "file": "game/GameUI.lua",
+        "name": "GameUI.RenderHUD",
+        "start": 701,
+        "end": 823,
+        "lines": 123
+      },
+      {
+        "file": "game/GameUI.lua",
+        "name": "GameUI.OnFleetNamingEnter",
+        "start": 1344,
+        "end": 1488,
+        "lines": 145
+      },
+      {
+        "file": "game/GameUI.lua",
+        "name": "GameUI.OnFleetNamingBackspace",
+        "start": 1343,
+        "end": 1498,
+        "lines": 156
+      },
+      {
+        "file": "game/battle/BattleContext.lua",
+        "name": "BattleContext.Reset",
+        "start": 10,
+        "end": 241,
+        "lines": 232
+      },
+      {
+        "file": "game/battle/RenderEntities.lua",
+        "name": "drawFloatTexts",
+        "start": 265,
+        "end": 411,
+        "lines": 147
+      },
+      {
+        "file": "game/ui/CareerPanel.lua",
+        "name": "CareerPanel.GetAnim",
+        "start": 28,
+        "end": 192,
+        "lines": 165
+      },
+      {
+        "file": "game/ui/CareerPanel.lua",
+        "name": "CareerPanel.IsOpen",
+        "start": 27,
+        "end": 229,
+        "lines": 203
+      },
+      {
+        "file": "game/ui/EmpirePanel.lua",
+        "name": "EmpirePanel.IsVisible",
+        "start": 19,
+        "end": 149,
+        "lines": 131
+      },
+      {
+        "file": "game/ui/EndGamePanel.lua",
+        "name": "renderProfilePopup",
+        "start": 295,
+        "end": 385,
+        "lines": 91
+      },
+      {
+        "file": "game/ui/EndGamePanel.lua",
+        "name": "renderEndGame",
+        "start": 662,
+        "end": 761,
+        "lines": 100
+      },
+      {
+        "file": "game/ui/GalaxyHud.lua",
+        "name": "renderDeployHint",
+        "start": 19,
+        "end": 99,
+        "lines": 81
+      },
+      {
+        "file": "game/ui/GalaxyPanels.lua",
+        "name": "M.RenderIntel",
+        "start": 116,
+        "end": 219,
+        "lines": 104
+      },
+      {
+        "file": "game/ui/GalaxyPanels.lua",
+        "name": "M.IsDiploVisible",
+        "start": 111,
+        "end": 220,
+        "lines": 110
+      },
+      {
+        "file": "game/ui/GalaxyPanels.lua",
+        "name": "M.IsQuestVisible",
+        "start": 110,
+        "end": 336,
+        "lines": 227
+      },
+      {
+        "file": "game/ui/GalaxyPanels.lua",
+        "name": "M.IsStatsVisible",
+        "start": 109,
+        "end": 417,
+        "lines": 309
+      },
+      {
+        "file": "game/ui/GalaxyPanels.lua",
+        "name": "M.IsSignalOpen",
+        "start": 108,
+        "end": 439,
+        "lines": 332
+      },
+      {
+        "file": "game/ui/GalaxyPanels.lua",
+        "name": "M.ToggleDiploRel",
+        "start": 106,
+        "end": 463,
+        "lines": 358
+      },
+      {
+        "file": "game/ui/GalaxyPanels.lua",
+        "name": "M.ToggleStats",
+        "start": 99,
+        "end": 464,
+        "lines": 366
+      },
+      {
+        "file": "game/ui/GalaxyPanels.lua",
+        "name": "M.SetBlackMarket",
+        "start": 96,
+        "end": 475,
+        "lines": 380
+      },
+      {
+        "file": "game/ui/GalaxyPanels.lua",
+        "name": "M.SetCareerStats",
+        "start": 95,
+        "end": 547,
+        "lines": 453
+      },
+      {
+        "file": "game/ui/GalaxyPanels.lua",
+        "name": "M.SetGameTime",
+        "start": 94,
+        "end": 563,
+        "lines": 470
+      },
+      {
+        "file": "game/ui/GalaxyPanels.lua",
+        "name": "M.SetSelectedPlanet",
+        "start": 93,
+        "end": 564,
+        "lines": 472
+      },
+      {
+        "file": "game/ui/LegacyPanel.lua",
+        "name": "LegacyPanel.Render",
+        "start": 79,
+        "end": 199,
+        "lines": 121
+      },
+      {
+        "file": "game/ui/LegacyPanel.lua",
+        "name": "LegacyPanel.Close",
+        "start": 69,
+        "end": 202,
+        "lines": 134
+      },
+      {
+        "file": "game/ui/LegacyPanel.lua",
+        "name": "LegacyPanel.Open",
+        "start": 68,
+        "end": 220,
+        "lines": 153
+      },
+      {
+        "file": "game/ui/LegacyPanel.lua",
+        "name": "LegacyPanel.IsOpen",
+        "start": 67,
+        "end": 232,
+        "lines": 166
+      },
+      {
+        "file": "game/ui/LogPanel.lua",
+        "name": "LogPanel.IsVisible",
+        "start": 19,
+        "end": 186,
+        "lines": 168
+      },
+      {
+        "file": "game/ui/MegaPanel.lua",
+        "name": "MegaPanel.Render",
+        "start": 33,
+        "end": 153,
+        "lines": 121
+      },
+      {
+        "file": "game/ui/MegaPanel.lua",
+        "name": "MegaPanel.Close",
+        "start": 21,
+        "end": 183,
+        "lines": 163
+      },
+      {
+        "file": "game/ui/MegaPanel.lua",
+        "name": "MegaPanel.Open",
+        "start": 20,
+        "end": 200,
+        "lines": 181
+      },
+      {
+        "file": "game/ui/MegaPanel.lua",
+        "name": "MegaPanel.IsOpen",
+        "start": 19,
+        "end": 219,
+        "lines": 201
+      },
+      {
+        "file": "game/ui/NemesisRenderPanel.lua",
+        "name": "NemesisRenderPanel.Render",
+        "start": 36,
+        "end": 116,
+        "lines": 81
+      },
+      {
+        "file": "game/ui/NemesisRenderPanel.lua",
+        "name": "NemesisRenderPanel.Hide",
+        "start": 25,
+        "end": 132,
+        "lines": 108
+      },
+      {
+        "file": "game/ui/NemesisRenderPanel.lua",
+        "name": "NemesisRenderPanel.Show",
+        "start": 24,
+        "end": 152,
+        "lines": 129
+      },
+      {
+        "file": "game/ui/NemesisRenderPanel.lua",
+        "name": "NemesisRenderPanel.IsVisible",
+        "start": 18,
+        "end": 154,
+        "lines": 137
+      },
+      {
+        "file": "game/ui/NotifyPanel.lua",
+        "name": "NotifyPanel.RenderCenter",
+        "start": 116,
+        "end": 212,
+        "lines": 97
+      },
+      {
+        "file": "game/ui/Overlays.lua",
+        "name": "M.RenderEventPopup",
+        "start": 218,
+        "end": 307,
+        "lines": 90
+      },
+      {
+        "file": "game/ui/TimeoutPanel.lua",
+        "name": "render",
+        "start": 14,
+        "end": 99,
+        "lines": 86
+      },
+      {
+        "file": "network/Client.lua",
+        "name": "buildSetupHost",
+        "start": 1810,
+        "end": 1902,
+        "lines": 93
+      },
+      {
+        "file": "network/ClientSetup.lua",
+        "name": "M.Init",
+        "start": 49,
+        "end": 157,
+        "lines": 109
+      }
+    ],
+    "duplicate_blocks": [],
+    "redundant_logic": [],
+    "todo_markers": [
+      {
+        "file": "code_health_check.py",
+        "line": 314,
+        "type": "BUG ",
+        "content": "\"\"\"检测 TODO/FIXME/BUG 等遗留标记\"\"\""
+      },
+      {
+        "file": "code_health_check.py",
+        "line": 446,
+        "type": "TODO",
+        "content": "'description': f\"发现 TODO: {todo_count}, FIXME: {fixme_count}, BUG: {bug_count} 个遗留标记\","
+      }
+    ],
+    "score": 63
+  },
+  "recommendations": [
+    {
+      "category": "大文件拆分",
+      "priority": "high",
+      "description": "发现 26 个超过 600 行的大文件",
+      "action": "建议将大文件按功能模块拆分为多个小文件，每个文件专注于单一职责"
+    },
+    {
+      "category": "长函数重构",
+      "priority": "high",
+      "description": "发现 45 个超过 80 行的长函数",
+      "action": "建议将长函数拆分为多个小函数，每个函数只做一件事"
+    },
+    {
+      "category": "遗留标记清理",
+      "priority": "medium",
+      "description": "发现 TODO: 1, FIXME: 0, BUG: 0 个遗留标记",
+      "action": "建议及时处理这些遗留标记，避免技术债务积累"
+    }
+  ]
+}
