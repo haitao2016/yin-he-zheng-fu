@@ -1,0 +1,4359 @@
+{
+  "summary": {
+    "total_files": 93,
+    "total_lines": 49934,
+    "code_lines": 38993,
+    "comment_lines": 6652,
+    "avg_comment_rate": 13.321584491528817,
+    "total_functions": 1087
+  },
+  "large_files": [
+    {
+      "path": "/workspace/scripts/code_health_check.py",
+      "total_lines": 1202,
+      "code_lines": 929,
+      "comment_lines": 136,
+      "blank_lines": 137,
+      "comment_rate": 11.314475873544092
+    },
+    {
+      "path": "/workspace/scripts/game/AchievementSystem.lua",
+      "total_lines": 814,
+      "code_lines": 699,
+      "comment_lines": 83,
+      "blank_lines": 32,
+      "comment_rate": 10.196560196560196
+    },
+    {
+      "path": "/workspace/scripts/game/BattleScene.lua",
+      "total_lines": 1626,
+      "code_lines": 1311,
+      "comment_lines": 208,
+      "blank_lines": 107,
+      "comment_rate": 12.792127921279212
+    },
+    {
+      "path": "/workspace/scripts/game/GalaxyEvents.lua",
+      "total_lines": 1504,
+      "code_lines": 1279,
+      "comment_lines": 161,
+      "blank_lines": 64,
+      "comment_rate": 10.704787234042554
+    },
+    {
+      "path": "/workspace/scripts/game/GalaxyScene.lua",
+      "total_lines": 2251,
+      "code_lines": 1797,
+      "comment_lines": 294,
+      "blank_lines": 160,
+      "comment_rate": 13.060861839182586
+    },
+    {
+      "path": "/workspace/scripts/game/GameUI.lua",
+      "total_lines": 1503,
+      "code_lines": 1070,
+      "comment_lines": 284,
+      "blank_lines": 149,
+      "comment_rate": 18.89554224883566
+    },
+    {
+      "path": "/workspace/scripts/game/PirateAI.lua",
+      "total_lines": 731,
+      "code_lines": 543,
+      "comment_lines": 121,
+      "blank_lines": 67,
+      "comment_rate": 16.55266757865937
+    },
+    {
+      "path": "/workspace/scripts/game/battle/BattleAI.lua",
+      "total_lines": 1485,
+      "code_lines": 1201,
+      "comment_lines": 179,
+      "blank_lines": 105,
+      "comment_rate": 12.053872053872054
+    },
+    {
+      "path": "/workspace/scripts/game/battle/RenderHUD.lua",
+      "total_lines": 666,
+      "code_lines": 559,
+      "comment_lines": 36,
+      "blank_lines": 71,
+      "comment_rate": 5.405405405405405
+    },
+    {
+      "path": "/workspace/scripts/game/battle/RenderOverlays.lua",
+      "total_lines": 974,
+      "code_lines": 846,
+      "comment_lines": 24,
+      "blank_lines": 104,
+      "comment_rate": 2.4640657084188913
+    },
+    {
+      "path": "/workspace/scripts/game/galaxy/RenderHUD.lua",
+      "total_lines": 712,
+      "code_lines": 573,
+      "comment_lines": 55,
+      "blank_lines": 84,
+      "comment_rate": 7.724719101123595
+    },
+    {
+      "path": "/workspace/scripts/game/galaxy/RenderStarmap.lua",
+      "total_lines": 948,
+      "code_lines": 769,
+      "comment_lines": 77,
+      "blank_lines": 102,
+      "comment_rate": 8.122362869198312
+    },
+    {
+      "path": "/workspace/scripts/game/systems/DiplomacySystem.lua",
+      "total_lines": 698,
+      "code_lines": 533,
+      "comment_lines": 123,
+      "blank_lines": 42,
+      "comment_rate": 17.621776504297994
+    },
+    {
+      "path": "/workspace/scripts/game/ui/EndGamePanel.lua",
+      "total_lines": 1486,
+      "code_lines": 1195,
+      "comment_lines": 139,
+      "blank_lines": 152,
+      "comment_rate": 9.353970390309556
+    },
+    {
+      "path": "/workspace/scripts/game/ui/FleetPanel.lua",
+      "total_lines": 1690,
+      "code_lines": 1394,
+      "comment_lines": 164,
+      "blank_lines": 132,
+      "comment_rate": 9.70414201183432
+    },
+    {
+      "path": "/workspace/scripts/game/ui/GalaxyPanels.lua",
+      "total_lines": 1394,
+      "code_lines": 1148,
+      "comment_lines": 109,
+      "blank_lines": 137,
+      "comment_rate": 7.819225251076039
+    },
+    {
+      "path": "/workspace/scripts/game/ui/PlanetPanel.lua",
+      "total_lines": 1227,
+      "code_lines": 1025,
+      "comment_lines": 122,
+      "blank_lines": 80,
+      "comment_rate": 9.942950285248573
+    },
+    {
+      "path": "/workspace/scripts/game/ui/ReplayPlayer.lua",
+      "total_lines": 665,
+      "code_lines": 480,
+      "comment_lines": 94,
+      "blank_lines": 91,
+      "comment_rate": 14.135338345864662
+    },
+    {
+      "path": "/workspace/scripts/game/ui/SettingsPanel.lua",
+      "total_lines": 628,
+      "code_lines": 489,
+      "comment_lines": 73,
+      "blank_lines": 66,
+      "comment_rate": 11.624203821656051
+    },
+    {
+      "path": "/workspace/scripts/game/ui/TechPanel.lua",
+      "total_lines": 856,
+      "code_lines": 661,
+      "comment_lines": 124,
+      "blank_lines": 71,
+      "comment_rate": 14.485981308411214
+    },
+    {
+      "path": "/workspace/scripts/game/ui/TopBar.lua",
+      "total_lines": 636,
+      "code_lines": 528,
+      "comment_lines": 71,
+      "blank_lines": 37,
+      "comment_rate": 11.163522012578616
+    },
+    {
+      "path": "/workspace/scripts/game/ui/TutorialSystem.lua",
+      "total_lines": 655,
+      "code_lines": 484,
+      "comment_lines": 98,
+      "blank_lines": 73,
+      "comment_rate": 14.961832061068703
+    },
+    {
+      "path": "/workspace/scripts/network/Client.lua",
+      "total_lines": 2428,
+      "code_lines": 1919,
+      "comment_lines": 354,
+      "blank_lines": 155,
+      "comment_rate": 14.579901153212521
+    },
+    {
+      "path": "/workspace/scripts/network/ClientBattle.lua",
+      "total_lines": 1205,
+      "code_lines": 936,
+      "comment_lines": 178,
+      "blank_lines": 91,
+      "comment_rate": 14.771784232365146
+    },
+    {
+      "path": "/workspace/scripts/network/ClientMenus.lua",
+      "total_lines": 1000,
+      "code_lines": 798,
+      "comment_lines": 113,
+      "blank_lines": 89,
+      "comment_rate": 11.3
+    },
+    {
+      "path": "/workspace/scripts/network/ClientSetup.lua",
+      "total_lines": 1138,
+      "code_lines": 943,
+      "comment_lines": 128,
+      "blank_lines": 67,
+      "comment_rate": 11.247803163444638
+    }
+  ],
+  "long_functions": [
+    {
+      "name": "M.SetSelectedPlanet(p)",
+      "start": 93,
+      "end": 475,
+      "length": 383,
+      "code_lines": 293,
+      "file": "/workspace/scripts/game/ui/GalaxyPanels.lua"
+    },
+    {
+      "name": "generate_markdown",
+      "start": 918,
+      "end": 1153,
+      "length": 236,
+      "code_lines": 200,
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "name": "BattleContext.Reset()",
+      "start": 10,
+      "end": 241,
+      "length": 232,
+      "code_lines": 154,
+      "file": "/workspace/scripts/game/battle/BattleContext.lua"
+    },
+    {
+      "name": "MegaPanel.IsOpen()",
+      "start": 19,
+      "end": 219,
+      "length": 201,
+      "code_lines": 148,
+      "file": "/workspace/scripts/game/ui/MegaPanel.lua"
+    },
+    {
+      "name": "generate_split_plan",
+      "start": 535,
+      "end": 720,
+      "length": 186,
+      "code_lines": 140,
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "name": "CareerPanel.IsOpen()",
+      "start": 27,
+      "end": 192,
+      "length": 166,
+      "code_lines": 119,
+      "file": "/workspace/scripts/game/ui/CareerPanel.lua"
+    },
+    {
+      "name": "drawFloatTexts()",
+      "start": 265,
+      "end": 411,
+      "length": 147,
+      "code_lines": 118,
+      "file": "/workspace/scripts/game/battle/RenderEntities.lua"
+    },
+    {
+      "name": "identify_code_blocks_lua",
+      "start": 358,
+      "end": 498,
+      "length": 141,
+      "code_lines": 115,
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "name": "LegacyPanel.IsOpen()",
+      "start": 67,
+      "end": 220,
+      "length": 154,
+      "code_lines": 110,
+      "file": "/workspace/scripts/game/ui/LegacyPanel.lua"
+    },
+    {
+      "name": "pushToCtx()",
+      "start": 1069,
+      "end": 1176,
+      "length": 108,
+      "code_lines": 102,
+      "file": "/workspace/scripts/game/BattleScene.lua"
+    },
+    {
+      "name": "NemesisRenderPanel.IsVisible()",
+      "start": 18,
+      "end": 154,
+      "length": 137,
+      "code_lines": 100,
+      "file": "/workspace/scripts/game/ui/NemesisRenderPanel.lua"
+    },
+    {
+      "name": "GameUI.IsFleetNaming()",
+      "start": 1341,
+      "end": 1503,
+      "length": 163,
+      "code_lines": 99,
+      "file": "/workspace/scripts/game/GameUI.lua"
+    },
+    {
+      "name": "EmpirePanel.IsVisible()",
+      "start": 19,
+      "end": 149,
+      "length": 131,
+      "code_lines": 92,
+      "file": "/workspace/scripts/game/ui/EmpirePanel.lua"
+    },
+    {
+      "name": "BattleScene.Render()",
+      "start": 1276,
+      "end": 1393,
+      "length": 118,
+      "code_lines": 86,
+      "file": "/workspace/scripts/game/BattleScene.lua"
+    },
+    {
+      "name": "run_analysis",
+      "start": 806,
+      "end": 917,
+      "length": 112,
+      "code_lines": 83,
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "name": "buildSetupHost()",
+      "start": 1810,
+      "end": 1895,
+      "length": 86,
+      "code_lines": 81,
+      "file": "/workspace/scripts/network/Client.lua"
+    }
+  ],
+  "duplicates": [
+    {
+      "file_a": "/workspace/scripts/code_health_check.py",
+      "line_a": 51,
+      "file_b": "/workspace/scripts/code_health_check.py",
+      "line_b": 53,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/code_health_check.py",
+      "line_a": 923,
+      "file_b": "/workspace/scripts/code_health_check.py",
+      "line_b": 1070,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/AchievementSystem.lua",
+      "line_a": 13,
+      "file_b": "/workspace/scripts/game/AchievementSystem.lua",
+      "line_b": 20,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/AchievementSystem.lua",
+      "line_a": 123,
+      "file_b": "/workspace/scripts/game/AchievementSystem.lua",
+      "line_b": 144,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/BattleScene.lua",
+      "line_a": 303,
+      "file_b": "/workspace/scripts/game/BattleScene.lua",
+      "line_b": 337,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/BattleScene.lua",
+      "line_a": 337,
+      "file_b": "/workspace/scripts/game/BattleScene.lua",
+      "line_b": 355,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/BattleSkills.lua",
+      "line_a": 187,
+      "file_b": "/workspace/scripts/game/BattleSkills.lua",
+      "line_b": 195,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/BattleSkills.lua",
+      "line_a": 407,
+      "file_b": "/workspace/scripts/game/BattleSkills.lua",
+      "line_b": 446,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/BlackMarketSystem.lua",
+      "line_a": 13,
+      "file_b": "/workspace/scripts/game/BlackMarketSystem.lua",
+      "line_b": 14,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/CampaignSystem.lua",
+      "line_a": 32,
+      "file_b": "/workspace/scripts/game/CampaignSystem.lua",
+      "line_b": 116,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/GalactopediaSystem.lua",
+      "line_a": 22,
+      "file_b": "/workspace/scripts/game/GalactopediaSystem.lua",
+      "line_b": 34,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/GalaxyEvents.lua",
+      "line_a": 72,
+      "file_b": "/workspace/scripts/game/GalaxyEvents.lua",
+      "line_b": 87,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/GalaxyEvents.lua",
+      "line_a": 221,
+      "file_b": "/workspace/scripts/game/GalaxyEvents.lua",
+      "line_b": 249,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/GalaxyScene.lua",
+      "line_a": 115,
+      "file_b": "/workspace/scripts/game/galaxy/GalaxyState.lua",
+      "line_b": 40,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/GalaxyScene.lua",
+      "line_a": 246,
+      "file_b": "/workspace/scripts/game/GalaxyScene.lua",
+      "line_b": 333,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/GameUI.lua",
+      "line_a": 55,
+      "file_b": "/workspace/scripts/game/ui/UICommon.lua",
+      "line_b": 19,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/LeagueSystem.lua",
+      "line_a": 93,
+      "file_b": "/workspace/scripts/game/LeagueSystem.lua",
+      "line_b": 123,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/LegacySystem.lua",
+      "line_a": 78,
+      "file_b": "/workspace/scripts/game/ui/FormationEditor.lua",
+      "line_b": 46,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/LegacySystem.lua",
+      "line_a": 79,
+      "file_b": "/workspace/scripts/game/MutantShipSystem.lua",
+      "line_b": 134,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/MutantShipSystem.lua",
+      "line_a": 134,
+      "file_b": "/workspace/scripts/game/ui/FormationEditor.lua",
+      "line_b": 47,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/LiverySystem.lua",
+      "line_a": 13,
+      "file_b": "/workspace/scripts/game/LiverySystem.lua",
+      "line_b": 29,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/MegastructureSystem.lua",
+      "line_a": 30,
+      "file_b": "/workspace/scripts/game/MegastructureSystem.lua",
+      "line_b": 44,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/MegastructureSystem.lua",
+      "line_a": 30,
+      "file_b": "/workspace/scripts/game/MegastructureSystem.lua",
+      "line_b": 58,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/MutantShipSystem.lua",
+      "line_a": 201,
+      "file_b": "/workspace/scripts/game/MutantShipSystem.lua",
+      "line_b": 220,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/NemesisSystem.lua",
+      "line_a": 21,
+      "file_b": "/workspace/scripts/game/NemesisSystem.lua",
+      "line_b": 36,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/NemesisSystem.lua",
+      "line_a": 166,
+      "file_b": "/workspace/scripts/game/NemesisSystem.lua",
+      "line_b": 192,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/QuestBoard.lua",
+      "line_a": 162,
+      "file_b": "/workspace/scripts/game/QuestBoard.lua",
+      "line_b": 164,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/QuestBoard.lua",
+      "line_a": 162,
+      "file_b": "/workspace/scripts/game/QuestBoard.lua",
+      "line_b": 187,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/StarWeather.lua",
+      "line_a": 19,
+      "file_b": "/workspace/scripts/game/StarWeather.lua",
+      "line_b": 28,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/BattleAI.lua",
+      "line_a": 362,
+      "file_b": "/workspace/scripts/game/battle/BattleAI.lua",
+      "line_b": 372,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/BattleAI.lua",
+      "line_a": 476,
+      "file_b": "/workspace/scripts/game/battle/BattleAI.lua",
+      "line_b": 522,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/BattleAI.lua",
+      "line_a": 1293,
+      "file_b": "/workspace/scripts/game/battle/BattleDeath.lua",
+      "line_b": 202,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/BattleCombatEnemy.lua",
+      "line_a": 178,
+      "file_b": "/workspace/scripts/game/battle/BattleCombatPlayer.lua",
+      "line_b": 273,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/BattleTimers.lua",
+      "line_a": 211,
+      "file_b": "/workspace/scripts/game/battle/BattleTimers.lua",
+      "line_b": 223,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/BattleUtils.lua",
+      "line_a": 116,
+      "file_b": "/workspace/scripts/game/battle/BattleUtils.lua",
+      "line_b": 199,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/RenderEntities.lua",
+      "line_a": 281,
+      "file_b": "/workspace/scripts/game/battle/RenderEntities.lua",
+      "line_b": 291,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/RenderEntities.lua",
+      "line_a": 281,
+      "file_b": "/workspace/scripts/game/battle/RenderEntities.lua",
+      "line_b": 314,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/RenderOverlays.lua",
+      "line_a": 146,
+      "file_b": "/workspace/scripts/game/battle/RenderOverlays.lua",
+      "line_b": 192,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/RenderOverlays.lua",
+      "line_a": 675,
+      "file_b": "/workspace/scripts/game/battle/RenderOverlays.lua",
+      "line_b": 692,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/galaxy/RenderFleets.lua",
+      "line_a": 498,
+      "file_b": "/workspace/scripts/game/galaxy/RenderHUD.lua",
+      "line_b": 306,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/galaxy/RenderHUD.lua",
+      "line_a": 463,
+      "file_b": "/workspace/scripts/game/galaxy/RenderStarmap.lua",
+      "line_b": 856,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/systems/BuildingSystem.lua",
+      "line_a": 142,
+      "file_b": "/workspace/scripts/game/systems/BuildingSystem.lua",
+      "line_b": 178,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/systems/ShipProductionQueue.lua",
+      "line_a": 15,
+      "file_b": "/workspace/scripts/game/ui/GalaxyPanels.lua",
+      "line_b": 1249,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/ui/EmpirePanel.lua",
+      "line_a": 79,
+      "file_b": "/workspace/scripts/game/ui/GalaxyPanels.lua",
+      "line_b": 712,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/ui/EmpirePanel.lua",
+      "line_a": 88,
+      "file_b": "/workspace/scripts/game/ui/LogPanel.lua",
+      "line_b": 80,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/ui/EndGamePanel.lua",
+      "line_a": 141,
+      "file_b": "/workspace/scripts/game/ui/EndGamePanel.lua",
+      "line_b": 339,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/ui/EndGamePanel.lua",
+      "line_a": 275,
+      "file_b": "/workspace/scripts/game/ui/LiveryPanel.lua",
+      "line_b": 103,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/ui/EndGamePanel.lua",
+      "line_a": 275,
+      "file_b": "/workspace/scripts/game/ui/SettingsPanel.lua",
+      "line_b": 433,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/ui/LiveryPanel.lua",
+      "line_a": 103,
+      "file_b": "/workspace/scripts/game/ui/SettingsPanel.lua",
+      "line_b": 433,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/ui/EndGamePanel.lua",
+      "line_a": 1201,
+      "file_b": "/workspace/scripts/game/ui/EndGamePanel.lua",
+      "line_b": 1212,
+      "lines": 8
+    }
+  ],
+  "redundant_patterns": [
+    {
+      "line": 56,
+      "code": "'`if cond then x = true else x = false end` 可简化为 `x = cond`'),",
+      "suggestion": "`if cond then x = true else x = false end` 可简化为 `x = cond`",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 282,
+      "code": "if s.victory ~= true then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/AchievementSystem.lua"
+    },
+    {
+      "line": 403,
+      "code": "check = function(s) return s.tier ~= nil end,",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/AchievementSystem.lua"
+    },
+    {
+      "line": 432,
+      "code": "check  = function(s) return s.tier ~= nil and (s.score or 0) >= 7 end,",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/AchievementSystem.lua"
+    },
+    {
+      "line": 121,
+      "code": "if skillPoints_ <= 0 then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/BattleSkills.lua"
+    },
+    {
+      "line": 286,
+      "code": "if idx < 1 or idx > #blueprints_ then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/BlueprintSystem.lua"
+    },
+    {
+      "line": 180,
+      "code": "if not level then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/CampaignSystem.lua"
+    },
+    {
+      "line": 248,
+      "code": "if not state_.showingDialogue then return true end",
+      "suggestion": "`if cond then return true end` 可简化为 `return cond`",
+      "file": "/workspace/scripts/game/CampaignSystem.lua"
+    },
+    {
+      "line": 124,
+      "code": "if not cmd or cmd.level >= COMMANDER_MAX_LEVEL then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/CommanderSystem.lua"
+    },
+    {
+      "line": 262,
+      "code": "if not cmd then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/CommanderSystem.lua"
+    },
+    {
+      "line": 1468,
+      "code": "return endgameCrisis_ ~= nil and not endgameCrisis_.resolved",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/GalaxyEvents.lua"
+    },
+    {
+      "line": 1474,
+      "code": "return endgameCrisis_ ~= nil",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/GalaxyEvents.lua"
+    },
+    {
+      "line": 358,
+      "code": "local orbitR = (pi == nil and 1 or pi) * 0  -- 仅用 size 派生",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/GalaxyScene.lua"
+    },
+    {
+      "line": 547,
+      "code": "if not fm_ then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GalaxyScene.lua"
+    },
+    {
+      "line": 549,
+      "code": "if not fl then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GalaxyScene.lua"
+    },
+    {
+      "line": 551,
+      "code": "if e.shipType == \"EXPLORER\" and e.count > 0 then return true end",
+      "suggestion": "`if cond then return true end` 可简化为 `return cond`",
+      "file": "/workspace/scripts/game/GalaxyScene.lua"
+    },
+    {
+      "line": 1096,
+      "code": "if not planet then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GalaxyScene.lua"
+    },
+    {
+      "line": 1337,
+      "code": "if not fm_ then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GalaxyScene.lua"
+    },
+    {
+      "line": 276,
+      "code": "{ id=\"research_first\", title=\"完成第一项科技\",     desc=\"解锁任意一项科技\",            check=function(gs) return gs.rs and next(gs.rs.unlocked) ~= nil end,              reward={nuclear=200, credits=500} },",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/GameConstants.lua"
+    },
+    {
+      "line": 281,
+      "code": "if not (gs.rs and gs.rs.unlocked) then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GameConstants.lua"
+    },
+    {
+      "line": 301,
+      "code": "if not gs.colonizedPlanets then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GameConstants.lua"
+    },
+    {
+      "line": 305,
+      "code": "if b.key == \"TRADE_HUB\" then return true end",
+      "suggestion": "`if cond then return true end` 可简化为 `return cond`",
+      "file": "/workspace/scripts/game/GameConstants.lua"
+    },
+    {
+      "line": 538,
+      "code": "if not touchDragActive_ or touchDragId_ ~= id then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GameUI.lua"
+    },
+    {
+      "line": 102,
+      "code": "decoded.lp    = math.min(math.max(decoded.lp or 0, 0), LP_CAP)",
+      "suggestion": "可提取为独立的 clamp() 函数以减少重复",
+      "file": "/workspace/scripts/game/LegacySystem.lua"
+    },
+    {
+      "line": 149,
+      "code": "if not b then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/LegacySystem.lua"
+    },
+    {
+      "line": 150,
+      "code": "if b.level >= MAX_LEVEL then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/LegacySystem.lua"
+    },
+    {
+      "line": 90,
+      "code": "if item.unlock == \"free\" then return true end",
+      "suggestion": "`if cond then return true end` 可简化为 `return cond`",
+      "file": "/workspace/scripts/game/LiverySystem.lua"
+    },
+    {
+      "line": 119,
+      "code": "if not def then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/MegastructureSystem.lua"
+    },
+    {
+      "line": 170,
+      "code": "if not state then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/MegastructureSystem.lua"
+    },
+    {
+      "line": 415,
+      "code": "if not state_.activeCaptain then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/NemesisSystem.lua"
+    },
+    {
+      "line": 431,
+      "code": "if not cs or not cs.defeated then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/NemesisSystem.lua"
+    },
+    {
+      "line": 178,
+      "code": "return fm ~= nil and (fm.salvageParts or 0) >= t",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/QuestBoard.lua"
+    },
+    {
+      "line": 182,
+      "code": "if not diplo then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/QuestBoard.lua"
+    },
+    {
+      "line": 521,
+      "code": "local hasMvp = (s.mvp ~= nil and s.mvp.dmg > 0)",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/battle/RenderOverlays.lua"
+    },
+    {
+      "line": 246,
+      "code": "if not planet.buildQueue then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/BuildingSystem.lua"
+    },
+    {
+      "line": 248,
+      "code": "if not job then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/BuildingSystem.lua"
+    },
+    {
+      "line": 94,
+      "code": "if not fl then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/FleetManager.lua"
+    },
+    {
+      "line": 96,
+      "code": "if not old then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/FleetManager.lua"
+    },
+    {
+      "line": 48,
+      "code": "if not t or not t.exclusiveGroup then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResearchSystem.lua"
+    },
+    {
+      "line": 49,
+      "code": "if self.unlocked[id] then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResearchSystem.lua"
+    },
+    {
+      "line": 62,
+      "code": "if not t then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResearchSystem.lua"
+    },
+    {
+      "line": 63,
+      "code": "if self.unlocked[id] then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResearchSystem.lua"
+    },
+    {
+      "line": 64,
+      "code": "if self.active        then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResearchSystem.lua"
+    },
+    {
+      "line": 66,
+      "code": "if not self.unlocked[pre] then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResearchSystem.lua"
+    },
+    {
+      "line": 109,
+      "code": "if (self.resources[res] or 0) < amt then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResourceManager.lua"
+    },
+    {
+      "line": 115,
+      "code": "if not self:canAfford(cost) then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResourceManager.lua"
+    },
+    {
+      "line": 123,
+      "code": "if self.resources[resType] ~= nil then",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/systems/ResourceManager.lua"
+    },
+    {
+      "line": 172,
+      "code": "for k, v in pairs(data.resources) do if self.resources[k] ~= nil then self.resources[k] = v end end",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/systems/ResourceManager.lua"
+    },
+    {
+      "line": 50,
+      "code": "if index < 1 or index > #self.items then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ShipProductionQueue.lua"
+    },
+    {
+      "line": 64,
+      "code": "if index <= 1 or index > #self.items then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ShipProductionQueue.lua"
+    }
+  ],
+  "todos": [
+    {
+      "line": 291,
+      "type": "TODO",
+      "text": "5. TODO / FIXME 统计",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 682,
+      "type": "XXX",
+      "text": "推断 require 路径：如果原文件位于 game/xxx.lua，则 require \"game.{base}_{suffix}\"",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 832,
+      "type": "TODO",
+      "text": "冗余逻辑 / TODO",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 1005,
+      "type": "TODO",
+      "text": "—— TODO",
+      "file": "/workspace/scripts/code_health_check.py"
+    }
+  ],
+  "split_plans": [
+    {
+      "original_file": "/workspace/scripts/network/Client.lua",
+      "original_name": "Client.lua",
+      "original_lines": 2428,
+      "sub_files": [
+        {
+          "filename": "Client_evolution_tree.lua",
+          "purpose": "数据表模块（EVOLUTION_TREE 定义）",
+          "line_range": "L179-L231",
+          "lines": 53,
+          "block_type": "data",
+          "start_line": 179,
+          "end_line": 231
+        },
+        {
+          "filename": "Client_scalars.lua",
+          "purpose": "数据表模块（scalars 定义）",
+          "line_range": "L1811-L1840",
+          "lines": 30,
+          "block_type": "data",
+          "start_line": 1811,
+          "end_line": 1840
+        },
+        {
+          "filename": "Client_general.lua",
+          "purpose": "general 相关函数（42 个函数，约 389 行代码）",
+          "line_range": "L63-L1965",
+          "lines": 1903,
+          "block_type": "module",
+          "functions": [
+            "getAdCount()",
+            "getRemainingTime()",
+            "buildEvolutionBonus()",
+            "getEvolutionUnlockedCount()",
+            "getTodayStr()",
+            "getDailyCountdown()",
+            "generateDailyChallenge(dateStr)",
+            "lcgRand(s)",
+            "getDpr()",
+            "getScreenSize()",
+            "markBaseEffectsDirty()",
+            "applyBaseModuleEffects()",
+            "handleLevelUp(leveled,",
+            "buildSaveData()",
+            "restoreGame(jsonStr)",
+            "menuCtx()",
+            "getCustomPanelVisible()",
+            "getCustomPanelLayout(sw,",
+            "getCustomSliderRects(sw,",
+            "getEndlessBtnLayout(sw,",
+            "getDifficultyHit(mx,",
+            "getMainMenuHit(mx,",
+            "renderMainMenu(sw,",
+            "renderDifficultyScreen(sw,",
+            "onLeagueModeSelect()",
+            "onMainMenuSelect(key)",
+            "onDifficultySelect(key)",
+            "onEndlessModeSelect()",
+            "renderStatsPanel(sw,",
+            "handleNanoVGRender(eventType,",
+            "showRewardAd(callback)",
+            "onWatchAdClicked()",
+            "handleCrisisChoice_(choiceIdx)",
+            "handleUpdate(eventType,",
+            "handleMouseButtonDown(eventType,",
+            "handleMouseButtonUp(eventType,",
+            "handleMouseMove(eventType,",
+            "handleMouseWheel(eventType,",
+            "handleKeyDown(eventType,",
+            "handleKeyUp(eventType,",
+            "buildSetupHost()",
+            "buildInputHost()"
+          ],
+          "start_line": 63,
+          "end_line": 1965
+        },
+        {
+          "filename": "Client_core.lua",
+          "purpose": "Client 相关函数（4 个函数，约 34 行代码）",
+          "line_range": "L2210-L2426",
+          "lines": 217,
+          "block_type": "module",
+          "functions": [
+            "Client.Start()",
+            "Client.Stop()",
+            "Client.GetCareerStats()",
+            "Client.GetPlayerName()"
+          ],
+          "start_line": 2210,
+          "end_line": 2426
+        }
+      ],
+      "strategy": "检测到原文件 2428 行，超过阈值 600 行。\n建议拆分为 5 个文件（1 个主文件 + 4 个子模块），总计 2253 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/GalaxyScene.lua",
+      "original_name": "GalaxyScene.lua",
+      "original_lines": 2251,
+      "sub_files": [
+        {
+          "filename": "GalaxyScene_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "line_range": "L17-L166",
+          "lines": 150,
+          "block_type": "config",
+          "start_line": 17,
+          "end_line": 166
+        },
+        {
+          "filename": "GalaxyScene_galaxy_scene.lua",
+          "purpose": "GalaxyScene 相关函数（44 个函数，约 247 行代码）",
+          "line_range": "L632-L2243",
+          "lines": 1612,
+          "block_type": "module",
+          "functions": [
+            "GalaxyScene.Colonize(planet)",
+            "GalaxyScene.Init(opts)",
+            "GalaxyScene.GetAllPlanets()",
+            "GalaxyScene.GetColonizedPlanets()",
+            "GalaxyScene.GetSelected()",
+            "GalaxyScene.SelectPlanet(planet)",
+            "GalaxyScene.GetMapVariant()",
+            "GalaxyScene.GetSeed()",
+            "GalaxyScene.GetGalaxyShape()",
+            "GalaxyScene.GetSpecialPlanets()",
+            "GalaxyScene.TogglePriority(planet)",
+            "GalaxyScene.IsPriority(planet)",
+            "GalaxyScene.GetPriorityPlanetCount()",
+            "GalaxyScene.WarpFleetToPlanet(targetPlanet)",
+            "GalaxyScene.Update(dt)",
+            "GalaxyScene.Render()",
+            "GalaxyScene.OnMouseDown(mx,",
+            "GalaxyScene.OnMouseMove(mx,",
+            "GalaxyScene.OnMouseUp(mx,",
+            "GalaxyScene.OnMouseWheel(mx,",
+            "GalaxyScene.OnTouchBegin(id,",
+            "GalaxyScene.OnTouchMove(id,",
+            "GalaxyScene.OnTouchEnd(id,",
+            "GalaxyScene.OnKeyDown(key)",
+            "GalaxyScene.OnKeyUp(key)",
+            "GalaxyScene.IsDeployed()",
+            "GalaxyScene.GetSeedState()",
+            "GalaxyScene.GetBase()",
+            "GalaxyScene.SelectFleet(fleetId)",
+            "GalaxyScene.GetSelectedFleetId()",
+            "GalaxyScene.InvalidateFleetColor(fleetId)",
+            "GalaxyScene.GetSaveData()",
+            "GalaxyScene.LoadSaveData(data,",
+            "GalaxyScene.ShowSignalBanner(senderName,",
+            "GalaxyScene.GarrisonFleet(fleetId,",
+            "GalaxyScene.RecallGarrison(fleetId)",
+            "GalaxyScene.GetGarrisonedPlanet(fleetId)",
+            "GalaxyScene.GetGarrisonFleetId(planet)",
+            "GalaxyScene.GetAllGarrisons()",
+            "GalaxyScene.ClearGarrisons()",
+            "GalaxyScene.SetExpeditions(exps)",
+            "GalaxyScene.SetDiploRelations(rels,",
+            "GalaxyScene.GetFleetSpeed(fleetId)",
+            "GalaxyScene.Shutdown()"
+          ],
+          "start_line": 632,
+          "end_line": 2243
+        },
+        {
+          "filename": "GalaxyScene_general.lua",
+          "purpose": "general 相关函数（25 个函数，约 230 行代码）",
+          "line_range": "L168-L1710",
+          "lines": 1543,
+          "block_type": "module",
+          "functions": [
+            "dist2(x1,y1,x2,y2)",
+            "randItem(t)",
+            "nvgColor(c,",
+            "w2s(wx,",
+            "s2w(sx,",
+            "generateBgStars()",
+            "generateFixedStarSystems(fixedDefs)",
+            "generateStarSystems()",
+            "generateAsteroids()",
+            "countEngineersInFleet(fleetId)",
+            "fleetHasExplorer(fleetId)",
+            "findNearbyUncolonizedPlanet(wx,",
+            "updatePlanets(dt)",
+            "updateHover()",
+            "tryClickAsteroid(mx,",
+            "handleClick(mx,",
+            "getFleetSpeed(fleetId)",
+            "updateFleets(dt)",
+            "invalidateFleetColor(fleetId)",
+            "getFleetColor(fleetId)",
+            "updateSeedShip(dt)",
+            "minimapRect()",
+            "teleportToMinimap(px,",
+            "touchCount()",
+            "pinchInfo()"
+          ],
+          "start_line": 168,
+          "end_line": 1710
+        }
+      ],
+      "strategy": "检测到原文件 2251 行，超过阈值 600 行。\n建议拆分为 4 个文件（1 个主文件 + 3 个子模块），总计 3355 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/ui/FleetPanel.lua",
+      "original_name": "FleetPanel.lua",
+      "original_lines": 1690,
+      "sub_files": [
+        {
+          "filename": "FleetPanel_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "line_range": "L7-L56",
+          "lines": 50,
+          "block_type": "config",
+          "start_line": 7,
+          "end_line": 56
+        },
+        {
+          "filename": "FleetPanel_fleet_panel.lua",
+          "purpose": "FleetPanel 相关函数（6 个函数，约 136 行代码）",
+          "line_range": "L101-L1589",
+          "lines": 1489,
+          "block_type": "module",
+          "functions": [
+            "FleetPanel.OnTextInput(text)",
+            "FleetPanel.OnBackspace()",
+            "FleetPanel.OnEnter()",
+            "FleetPanel.IsNaming()",
+            "FleetPanel.Render(ctx)",
+            "FleetPanel.RenderNamingModal()"
+          ],
+          "start_line": 101,
+          "end_line": 1589
+        },
+        {
+          "filename": "FleetPanel_general.lua",
+          "purpose": "general 相关函数（5 个函数，约 18 行代码）",
+          "line_range": "L69-L316",
+          "lines": 248,
+          "block_type": "module",
+          "functions": [
+            "randomFleetName()",
+            "openNaming(fleetId)",
+            "closeNaming()",
+            "confirmNaming()",
+            "addRow(icon,"
+          ],
+          "start_line": 69,
+          "end_line": 316
+        }
+      ],
+      "strategy": "检测到原文件 1690 行，超过阈值 600 行。\n建议拆分为 4 个文件（1 个主文件 + 3 个子模块），总计 1837 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/BattleScene.lua",
+      "original_name": "BattleScene.lua",
+      "original_lines": 1626,
+      "sub_files": [
+        {
+          "filename": "BattleScene_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "line_range": "L11-L401",
+          "lines": 391,
+          "block_type": "config",
+          "start_line": 11,
+          "end_line": 401
+        },
+        {
+          "filename": "BattleScene_battle_environments.lua",
+          "purpose": "数据表模块（BATTLE_ENVIRONMENTS 定义）",
+          "line_range": "L206-L258",
+          "lines": 53,
+          "block_type": "data",
+          "start_line": 206,
+          "end_line": 258
+        },
+        {
+          "filename": "BattleScene_formation_config.lua",
+          "purpose": "数据表模块（FORMATION_CONFIG 定义）",
+          "line_range": "L301-L385",
+          "lines": 85,
+          "block_type": "data",
+          "start_line": 301,
+          "end_line": 385
+        },
+        {
+          "filename": "BattleScene_ship.lua",
+          "purpose": "数据表模块（ship 定义）",
+          "line_range": "L460-L503",
+          "lines": 44,
+          "block_type": "data",
+          "start_line": 460,
+          "end_line": 503
+        },
+        {
+          "filename": "BattleScene_battle_scene.lua",
+          "purpose": "BattleScene 相关函数（7 个函数，约 216 行代码）",
+          "line_range": "L589-L1481",
+          "lines": 893,
+          "block_type": "module",
+          "functions": [
+            "BattleScene.Init(opts)",
+            "BattleScene.Reset()",
+            "BattleScene.AddProductionShip(shipType)",
+            "BattleScene.StartNextWave()",
+            "BattleScene.Update(dt)",
+            "BattleScene.Render()",
+            "BattleScene.GetState()"
+          ],
+          "start_line": 589,
+          "end_line": 1481
+        },
+        {
+          "filename": "BattleScene_general.lua",
+          "purpose": "general 相关函数（11 个函数，约 209 行代码）",
+          "line_range": "L402-L1602",
+          "lines": 1201,
+          "block_type": "module",
+          "functions": [
+            "getComboLevel()",
+            "logBattleEvent(text)",
+            "makeShip(stype,",
+            "syncAIVars()",
+            "syncAIVarsBack()",
+            "syncAIRefs()",
+            "selectEnv()",
+            "pushToCtx()",
+            "pullFromCtx()",
+            "inBtn(b)",
+            "inBtn(b)"
+          ],
+          "start_line": 402,
+          "end_line": 1602
+        }
+      ],
+      "strategy": "检测到原文件 1626 行，超过阈值 600 行。\n建议拆分为 7 个文件（1 个主文件 + 6 个子模块），总计 2717 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/GalaxyEvents.lua",
+      "original_name": "GalaxyEvents.lua",
+      "original_lines": 1504,
+      "sub_files": [
+        {
+          "filename": "GalaxyEvents_event_types.lua",
+          "purpose": "数据表模块（EVENT_TYPES 定义）",
+          "line_range": "L25-L457",
+          "lines": 433,
+          "block_type": "data",
+          "start_line": 25,
+          "end_line": 457
+        },
+        {
+          "filename": "GalaxyEvents_disaster_types.lua",
+          "purpose": "数据表模块（DISASTER_TYPES 定义）",
+          "line_range": "L942-L1013",
+          "lines": 72,
+          "block_type": "data",
+          "start_line": 942,
+          "end_line": 1013
+        },
+        {
+          "filename": "GalaxyEvents_endgame_crisis_types.lua",
+          "purpose": "数据表模块（ENDGAME_CRISIS_TYPES 定义）",
+          "line_range": "L1115-L1285",
+          "lines": 171,
+          "block_type": "data",
+          "start_line": 1115,
+          "end_line": 1285
+        },
+        {
+          "filename": "GalaxyEvents_galaxy_events.lua",
+          "purpose": "GalaxyEvents 相关函数（29 个函数，约 139 行代码）",
+          "line_range": "L578-L1502",
+          "lines": 925,
+          "block_type": "module",
+          "functions": [
+            "GalaxyEvents.ScheduleChain(typeKey,",
+            "GalaxyEvents.Reset()",
+            "GalaxyEvents.Update(dt,",
+            "GalaxyEvents.onCrisisExpired(ev)",
+            "GalaxyEvents.AddBuff(buffKey,",
+            "GalaxyEvents.RemoveBuff(buffKey)",
+            "GalaxyEvents.HasBuff(buffKey)",
+            "GalaxyEvents.GetActiveBuffs()",
+            "GalaxyEvents.Draw(ctx)",
+            "GalaxyEvents.GetList()",
+            "GalaxyEvents.GetType(typeKey)",
+            "GalaxyEvents.Serialize()",
+            "GalaxyEvents.Deserialize(data)",
+            "GalaxyEvents.SetPlanetProvider(fn)",
+            "GalaxyEvents.UpdateDisasters(dt,",
+            "GalaxyEvents.GetDisasterType(typeKey)",
+            "GalaxyEvents.ResetDisasters()",
+            "GalaxyEvents.TriggerEndgameCrisis(forceType)",
+            "GalaxyEvents.GetEndgameCrisis()",
+            "GalaxyEvents.AdvanceCrisisPhase(choiceIdx)",
+            "GalaxyEvents.UpdateEndgameCrisis(dt)",
+            "GalaxyEvents.GetCrisisRewards()",
+            "GalaxyEvents.IsEndgameCrisisActive()",
+            "GalaxyEvents.HasEndgameCrisisTriggered()",
+            "GalaxyEvents.onCrisisPhaseTimeout(crisis,",
+            "GalaxyEvents.onCrisisResolved(crisis,",
+            "GalaxyEvents.SerializeEndgameCrisis()",
+            "GalaxyEvents.DeserializeEndgameCrisis(data)",
+            "GalaxyEvents.ResetEndgameCrisis()"
+          ],
+          "start_line": 578,
+          "end_line": 1502
+        }
+      ],
+      "strategy": "检测到原文件 1504 行，超过阈值 600 行。\n建议拆分为 5 个文件（1 个主文件 + 4 个子模块），总计 1651 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/GameUI.lua",
+      "original_name": "GameUI.lua",
+      "original_lines": 1503,
+      "sub_files": [
+        {
+          "filename": "GameUI_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "line_range": "L7-L294",
+          "lines": 288,
+          "block_type": "config",
+          "start_line": 7,
+          "end_line": 294
+        },
+        {
+          "filename": "GameUI_c.lua",
+          "purpose": "数据表模块（C 定义）",
+          "line_range": "L47-L82",
+          "lines": 36,
+          "block_type": "data",
+          "start_line": 47,
+          "end_line": 82
+        },
+        {
+          "filename": "GameUI_game_ui.lua",
+          "purpose": "GameUI 相关函数（43 个函数，约 318 行代码）",
+          "line_range": "L298-L1503",
+          "lines": 1206,
+          "block_type": "module",
+          "functions": [
+            "GameUI.Notify(msg,",
+            "GameUI.RenderNotifications()",
+            "GameUI.SetPirateWarning(minTime)",
+            "GameUI.UpdateNotifications(dt)",
+            "GameUI.TriggerTechComplete(techId)",
+            "GameUI.OnScroll(mx,",
+            "GameUI.OnTouchBegin(id,",
+            "GameUI.OnTouchMove(id,",
+            "GameUI.OnTouchEnd(id,",
+            "GameUI.RenderTopBar()",
+            "GameUI.RenderSceneTitle()",
+            "GameUI.ShowEventPopup(ev,",
+            "GameUI.ShowDiploEvent(ev)",
+            "GameUI.RenderHUD(dt)",
+            "GameUI.RefreshResourceBar()",
+            "GameUI.RefreshBlackMarketPanel()",
+            "GameUI.RefreshPlanetPanel(planet)",
+            "GameUI.ForceRefreshPanel(planet)",
+            "GameUI.RefreshShipyardPanel()",
+            "GameUI.SetExplorerColonizeMode(active)",
+            "GameUI.SetAchievements(data,",
+            "GameUI.SetRedeemCallback(fn)",
+            "GameUI.GetRedeemableCount()",
+            "GameUI.SetEndlessRound(round)",
+            "GameUI.ShowDailyChallengeHint(challenge)",
+            "GameUI.SetLeagueHud(data)",
+            "GameUI.ShowCardDraft(cards,",
+            "GameUI.HideCardDraft()",
+            "GameUI.RefreshExplorerTasks(tasks)",
+            "GameUI.PushExploreLog(entry)",
+            "GameUI.SetCompletedGoals(completed)",
+            "GameUI.SetCareerStats(stats)",
+            "GameUI.ShowScene(scene,",
+            "GameUI.OnClick(mx,",
+            "GameUI.Init(opts)",
+            "GameUI.Shutdown()",
+            "GameUI.SetShipyardBuilt(built)",
+            "GameUI.RefreshFleetPanel(fm,",
+            "GameUI.SetExpeditions(exps,",
+            "GameUI.SetMapSelectedFleet(fleetId)",
+            "GameUI.RefreshReservePanel(fm)",
+            "GameUI.SetDeployed(flag)",
+            "GameUI.IsFleetNaming()"
+          ],
+          "start_line": 298,
+          "end_line": 1503
+        },
+        {
+          "filename": "GameUI_general.lua",
+          "purpose": "general 相关函数（6 个函数，约 42 行代码）",
+          "line_range": "L445-L602",
+          "lines": 158,
+          "block_type": "module",
+          "functions": [
+            "clr(r,g,b,a)",
+            "text(x,",
+            "addHit(x,",
+            "addScroll(x,",
+            "drawButton(x,",
+            "progressBar(x,"
+          ],
+          "start_line": 445,
+          "end_line": 602
+        }
+      ],
+      "strategy": "检测到原文件 1503 行，超过阈值 600 行。\n建议拆分为 5 个文件（1 个主文件 + 4 个子模块），总计 1738 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/ui/EndGamePanel.lua",
+      "original_name": "EndGamePanel.lua",
+      "original_lines": 1486,
+      "sub_files": [
+        {
+          "filename": "EndGamePanel_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "line_range": "L11-L51",
+          "lines": 41,
+          "block_type": "config",
+          "start_line": 11,
+          "end_line": 51
+        },
+        {
+          "filename": "EndGamePanel_general.lua",
+          "purpose": "general 相关函数（11 个函数，约 135 行代码）",
+          "line_range": "L52-L883",
+          "lines": 832,
+          "block_type": "module",
+          "functions": [
+            "generateBattleReport()",
+            "renderLeaderboard()",
+            "renderProfilePopup()",
+            "divider(dy)",
+            "statRow(label,",
+            "renderRadarChart(vg,",
+            "renderEndGame()",
+            "easeOutElastic(x)",
+            "seg(start,",
+            "fmtTime(s)",
+            "fmtNum(n)"
+          ],
+          "start_line": 52,
+          "end_line": 883
+        },
+        {
+          "filename": "EndGamePanel_end_game_panel.lua",
+          "purpose": "EndGamePanel 相关函数（12 个函数，约 33 行代码）",
+          "line_range": "L1373-L1484",
+          "lines": 112,
+          "block_type": "module",
+          "functions": [
+            "EndGamePanel.Update(dt)",
+            "EndGamePanel.Render()",
+            "EndGamePanel.RenderLeaderboard()",
+            "EndGamePanel.Show(gameType,",
+            "EndGamePanel.Hide()",
+            "EndGamePanel.IsActive()",
+            "EndGamePanel.SetAdCallback(fn)",
+            "EndGamePanel.SetLeaderboardCallback(fn)",
+            "EndGamePanel.SetNotifyFn(fn)",
+            "EndGamePanel.SetCareerStats(career)",
+            "EndGamePanel.SetReplayData(data)",
+            "EndGamePanel.SetReplayCallback(fn)"
+          ],
+          "start_line": 1373,
+          "end_line": 1484
+        }
+      ],
+      "strategy": "检测到原文件 1486 行，超过阈值 600 行。\n建议拆分为 4 个文件（1 个主文件 + 3 个子模块），总计 1035 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/battle/BattleAI.lua",
+      "original_name": "BattleAI.lua",
+      "original_lines": 1485,
+      "sub_files": [
+        {
+          "filename": "BattleAI_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "line_range": "L11-L37",
+          "lines": 27,
+          "block_type": "config",
+          "start_line": 11,
+          "end_line": 37
+        },
+        {
+          "filename": "BattleAI_battle_ai.lua",
+          "purpose": "BattleAI 相关函数（15 个函数，约 189 行代码）",
+          "line_range": "L73-L1426",
+          "lines": 1354,
+          "block_type": "module",
+          "functions": [
+            "BattleAI.Init(refs)",
+            "BattleAI.SyncRefs(refs)",
+            "BattleAI.SyncVarsIn(v)",
+            "BattleAI.GetVarsOut()",
+            "BattleAI.MakeBossShip(baseType,",
+            "BattleAI.MakeNemesisShip(captainId,",
+            "BattleAI.BuildNemesisWave(captainId)",
+            "BattleAI.BuildEnemyWave(wave)",
+            "BattleAI.GetNextWavePreview(wave)",
+            "BattleAI.ApplyWaveStartPassives()",
+            "BattleAI.ApplyFormationPositions(fleet)",
+            "BattleAI.UpdatePlayerFleet(dt)",
+            "BattleAI.UpdateEnemyFleet(dt)",
+            "BattleAI.ProcessDeaths(dt)",
+            "BattleAI.UpdatePassives(dt)"
+          ],
+          "start_line": 73,
+          "end_line": 1426
+        },
+        {
+          "filename": "BattleAI_general.lua",
+          "purpose": "general 相关函数（7 个函数，约 60 行代码）",
+          "line_range": "L120-L237",
+          "lines": 118,
+          "block_type": "module",
+          "functions": [
+            "dist2(x1,",
+            "clamp(v,",
+            "getComboLevel()",
+            "logBattleEvent(text)",
+            "spawnExplosion(ship)",
+            "spawnHitSparks(x,",
+            "spawnShockRing(x,"
+          ],
+          "start_line": 120,
+          "end_line": 237
+        }
+      ],
+      "strategy": "检测到原文件 1485 行，超过阈值 600 行。\n建议拆分为 4 个文件（1 个主文件 + 3 个子模块），总计 1549 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/ui/GalaxyPanels.lua",
+      "original_name": "GalaxyPanels.lua",
+      "original_lines": 1394,
+      "sub_files": [
+        {
+          "filename": "GalaxyPanels_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "line_range": "L16-L67",
+          "lines": 52,
+          "block_type": "config",
+          "start_line": 16,
+          "end_line": 67
+        },
+        {
+          "filename": "GalaxyPanels_m.lua",
+          "purpose": "M 相关函数（9 个函数，约 442 行代码）",
+          "line_range": "L69-L1253",
+          "lines": 1185,
+          "block_type": "module",
+          "functions": [
+            "M.Init(cfg)",
+            "M.Update(dt)",
+            "M.SetSelectedPlanet(p)",
+            "M.RenderSignal()",
+            "M.RenderMarket()",
+            "M.RenderDiploRel()",
+            "M.RenderBlackMarket()",
+            "M.RenderExchange(base,",
+            "M.RenderShipyard(planet)"
+          ],
+          "start_line": 69,
+          "end_line": 1253
+        }
+      ],
+      "strategy": "检测到原文件 1394 行，超过阈值 600 行。\n建议拆分为 3 个文件（1 个主文件 + 2 个子模块），总计 1287 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/ui/PlanetPanel.lua",
+      "original_name": "PlanetPanel.lua",
+      "original_lines": 1227,
+      "sub_files": [
+        {
+          "filename": "PlanetPanel_planet_panel.lua",
+          "purpose": "PlanetPanel 相关函数（5 个函数，约 48 行代码）",
+          "line_range": "L21-L150",
+          "lines": 130,
+          "block_type": "module",
+          "functions": [
+            "PlanetPanel.Update(dt)",
+            "PlanetPanel.TriggerHighlight(planetId,",
+            "PlanetPanel.TriggerGlow(planetId,",
+            "PlanetPanel.ResetScroll()",
+            "PlanetPanel.Render(planet,"
+          ],
+          "start_line": 21,
+          "end_line": 150
+        },
+        {
+          "filename": "PlanetPanel_general.lua",
+          "purpose": "general 相关函数（7 个函数，约 31 行代码）",
+          "line_range": "L32-L911",
+          "lines": 880,
+          "block_type": "module",
+          "functions": [
+            "triggerPress(key)",
+            "triggerShake(key)",
+            "getPressScale(key)",
+            "getShakeOffset(key)",
+            "getHighlightAlpha(planetId,",
+            "getGlowParams(planetId,",
+            "vy2sy(vy)"
+          ],
+          "start_line": 32,
+          "end_line": 911
+        }
+      ],
+      "strategy": "检测到原文件 1227 行，超过阈值 600 行。\n建议拆分为 3 个文件（1 个主文件 + 2 个子模块），总计 1060 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/network/ClientBattle.lua",
+      "original_name": "ClientBattle.lua",
+      "original_lines": 1205,
+      "sub_files": [
+        {
+          "filename": "ClientBattle_explorer_task_templates.lua",
+          "purpose": "数据表模块（EXPLORER_TASK_TEMPLATES 定义）",
+          "line_range": "L25-L86",
+          "lines": 62,
+          "block_type": "data",
+          "start_line": 25,
+          "end_line": 86
+        },
+        {
+          "filename": "ClientBattle_m.lua",
+          "purpose": "M 相关函数（21 个函数，约 115 行代码）",
+          "line_range": "L208-L1049",
+          "lines": 842,
+          "block_type": "module",
+          "functions": [
+            "M.Init(state)",
+            "M.DrawEndlessCards(count)",
+            "M.ApplyEndlessCard(cardKey)",
+            "M.DdaApply()",
+            "M.DdaEvaluateBattle(isWin,",
+            "M.DdaPeriodicCheck()",
+            "M.StartExplorerTask()",
+            "M.UpdateExplorerTasks(dt)",
+            "M.DoStartEndlessRound()",
+            "M.StartEndlessNextRound()",
+            "M.CheckVictory()",
+            "M.CheckDefeat()",
+            "M.SwitchScene(name)",
+            "M.GetPlayerTargets()",
+            "M.OnPirateAttack(pirateLevel,",
+            "M.CalcFleetPower(fleetId)",
+            "M.CalcBaseThreat(baseLevel)",
+            "M.LaunchExpedition(fleetId,",
+            "M.SettleExpedition(exp)",
+            "M.OnFleetSiegeBase(fleetId,",
+            "M.TriggerEndGame(gameType)"
+          ],
+          "start_line": 208,
+          "end_line": 1049
+        }
+      ],
+      "strategy": "检测到原文件 1205 行，超过阈值 600 行。\n建议拆分为 3 个文件（1 个主文件 + 2 个子模块），总计 954 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/network/ClientSetup.lua",
+      "original_name": "ClientSetup.lua",
+      "original_lines": 1138,
+      "sub_files": [
+        {
+          "filename": "ClientSetup_battle_state_.lua",
+          "purpose": "数据表模块（battleState_ 定义）",
+          "line_range": "L102-L159",
+          "lines": 58,
+          "block_type": "data",
+          "start_line": 102,
+          "end_line": 159
+        }
+      ],
+      "strategy": "检测到原文件 1138 行，超过阈值 600 行。\n建议拆分为 2 个文件（1 个主文件 + 1 个子模块），总计 108 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/network/ClientMenus.lua",
+      "original_name": "ClientMenus.lua",
+      "original_lines": 1000,
+      "sub_files": [
+        {
+          "filename": "ClientMenus_client_menus.lua",
+          "purpose": "ClientMenus 相关函数（13 个函数，约 204 行代码）",
+          "line_range": "L102-L786",
+          "lines": 685,
+          "block_type": "module",
+          "functions": [
+            "ClientMenus.GetMainMenuBtnLayout(sw,",
+            "ClientMenus.GetMainMenuHit(mx,",
+            "ClientMenus.RenderMainMenu(vg,",
+            "ClientMenus.GetDifficultyBtnLayout(sw,",
+            "ClientMenus.GetCustomPanelVisible(ctx)",
+            "ClientMenus.GetCustomPanelLayout(sw,",
+            "ClientMenus.GetCustomSliderRects(sw,",
+            "ClientMenus.GetEndlessBtnLayout(sw,",
+            "ClientMenus.GetNicknameInputLayout(sw,",
+            "ClientMenus.GetDifficultyHit(mx,",
+            "ClientMenus.RenderDifficultyScreen(vg,",
+            "ClientMenus.GetHeritagePanelHit(mx,",
+            "ClientMenus.RenderHeritagePanel(vg,"
+          ],
+          "start_line": 102,
+          "end_line": 786
+        }
+      ],
+      "strategy": "检测到原文件 1000 行，超过阈值 600 行。\n建议拆分为 2 个文件（1 个主文件 + 1 个子模块），总计 735 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/battle/RenderOverlays.lua",
+      "original_name": "RenderOverlays.lua",
+      "original_lines": 974,
+      "sub_files": [
+        {
+          "filename": "RenderOverlays_general.lua",
+          "purpose": "general 相关函数（11 个函数，约 186 行代码）",
+          "line_range": "L9-L667",
+          "lines": 659,
+          "block_type": "module",
+          "functions": [
+            "drawBossDestroyedEffect()",
+            "drawFireworks()",
+            "drawMilestoneBanner()",
+            "drawBossWarning()",
+            "drawPincerBanner()",
+            "drawNemesisOverlay()",
+            "drawAnomalyBanner()",
+            "drawAnomalyHUD()",
+            "drawReinforcementWarning()",
+            "drawWaveSummary()",
+            "drawStateOverlay()"
+          ],
+          "start_line": 9,
+          "end_line": 667
+        }
+      ],
+      "strategy": "检测到原文件 974 行，超过阈值 600 行。\n建议拆分为 2 个文件（1 个主文件 + 1 个子模块），总计 709 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/galaxy/RenderStarmap.lua",
+      "original_name": "RenderStarmap.lua",
+      "original_lines": 948,
+      "sub_files": [
+        {
+          "filename": "RenderStarmap_m.lua",
+          "purpose": "M 相关函数（8 个函数，约 126 行代码）",
+          "line_range": "L30-L928",
+          "lines": 899,
+          "block_type": "module",
+          "functions": [
+            "M.drawBackground()",
+            "M.drawStarSystem(sys)",
+            "M.drawDiploRelLines()",
+            "M.drawTradeRoutes()",
+            "M.drawExpeditionPaths()",
+            "M.drawDeepSpaceSystem(sys,",
+            "M.drawPirateThreatHeatmap()",
+            "M.drawColonyRipples()"
+          ],
+          "start_line": 30,
+          "end_line": 928
+        }
+      ],
+      "strategy": "检测到原文件 948 行，超过阈值 600 行。\n建议拆分为 2 个文件（1 个主文件 + 1 个子模块），总计 949 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/ui/TechPanel.lua",
+      "original_name": "TechPanel.lua",
+      "original_lines": 856,
+      "sub_files": [
+        {
+          "filename": "TechPanel_general.lua",
+          "purpose": "general 相关函数（4 个函数，约 42 行代码）",
+          "line_range": "L82-L193",
+          "lines": 112,
+          "block_type": "module",
+          "functions": [
+            "getDownstream(id)",
+            "getExclusivePeers(id)",
+            "computeRecommendedPath(rs)",
+            "drawConnection(vg,"
+          ],
+          "start_line": 82,
+          "end_line": 193
+        }
+      ],
+      "strategy": "检测到原文件 856 行，超过阈值 600 行。\n建议拆分为 2 个文件（1 个主文件 + 1 个子模块），总计 162 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/AchievementSystem.lua",
+      "original_name": "AchievementSystem.lua",
+      "original_lines": 814,
+      "sub_files": [
+        {
+          "filename": "AchievementSystem_achievements.lua",
+          "purpose": "数据表模块（ACHIEVEMENTS 定义）",
+          "line_range": "L11-L512",
+          "lines": 502,
+          "block_type": "data",
+          "start_line": 11,
+          "end_line": 512
+        },
+        {
+          "filename": "AchievementSystem_achievement_rewards.lua",
+          "purpose": "数据表模块（ACHIEVEMENT_REWARDS 定义）",
+          "line_range": "L517-L591",
+          "lines": 75,
+          "block_type": "data",
+          "start_line": 517,
+          "end_line": 591
+        },
+        {
+          "filename": "AchievementSystem_achievement_system.lua",
+          "purpose": "AchievementSystem 相关函数（15 个函数，约 91 行代码）",
+          "line_range": "L607-L809",
+          "lines": 203,
+          "block_type": "module",
+          "functions": [
+            "AchievementSystem.Init(opts)",
+            "AchievementSystem.Check(eventName,",
+            "AchievementSystem.Update(dt)",
+            "AchievementSystem.GetUnlocked()",
+            "AchievementSystem.SetUnlocked(list)",
+            "AchievementSystem.GetTotal()",
+            "AchievementSystem.Redeem(id)",
+            "AchievementSystem.GetRedeemed()",
+            "AchievementSystem.SetRedeemed(list)",
+            "AchievementSystem.GetRedeemableCount()",
+            "AchievementSystem.GetActiveRewards()",
+            "AchievementSystem.GetReward(id)",
+            "AchievementSystem.IsRedeemed(id)",
+            "AchievementSystem.GetAll()",
+            "AchievementSystem.GetHiddenProgress()"
+          ],
+          "start_line": 607,
+          "end_line": 809
+        }
+      ],
+      "strategy": "检测到原文件 814 行，超过阈值 600 行。\n建议拆分为 4 个文件（1 个主文件 + 3 个子模块），总计 830 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/PirateAI.lua",
+      "original_name": "PirateAI.lua",
+      "original_lines": 731,
+      "sub_files": [
+        {
+          "filename": "PirateAI_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "line_range": "L12-L29",
+          "lines": 18,
+          "block_type": "config",
+          "start_line": 12,
+          "end_line": 29
+        },
+        {
+          "filename": "PirateAI_general.lua",
+          "purpose": "general 相关函数（13 个函数，约 125 行代码）",
+          "line_range": "L63-L720",
+          "lines": 658,
+          "block_type": "module",
+          "functions": [
+            "PirateAI:generateBases(worldRange,",
+            "PirateAI:generateFixedBases(defs)",
+            "PirateAI:update(dt)",
+            "PirateAI:evaluateThreat()",
+            "PirateAI:launchAttack(base)",
+            "PirateAI:weakenBase(baseId)",
+            "PirateAI:strengthenBase(baseId)",
+            "PirateAI:RevealMostThreateningBase(duration)",
+            "PirateAI:GetActiveIntel()",
+            "PirateAI:render(vg,",
+            "PirateAI:renderMinimap(vg,",
+            "PirateAI:serialize()",
+            "PirateAI:deserialize(data)"
+          ],
+          "start_line": 63,
+          "end_line": 720
+        }
+      ],
+      "strategy": "检测到原文件 731 行，超过阈值 600 行。\n建议拆分为 3 个文件（1 个主文件 + 2 个子模块），总计 726 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/galaxy/RenderHUD.lua",
+      "original_name": "RenderHUD.lua",
+      "original_lines": 712,
+      "sub_files": [
+        {
+          "filename": "RenderHUD_m.lua",
+          "purpose": "M 相关函数（11 个函数，约 315 行代码）",
+          "line_range": "L56-L709",
+          "lines": 654,
+          "block_type": "module",
+          "functions": [
+            "M.drawTooltip(planet)",
+            "M.drawAsteroidTooltip(a)",
+            "M.drawPirateWarningHUD()",
+            "M.drawAnomalyIndicator()",
+            "M.drawWeatherHUD()",
+            "M.drawSeedLabel()",
+            "M.drawMinimap()",
+            "M.drawPirateThreatHeatmap()",
+            "M.drawColonyRipples()",
+            "M.drawSignalButton()",
+            "M.drawSignalBanners()"
+          ],
+          "start_line": 56,
+          "end_line": 709
+        }
+      ],
+      "strategy": "检测到原文件 712 行，超过阈值 600 行。\n建议拆分为 2 个文件（1 个主文件 + 1 个子模块），总计 704 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/systems/DiplomacySystem.lua",
+      "original_name": "DiplomacySystem.lua",
+      "original_lines": 698,
+      "sub_files": [
+        {
+          "filename": "DiplomacySystem_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "line_range": "L20-L48",
+          "lines": 29,
+          "block_type": "config",
+          "start_line": 20,
+          "end_line": 48
+        },
+        {
+          "filename": "DiplomacySystem_general.lua",
+          "purpose": "general 相关函数（24 个函数，约 141 行代码）",
+          "line_range": "L71-L661",
+          "lines": 591,
+          "block_type": "module",
+          "functions": [
+            "DiplomacySystem:initFactions(allPlanets,",
+            "DiplomacySystem:initTriangleRelations()",
+            "DiplomacySystem:getRelation(fk1,",
+            "DiplomacySystem:getAllRelations()",
+            "DiplomacySystem:getCompetitor(factionKey)",
+            "DiplomacySystem:applyTrianglePenalty(factionKey,",
+            "DiplomacySystem:activateIntel(factionKey)",
+            "DiplomacySystem:activateAlliance(factionKey)",
+            "DiplomacySystem:activateBlockade(factionKey,",
+            "DiplomacySystem:activateMediation(fk1,",
+            "DiplomacySystem:isBlockaded(factionKey)",
+            "DiplomacySystem:hasAlliance(factionKey)",
+            "DiplomacySystem:hasIntel(factionKey)",
+            "DiplomacySystem:getAgreements()",
+            "DiplomacySystem:getState(planetId)",
+            "DiplomacySystem:sendGift(planetId,",
+            "DiplomacySystem:tick(dt,",
+            "DiplomacySystem:_generateDiploEvent(rm,",
+            "DiplomacySystem:hasMilitary(planetId)",
+            "DiplomacySystem:countLongTrades()",
+            "DiplomacySystem:activateLongTrade(planetId,",
+            "DiplomacySystem:getLongTradeList()",
+            "DiplomacySystem:serialize()",
+            "DiplomacySystem:deserialize(data,"
+          ],
+          "start_line": 71,
+          "end_line": 661
+        }
+      ],
+      "strategy": "检测到原文件 698 行，超过阈值 600 行。\n建议拆分为 3 个文件（1 个主文件 + 2 个子模块），总计 670 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/battle/RenderHUD.lua",
+      "original_name": "RenderHUD.lua",
+      "original_lines": 666,
+      "sub_files": [
+        {
+          "filename": "RenderHUD_general.lua",
+          "purpose": "general 相关函数（9 个函数，约 174 行代码）",
+          "line_range": "L12-L643",
+          "lines": 632,
+          "block_type": "module",
+          "functions": [
+            "drawWaveHUD()",
+            "drawComboHUD()",
+            "drawShipInfoPanel()",
+            "statLine(label,",
+            "drawFocusRing()",
+            "drawFocusHUD()",
+            "drawFormationBar()",
+            "drawRetreatReinforce()",
+            "drawSkillUpgrade()"
+          ],
+          "start_line": 12,
+          "end_line": 643
+        }
+      ],
+      "strategy": "检测到原文件 666 行，超过阈值 600 行。\n建议拆分为 2 个文件（1 个主文件 + 1 个子模块），总计 682 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/ui/ReplayPlayer.lua",
+      "original_name": "ReplayPlayer.lua",
+      "original_lines": 665,
+      "sub_files": [
+        {
+          "filename": "ReplayPlayer_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "line_range": "L11-L41",
+          "lines": 31,
+          "block_type": "config",
+          "start_line": 11,
+          "end_line": 41
+        },
+        {
+          "filename": "ReplayPlayer_general.lua",
+          "purpose": "general 相关函数（11 个函数，约 139 行代码）",
+          "line_range": "L46-L524",
+          "lines": 479,
+          "block_type": "module",
+          "functions": [
+            "easeOutCubic(t)",
+            "easeOutBack(t)",
+            "lerp(a,",
+            "formatTime(seconds)",
+            "renderBattleMap(vg,",
+            "worldToMap(wx,",
+            "renderTimeline(vg,",
+            "renderEventPopups(vg,",
+            "renderMVPBanner(vg,",
+            "renderHighlightList(vg,",
+            "renderReplayPlayer()"
+          ],
+          "start_line": 46,
+          "end_line": 524
+        },
+        {
+          "filename": "ReplayPlayer_replay_player.lua",
+          "purpose": "ReplayPlayer 相关函数（6 个函数，约 20 行代码）",
+          "line_range": "L561-L663",
+          "lines": 103,
+          "block_type": "module",
+          "functions": [
+            "ReplayPlayer.Update(dt)",
+            "ReplayPlayer.Render()",
+            "ReplayPlayer.Show()",
+            "ReplayPlayer.Hide()",
+            "ReplayPlayer.IsActive()",
+            "ReplayPlayer.SetOnClose(fn)"
+          ],
+          "start_line": 561,
+          "end_line": 663
+        }
+      ],
+      "strategy": "检测到原文件 665 行，超过阈值 600 行。\n建议拆分为 4 个文件（1 个主文件 + 3 个子模块），总计 663 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/ui/TutorialSystem.lua",
+      "original_name": "TutorialSystem.lua",
+      "original_lines": 655,
+      "sub_files": [
+        {
+          "filename": "TutorialSystem_phases.lua",
+          "purpose": "数据表模块（PHASES 定义）",
+          "line_range": "L26-L147",
+          "lines": 122,
+          "block_type": "data",
+          "start_line": 26,
+          "end_line": 147
+        },
+        {
+          "filename": "TutorialSystem_tutorial_system.lua",
+          "purpose": "TutorialSystem 相关函数（15 个函数，约 76 行代码）",
+          "line_range": "L175-L653",
+          "lines": 479,
+          "block_type": "module",
+          "functions": [
+            "TutorialSystem.SetEnabled(flag)",
+            "TutorialSystem.IsEnabled()",
+            "TutorialSystem.Reset()",
+            "TutorialSystem.TriggerPhase(phaseName)",
+            "TutorialSystem.TriggerStart()",
+            "TutorialSystem.TriggerDeployed()",
+            "TutorialSystem.Skip()",
+            "TutorialSystem.IsActive()",
+            "TutorialSystem.Update(dt)",
+            "TutorialSystem._ShowNext()",
+            "TutorialSystem._OnConfirm()",
+            "TutorialSystem.Render()",
+            "TutorialSystem.Serialize()",
+            "TutorialSystem.Deserialize(data)",
+            "TutorialSystem.IsDone()"
+          ],
+          "start_line": 175,
+          "end_line": 653
+        }
+      ],
+      "strategy": "检测到原文件 655 行，超过阈值 600 行。\n建议拆分为 3 个文件（1 个主文件 + 2 个子模块），总计 651 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/ui/TopBar.lua",
+      "original_name": "TopBar.lua",
+      "original_lines": 636,
+      "sub_files": [
+        {
+          "filename": "TopBar_part2.lua",
+          "purpose": "第 2 部分（通用分段，建议手动分析后改为有意义的命名）",
+          "line_range": "L601-L636",
+          "lines": 36,
+          "block_type": "chunk",
+          "start_line": 601,
+          "end_line": 636
+        }
+      ],
+      "strategy": "检测到原文件 636 行，超过阈值 600 行。\n建议拆分为 2 个文件（1 个主文件 + 1 个子模块），总计 86 行左右代码。"
+    },
+    {
+      "original_file": "/workspace/scripts/game/ui/SettingsPanel.lua",
+      "original_name": "SettingsPanel.lua",
+      "original_lines": 628,
+      "sub_files": [
+        {
+          "filename": "SettingsPanel_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "line_range": "L12-L43",
+          "lines": 32,
+          "block_type": "config",
+          "start_line": 12,
+          "end_line": 43
+        },
+        {
+          "filename": "SettingsPanel_settings_panel.lua",
+          "purpose": "SettingsPanel 相关函数（20 个函数，约 68 行代码）",
+          "line_range": "L453-L624",
+          "lines": 172,
+          "block_type": "module",
+          "functions": [
+            "SettingsPanel.SetAudio(audioModule)",
+            "SettingsPanel.Load()",
+            "SettingsPanel.Show()",
+            "SettingsPanel.Hide()",
+            "SettingsPanel.IsVisible()",
+            "SettingsPanel.Toggle()",
+            "SettingsPanel.Render()",
+            "SettingsPanel.GetSliderRects()",
+            "SettingsPanel.GetVolumes()",
+            "SettingsPanel.GetQualityLevel()",
+            "SettingsPanel.GetColorblindMode()",
+            "SettingsPanel.IsFPSVisible()",
+            "SettingsPanel.GetAutoPause()",
+            "SettingsPanel.UpdateFPS(dt)",
+            "SettingsPanel.RenderFPS()",
+            "SettingsPanel.TransformColor(r,",
+            "SettingsPanel.GetQualityScale()",
+            "SettingsPanel.OnTouchBegin(id,",
+            "SettingsPanel.OnTouchMove(id,",
+            "SettingsPanel.OnTouchEnd(id)"
+          ],
+          "start_line": 453,
+          "end_line": 624
+        }
+      ],
+      "strategy": "检测到原文件 628 行，超过阈值 600 行。\n建议拆分为 3 个文件（1 个主文件 + 2 个子模块），总计 254 行左右代码。"
+    }
+  ],
+  "split_executed": [
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/network/Client.lua",
+        "original_name": "Client.lua",
+        "original_lines": 2428,
+        "sub_files": [
+          {
+            "filename": "Client_evolution_tree.lua",
+            "purpose": "数据表模块（EVOLUTION_TREE 定义）",
+            "line_range": "L179-L231",
+            "lines": 53,
+            "block_type": "data",
+            "start_line": 179,
+            "end_line": 231
+          },
+          {
+            "filename": "Client_scalars.lua",
+            "purpose": "数据表模块（scalars 定义）",
+            "line_range": "L1811-L1840",
+            "lines": 30,
+            "block_type": "data",
+            "start_line": 1811,
+            "end_line": 1840
+          },
+          {
+            "filename": "Client_general.lua",
+            "purpose": "general 相关函数（42 个函数，约 389 行代码）",
+            "line_range": "L63-L1965",
+            "lines": 1903,
+            "block_type": "module",
+            "functions": [
+              "getAdCount()",
+              "getRemainingTime()",
+              "buildEvolutionBonus()",
+              "getEvolutionUnlockedCount()",
+              "getTodayStr()",
+              "getDailyCountdown()",
+              "generateDailyChallenge(dateStr)",
+              "lcgRand(s)",
+              "getDpr()",
+              "getScreenSize()",
+              "markBaseEffectsDirty()",
+              "applyBaseModuleEffects()",
+              "handleLevelUp(leveled,",
+              "buildSaveData()",
+              "restoreGame(jsonStr)",
+              "menuCtx()",
+              "getCustomPanelVisible()",
+              "getCustomPanelLayout(sw,",
+              "getCustomSliderRects(sw,",
+              "getEndlessBtnLayout(sw,",
+              "getDifficultyHit(mx,",
+              "getMainMenuHit(mx,",
+              "renderMainMenu(sw,",
+              "renderDifficultyScreen(sw,",
+              "onLeagueModeSelect()",
+              "onMainMenuSelect(key)",
+              "onDifficultySelect(key)",
+              "onEndlessModeSelect()",
+              "renderStatsPanel(sw,",
+              "handleNanoVGRender(eventType,",
+              "showRewardAd(callback)",
+              "onWatchAdClicked()",
+              "handleCrisisChoice_(choiceIdx)",
+              "handleUpdate(eventType,",
+              "handleMouseButtonDown(eventType,",
+              "handleMouseButtonUp(eventType,",
+              "handleMouseMove(eventType,",
+              "handleMouseWheel(eventType,",
+              "handleKeyDown(eventType,",
+              "handleKeyUp(eventType,",
+              "buildSetupHost()",
+              "buildInputHost()"
+            ],
+            "start_line": 63,
+            "end_line": 1965
+          },
+          {
+            "filename": "Client_core.lua",
+            "purpose": "Client 相关函数（4 个函数，约 34 行代码）",
+            "line_range": "L2210-L2426",
+            "lines": 217,
+            "block_type": "module",
+            "functions": [
+              "Client.Start()",
+              "Client.Stop()",
+              "Client.GetCareerStats()",
+              "Client.GetPlayerName()"
+            ],
+            "start_line": 2210,
+            "end_line": 2426
+          }
+        ],
+        "strategy": "检测到原文件 2428 行，超过阈值 600 行。\n建议拆分为 5 个文件（1 个主文件 + 4 个子模块），总计 2253 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/network/Client.lua",
+          "target": "/workspace/scripts/network/Client.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/network/Client_evolution_tree.lua",
+          "filename": "Client_evolution_tree.lua",
+          "purpose": "数据表模块（EVOLUTION_TREE 定义）",
+          "source_lines": "L179-L231",
+          "lines": 53
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/network/Client_scalars.lua",
+          "filename": "Client_scalars.lua",
+          "purpose": "数据表模块（scalars 定义）",
+          "source_lines": "L1811-L1840",
+          "lines": 30
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/network/Client_general.lua",
+          "filename": "Client_general.lua",
+          "purpose": "general 相关函数（42 个函数，约 389 行代码）",
+          "source_lines": "L63-L1965",
+          "lines": 1903
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/network/Client_core.lua",
+          "filename": "Client_core.lua",
+          "purpose": "Client 相关函数（4 个函数，约 34 行代码）",
+          "source_lines": "L2210-L2426",
+          "lines": 217
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/network/Client.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/GalaxyScene.lua",
+        "original_name": "GalaxyScene.lua",
+        "original_lines": 2251,
+        "sub_files": [
+          {
+            "filename": "GalaxyScene_config.lua",
+            "purpose": "配置常量（从原文件拆分独立模块）",
+            "line_range": "L17-L166",
+            "lines": 150,
+            "block_type": "config",
+            "start_line": 17,
+            "end_line": 166
+          },
+          {
+            "filename": "GalaxyScene_galaxy_scene.lua",
+            "purpose": "GalaxyScene 相关函数（44 个函数，约 247 行代码）",
+            "line_range": "L632-L2243",
+            "lines": 1612,
+            "block_type": "module",
+            "functions": [
+              "GalaxyScene.Colonize(planet)",
+              "GalaxyScene.Init(opts)",
+              "GalaxyScene.GetAllPlanets()",
+              "GalaxyScene.GetColonizedPlanets()",
+              "GalaxyScene.GetSelected()",
+              "GalaxyScene.SelectPlanet(planet)",
+              "GalaxyScene.GetMapVariant()",
+              "GalaxyScene.GetSeed()",
+              "GalaxyScene.GetGalaxyShape()",
+              "GalaxyScene.GetSpecialPlanets()",
+              "GalaxyScene.TogglePriority(planet)",
+              "GalaxyScene.IsPriority(planet)",
+              "GalaxyScene.GetPriorityPlanetCount()",
+              "GalaxyScene.WarpFleetToPlanet(targetPlanet)",
+              "GalaxyScene.Update(dt)",
+              "GalaxyScene.Render()",
+              "GalaxyScene.OnMouseDown(mx,",
+              "GalaxyScene.OnMouseMove(mx,",
+              "GalaxyScene.OnMouseUp(mx,",
+              "GalaxyScene.OnMouseWheel(mx,",
+              "GalaxyScene.OnTouchBegin(id,",
+              "GalaxyScene.OnTouchMove(id,",
+              "GalaxyScene.OnTouchEnd(id,",
+              "GalaxyScene.OnKeyDown(key)",
+              "GalaxyScene.OnKeyUp(key)",
+              "GalaxyScene.IsDeployed()",
+              "GalaxyScene.GetSeedState()",
+              "GalaxyScene.GetBase()",
+              "GalaxyScene.SelectFleet(fleetId)",
+              "GalaxyScene.GetSelectedFleetId()",
+              "GalaxyScene.InvalidateFleetColor(fleetId)",
+              "GalaxyScene.GetSaveData()",
+              "GalaxyScene.LoadSaveData(data,",
+              "GalaxyScene.ShowSignalBanner(senderName,",
+              "GalaxyScene.GarrisonFleet(fleetId,",
+              "GalaxyScene.RecallGarrison(fleetId)",
+              "GalaxyScene.GetGarrisonedPlanet(fleetId)",
+              "GalaxyScene.GetGarrisonFleetId(planet)",
+              "GalaxyScene.GetAllGarrisons()",
+              "GalaxyScene.ClearGarrisons()",
+              "GalaxyScene.SetExpeditions(exps)",
+              "GalaxyScene.SetDiploRelations(rels,",
+              "GalaxyScene.GetFleetSpeed(fleetId)",
+              "GalaxyScene.Shutdown()"
+            ],
+            "start_line": 632,
+            "end_line": 2243
+          },
+          {
+            "filename": "GalaxyScene_general.lua",
+            "purpose": "general 相关函数（25 个函数，约 230 行代码）",
+            "line_range": "L168-L1710",
+            "lines": 1543,
+            "block_type": "module",
+            "functions": [
+              "dist2(x1,y1,x2,y2)",
+              "randItem(t)",
+              "nvgColor(c,",
+              "w2s(wx,",
+              "s2w(sx,",
+              "generateBgStars()",
+              "generateFixedStarSystems(fixedDefs)",
+              "generateStarSystems()",
+              "generateAsteroids()",
+              "countEngineersInFleet(fleetId)",
+              "fleetHasExplorer(fleetId)",
+              "findNearbyUncolonizedPlanet(wx,",
+              "updatePlanets(dt)",
+              "updateHover()",
+              "tryClickAsteroid(mx,",
+              "handleClick(mx,",
+              "getFleetSpeed(fleetId)",
+              "updateFleets(dt)",
+              "invalidateFleetColor(fleetId)",
+              "getFleetColor(fleetId)",
+              "updateSeedShip(dt)",
+              "minimapRect()",
+              "teleportToMinimap(px,",
+              "touchCount()",
+              "pinchInfo()"
+            ],
+            "start_line": 168,
+            "end_line": 1710
+          }
+        ],
+        "strategy": "检测到原文件 2251 行，超过阈值 600 行。\n建议拆分为 4 个文件（1 个主文件 + 3 个子模块），总计 3355 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/GalaxyScene.lua",
+          "target": "/workspace/scripts/game/GalaxyScene.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/GalaxyScene_config.lua",
+          "filename": "GalaxyScene_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "source_lines": "L17-L166",
+          "lines": 150
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/GalaxyScene_galaxy_scene.lua",
+          "filename": "GalaxyScene_galaxy_scene.lua",
+          "purpose": "GalaxyScene 相关函数（44 个函数，约 247 行代码）",
+          "source_lines": "L632-L2243",
+          "lines": 1612
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/GalaxyScene_general.lua",
+          "filename": "GalaxyScene_general.lua",
+          "purpose": "general 相关函数（25 个函数，约 230 行代码）",
+          "source_lines": "L168-L1710",
+          "lines": 1543
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/GalaxyScene.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/ui/FleetPanel.lua",
+        "original_name": "FleetPanel.lua",
+        "original_lines": 1690,
+        "sub_files": [
+          {
+            "filename": "FleetPanel_config.lua",
+            "purpose": "配置常量（从原文件拆分独立模块）",
+            "line_range": "L7-L56",
+            "lines": 50,
+            "block_type": "config",
+            "start_line": 7,
+            "end_line": 56
+          },
+          {
+            "filename": "FleetPanel_fleet_panel.lua",
+            "purpose": "FleetPanel 相关函数（6 个函数，约 136 行代码）",
+            "line_range": "L101-L1589",
+            "lines": 1489,
+            "block_type": "module",
+            "functions": [
+              "FleetPanel.OnTextInput(text)",
+              "FleetPanel.OnBackspace()",
+              "FleetPanel.OnEnter()",
+              "FleetPanel.IsNaming()",
+              "FleetPanel.Render(ctx)",
+              "FleetPanel.RenderNamingModal()"
+            ],
+            "start_line": 101,
+            "end_line": 1589
+          },
+          {
+            "filename": "FleetPanel_general.lua",
+            "purpose": "general 相关函数（5 个函数，约 18 行代码）",
+            "line_range": "L69-L316",
+            "lines": 248,
+            "block_type": "module",
+            "functions": [
+              "randomFleetName()",
+              "openNaming(fleetId)",
+              "closeNaming()",
+              "confirmNaming()",
+              "addRow(icon,"
+            ],
+            "start_line": 69,
+            "end_line": 316
+          }
+        ],
+        "strategy": "检测到原文件 1690 行，超过阈值 600 行。\n建议拆分为 4 个文件（1 个主文件 + 3 个子模块），总计 1837 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/ui/FleetPanel.lua",
+          "target": "/workspace/scripts/game/ui/FleetPanel.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/FleetPanel_config.lua",
+          "filename": "FleetPanel_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "source_lines": "L7-L56",
+          "lines": 50
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/FleetPanel_fleet_panel.lua",
+          "filename": "FleetPanel_fleet_panel.lua",
+          "purpose": "FleetPanel 相关函数（6 个函数，约 136 行代码）",
+          "source_lines": "L101-L1589",
+          "lines": 1489
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/FleetPanel_general.lua",
+          "filename": "FleetPanel_general.lua",
+          "purpose": "general 相关函数（5 个函数，约 18 行代码）",
+          "source_lines": "L69-L316",
+          "lines": 248
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/ui/FleetPanel.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/BattleScene.lua",
+        "original_name": "BattleScene.lua",
+        "original_lines": 1626,
+        "sub_files": [
+          {
+            "filename": "BattleScene_config.lua",
+            "purpose": "配置常量（从原文件拆分独立模块）",
+            "line_range": "L11-L401",
+            "lines": 391,
+            "block_type": "config",
+            "start_line": 11,
+            "end_line": 401
+          },
+          {
+            "filename": "BattleScene_battle_environments.lua",
+            "purpose": "数据表模块（BATTLE_ENVIRONMENTS 定义）",
+            "line_range": "L206-L258",
+            "lines": 53,
+            "block_type": "data",
+            "start_line": 206,
+            "end_line": 258
+          },
+          {
+            "filename": "BattleScene_formation_config.lua",
+            "purpose": "数据表模块（FORMATION_CONFIG 定义）",
+            "line_range": "L301-L385",
+            "lines": 85,
+            "block_type": "data",
+            "start_line": 301,
+            "end_line": 385
+          },
+          {
+            "filename": "BattleScene_ship.lua",
+            "purpose": "数据表模块（ship 定义）",
+            "line_range": "L460-L503",
+            "lines": 44,
+            "block_type": "data",
+            "start_line": 460,
+            "end_line": 503
+          },
+          {
+            "filename": "BattleScene_battle_scene.lua",
+            "purpose": "BattleScene 相关函数（7 个函数，约 216 行代码）",
+            "line_range": "L589-L1481",
+            "lines": 893,
+            "block_type": "module",
+            "functions": [
+              "BattleScene.Init(opts)",
+              "BattleScene.Reset()",
+              "BattleScene.AddProductionShip(shipType)",
+              "BattleScene.StartNextWave()",
+              "BattleScene.Update(dt)",
+              "BattleScene.Render()",
+              "BattleScene.GetState()"
+            ],
+            "start_line": 589,
+            "end_line": 1481
+          },
+          {
+            "filename": "BattleScene_general.lua",
+            "purpose": "general 相关函数（11 个函数，约 209 行代码）",
+            "line_range": "L402-L1602",
+            "lines": 1201,
+            "block_type": "module",
+            "functions": [
+              "getComboLevel()",
+              "logBattleEvent(text)",
+              "makeShip(stype,",
+              "syncAIVars()",
+              "syncAIVarsBack()",
+              "syncAIRefs()",
+              "selectEnv()",
+              "pushToCtx()",
+              "pullFromCtx()",
+              "inBtn(b)",
+              "inBtn(b)"
+            ],
+            "start_line": 402,
+            "end_line": 1602
+          }
+        ],
+        "strategy": "检测到原文件 1626 行，超过阈值 600 行。\n建议拆分为 7 个文件（1 个主文件 + 6 个子模块），总计 2717 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/BattleScene.lua",
+          "target": "/workspace/scripts/game/BattleScene.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/BattleScene_config.lua",
+          "filename": "BattleScene_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "source_lines": "L11-L401",
+          "lines": 391
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/BattleScene_battle_environments.lua",
+          "filename": "BattleScene_battle_environments.lua",
+          "purpose": "数据表模块（BATTLE_ENVIRONMENTS 定义）",
+          "source_lines": "L206-L258",
+          "lines": 53
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/BattleScene_formation_config.lua",
+          "filename": "BattleScene_formation_config.lua",
+          "purpose": "数据表模块（FORMATION_CONFIG 定义）",
+          "source_lines": "L301-L385",
+          "lines": 85
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/BattleScene_ship.lua",
+          "filename": "BattleScene_ship.lua",
+          "purpose": "数据表模块（ship 定义）",
+          "source_lines": "L460-L503",
+          "lines": 44
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/BattleScene_battle_scene.lua",
+          "filename": "BattleScene_battle_scene.lua",
+          "purpose": "BattleScene 相关函数（7 个函数，约 216 行代码）",
+          "source_lines": "L589-L1481",
+          "lines": 893
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/BattleScene_general.lua",
+          "filename": "BattleScene_general.lua",
+          "purpose": "general 相关函数（11 个函数，约 209 行代码）",
+          "source_lines": "L402-L1602",
+          "lines": 1201
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/BattleScene.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/GalaxyEvents.lua",
+        "original_name": "GalaxyEvents.lua",
+        "original_lines": 1504,
+        "sub_files": [
+          {
+            "filename": "GalaxyEvents_event_types.lua",
+            "purpose": "数据表模块（EVENT_TYPES 定义）",
+            "line_range": "L25-L457",
+            "lines": 433,
+            "block_type": "data",
+            "start_line": 25,
+            "end_line": 457
+          },
+          {
+            "filename": "GalaxyEvents_disaster_types.lua",
+            "purpose": "数据表模块（DISASTER_TYPES 定义）",
+            "line_range": "L942-L1013",
+            "lines": 72,
+            "block_type": "data",
+            "start_line": 942,
+            "end_line": 1013
+          },
+          {
+            "filename": "GalaxyEvents_endgame_crisis_types.lua",
+            "purpose": "数据表模块（ENDGAME_CRISIS_TYPES 定义）",
+            "line_range": "L1115-L1285",
+            "lines": 171,
+            "block_type": "data",
+            "start_line": 1115,
+            "end_line": 1285
+          },
+          {
+            "filename": "GalaxyEvents_galaxy_events.lua",
+            "purpose": "GalaxyEvents 相关函数（29 个函数，约 139 行代码）",
+            "line_range": "L578-L1502",
+            "lines": 925,
+            "block_type": "module",
+            "functions": [
+              "GalaxyEvents.ScheduleChain(typeKey,",
+              "GalaxyEvents.Reset()",
+              "GalaxyEvents.Update(dt,",
+              "GalaxyEvents.onCrisisExpired(ev)",
+              "GalaxyEvents.AddBuff(buffKey,",
+              "GalaxyEvents.RemoveBuff(buffKey)",
+              "GalaxyEvents.HasBuff(buffKey)",
+              "GalaxyEvents.GetActiveBuffs()",
+              "GalaxyEvents.Draw(ctx)",
+              "GalaxyEvents.GetList()",
+              "GalaxyEvents.GetType(typeKey)",
+              "GalaxyEvents.Serialize()",
+              "GalaxyEvents.Deserialize(data)",
+              "GalaxyEvents.SetPlanetProvider(fn)",
+              "GalaxyEvents.UpdateDisasters(dt,",
+              "GalaxyEvents.GetDisasterType(typeKey)",
+              "GalaxyEvents.ResetDisasters()",
+              "GalaxyEvents.TriggerEndgameCrisis(forceType)",
+              "GalaxyEvents.GetEndgameCrisis()",
+              "GalaxyEvents.AdvanceCrisisPhase(choiceIdx)",
+              "GalaxyEvents.UpdateEndgameCrisis(dt)",
+              "GalaxyEvents.GetCrisisRewards()",
+              "GalaxyEvents.IsEndgameCrisisActive()",
+              "GalaxyEvents.HasEndgameCrisisTriggered()",
+              "GalaxyEvents.onCrisisPhaseTimeout(crisis,",
+              "GalaxyEvents.onCrisisResolved(crisis,",
+              "GalaxyEvents.SerializeEndgameCrisis()",
+              "GalaxyEvents.DeserializeEndgameCrisis(data)",
+              "GalaxyEvents.ResetEndgameCrisis()"
+            ],
+            "start_line": 578,
+            "end_line": 1502
+          }
+        ],
+        "strategy": "检测到原文件 1504 行，超过阈值 600 行。\n建议拆分为 5 个文件（1 个主文件 + 4 个子模块），总计 1651 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/GalaxyEvents.lua",
+          "target": "/workspace/scripts/game/GalaxyEvents.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/GalaxyEvents_event_types.lua",
+          "filename": "GalaxyEvents_event_types.lua",
+          "purpose": "数据表模块（EVENT_TYPES 定义）",
+          "source_lines": "L25-L457",
+          "lines": 433
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/GalaxyEvents_disaster_types.lua",
+          "filename": "GalaxyEvents_disaster_types.lua",
+          "purpose": "数据表模块（DISASTER_TYPES 定义）",
+          "source_lines": "L942-L1013",
+          "lines": 72
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/GalaxyEvents_endgame_crisis_types.lua",
+          "filename": "GalaxyEvents_endgame_crisis_types.lua",
+          "purpose": "数据表模块（ENDGAME_CRISIS_TYPES 定义）",
+          "source_lines": "L1115-L1285",
+          "lines": 171
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/GalaxyEvents_galaxy_events.lua",
+          "filename": "GalaxyEvents_galaxy_events.lua",
+          "purpose": "GalaxyEvents 相关函数（29 个函数，约 139 行代码）",
+          "source_lines": "L578-L1502",
+          "lines": 925
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/GalaxyEvents.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/GameUI.lua",
+        "original_name": "GameUI.lua",
+        "original_lines": 1503,
+        "sub_files": [
+          {
+            "filename": "GameUI_config.lua",
+            "purpose": "配置常量（从原文件拆分独立模块）",
+            "line_range": "L7-L294",
+            "lines": 288,
+            "block_type": "config",
+            "start_line": 7,
+            "end_line": 294
+          },
+          {
+            "filename": "GameUI_c.lua",
+            "purpose": "数据表模块（C 定义）",
+            "line_range": "L47-L82",
+            "lines": 36,
+            "block_type": "data",
+            "start_line": 47,
+            "end_line": 82
+          },
+          {
+            "filename": "GameUI_game_ui.lua",
+            "purpose": "GameUI 相关函数（43 个函数，约 318 行代码）",
+            "line_range": "L298-L1503",
+            "lines": 1206,
+            "block_type": "module",
+            "functions": [
+              "GameUI.Notify(msg,",
+              "GameUI.RenderNotifications()",
+              "GameUI.SetPirateWarning(minTime)",
+              "GameUI.UpdateNotifications(dt)",
+              "GameUI.TriggerTechComplete(techId)",
+              "GameUI.OnScroll(mx,",
+              "GameUI.OnTouchBegin(id,",
+              "GameUI.OnTouchMove(id,",
+              "GameUI.OnTouchEnd(id,",
+              "GameUI.RenderTopBar()",
+              "GameUI.RenderSceneTitle()",
+              "GameUI.ShowEventPopup(ev,",
+              "GameUI.ShowDiploEvent(ev)",
+              "GameUI.RenderHUD(dt)",
+              "GameUI.RefreshResourceBar()",
+              "GameUI.RefreshBlackMarketPanel()",
+              "GameUI.RefreshPlanetPanel(planet)",
+              "GameUI.ForceRefreshPanel(planet)",
+              "GameUI.RefreshShipyardPanel()",
+              "GameUI.SetExplorerColonizeMode(active)",
+              "GameUI.SetAchievements(data,",
+              "GameUI.SetRedeemCallback(fn)",
+              "GameUI.GetRedeemableCount()",
+              "GameUI.SetEndlessRound(round)",
+              "GameUI.ShowDailyChallengeHint(challenge)",
+              "GameUI.SetLeagueHud(data)",
+              "GameUI.ShowCardDraft(cards,",
+              "GameUI.HideCardDraft()",
+              "GameUI.RefreshExplorerTasks(tasks)",
+              "GameUI.PushExploreLog(entry)",
+              "GameUI.SetCompletedGoals(completed)",
+              "GameUI.SetCareerStats(stats)",
+              "GameUI.ShowScene(scene,",
+              "GameUI.OnClick(mx,",
+              "GameUI.Init(opts)",
+              "GameUI.Shutdown()",
+              "GameUI.SetShipyardBuilt(built)",
+              "GameUI.RefreshFleetPanel(fm,",
+              "GameUI.SetExpeditions(exps,",
+              "GameUI.SetMapSelectedFleet(fleetId)",
+              "GameUI.RefreshReservePanel(fm)",
+              "GameUI.SetDeployed(flag)",
+              "GameUI.IsFleetNaming()"
+            ],
+            "start_line": 298,
+            "end_line": 1503
+          },
+          {
+            "filename": "GameUI_general.lua",
+            "purpose": "general 相关函数（6 个函数，约 42 行代码）",
+            "line_range": "L445-L602",
+            "lines": 158,
+            "block_type": "module",
+            "functions": [
+              "clr(r,g,b,a)",
+              "text(x,",
+              "addHit(x,",
+              "addScroll(x,",
+              "drawButton(x,",
+              "progressBar(x,"
+            ],
+            "start_line": 445,
+            "end_line": 602
+          }
+        ],
+        "strategy": "检测到原文件 1503 行，超过阈值 600 行。\n建议拆分为 5 个文件（1 个主文件 + 4 个子模块），总计 1738 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/GameUI.lua",
+          "target": "/workspace/scripts/game/GameUI.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/GameUI_config.lua",
+          "filename": "GameUI_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "source_lines": "L7-L294",
+          "lines": 288
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/GameUI_c.lua",
+          "filename": "GameUI_c.lua",
+          "purpose": "数据表模块（C 定义）",
+          "source_lines": "L47-L82",
+          "lines": 36
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/GameUI_game_ui.lua",
+          "filename": "GameUI_game_ui.lua",
+          "purpose": "GameUI 相关函数（43 个函数，约 318 行代码）",
+          "source_lines": "L298-L1503",
+          "lines": 1206
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/GameUI_general.lua",
+          "filename": "GameUI_general.lua",
+          "purpose": "general 相关函数（6 个函数，约 42 行代码）",
+          "source_lines": "L445-L602",
+          "lines": 158
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/GameUI.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/ui/EndGamePanel.lua",
+        "original_name": "EndGamePanel.lua",
+        "original_lines": 1486,
+        "sub_files": [
+          {
+            "filename": "EndGamePanel_config.lua",
+            "purpose": "配置常量（从原文件拆分独立模块）",
+            "line_range": "L11-L51",
+            "lines": 41,
+            "block_type": "config",
+            "start_line": 11,
+            "end_line": 51
+          },
+          {
+            "filename": "EndGamePanel_general.lua",
+            "purpose": "general 相关函数（11 个函数，约 135 行代码）",
+            "line_range": "L52-L883",
+            "lines": 832,
+            "block_type": "module",
+            "functions": [
+              "generateBattleReport()",
+              "renderLeaderboard()",
+              "renderProfilePopup()",
+              "divider(dy)",
+              "statRow(label,",
+              "renderRadarChart(vg,",
+              "renderEndGame()",
+              "easeOutElastic(x)",
+              "seg(start,",
+              "fmtTime(s)",
+              "fmtNum(n)"
+            ],
+            "start_line": 52,
+            "end_line": 883
+          },
+          {
+            "filename": "EndGamePanel_end_game_panel.lua",
+            "purpose": "EndGamePanel 相关函数（12 个函数，约 33 行代码）",
+            "line_range": "L1373-L1484",
+            "lines": 112,
+            "block_type": "module",
+            "functions": [
+              "EndGamePanel.Update(dt)",
+              "EndGamePanel.Render()",
+              "EndGamePanel.RenderLeaderboard()",
+              "EndGamePanel.Show(gameType,",
+              "EndGamePanel.Hide()",
+              "EndGamePanel.IsActive()",
+              "EndGamePanel.SetAdCallback(fn)",
+              "EndGamePanel.SetLeaderboardCallback(fn)",
+              "EndGamePanel.SetNotifyFn(fn)",
+              "EndGamePanel.SetCareerStats(career)",
+              "EndGamePanel.SetReplayData(data)",
+              "EndGamePanel.SetReplayCallback(fn)"
+            ],
+            "start_line": 1373,
+            "end_line": 1484
+          }
+        ],
+        "strategy": "检测到原文件 1486 行，超过阈值 600 行。\n建议拆分为 4 个文件（1 个主文件 + 3 个子模块），总计 1035 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/ui/EndGamePanel.lua",
+          "target": "/workspace/scripts/game/ui/EndGamePanel.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/EndGamePanel_config.lua",
+          "filename": "EndGamePanel_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "source_lines": "L11-L51",
+          "lines": 41
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/EndGamePanel_general.lua",
+          "filename": "EndGamePanel_general.lua",
+          "purpose": "general 相关函数（11 个函数，约 135 行代码）",
+          "source_lines": "L52-L883",
+          "lines": 832
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/EndGamePanel_end_game_panel.lua",
+          "filename": "EndGamePanel_end_game_panel.lua",
+          "purpose": "EndGamePanel 相关函数（12 个函数，约 33 行代码）",
+          "source_lines": "L1373-L1484",
+          "lines": 112
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/ui/EndGamePanel.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/battle/BattleAI.lua",
+        "original_name": "BattleAI.lua",
+        "original_lines": 1485,
+        "sub_files": [
+          {
+            "filename": "BattleAI_config.lua",
+            "purpose": "配置常量（从原文件拆分独立模块）",
+            "line_range": "L11-L37",
+            "lines": 27,
+            "block_type": "config",
+            "start_line": 11,
+            "end_line": 37
+          },
+          {
+            "filename": "BattleAI_battle_ai.lua",
+            "purpose": "BattleAI 相关函数（15 个函数，约 189 行代码）",
+            "line_range": "L73-L1426",
+            "lines": 1354,
+            "block_type": "module",
+            "functions": [
+              "BattleAI.Init(refs)",
+              "BattleAI.SyncRefs(refs)",
+              "BattleAI.SyncVarsIn(v)",
+              "BattleAI.GetVarsOut()",
+              "BattleAI.MakeBossShip(baseType,",
+              "BattleAI.MakeNemesisShip(captainId,",
+              "BattleAI.BuildNemesisWave(captainId)",
+              "BattleAI.BuildEnemyWave(wave)",
+              "BattleAI.GetNextWavePreview(wave)",
+              "BattleAI.ApplyWaveStartPassives()",
+              "BattleAI.ApplyFormationPositions(fleet)",
+              "BattleAI.UpdatePlayerFleet(dt)",
+              "BattleAI.UpdateEnemyFleet(dt)",
+              "BattleAI.ProcessDeaths(dt)",
+              "BattleAI.UpdatePassives(dt)"
+            ],
+            "start_line": 73,
+            "end_line": 1426
+          },
+          {
+            "filename": "BattleAI_general.lua",
+            "purpose": "general 相关函数（7 个函数，约 60 行代码）",
+            "line_range": "L120-L237",
+            "lines": 118,
+            "block_type": "module",
+            "functions": [
+              "dist2(x1,",
+              "clamp(v,",
+              "getComboLevel()",
+              "logBattleEvent(text)",
+              "spawnExplosion(ship)",
+              "spawnHitSparks(x,",
+              "spawnShockRing(x,"
+            ],
+            "start_line": 120,
+            "end_line": 237
+          }
+        ],
+        "strategy": "检测到原文件 1485 行，超过阈值 600 行。\n建议拆分为 4 个文件（1 个主文件 + 3 个子模块），总计 1549 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/battle/BattleAI.lua",
+          "target": "/workspace/scripts/game/battle/BattleAI.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/battle/BattleAI_config.lua",
+          "filename": "BattleAI_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "source_lines": "L11-L37",
+          "lines": 27
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/battle/BattleAI_battle_ai.lua",
+          "filename": "BattleAI_battle_ai.lua",
+          "purpose": "BattleAI 相关函数（15 个函数，约 189 行代码）",
+          "source_lines": "L73-L1426",
+          "lines": 1354
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/battle/BattleAI_general.lua",
+          "filename": "BattleAI_general.lua",
+          "purpose": "general 相关函数（7 个函数，约 60 行代码）",
+          "source_lines": "L120-L237",
+          "lines": 118
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/battle/BattleAI.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/ui/GalaxyPanels.lua",
+        "original_name": "GalaxyPanels.lua",
+        "original_lines": 1394,
+        "sub_files": [
+          {
+            "filename": "GalaxyPanels_config.lua",
+            "purpose": "配置常量（从原文件拆分独立模块）",
+            "line_range": "L16-L67",
+            "lines": 52,
+            "block_type": "config",
+            "start_line": 16,
+            "end_line": 67
+          },
+          {
+            "filename": "GalaxyPanels_m.lua",
+            "purpose": "M 相关函数（9 个函数，约 442 行代码）",
+            "line_range": "L69-L1253",
+            "lines": 1185,
+            "block_type": "module",
+            "functions": [
+              "M.Init(cfg)",
+              "M.Update(dt)",
+              "M.SetSelectedPlanet(p)",
+              "M.RenderSignal()",
+              "M.RenderMarket()",
+              "M.RenderDiploRel()",
+              "M.RenderBlackMarket()",
+              "M.RenderExchange(base,",
+              "M.RenderShipyard(planet)"
+            ],
+            "start_line": 69,
+            "end_line": 1253
+          }
+        ],
+        "strategy": "检测到原文件 1394 行，超过阈值 600 行。\n建议拆分为 3 个文件（1 个主文件 + 2 个子模块），总计 1287 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/ui/GalaxyPanels.lua",
+          "target": "/workspace/scripts/game/ui/GalaxyPanels.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/GalaxyPanels_config.lua",
+          "filename": "GalaxyPanels_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "source_lines": "L16-L67",
+          "lines": 52
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/GalaxyPanels_m.lua",
+          "filename": "GalaxyPanels_m.lua",
+          "purpose": "M 相关函数（9 个函数，约 442 行代码）",
+          "source_lines": "L69-L1253",
+          "lines": 1185
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/ui/GalaxyPanels.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/ui/PlanetPanel.lua",
+        "original_name": "PlanetPanel.lua",
+        "original_lines": 1227,
+        "sub_files": [
+          {
+            "filename": "PlanetPanel_planet_panel.lua",
+            "purpose": "PlanetPanel 相关函数（5 个函数，约 48 行代码）",
+            "line_range": "L21-L150",
+            "lines": 130,
+            "block_type": "module",
+            "functions": [
+              "PlanetPanel.Update(dt)",
+              "PlanetPanel.TriggerHighlight(planetId,",
+              "PlanetPanel.TriggerGlow(planetId,",
+              "PlanetPanel.ResetScroll()",
+              "PlanetPanel.Render(planet,"
+            ],
+            "start_line": 21,
+            "end_line": 150
+          },
+          {
+            "filename": "PlanetPanel_general.lua",
+            "purpose": "general 相关函数（7 个函数，约 31 行代码）",
+            "line_range": "L32-L911",
+            "lines": 880,
+            "block_type": "module",
+            "functions": [
+              "triggerPress(key)",
+              "triggerShake(key)",
+              "getPressScale(key)",
+              "getShakeOffset(key)",
+              "getHighlightAlpha(planetId,",
+              "getGlowParams(planetId,",
+              "vy2sy(vy)"
+            ],
+            "start_line": 32,
+            "end_line": 911
+          }
+        ],
+        "strategy": "检测到原文件 1227 行，超过阈值 600 行。\n建议拆分为 3 个文件（1 个主文件 + 2 个子模块），总计 1060 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/ui/PlanetPanel.lua",
+          "target": "/workspace/scripts/game/ui/PlanetPanel.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/PlanetPanel_planet_panel.lua",
+          "filename": "PlanetPanel_planet_panel.lua",
+          "purpose": "PlanetPanel 相关函数（5 个函数，约 48 行代码）",
+          "source_lines": "L21-L150",
+          "lines": 130
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/PlanetPanel_general.lua",
+          "filename": "PlanetPanel_general.lua",
+          "purpose": "general 相关函数（7 个函数，约 31 行代码）",
+          "source_lines": "L32-L911",
+          "lines": 880
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/ui/PlanetPanel.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/network/ClientBattle.lua",
+        "original_name": "ClientBattle.lua",
+        "original_lines": 1205,
+        "sub_files": [
+          {
+            "filename": "ClientBattle_explorer_task_templates.lua",
+            "purpose": "数据表模块（EXPLORER_TASK_TEMPLATES 定义）",
+            "line_range": "L25-L86",
+            "lines": 62,
+            "block_type": "data",
+            "start_line": 25,
+            "end_line": 86
+          },
+          {
+            "filename": "ClientBattle_m.lua",
+            "purpose": "M 相关函数（21 个函数，约 115 行代码）",
+            "line_range": "L208-L1049",
+            "lines": 842,
+            "block_type": "module",
+            "functions": [
+              "M.Init(state)",
+              "M.DrawEndlessCards(count)",
+              "M.ApplyEndlessCard(cardKey)",
+              "M.DdaApply()",
+              "M.DdaEvaluateBattle(isWin,",
+              "M.DdaPeriodicCheck()",
+              "M.StartExplorerTask()",
+              "M.UpdateExplorerTasks(dt)",
+              "M.DoStartEndlessRound()",
+              "M.StartEndlessNextRound()",
+              "M.CheckVictory()",
+              "M.CheckDefeat()",
+              "M.SwitchScene(name)",
+              "M.GetPlayerTargets()",
+              "M.OnPirateAttack(pirateLevel,",
+              "M.CalcFleetPower(fleetId)",
+              "M.CalcBaseThreat(baseLevel)",
+              "M.LaunchExpedition(fleetId,",
+              "M.SettleExpedition(exp)",
+              "M.OnFleetSiegeBase(fleetId,",
+              "M.TriggerEndGame(gameType)"
+            ],
+            "start_line": 208,
+            "end_line": 1049
+          }
+        ],
+        "strategy": "检测到原文件 1205 行，超过阈值 600 行。\n建议拆分为 3 个文件（1 个主文件 + 2 个子模块），总计 954 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/network/ClientBattle.lua",
+          "target": "/workspace/scripts/network/ClientBattle.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/network/ClientBattle_explorer_task_templates.lua",
+          "filename": "ClientBattle_explorer_task_templates.lua",
+          "purpose": "数据表模块（EXPLORER_TASK_TEMPLATES 定义）",
+          "source_lines": "L25-L86",
+          "lines": 62
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/network/ClientBattle_m.lua",
+          "filename": "ClientBattle_m.lua",
+          "purpose": "M 相关函数（21 个函数，约 115 行代码）",
+          "source_lines": "L208-L1049",
+          "lines": 842
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/network/ClientBattle.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/network/ClientSetup.lua",
+        "original_name": "ClientSetup.lua",
+        "original_lines": 1138,
+        "sub_files": [
+          {
+            "filename": "ClientSetup_battle_state_.lua",
+            "purpose": "数据表模块（battleState_ 定义）",
+            "line_range": "L102-L159",
+            "lines": 58,
+            "block_type": "data",
+            "start_line": 102,
+            "end_line": 159
+          }
+        ],
+        "strategy": "检测到原文件 1138 行，超过阈值 600 行。\n建议拆分为 2 个文件（1 个主文件 + 1 个子模块），总计 108 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/network/ClientSetup.lua",
+          "target": "/workspace/scripts/network/ClientSetup.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/network/ClientSetup_battle_state_.lua",
+          "filename": "ClientSetup_battle_state_.lua",
+          "purpose": "数据表模块（battleState_ 定义）",
+          "source_lines": "L102-L159",
+          "lines": 58
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/network/ClientSetup.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/network/ClientMenus.lua",
+        "original_name": "ClientMenus.lua",
+        "original_lines": 1000,
+        "sub_files": [
+          {
+            "filename": "ClientMenus_client_menus.lua",
+            "purpose": "ClientMenus 相关函数（13 个函数，约 204 行代码）",
+            "line_range": "L102-L786",
+            "lines": 685,
+            "block_type": "module",
+            "functions": [
+              "ClientMenus.GetMainMenuBtnLayout(sw,",
+              "ClientMenus.GetMainMenuHit(mx,",
+              "ClientMenus.RenderMainMenu(vg,",
+              "ClientMenus.GetDifficultyBtnLayout(sw,",
+              "ClientMenus.GetCustomPanelVisible(ctx)",
+              "ClientMenus.GetCustomPanelLayout(sw,",
+              "ClientMenus.GetCustomSliderRects(sw,",
+              "ClientMenus.GetEndlessBtnLayout(sw,",
+              "ClientMenus.GetNicknameInputLayout(sw,",
+              "ClientMenus.GetDifficultyHit(mx,",
+              "ClientMenus.RenderDifficultyScreen(vg,",
+              "ClientMenus.GetHeritagePanelHit(mx,",
+              "ClientMenus.RenderHeritagePanel(vg,"
+            ],
+            "start_line": 102,
+            "end_line": 786
+          }
+        ],
+        "strategy": "检测到原文件 1000 行，超过阈值 600 行。\n建议拆分为 2 个文件（1 个主文件 + 1 个子模块），总计 735 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/network/ClientMenus.lua",
+          "target": "/workspace/scripts/network/ClientMenus.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/network/ClientMenus_client_menus.lua",
+          "filename": "ClientMenus_client_menus.lua",
+          "purpose": "ClientMenus 相关函数（13 个函数，约 204 行代码）",
+          "source_lines": "L102-L786",
+          "lines": 685
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/network/ClientMenus.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/battle/RenderOverlays.lua",
+        "original_name": "RenderOverlays.lua",
+        "original_lines": 974,
+        "sub_files": [
+          {
+            "filename": "RenderOverlays_general.lua",
+            "purpose": "general 相关函数（11 个函数，约 186 行代码）",
+            "line_range": "L9-L667",
+            "lines": 659,
+            "block_type": "module",
+            "functions": [
+              "drawBossDestroyedEffect()",
+              "drawFireworks()",
+              "drawMilestoneBanner()",
+              "drawBossWarning()",
+              "drawPincerBanner()",
+              "drawNemesisOverlay()",
+              "drawAnomalyBanner()",
+              "drawAnomalyHUD()",
+              "drawReinforcementWarning()",
+              "drawWaveSummary()",
+              "drawStateOverlay()"
+            ],
+            "start_line": 9,
+            "end_line": 667
+          }
+        ],
+        "strategy": "检测到原文件 974 行，超过阈值 600 行。\n建议拆分为 2 个文件（1 个主文件 + 1 个子模块），总计 709 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/battle/RenderOverlays.lua",
+          "target": "/workspace/scripts/game/battle/RenderOverlays.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/battle/RenderOverlays_general.lua",
+          "filename": "RenderOverlays_general.lua",
+          "purpose": "general 相关函数（11 个函数，约 186 行代码）",
+          "source_lines": "L9-L667",
+          "lines": 659
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/battle/RenderOverlays.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/galaxy/RenderStarmap.lua",
+        "original_name": "RenderStarmap.lua",
+        "original_lines": 948,
+        "sub_files": [
+          {
+            "filename": "RenderStarmap_m.lua",
+            "purpose": "M 相关函数（8 个函数，约 126 行代码）",
+            "line_range": "L30-L928",
+            "lines": 899,
+            "block_type": "module",
+            "functions": [
+              "M.drawBackground()",
+              "M.drawStarSystem(sys)",
+              "M.drawDiploRelLines()",
+              "M.drawTradeRoutes()",
+              "M.drawExpeditionPaths()",
+              "M.drawDeepSpaceSystem(sys,",
+              "M.drawPirateThreatHeatmap()",
+              "M.drawColonyRipples()"
+            ],
+            "start_line": 30,
+            "end_line": 928
+          }
+        ],
+        "strategy": "检测到原文件 948 行，超过阈值 600 行。\n建议拆分为 2 个文件（1 个主文件 + 1 个子模块），总计 949 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/galaxy/RenderStarmap.lua",
+          "target": "/workspace/scripts/game/galaxy/RenderStarmap.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/galaxy/RenderStarmap_m.lua",
+          "filename": "RenderStarmap_m.lua",
+          "purpose": "M 相关函数（8 个函数，约 126 行代码）",
+          "source_lines": "L30-L928",
+          "lines": 899
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/galaxy/RenderStarmap.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/ui/TechPanel.lua",
+        "original_name": "TechPanel.lua",
+        "original_lines": 856,
+        "sub_files": [
+          {
+            "filename": "TechPanel_general.lua",
+            "purpose": "general 相关函数（4 个函数，约 42 行代码）",
+            "line_range": "L82-L193",
+            "lines": 112,
+            "block_type": "module",
+            "functions": [
+              "getDownstream(id)",
+              "getExclusivePeers(id)",
+              "computeRecommendedPath(rs)",
+              "drawConnection(vg,"
+            ],
+            "start_line": 82,
+            "end_line": 193
+          }
+        ],
+        "strategy": "检测到原文件 856 行，超过阈值 600 行。\n建议拆分为 2 个文件（1 个主文件 + 1 个子模块），总计 162 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/ui/TechPanel.lua",
+          "target": "/workspace/scripts/game/ui/TechPanel.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/TechPanel_general.lua",
+          "filename": "TechPanel_general.lua",
+          "purpose": "general 相关函数（4 个函数，约 42 行代码）",
+          "source_lines": "L82-L193",
+          "lines": 112
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/ui/TechPanel.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/AchievementSystem.lua",
+        "original_name": "AchievementSystem.lua",
+        "original_lines": 814,
+        "sub_files": [
+          {
+            "filename": "AchievementSystem_achievements.lua",
+            "purpose": "数据表模块（ACHIEVEMENTS 定义）",
+            "line_range": "L11-L512",
+            "lines": 502,
+            "block_type": "data",
+            "start_line": 11,
+            "end_line": 512
+          },
+          {
+            "filename": "AchievementSystem_achievement_rewards.lua",
+            "purpose": "数据表模块（ACHIEVEMENT_REWARDS 定义）",
+            "line_range": "L517-L591",
+            "lines": 75,
+            "block_type": "data",
+            "start_line": 517,
+            "end_line": 591
+          },
+          {
+            "filename": "AchievementSystem_achievement_system.lua",
+            "purpose": "AchievementSystem 相关函数（15 个函数，约 91 行代码）",
+            "line_range": "L607-L809",
+            "lines": 203,
+            "block_type": "module",
+            "functions": [
+              "AchievementSystem.Init(opts)",
+              "AchievementSystem.Check(eventName,",
+              "AchievementSystem.Update(dt)",
+              "AchievementSystem.GetUnlocked()",
+              "AchievementSystem.SetUnlocked(list)",
+              "AchievementSystem.GetTotal()",
+              "AchievementSystem.Redeem(id)",
+              "AchievementSystem.GetRedeemed()",
+              "AchievementSystem.SetRedeemed(list)",
+              "AchievementSystem.GetRedeemableCount()",
+              "AchievementSystem.GetActiveRewards()",
+              "AchievementSystem.GetReward(id)",
+              "AchievementSystem.IsRedeemed(id)",
+              "AchievementSystem.GetAll()",
+              "AchievementSystem.GetHiddenProgress()"
+            ],
+            "start_line": 607,
+            "end_line": 809
+          }
+        ],
+        "strategy": "检测到原文件 814 行，超过阈值 600 行。\n建议拆分为 4 个文件（1 个主文件 + 3 个子模块），总计 830 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/AchievementSystem.lua",
+          "target": "/workspace/scripts/game/AchievementSystem.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/AchievementSystem_achievements.lua",
+          "filename": "AchievementSystem_achievements.lua",
+          "purpose": "数据表模块（ACHIEVEMENTS 定义）",
+          "source_lines": "L11-L512",
+          "lines": 502
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/AchievementSystem_achievement_rewards.lua",
+          "filename": "AchievementSystem_achievement_rewards.lua",
+          "purpose": "数据表模块（ACHIEVEMENT_REWARDS 定义）",
+          "source_lines": "L517-L591",
+          "lines": 75
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/AchievementSystem_achievement_system.lua",
+          "filename": "AchievementSystem_achievement_system.lua",
+          "purpose": "AchievementSystem 相关函数（15 个函数，约 91 行代码）",
+          "source_lines": "L607-L809",
+          "lines": 203
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/AchievementSystem.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/PirateAI.lua",
+        "original_name": "PirateAI.lua",
+        "original_lines": 731,
+        "sub_files": [
+          {
+            "filename": "PirateAI_config.lua",
+            "purpose": "配置常量（从原文件拆分独立模块）",
+            "line_range": "L12-L29",
+            "lines": 18,
+            "block_type": "config",
+            "start_line": 12,
+            "end_line": 29
+          },
+          {
+            "filename": "PirateAI_general.lua",
+            "purpose": "general 相关函数（13 个函数，约 125 行代码）",
+            "line_range": "L63-L720",
+            "lines": 658,
+            "block_type": "module",
+            "functions": [
+              "PirateAI:generateBases(worldRange,",
+              "PirateAI:generateFixedBases(defs)",
+              "PirateAI:update(dt)",
+              "PirateAI:evaluateThreat()",
+              "PirateAI:launchAttack(base)",
+              "PirateAI:weakenBase(baseId)",
+              "PirateAI:strengthenBase(baseId)",
+              "PirateAI:RevealMostThreateningBase(duration)",
+              "PirateAI:GetActiveIntel()",
+              "PirateAI:render(vg,",
+              "PirateAI:renderMinimap(vg,",
+              "PirateAI:serialize()",
+              "PirateAI:deserialize(data)"
+            ],
+            "start_line": 63,
+            "end_line": 720
+          }
+        ],
+        "strategy": "检测到原文件 731 行，超过阈值 600 行。\n建议拆分为 3 个文件（1 个主文件 + 2 个子模块），总计 726 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/PirateAI.lua",
+          "target": "/workspace/scripts/game/PirateAI.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/PirateAI_config.lua",
+          "filename": "PirateAI_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "source_lines": "L12-L29",
+          "lines": 18
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/PirateAI_general.lua",
+          "filename": "PirateAI_general.lua",
+          "purpose": "general 相关函数（13 个函数，约 125 行代码）",
+          "source_lines": "L63-L720",
+          "lines": 658
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/PirateAI.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/galaxy/RenderHUD.lua",
+        "original_name": "RenderHUD.lua",
+        "original_lines": 712,
+        "sub_files": [
+          {
+            "filename": "RenderHUD_m.lua",
+            "purpose": "M 相关函数（11 个函数，约 315 行代码）",
+            "line_range": "L56-L709",
+            "lines": 654,
+            "block_type": "module",
+            "functions": [
+              "M.drawTooltip(planet)",
+              "M.drawAsteroidTooltip(a)",
+              "M.drawPirateWarningHUD()",
+              "M.drawAnomalyIndicator()",
+              "M.drawWeatherHUD()",
+              "M.drawSeedLabel()",
+              "M.drawMinimap()",
+              "M.drawPirateThreatHeatmap()",
+              "M.drawColonyRipples()",
+              "M.drawSignalButton()",
+              "M.drawSignalBanners()"
+            ],
+            "start_line": 56,
+            "end_line": 709
+          }
+        ],
+        "strategy": "检测到原文件 712 行，超过阈值 600 行。\n建议拆分为 2 个文件（1 个主文件 + 1 个子模块），总计 704 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/galaxy/RenderHUD.lua",
+          "target": "/workspace/scripts/game/galaxy/RenderHUD.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/galaxy/RenderHUD_m.lua",
+          "filename": "RenderHUD_m.lua",
+          "purpose": "M 相关函数（11 个函数，约 315 行代码）",
+          "source_lines": "L56-L709",
+          "lines": 654
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/galaxy/RenderHUD.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/systems/DiplomacySystem.lua",
+        "original_name": "DiplomacySystem.lua",
+        "original_lines": 698,
+        "sub_files": [
+          {
+            "filename": "DiplomacySystem_config.lua",
+            "purpose": "配置常量（从原文件拆分独立模块）",
+            "line_range": "L20-L48",
+            "lines": 29,
+            "block_type": "config",
+            "start_line": 20,
+            "end_line": 48
+          },
+          {
+            "filename": "DiplomacySystem_general.lua",
+            "purpose": "general 相关函数（24 个函数，约 141 行代码）",
+            "line_range": "L71-L661",
+            "lines": 591,
+            "block_type": "module",
+            "functions": [
+              "DiplomacySystem:initFactions(allPlanets,",
+              "DiplomacySystem:initTriangleRelations()",
+              "DiplomacySystem:getRelation(fk1,",
+              "DiplomacySystem:getAllRelations()",
+              "DiplomacySystem:getCompetitor(factionKey)",
+              "DiplomacySystem:applyTrianglePenalty(factionKey,",
+              "DiplomacySystem:activateIntel(factionKey)",
+              "DiplomacySystem:activateAlliance(factionKey)",
+              "DiplomacySystem:activateBlockade(factionKey,",
+              "DiplomacySystem:activateMediation(fk1,",
+              "DiplomacySystem:isBlockaded(factionKey)",
+              "DiplomacySystem:hasAlliance(factionKey)",
+              "DiplomacySystem:hasIntel(factionKey)",
+              "DiplomacySystem:getAgreements()",
+              "DiplomacySystem:getState(planetId)",
+              "DiplomacySystem:sendGift(planetId,",
+              "DiplomacySystem:tick(dt,",
+              "DiplomacySystem:_generateDiploEvent(rm,",
+              "DiplomacySystem:hasMilitary(planetId)",
+              "DiplomacySystem:countLongTrades()",
+              "DiplomacySystem:activateLongTrade(planetId,",
+              "DiplomacySystem:getLongTradeList()",
+              "DiplomacySystem:serialize()",
+              "DiplomacySystem:deserialize(data,"
+            ],
+            "start_line": 71,
+            "end_line": 661
+          }
+        ],
+        "strategy": "检测到原文件 698 行，超过阈值 600 行。\n建议拆分为 3 个文件（1 个主文件 + 2 个子模块），总计 670 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/systems/DiplomacySystem.lua",
+          "target": "/workspace/scripts/game/systems/DiplomacySystem.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/systems/DiplomacySystem_config.lua",
+          "filename": "DiplomacySystem_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "source_lines": "L20-L48",
+          "lines": 29
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/systems/DiplomacySystem_general.lua",
+          "filename": "DiplomacySystem_general.lua",
+          "purpose": "general 相关函数（24 个函数，约 141 行代码）",
+          "source_lines": "L71-L661",
+          "lines": 591
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/systems/DiplomacySystem.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/battle/RenderHUD.lua",
+        "original_name": "RenderHUD.lua",
+        "original_lines": 666,
+        "sub_files": [
+          {
+            "filename": "RenderHUD_general.lua",
+            "purpose": "general 相关函数（9 个函数，约 174 行代码）",
+            "line_range": "L12-L643",
+            "lines": 632,
+            "block_type": "module",
+            "functions": [
+              "drawWaveHUD()",
+              "drawComboHUD()",
+              "drawShipInfoPanel()",
+              "statLine(label,",
+              "drawFocusRing()",
+              "drawFocusHUD()",
+              "drawFormationBar()",
+              "drawRetreatReinforce()",
+              "drawSkillUpgrade()"
+            ],
+            "start_line": 12,
+            "end_line": 643
+          }
+        ],
+        "strategy": "检测到原文件 666 行，超过阈值 600 行。\n建议拆分为 2 个文件（1 个主文件 + 1 个子模块），总计 682 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/battle/RenderHUD.lua",
+          "target": "/workspace/scripts/game/battle/RenderHUD.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/battle/RenderHUD_general.lua",
+          "filename": "RenderHUD_general.lua",
+          "purpose": "general 相关函数（9 个函数，约 174 行代码）",
+          "source_lines": "L12-L643",
+          "lines": 632
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/battle/RenderHUD.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/ui/ReplayPlayer.lua",
+        "original_name": "ReplayPlayer.lua",
+        "original_lines": 665,
+        "sub_files": [
+          {
+            "filename": "ReplayPlayer_config.lua",
+            "purpose": "配置常量（从原文件拆分独立模块）",
+            "line_range": "L11-L41",
+            "lines": 31,
+            "block_type": "config",
+            "start_line": 11,
+            "end_line": 41
+          },
+          {
+            "filename": "ReplayPlayer_general.lua",
+            "purpose": "general 相关函数（11 个函数，约 139 行代码）",
+            "line_range": "L46-L524",
+            "lines": 479,
+            "block_type": "module",
+            "functions": [
+              "easeOutCubic(t)",
+              "easeOutBack(t)",
+              "lerp(a,",
+              "formatTime(seconds)",
+              "renderBattleMap(vg,",
+              "worldToMap(wx,",
+              "renderTimeline(vg,",
+              "renderEventPopups(vg,",
+              "renderMVPBanner(vg,",
+              "renderHighlightList(vg,",
+              "renderReplayPlayer()"
+            ],
+            "start_line": 46,
+            "end_line": 524
+          },
+          {
+            "filename": "ReplayPlayer_replay_player.lua",
+            "purpose": "ReplayPlayer 相关函数（6 个函数，约 20 行代码）",
+            "line_range": "L561-L663",
+            "lines": 103,
+            "block_type": "module",
+            "functions": [
+              "ReplayPlayer.Update(dt)",
+              "ReplayPlayer.Render()",
+              "ReplayPlayer.Show()",
+              "ReplayPlayer.Hide()",
+              "ReplayPlayer.IsActive()",
+              "ReplayPlayer.SetOnClose(fn)"
+            ],
+            "start_line": 561,
+            "end_line": 663
+          }
+        ],
+        "strategy": "检测到原文件 665 行，超过阈值 600 行。\n建议拆分为 4 个文件（1 个主文件 + 3 个子模块），总计 663 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/ui/ReplayPlayer.lua",
+          "target": "/workspace/scripts/game/ui/ReplayPlayer.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/ReplayPlayer_config.lua",
+          "filename": "ReplayPlayer_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "source_lines": "L11-L41",
+          "lines": 31
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/ReplayPlayer_general.lua",
+          "filename": "ReplayPlayer_general.lua",
+          "purpose": "general 相关函数（11 个函数，约 139 行代码）",
+          "source_lines": "L46-L524",
+          "lines": 479
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/ReplayPlayer_replay_player.lua",
+          "filename": "ReplayPlayer_replay_player.lua",
+          "purpose": "ReplayPlayer 相关函数（6 个函数，约 20 行代码）",
+          "source_lines": "L561-L663",
+          "lines": 103
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/ui/ReplayPlayer.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/ui/TutorialSystem.lua",
+        "original_name": "TutorialSystem.lua",
+        "original_lines": 655,
+        "sub_files": [
+          {
+            "filename": "TutorialSystem_phases.lua",
+            "purpose": "数据表模块（PHASES 定义）",
+            "line_range": "L26-L147",
+            "lines": 122,
+            "block_type": "data",
+            "start_line": 26,
+            "end_line": 147
+          },
+          {
+            "filename": "TutorialSystem_tutorial_system.lua",
+            "purpose": "TutorialSystem 相关函数（15 个函数，约 76 行代码）",
+            "line_range": "L175-L653",
+            "lines": 479,
+            "block_type": "module",
+            "functions": [
+              "TutorialSystem.SetEnabled(flag)",
+              "TutorialSystem.IsEnabled()",
+              "TutorialSystem.Reset()",
+              "TutorialSystem.TriggerPhase(phaseName)",
+              "TutorialSystem.TriggerStart()",
+              "TutorialSystem.TriggerDeployed()",
+              "TutorialSystem.Skip()",
+              "TutorialSystem.IsActive()",
+              "TutorialSystem.Update(dt)",
+              "TutorialSystem._ShowNext()",
+              "TutorialSystem._OnConfirm()",
+              "TutorialSystem.Render()",
+              "TutorialSystem.Serialize()",
+              "TutorialSystem.Deserialize(data)",
+              "TutorialSystem.IsDone()"
+            ],
+            "start_line": 175,
+            "end_line": 653
+          }
+        ],
+        "strategy": "检测到原文件 655 行，超过阈值 600 行。\n建议拆分为 3 个文件（1 个主文件 + 2 个子模块），总计 651 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/ui/TutorialSystem.lua",
+          "target": "/workspace/scripts/game/ui/TutorialSystem.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/TutorialSystem_phases.lua",
+          "filename": "TutorialSystem_phases.lua",
+          "purpose": "数据表模块（PHASES 定义）",
+          "source_lines": "L26-L147",
+          "lines": 122
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/TutorialSystem_tutorial_system.lua",
+          "filename": "TutorialSystem_tutorial_system.lua",
+          "purpose": "TutorialSystem 相关函数（15 个函数，约 76 行代码）",
+          "source_lines": "L175-L653",
+          "lines": 479
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/ui/TutorialSystem.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/ui/TopBar.lua",
+        "original_name": "TopBar.lua",
+        "original_lines": 636,
+        "sub_files": [
+          {
+            "filename": "TopBar_part2.lua",
+            "purpose": "第 2 部分（通用分段，建议手动分析后改为有意义的命名）",
+            "line_range": "L601-L636",
+            "lines": 36,
+            "block_type": "chunk",
+            "start_line": 601,
+            "end_line": 636
+          }
+        ],
+        "strategy": "检测到原文件 636 行，超过阈值 600 行。\n建议拆分为 2 个文件（1 个主文件 + 1 个子模块），总计 86 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/ui/TopBar.lua",
+          "target": "/workspace/scripts/game/ui/TopBar.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/TopBar_part2.lua",
+          "filename": "TopBar_part2.lua",
+          "purpose": "第 2 部分（通用分段，建议手动分析后改为有意义的命名）",
+          "source_lines": "L601-L636",
+          "lines": 36
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/ui/TopBar.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    },
+    {
+      "plan": {
+        "original_file": "/workspace/scripts/game/ui/SettingsPanel.lua",
+        "original_name": "SettingsPanel.lua",
+        "original_lines": 628,
+        "sub_files": [
+          {
+            "filename": "SettingsPanel_config.lua",
+            "purpose": "配置常量（从原文件拆分独立模块）",
+            "line_range": "L12-L43",
+            "lines": 32,
+            "block_type": "config",
+            "start_line": 12,
+            "end_line": 43
+          },
+          {
+            "filename": "SettingsPanel_settings_panel.lua",
+            "purpose": "SettingsPanel 相关函数（20 个函数，约 68 行代码）",
+            "line_range": "L453-L624",
+            "lines": 172,
+            "block_type": "module",
+            "functions": [
+              "SettingsPanel.SetAudio(audioModule)",
+              "SettingsPanel.Load()",
+              "SettingsPanel.Show()",
+              "SettingsPanel.Hide()",
+              "SettingsPanel.IsVisible()",
+              "SettingsPanel.Toggle()",
+              "SettingsPanel.Render()",
+              "SettingsPanel.GetSliderRects()",
+              "SettingsPanel.GetVolumes()",
+              "SettingsPanel.GetQualityLevel()",
+              "SettingsPanel.GetColorblindMode()",
+              "SettingsPanel.IsFPSVisible()",
+              "SettingsPanel.GetAutoPause()",
+              "SettingsPanel.UpdateFPS(dt)",
+              "SettingsPanel.RenderFPS()",
+              "SettingsPanel.TransformColor(r,",
+              "SettingsPanel.GetQualityScale()",
+              "SettingsPanel.OnTouchBegin(id,",
+              "SettingsPanel.OnTouchMove(id,",
+              "SettingsPanel.OnTouchEnd(id)"
+            ],
+            "start_line": 453,
+            "end_line": 624
+          }
+        ],
+        "strategy": "检测到原文件 628 行，超过阈值 600 行。\n建议拆分为 3 个文件（1 个主文件 + 2 个子模块），总计 254 行左右代码。"
+      },
+      "operations": [
+        {
+          "action": "backup",
+          "source": "/workspace/scripts/game/ui/SettingsPanel.lua",
+          "target": "/workspace/scripts/game/ui/SettingsPanel.lua.bak"
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/SettingsPanel_config.lua",
+          "filename": "SettingsPanel_config.lua",
+          "purpose": "配置常量（从原文件拆分独立模块）",
+          "source_lines": "L12-L43",
+          "lines": 32
+        },
+        {
+          "action": "create_subfile",
+          "target": "/workspace/scripts/game/ui/SettingsPanel_settings_panel.lua",
+          "filename": "SettingsPanel_settings_panel.lua",
+          "purpose": "SettingsPanel 相关函数（20 个函数，约 68 行代码）",
+          "source_lines": "L453-L624",
+          "lines": 172
+        },
+        {
+          "action": "create_refactored_skeleton",
+          "target": "/workspace/scripts/game/ui/SettingsPanel.lua.refactored",
+          "description": "重构后的主文件骨架（包含 require 语句，具体逻辑需要手动迁移）"
+        }
+      ]
+    }
+  ],
+  "score": 47
+}
