@@ -104,50 +104,37 @@ function ResearchSystem:update(dt)
         -- 应用特殊科技效果到 baseBonus
         local bonus = TECHS[id] and TECHS[id].bonus
         if bonus then
-            if bonus.fleetSpeedMult then
-                self.rm.baseBonus = self.rm.baseBonus or {}
-                self.rm.baseBonus.fleetSpeedMult = (self.rm.baseBonus.fleetSpeedMult or 1.0) * bonus.fleetSpeedMult
-                print("[Research] 曲速引擎激活：舰队速度×" .. tostring(self.rm.baseBonus.fleetSpeedMult))
+            self.rm.baseBonus = self.rm.baseBonus or {}
+            local bb = self.rm.baseBonus
+
+            local function applyMult(key, label)
+                if bonus[key] then
+                    bb[key] = (bb[key] or 1.0) * bonus[key]
+                    print("[Research] " .. label .. "：×" .. tostring(bb[key]))
+                end
             end
+
+            local function applyAdd(key, label)
+                if bonus[key] then
+                    bb[key] = (bb[key] or 0) + bonus[key]
+                    print("[Research] " .. label .. "：+" .. tostring(bonus[key]))
+                end
+            end
+
+            applyMult("fleetSpeedMult",      "曲速引擎激活：舰队速度")
+            applyMult("aoeRadiusMult",       "新星炮激活：AOE半径")
+            applyMult("shieldMaxMult",       "要塞协议激活：护盾上限")
+            applyMult("enemySpeedDebuff",    "虚空锚定激活：敌方舰队速度")
+            applyMult("globalProdMult",      "星际同步激活：全局产出")
+            applyMult("researchSpeedMult",   "科研速度加成")
+
+            applyAdd("battleStartSkillCharge", "新星炮激活：每波战斗开始额外技能充能")
+            applyAdd("shieldRegenPct",         "要塞协议激活：战斗中护盾每10s回复" .. (bonus.shieldRegenPct and tostring(bonus.shieldRegenPct * 100) .. "%" or ""))
+
             if bonus.shieldBonus then
-                self.rm.baseBonus = self.rm.baseBonus or {}
-                self.rm.baseBonus.shieldBonus  = (self.rm.baseBonus.shieldBonus  or 0) + bonus.shieldBonus
-                self.rm.baseBonus.defenseBonus = (self.rm.baseBonus.defenseBonus or 0) + bonus.defenseBonus
+                bb.shieldBonus  = (bb.shieldBonus  or 0) + bonus.shieldBonus
+                bb.defenseBonus = (bb.defenseBonus or 0) + (bonus.defenseBonus or 0)
                 print("[Research] 护盾强化激活：护盾+" .. tostring(bonus.shieldBonus))
-            end
-            -- P1-1: NOVA_CANNON
-            if bonus.aoeRadiusMult then
-                self.rm.baseBonus = self.rm.baseBonus or {}
-                self.rm.baseBonus.aoeRadiusMult = (self.rm.baseBonus.aoeRadiusMult or 1.0) * bonus.aoeRadiusMult
-                print("[Research] 新星炮激活：AOE半径×" .. tostring(self.rm.baseBonus.aoeRadiusMult))
-            end
-            if bonus.battleStartSkillCharge then
-                self.rm.baseBonus = self.rm.baseBonus or {}
-                self.rm.baseBonus.battleStartSkillCharge = (self.rm.baseBonus.battleStartSkillCharge or 0) + bonus.battleStartSkillCharge
-                print("[Research] 新星炮激活：每波战斗开始额外技能充能+" .. tostring(bonus.battleStartSkillCharge))
-            end
-            -- P1-1: FORTRESS_PROTOCOL
-            if bonus.shieldMaxMult then
-                self.rm.baseBonus = self.rm.baseBonus or {}
-                self.rm.baseBonus.shieldMaxMult = (self.rm.baseBonus.shieldMaxMult or 1.0) * bonus.shieldMaxMult
-                print("[Research] 要塞协议激活：护盾上限×" .. tostring(self.rm.baseBonus.shieldMaxMult))
-            end
-            if bonus.shieldRegenPct then
-                self.rm.baseBonus = self.rm.baseBonus or {}
-                self.rm.baseBonus.shieldRegenPct = (self.rm.baseBonus.shieldRegenPct or 0) + bonus.shieldRegenPct
-                print("[Research] 要塞协议激活：战斗中护盾每10s回复" .. tostring(bonus.shieldRegenPct * 100) .. "%")
-            end
-            -- P1-3: VOID_ANCHOR
-            if bonus.enemySpeedDebuff then
-                self.rm.baseBonus = self.rm.baseBonus or {}
-                self.rm.baseBonus.enemySpeedDebuff = (self.rm.baseBonus.enemySpeedDebuff or 1.0) * bonus.enemySpeedDebuff
-                print("[Research] 虚空锚定激活：敌方舰队速度×" .. tostring(self.rm.baseBonus.enemySpeedDebuff))
-            end
-            -- P1-3: STELLAR_SYNC
-            if bonus.globalProdMult then
-                self.rm.baseBonus = self.rm.baseBonus or {}
-                self.rm.baseBonus.globalProdMult = (self.rm.baseBonus.globalProdMult or 1.0) * bonus.globalProdMult
-                print("[Research] 星际同步激活：全局产出×" .. tostring(self.rm.baseBonus.globalProdMult))
             end
         end
         print("[Research] 完成: " .. TECHS[id].name)

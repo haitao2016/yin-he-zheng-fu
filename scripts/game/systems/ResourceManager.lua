@@ -25,51 +25,45 @@ function ResourceManager.new()
     return self
 end
 
--- 互换比例常量
-local CONVERT_RATIO = 1.5  -- 1 矿石 → 1.5 能量（或 1.5 能量 → 1 矿石）
+local CONVERT_RATIO = 1.5
 
--- 精炼配置（模块级缓存，避免每帧 GC）
 local REFINE_CFG = {
     minerals = { ref="metal",   ratio=3.0, processRate=7.0 },
     energy   = { ref="esource", ratio=2.0, processRate=3.0 },
-    crystal  = { ref="nuclear", ratio=3.0, processRate=1.0 },  -- M1 修复：5:1→3:1，早期核能不再过窄
+    crystal  = { ref="nuclear", ratio=3.0, processRate=1.0 },
 }
 
+local function clampResource(resources, caps, key, value)
+    return math.min(caps[key] or 99999, math.max(0, value))
+end
+
 function ResourceManager:update(dt)
-    -- Step 1：所有资源按速率正常积累（原矿也进入库存）
-    local resMult = self.leagueResMult or 1.0  -- P1-3: 联赛资源倍率
+    local resMult = self.leagueResMult or 1.0
     for res, rate in pairs(self.rates) do
         if rate ~= 0 then
-            local cap = self.caps[res] or 99999
-            self.resources[res] = math.min(cap, (self.resources[res] or 0) + rate * resMult * dt)
+            self.resources[res] = clampResource(self.resources, self.caps, res,
+                (self.resources[res] or 0) + rate * resMult * dt)
         end
     end
 
-    -- Step 2：原矿 ⇄ 原矿 自动互换（convertRate 只作用于原矿层）
     if self.convertRate ~= 0 then
         local rate = self.convertRate
         if rate > 0 then
-            local drain = math.min(rate * dt, math.max(0, self.resources.minerals))
-            self.resources.minerals = self.resources.minerals - drain
-            self.resources.energy   = math.min(self.caps.energy,
-                self.resources.energy + drain * CONVERT_RATIO)
+            local drain = math.min(rate * dt, self.resources.minerals or 0)
+            self.resources.minerals = clampResource(self.resources, self.caps, "minerals", self.resources.minerals - drain)
+            self.resources.energy   = clampResource(self.resources, self.caps, "energy",   self.resources.energy + drain * CONVERT_RATIO)
         else
-            local drain = math.min((-rate) * CONVERT_RATIO * dt, math.max(0, self.resources.energy))
-            self.resources.energy   = self.resources.energy - drain
-            self.resources.minerals = math.min(self.caps.minerals,
-                self.resources.minerals + drain / CONVERT_RATIO)
+            local drain = math.min((-rate) * CONVERT_RATIO * dt, self.resources.energy or 0)
+            self.resources.energy   = clampResource(self.resources, self.caps, "energy",   self.resources.energy - drain)
+            self.resources.minerals = clampResource(self.resources, self.caps, "minerals", self.resources.minerals + drain / CONVERT_RATIO)
         end
     end
 
-    -- Step 3：精炼厂以固定速率从原矿库存消耗并转化为精炼资源
     if self.refineryMult and self.refineryMult > 0 then
-        -- S1 RAPID_REFINE: 全局精炼速率加成（累乘到 refineryMult 上）
         local globalMult = (self.baseBonus and self.baseBonus.globalRefineMult) or 1.0
         for raw, cfg in pairs(REFINE_CFG) do
             local rawAmt = self.resources[raw] or 0
             if rawAmt > 0 then
-                -- S1 CRYSTAL_PROCESS: 水晶精炼效率独立加成
-                -- P1-2 Volcanic nuclearMult: 核能精炼速率加成
                 local extraMult = globalMult
                 if raw == "crystal" then
                     extraMult = extraMult * ((self.baseBonus and self.baseBonus.crystalRefineMult) or 1.0)
@@ -77,9 +71,8 @@ function ResourceManager:update(dt)
                 end
                 local toConsume = math.min(rawAmt, cfg.processRate * self.refineryMult * extraMult * dt)
                 if toConsume > 0 then
-                    self.resources[raw] = rawAmt - toConsume
-                    local cap = self.caps[cfg.ref] or 99999
-                    self.resources[cfg.ref] = math.min(cap,
+                    self.resources[raw] = clampResource(self.resources, self.caps, raw, rawAmt - toConsume)
+                    self.resources[cfg.ref] = clampResource(self.resources, self.caps, cfg.ref,
                         (self.resources[cfg.ref] or 0) + toConsume / cfg.ratio)
                 end
             end
