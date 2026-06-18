@@ -229,12 +229,12 @@ function M.Init(H)
         player = player_,
         pirateAI = pirateAI,
         onPlanetSelect = function(p)
-            H.selectedPlanet_ = p
-            GameUI.ShowPlanetPanel(p)
+            ClientGalaxy.OnPlanetSelect(p)
         end,
         onFleetSelect = function(fid)
             H.activeFleetId_ = fid
-            GameUI.ShowFleetPanel(fid)
+            GameUI.RefreshFleetPanel(fm_, fid)
+            GameUI.SetMapSelectedFleet(fid)
         end,
         onFleetContactPlanet = function(fleet, planet)
             if H.explorerColonizeMode_ then
