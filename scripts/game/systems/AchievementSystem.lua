@@ -170,6 +170,94 @@ AchievementSystem.ACHIEVEMENTS = {
         condition = function(ps) return (ps.planetsColonized or 0) >= 5 end,
         reward = { purpleCrystal = 30 },
     },
+    
+    -- V1.6 P3-1: 战斗专项成就
+    {
+        id = "NO_DAMAGE_MASTER",
+        name = "无伤大师",
+        desc = "连续 5 波无伤",
+        icon = "🛡️",
+        category = "combat",
+        condition = function(ps) return (ps.noDamageStreak or 0) >= 5 end,
+        reward = { purpleCrystal = 50, rainbowCrystal = 5 },
+    },
+    {
+        id = "COMBO_KING",
+        name = "连击之王",
+        desc = "单场战斗达成 30 连击",
+        icon = "🔥",
+        category = "combat",
+        condition = function(ps) return (ps.maxCombo or 0) >= 30 end,
+        reward = { blueCrystal = 100 },
+    },
+    {
+        id = "WAVE_MVP_5",
+        name = "5波 MVP",
+        desc = "连续 5 波击杀数最高",
+        icon = "⭐",
+        category = "combat",
+        condition = function(ps) return (ps.mvpStreak or 0) >= 5 end,
+        reward = { blueCrystal = 80 },
+    },
+    {
+        id = "SPEEDRUNNER",
+        name = "速通达人",
+        desc = "60 秒内完成波次 10",
+        icon = "⚡",
+        category = "combat",
+        condition = function(ps) return (ps.fastestWave10 or 999) <= 60 end,
+        reward = { purpleCrystal = 30 },
+    },
+    {
+        id = "PERFECT_CLEAR",
+        name = "完美通关",
+        desc = "波次 30 无伤无舰损",
+        icon = "✨",
+        category = "combat",
+        condition = function(ps) return ps.perfectWave30 or false end,
+        reward = { rainbowCrystal = 10 },
+    },
+    {
+        id = "UNDERDOG",
+        name = "逆袭",
+        desc = "舰队规模低于 5 艘击败 Boss",
+        icon = "💪",
+        category = "combat",
+        condition = function(ps) return ps.bossDefeatedWithSmallFleet or false end,
+        reward = { purpleCrystal = 50 },
+    },
+    
+    -- 隐藏成就
+    {
+        id = "HIDDEN_LUCKY",
+        name = "???",
+        desc = "隐藏成就：幸运之星",
+        icon = "🍀",
+        category = "hidden",
+        hidden = true,
+        condition = function(ps) return ps.luckyEventTriggered or false end,
+        reward = { rainbowCrystal = 20 },
+    },
+    {
+        id = "HIDDEN_PERSISTENT",
+        name = "???",
+        desc = "隐藏成就：坚持不懈",
+        icon = "🎯",
+        category = "hidden",
+        hidden = true,
+        condition = function(ps) return (ps.totalBattles or 0) >= 100 end,
+        reward = { purpleCrystal = 100 },
+    },
+    {
+        id = "HIDDEN_EXPLORER",
+        name = "???",
+        desc = "隐藏成就：深空探索者",
+        icon = "🔭",
+        category = "hidden",
+        hidden = true,
+        condition = function(ps) return (ps.hiddenPlanetsFound or 0) >= 3 end,
+        reward = { rainbowCrystal = 15 },
+    },
 }
 
 -- 成就分类
@@ -179,6 +267,7 @@ AchievementSystem.CATEGORIES = {
     { id = "fleet", name = "舰船", icon = "🚀" },
     { id = "economy", name = "经济", icon = "💰" },
     { id = "exploration", name = "探索", icon = "🌌" },
+    { id = "hidden", name = "隐藏", icon = "❓" },
 }
 
 -- 获取玩家成就进度
