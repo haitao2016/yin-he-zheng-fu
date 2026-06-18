@@ -204,6 +204,18 @@ function MegastructureSystem.Update(dt, buildMult)
     return nil
 end
 
+--- 获取下一阶段建造费用
+---@param key string
+---@return table|nil  { metal=N, esource=N, ... } or nil
+function MegastructureSystem.GetNextPhaseCost(key)
+    local def = MEGASTRUCTURES[key]
+    local state = megaStates_[key]
+    if not def or not state then return nil end
+    local phaseIdx = state.currentPhase + 1
+    if phaseIdx > #def.phases then return nil end
+    return def.phases[phaseIdx].cost
+end
+
 --- 获取建造进度百分比 0~1（当前阶段）
 function MegastructureSystem.GetProgress(key)
     local state = megaStates_[key]

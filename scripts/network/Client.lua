@@ -2089,6 +2089,23 @@ softReset = function()
         evBonus_._legacyMegaPhaseReduction = legacyBonus.megaPhaseReduction
         print(string.format("[Legacy] 经济L5: 巨构阶段 -%ds", legacyBonus.megaPhaseReduction))
     end
+    if legacyBonus.agreementCdReduction > 0 then
+        evBonus_._legacyAgreementCdReduction = legacyBonus.agreementCdReduction
+        print(string.format("[Legacy] 外交L2: 协议CD -%d%%", legacyBonus.agreementCdReduction * 100))
+    end
+    if legacyBonus.diploPositiveBonus > 0 then
+        evBonus_._legacyDiploPositiveBonus = legacyBonus.diploPositiveBonus
+        print(string.format("[Legacy] 外交L3: 正面事件 +%d%%", legacyBonus.diploPositiveBonus * 100))
+    end
+    if legacyBonus.questRefreshReduction > 0 then
+        rm_._legacyQuestRefreshReduction = legacyBonus.questRefreshReduction
+        print(string.format("[Legacy] 外交L4: 任务刷新CD -%ds", legacyBonus.questRefreshReduction))
+    end
+    if legacyBonus.crisisCountdownBonus > 0 then
+        evBonus_._legacyCrisisCountdownBonus = legacyBonus.crisisCountdownBonus
+        GalaxyEvents._crisisCountdownBonus = legacyBonus.crisisCountdownBonus
+        print(string.format("[Legacy] 外交L5: 危机倒计时 +%ds", legacyBonus.crisisCountdownBonus))
+    end
     evBonus_._legacyBonuses = legacyBonus  -- 完整暴露给子系统
 
     -- 广告奖励：若上一局看了广告，新局额外获得资源

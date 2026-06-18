@@ -534,6 +534,9 @@ local function makeShip(stype, x, y, team)
         local affixKeys = mutantData.affixes
         if affixKeys and #affixKeys > 0 then
             ship.mutantAffixes = affixKeys
+            -- 构建 affixSet 字典供 BattleAI O(1) 查询
+            ship.affixSet = {}
+            for _, k in ipairs(affixKeys) do ship.affixSet[k] = true end
             -- 应用属性型词缀 (fragile/sluggish/overcharge 的数值修改)
             local MutantShip = require("game.MutantShipSystem")
             MutantShip.ApplyAffixStats(ship, affixKeys)

@@ -688,21 +688,21 @@ function BattleAI.UpdatePlayerFleet(dt)
             end
         end
 
-        -- 变异词缀运行时效果
-        if ship.affixes then
+        -- 变异词缀运行时效果（使用 affixSet 字典，由 makeShip 构建）
+        if ship.affixSet then
             -- regen: 每秒回复 1% maxHP
-            if ship.affixes.regen then
+            if ship.affixSet.regen then
                 ship.health = math.min(ship.maxHealth, ship.health + ship.maxHealth * 0.01 * dt)
             end
             -- overcharge: 每秒消耗 0.5% HP，换取额外伤害（在射击时已 ×1.5）
-            if ship.affixes.overcharge then
+            if ship.affixSet.overcharge then
                 ship.health = ship.health - ship.maxHealth * 0.005 * dt
                 if ship.health < 1 then ship.health = 1 end
             end
             -- berserk: 血量 <30% 时伤害×2
             -- (应用在射击段)
             -- stealth: 3s 隐匿 / 20s 循环
-            if ship.affixes.stealth then
+            if ship.affixSet.stealth then
                 ship.stealthCycle = (ship.stealthCycle or 0) + dt
                 if ship.stealthCycle >= 20.0 then
                     ship.stealthCycle = 0
@@ -710,7 +710,7 @@ function BattleAI.UpdatePlayerFleet(dt)
                 end
             end
             -- unstable: 2s 锁定 / 30s 循环（锁定期间不能射击）
-            if ship.affixes.unstable then
+            if ship.affixSet.unstable then
                 ship.unstableCycle = (ship.unstableCycle or 0) + dt
                 if ship.unstableCycle >= 30.0 then
                     ship.unstableCycle = 0
@@ -808,7 +808,7 @@ function BattleAI.UpdatePlayerFleet(dt)
 
                     -- Berserk 变异 (血量 <30% 时 ×2)
                     local berserkMult = 1.0
-                    if ship.affixes and ship.affixes.berserk and ship.health < ship.maxHealth * 0.3 then
+                    if ship.affixSet and ship.affixSet.berserk and ship.health < ship.maxHealth * 0.3 then
                         berserkMult = 2.0
                     end
 
@@ -844,7 +844,7 @@ function BattleAI.UpdatePlayerFleet(dt)
                     battleStats_.dmgDealt = battleStats_.dmgDealt + dmg
 
                     -- shock 变异溅射（30% 伤害，半径 40）
-                    if ship.affixes and ship.affixes.shock then
+                    if ship.affixSet and ship.affixSet.shock then
                         local splashDmg = math.floor(dmg * 0.3)
                         for _, es in ipairs(enemyFleet_) do
                             if es ~= target then
@@ -1152,7 +1152,7 @@ function BattleAI.ProcessDeaths(dt)
             -- 战斗日志
             logBattleEvent((SHIP_TYPES_[ship.stype] and SHIP_TYPES_[ship.stype].name or ship.stype) .. " 被击毁")
             -- fission 变异：分裂为 2 个小型克隆
-            if ship.affixes and ship.affixes.fission and not ship.isFissionClone then
+            if ship.affixSet and ship.affixSet.fission and not ship.isFissionClone then
                 for ci = 1, 2 do
                     local clone = makeShip_(ship.stype, ship.x + (ci == 1 and -15 or 15), ship.y, "player")
                     clone.health = math.floor(ship.maxHealth * 0.4)
@@ -1224,7 +1224,7 @@ function BattleAI.ProcessDeaths(dt)
                     ship.lastHitter.health = math.min(ship.lastHitter.maxHealth, ship.lastHitter.health + heal)
                 end
                 -- vampiric 词缀：击杀回复 5% maxHP
-                if ship.lastHitter.affixes and ship.lastHitter.affixes.vampiric then
+                if ship.lastHitter.affixSet and ship.lastHitter.affixSet.vampiric then
                     local heal = math.floor(ship.lastHitter.maxHealth * 0.05)
                     ship.lastHitter.health = math.min(ship.lastHitter.maxHealth, ship.lastHitter.health + heal)
                 end

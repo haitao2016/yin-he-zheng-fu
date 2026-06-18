@@ -212,10 +212,11 @@ end
 ---@param fm table|nil FleetManager（残骸零件查询）
 ---@return table|nil completedQuest  本帧完成的任务（仅第一个）
 function QuestBoard.Update(dt, rm, diplo, fm)
-    -- 生成计时
+    -- 生成计时（外交遗产 L4 减少刷新间隔）
     spawnTimer_ = spawnTimer_ - dt
     if spawnTimer_ <= 0 then
-        spawnTimer_ = REFRESH_CD
+        local reduction = rm and rm._legacyQuestRefreshReduction or 0
+        spawnTimer_ = REFRESH_CD - reduction
         generateQuest()
     end
 

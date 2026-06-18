@@ -926,16 +926,29 @@ function M.Init(H)
             ClientBattle.LaunchExpedition(fleetId, baseId)
         end,
 
-        -- Megastructure
+        -- Megastructure（先检查资源+扣除，再启动建造）
         onMegaStartPhase = function(megaId)
-            local ok, msg = MegastructureSystem.StartPhase(megaId, rm_)
+            local coreLevel = bs_ and bs_:getCoreLevel() or 0
+            local canStart, errMsg = MegastructureSystem.CanStartPhase(megaId, rm_.resources, coreLevel)
+            if not canStart then
+                GameUI.Notify(errMsg or "无法启动建造", "warning")
+                return
+            end
+            -- 扣除本阶段资源
+            local phaseCost = MegastructureSystem.GetNextPhaseCost(megaId)
+            if phaseCost then
+                for res, need in pairs(phaseCost) do
+                    rm_.resources[res] = (rm_.resources[res] or 0) - need
+                end
+            end
+            local ok = MegastructureSystem.StartPhase(megaId)
             if ok then
                 Audio.Play(Audio.SFX.BUILD)
                 GameUI.Notify("🏗️ 巨构工程启动: " .. megaId, "success")
                 applyBaseModuleEffects()
                 saveGame()
             else
-                GameUI.Notify(msg or "无法启动建造", "warning")
+                GameUI.Notify("启动建造失败", "warning")
             end
         end,
     })
