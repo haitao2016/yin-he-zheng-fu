@@ -538,8 +538,8 @@ function M.CheckVictory()
     if not allDestroyed then return end
 
     -- 胜利！
-    if S.isCampaignMode then
-        Campaign.OnMissionComplete(S.difficulty)
+    if S.campaignMode then
+        Campaign.CompleteLevel()
     end
     if S.isEndlessMode then
         -- 无尽模式不直接结束，进入下一轮
@@ -1094,10 +1094,8 @@ function M.TriggerEndGame(gameType)
         S.clientCloud:submitScore("galaxy_conquest", scoreVal, { onlyIfBetter = true })
     end
 
-    -- P2-2: 战役模式结算
-    if S.isCampaignMode and gameType == "win" then
-        Campaign.OnMissionScore(scoreVal, stars)
-    end
+    -- P2-2: 战役模式结算（CompleteLevel 已在 CheckVictory 中调用）
+    -- 此处不再重复调用不存在的 OnMissionScore
 
     -- 战绩统计
     local career = S.career or {}
@@ -1163,8 +1161,15 @@ function M.TriggerEndGame(gameType)
         LeagueSystem.SubmitGame(scoreVal, gameType == "win", stars)
     end
 
-    -- P1-3 V2.5: 文明遗产
-    LegacySystem.AwardEndOfGame(gameType, scoreVal, stars, S.totalPlayTime or 0)
+    -- P1-3 V2.5: 文明遗产（构造 stats 表匹配 LegacySystem 期望）
+    local legacyStats = {
+        survived10Waves   = (stats.wavesCleared or 0) >= 10,
+        kills             = stats.enemiesKilled or 0,
+        builtMegastructure = S.battleStatsCache.builtMegastructure or false,
+        survivedCrisis     = S.battleStatsCache.survivedCrisis or false,
+        leagueRank         = S.leagueMode and (S.battleStatsCache.leagueRank or 0) or 0,
+    }
+    LegacySystem.AwardEndOfGame(legacyStats)
 
     -- 保存战绩
     if S.saveCareer then S.saveCareer() end
