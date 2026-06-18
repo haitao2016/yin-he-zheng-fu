@@ -149,38 +149,49 @@ class CodeHealthChecker:
     
     def detect_duplicates(self, file_contents: Dict[str, List[str]]) -> List[Dict]:
         """检测重复代码块 (优化版)"""
-        duplicates = []
+        all_blocks = self._extract_code_blocks(file_contents)
+        duplicates = self._find_similar_blocks(all_blocks)
+        return self._deduplicate(duplicates)[:20]
+
+    def _extract_code_blocks(self, file_contents: Dict[str, List[str]]) -> List[Dict]:
+        """提取所有候选代码块"""
         all_blocks = []
-        
-        # 使用步长减少块数量
         step = max(1, self.DUPLICATE_MIN_LINES // 2)
-        
+        max_blocks_per_file = 50
+
         for file_path, lines in file_contents.items():
-            # 限制每个文件的最大块数
-            max_blocks_per_file = 50
             block_count = 0
-            
             for i in range(0, len(lines) - self.DUPLICATE_MIN_LINES + 1, step):
                 if block_count >= max_blocks_per_file:
                     break
-                    
-                block = lines[i:i + self.DUPLICATE_MIN_LINES]
-                block_text = '\n'.join(line.strip() for line in block if line.strip())
-                if len(block_text) > 50:  # 忽略太短的块
-                    all_blocks.append({
-                        'file': file_path,
-                        'start_line': i + 1,
-                        'end_line': i + self.DUPLICATE_MIN_LINES,
-                        'content': block_text,
-                        'content_hash': hash(block_text[:100])  # 用于快速过滤
-                    })
+                block_text = self._build_block_text(lines, i)
+                if block_text and len(block_text) > 50:
+                    all_blocks.append(self._make_block(file_path, i, block_text))
                     block_count += 1
-        
-        # 使用哈希快速过滤后再比较相似度
-        checked = set()
-        max_comparisons = 10000  # 限制最大比较次数
+        return all_blocks
+
+    def _build_block_text(self, lines: List[str], start: int) -> str:
+        """构建代码块文本"""
+        block = lines[start:start + self.DUPLICATE_MIN_LINES]
+        return '\n'.join(line.strip() for line in block if line.strip())
+
+    def _make_block(self, file_path: str, start: int, text: str) -> Dict:
+        """构造代码块对象"""
+        return {
+            'file': file_path,
+            'start_line': start + 1,
+            'end_line': start + self.DUPLICATE_MIN_LINES,
+            'content': text,
+            'content_hash': hash(text[:100])
+        }
+
+    def _find_similar_blocks(self, all_blocks: List[Dict]) -> List[Dict]:
+        """查找相似代码块"""
+        duplicates = []
+        max_comparisons = 10000
         comparison_count = 0
-        
+        checked = set()
+
         for i, block1 in enumerate(all_blocks):
             if comparison_count >= max_comparisons:
                 break
@@ -188,41 +199,43 @@ class CodeHealthChecker:
                 if comparison_count >= max_comparisons:
                     break
                 comparison_count += 1
-                
-                pair_key = (min(i, j), max(i, j))
-                if pair_key in checked:
+
+                if not self._should_compare(block1, block2, checked, i, j):
                     continue
-                checked.add(pair_key)
-                
-                # 跳过同一文件的相邻块
-                if block1['file'] == block2['file'] and abs(block1['start_line'] - block2['start_line']) < self.DUPLICATE_MIN_LINES * 2:
-                    continue
-                
-                # 快速哈希过滤
-                if block1['content_hash'] != block2['content_hash']:
-                    # 只有哈希不同时才进行完整相似度计算
-                    similarity = SequenceMatcher(None, block1['content'], block2['content']).ratio()
-                else:
-                    similarity = 1.0
-                
+
+                similarity = self._calc_similarity(block1, block2)
                 if similarity >= self.DUPLICATE_SIMILARITY:
-                    duplicates.append({
-                        'block1': {
-                            'file': block1['file'],
-                            'start': block1['start_line'],
-                            'end': block1['end_line']
-                        },
-                        'block2': {
-                            'file': block2['file'],
-                            'start': block2['start_line'],
-                            'end': block2['end_line']
-                        },
-                        'similarity': round(similarity * 100, 1)
-                    })
-        
-        # 去重并限制数量
+                    duplicates.append(self._make_duplicate(block1, block2, similarity))
+        return duplicates
+
+    def _should_compare(self, b1: Dict, b2: Dict, checked: set, i: int, j: int) -> bool:
+        """判断两个块是否需要比较"""
+        pair_key = (min(i, j), max(i, j))
+        if pair_key in checked:
+            return False
+        checked.add(pair_key)
+        if b1['file'] == b2['file'] and abs(b1['start_line'] - b2['start_line']) < self.DUPLICATE_MIN_LINES * 2:
+            return False
+        return True
+
+    def _calc_similarity(self, b1: Dict, b2: Dict) -> float:
+        """计算相似度 (哈希快速过滤)"""
+        if b1['content_hash'] != b2['content_hash']:
+            return SequenceMatcher(None, b1['content'], b2['content']).ratio()
+        return 1.0
+
+    def _make_duplicate(self, b1: Dict, b2: Dict, similarity: float) -> Dict:
+        """构造重复代码块对象"""
+        return {
+            'block1': {'file': b1['file'], 'start': b1['start_line'], 'end': b1['end_line']},
+            'block2': {'file': b2['file'], 'start': b2['start_line'], 'end': b2['end_line']},
+            'similarity': round(similarity * 100, 1)
+        }
+
+    def _deduplicate(self, duplicates: List[Dict]) -> List[Dict]:
+        """去重"""
         seen = set()
-        unique_duplicates = []
+        unique = []
         for dup in duplicates:
             key = tuple(sorted([
                 (dup['block1']['file'], dup['block1']['start']),
@@ -230,9 +243,8 @@ class CodeHealthChecker:
             ]))
             if key not in seen:
                 seen.add(key)
-                unique_duplicates.append(dup)
-        
-        return unique_duplicates[:20]  # 限制返回数量
+                unique.append(dup)
+        return unique
     
     def detect_redundant_logic(self, content: str, file_ext: str) -> List[Dict]:
         """检测冗余的 if/return 逻辑"""
@@ -316,13 +328,19 @@ class CodeHealthChecker:
         lines = content.split('\n')
         
         for i, line in enumerate(lines, 1):
+            stripped = line.strip()
+            # 忽略 docstring/注释/字符串中的误检
+            if stripped.startswith('#') or stripped.startswith('"""') or stripped.startswith("'''"):
+                continue
+            # 忽略仅在字符串中出现的标记
             for pattern in self.TODO_PATTERNS:
-                if re.search(pattern, line, re.IGNORECASE):
-                    marker_type = re.search(pattern, line, re.IGNORECASE).group(0).strip(':').upper()
+                match = re.search(pattern, line, re.IGNORECASE)
+                if match:
+                    marker_type = match.group(0).strip(':').strip().upper()
                     markers.append({
                         'line': i,
                         'type': marker_type,
-                        'content': line.strip()[:100]  # 限制长度
+                        'content': stripped[:100]
                     })
                     break
         
@@ -515,127 +533,149 @@ class CodeHealthChecker:
 
 def generate_markdown_report(results: Dict) -> str:
     """生成 Markdown 报告"""
-    report = []
-    
-    # 标题
-    report.append("# 代码健康度检查报告")
-    report.append("")
-    report.append(f"**扫描时间**: {results['scan_time']}")
-    report.append(f"**目标目录**: `{results['target_directory']}`")
-    report.append("")
-    
-    # 健康度评分
+    sections = [
+        _render_header(results),
+        _render_score(results),
+        _render_summary_stats(results),
+        _render_large_files(results),
+        _render_long_functions(results),
+        _render_duplicate_blocks(results),
+        _render_redundant_logic(results),
+        _render_todo_markers(results),
+        _render_recommendations(results),
+        _render_file_details(results),
+    ]
+    return '\n'.join(s for s in sections if s)
+
+
+def _render_header(results: Dict) -> str:
+    """渲染报告头部"""
+    return (
+        "# 代码健康度检查报告\n\n"
+        f"**扫描时间**: {results['scan_time']}\n"
+        f"**目标目录**: `{results['target_directory']}`\n"
+    )
+
+
+def _render_score(results: Dict) -> str:
+    """渲染健康度评分"""
     score = results['summary']['score']
     score_color = "🟢" if score >= 80 else ("🟡" if score >= 60 else "🔴")
-    report.append(f"## 健康度评分: {score_color} {score}/100")
-    report.append("")
-    
-    # 统计概览
-    report.append("## 统计概览")
-    report.append("")
-    report.append(f"| 指标 | 数值 |")
-    report.append(f"|------|------|")
-    report.append(f"| 扫描文件数 | {results['summary']['total_files']} |")
-    report.append(f"| 总代码行数 | {results['summary']['total_lines']} |")
-    report.append(f"| 大文件 (>600行) | {len(results['summary']['large_files'])} |")
-    report.append(f"| 长函数 (>80行) | {len(results['summary']['long_functions'])} |")
-    report.append(f"| 重复代码块 | {len(results['summary']['duplicate_blocks'])} |")
-    report.append(f"| 冗余逻辑 | {len(results['summary']['redundant_logic'])} |")
-    report.append(f"| 遗留标记 | {len(results['summary']['todo_markers'])} |")
-    report.append("")
-    
-    # 大文件列表
-    if results['summary']['large_files']:
-        report.append("## 大文件列表 (>600行)")
-        report.append("")
-        report.append("| 文件 | 行数 | 建议 |")
-        report.append("|------|------|------|")
-        for item in sorted(results['summary']['large_files'], key=lambda x: -x['lines']):
-            report.append(f"| `{item['file']}` | {item['lines']} | 建议拆分 |")
-        report.append("")
-    
-    # 长函数列表
-    if results['summary']['long_functions']:
-        report.append("## 长函数列表 (>80行)")
-        report.append("")
-        report.append("| 文件 | 函数名 | 起始行 | 行数 |")
-        report.append("|------|--------|--------|------|")
-        for item in sorted(results['summary']['long_functions'], key=lambda x: -x.get('lines', 0))[:20]:
-            report.append(f"| `{item['file']}` | `{item['name']}` | {item['start']} | {item.get('lines', 'N/A')} |")
-        report.append("")
-    
-    # 重复代码块
-    if results['summary']['duplicate_blocks']:
-        report.append("## 重复代码块")
-        report.append("")
-        report.append("| 位置1 | 位置2 | 相似度 |")
-        report.append("|-------|-------|--------|")
-        for item in results['summary']['duplicate_blocks']:
-            loc1 = f"{item['block1']['file']}:{item['block1']['start']}"
-            loc2 = f"{item['block2']['file']}:{item['block2']['start']}"
-            report.append(f"| `{loc1}` | `{loc2}` | {item['similarity']}% |")
-        report.append("")
-    
-    # 冗余逻辑
-    if results['summary']['redundant_logic']:
-        report.append("## 冗余逻辑")
-        report.append("")
-        report.append("| 文件 | 行号 | 类型 | 建议 |")
-        report.append("|------|------|------|------|")
-        for item in results['summary']['redundant_logic'][:20]:
-            report.append(f"| `{item['file']}` | {item['line']} | {item['type']} | {item['suggestion']} |")
-        report.append("")
-    
-    # 遗留标记
-    if results['summary']['todo_markers']:
-        report.append("## 遗留标记")
-        report.append("")
-        
-        # 按类型分组
-        by_type = defaultdict(list)
-        for item in results['summary']['todo_markers']:
-            by_type[item['type']].append(item)
-        
-        for marker_type, items in sorted(by_type.items()):
-            report.append(f"### {marker_type} ({len(items)} 个)")
-            report.append("")
-            for item in items[:10]:  # 每种类型最多显示10个
-                content = item['content'][:80] + "..." if len(item['content']) > 80 else item['content']
-                report.append(f"- `{item['file']}:{item['line']}` - {content}")
-            if len(items) > 10:
-                report.append(f"- ... 还有 {len(items) - 10} 个")
-            report.append("")
-    
-    # 优化建议
-    if results['recommendations']:
-        report.append("## 优化建议")
-        report.append("")
-        for i, rec in enumerate(results['recommendations'], 1):
-            priority_icon = "🔴" if rec['priority'] == 'high' else ("🟡" if rec['priority'] == 'medium' else "🟢")
-            report.append(f"### {i}. {rec['category']} {priority_icon}")
-            report.append("")
-            report.append(f"**问题描述**: {rec['description']}")
-            report.append("")
-            report.append(f"**优化建议**: {rec['action']}")
-            report.append("")
-    
-    # 文件详情
-    report.append("## 文件详情")
-    report.append("")
-    report.append("<details>")
-    report.append("<summary>点击展开文件列表</summary>")
-    report.append("")
-    report.append("| 文件 | 行数 | 函数数 | 长函数 | TODO标记 |")
-    report.append("|------|------|--------|--------|----------|")
+    return f"## 健康度评分: {score_color} {score}/100\n"
+
+
+def _render_summary_stats(results: Dict) -> str:
+    """渲染统计概览"""
+    s = results['summary']
+    rows = [
+        ("扫描文件数", s['total_files']),
+        ("总代码行数", s['total_lines']),
+        ("大文件 (>600行)", len(s['large_files'])),
+        ("长函数 (>80行)", len(s['long_functions'])),
+        ("重复代码块", len(s['duplicate_blocks'])),
+        ("冗余逻辑", len(s['redundant_logic'])),
+        ("遗留标记", len(s['todo_markers'])),
+    ]
+    lines = ["## 统计概览\n", "| 指标 | 数值 |", "|------|------|"]
+    for name, val in rows:
+        lines.append(f"| {name} | {val} |")
+    return '\n'.join(lines) + '\n'
+
+
+def _render_large_files(results: Dict) -> str:
+    """渲染大文件列表"""
+    files = results['summary']['large_files']
+    if not files:
+        return ""
+    lines = ["## 大文件列表 (>600行)\n", "| 文件 | 行数 | 建议 |", "|------|------|------|"]
+    for item in sorted(files, key=lambda x: -x['lines']):
+        lines.append(f"| `{item['file']}` | {item['lines']} | 建议拆分 |")
+    return '\n'.join(lines) + '\n'
+
+
+def _render_long_functions(results: Dict) -> str:
+    """渲染长函数列表"""
+    funcs = results['summary']['long_functions']
+    if not funcs:
+        return ""
+    lines = ["## 长函数列表 (>80行)\n", "| 文件 | 函数名 | 起始行 | 行数 |", "|------|--------|--------|------|"]
+    for item in sorted(funcs, key=lambda x: -x.get('lines', 0))[:20]:
+        lines.append(f"| `{item['file']}` | `{item['name']}` | {item['start']} | {item.get('lines', 'N/A')} |")
+    return '\n'.join(lines) + '\n'
+
+
+def _render_duplicate_blocks(results: Dict) -> str:
+    """渲染重复代码块"""
+    dups = results['summary']['duplicate_blocks']
+    if not dups:
+        return ""
+    lines = ["## 重复代码块\n", "| 位置1 | 位置2 | 相似度 |", "|-------|-------|--------|"]
+    for item in dups:
+        loc1 = f"{item['block1']['file']}:{item['block1']['start']}"
+        loc2 = f"{item['block2']['file']}:{item['block2']['start']}"
+        lines.append(f"| `{loc1}` | `{loc2}` | {item['similarity']}% |")
+    return '\n'.join(lines) + '\n'
+
+
+def _render_redundant_logic(results: Dict) -> str:
+    """渲染冗余逻辑"""
+    items = results['summary']['redundant_logic']
+    if not items:
+        return ""
+    lines = ["## 冗余逻辑\n", "| 文件 | 行号 | 类型 | 建议 |", "|------|------|------|------|"]
+    for item in items[:20]:
+        lines.append(f"| `{item['file']}` | {item['line']} | {item['type']} | {item['suggestion']} |")
+    return '\n'.join(lines) + '\n'
+
+
+def _render_todo_markers(results: Dict) -> str:
+    """渲染遗留标记"""
+    markers = results['summary']['todo_markers']
+    if not markers:
+        return ""
+
+    by_type = defaultdict(list)
+    for item in markers:
+        by_type[item['type']].append(item)
+
+    lines = ["## 遗留标记\n"]
+    for marker_type, items in sorted(by_type.items()):
+        lines.append(f"### {marker_type} ({len(items)} 个)\n")
+        for item in items[:10]:
+            content = item['content'][:80] + "..." if len(item['content']) > 80 else item['content']
+            lines.append(f"- `{item['file']}:{item['line']}` - {content}")
+        if len(items) > 10:
+            lines.append(f"- ... 还有 {len(items) - 10} 个")
+        lines.append("")
+    return '\n'.join(lines)
+
+
+def _render_recommendations(results: Dict) -> str:
+    """渲染优化建议"""
+    recs = results['recommendations']
+    if not recs:
+        return ""
+    lines = ["## 优化建议\n"]
+    for i, rec in enumerate(recs, 1):
+        icon = "🔴" if rec['priority'] == 'high' else ("🟡" if rec['priority'] == 'medium' else "🟢")
+        lines.append(f"### {i}. {rec['category']} {icon}\n")
+        lines.append(f"**问题描述**: {rec['description']}\n")
+        lines.append(f"**优化建议**: {rec['action']}\n")
+    return '\n'.join(lines)
+
+
+def _render_file_details(results: Dict) -> str:
+    """渲染文件详情"""
+    lines = ["## 文件详情\n", "<details>", "<summary>点击展开文件列表</summary>\n",
+             "| 文件 | 行数 | 函数数 | 长函数 | TODO标记 |",
+             "|------|------|--------|--------|----------|"]
     for file_path, file_info in sorted(results['files'].items()):
         func_count = len(file_info.get('functions', []))
         long_func = len(file_info.get('long_functions', []))
         todo_count = len(file_info.get('todo_markers', []))
-        report.append(f"| `{file_path}` | {file_info.get('lines', 0)} | {func_count} | {long_func} | {todo_count} |")
-    report.append("")
-    report.append("</details>")
-    
-    return '\n'.join(report)
+        lines.append(f"| `{file_path}` | {file_info.get('lines', 0)} | {func_count} | {long_func} | {todo_count} |")
+    lines.append("\n</details>")
+    return '\n'.join(lines)
 
 
 def main():
