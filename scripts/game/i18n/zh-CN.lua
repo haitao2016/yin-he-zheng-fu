@@ -207,4 +207,330 @@ return {
 
     ["commander.skill.iron_will.name"] = "钢铁意志",
     ["commander.skill.iron_will.desc"] = "战损后仍保持 {value}% 战斗力",
+
+    -- ========================================================================
+    -- 科技名称与描述
+    -- ========================================================================
+
+    ["tech.deep_mining.name"] = "深层采矿",
+    ["tech.deep_mining.desc"] = "提升矿井产量20%。利用深层钻探技术开采行星地核资源。",
+    ["tech.solar_efficiency.name"] = "高效光伏",
+    ["tech.solar_efficiency.desc"] = "电站产量+15%。改进光伏转化效率。",
+    ["tech.crystal_process.name"] = "晶石精炼",
+    ["tech.crystal_process.desc"] = "晶石加工效率提升20%。",
+    ["tech.hull_alloy.name"] = "合金船壳",
+    ["tech.hull_alloy.desc"] = "所有舰船耐久+25%。",
+    ["tech.shield_reinforce.name"] = "护盾强化",
+    ["tech.shield_reinforce.desc"] = "护盾值+100，防御+10%。",
+    ["tech.rapid_refine.name"] = "快速精炼",
+    ["tech.rapid_refine.desc"] = "舰船建造时间-15%。",
+    ["tech.warp_drive.name"] = "曲速引擎",
+    ["tech.warp_drive.desc"] = "舰队移动速度+50%。",
+    ["tech.advanced_weapons.name"] = "高级武器系统",
+    ["tech.advanced_weapons.desc"] = "所有战舰攻击力+30%。",
+    ["tech.defense_matrix.name"] = "防御矩阵",
+    ["tech.defense_matrix.desc"] = "舰队生命值+30%，护盾上限+20%。",
+    ["tech.void_anchor.name"] = "虚空锚定",
+    ["tech.void_anchor.desc"] = "敌方舰队移动速度-30%。",
+    ["tech.nova_cannon.name"] = "新星炮",
+    ["tech.nova_cannon.desc"] = "AOE半径+80%，全体伤害+50%。",
+    ["tech.fortress_protocol.name"] = "要塞协议",
+    ["tech.fortress_protocol.desc"] = "基地护盾最大值翻倍，每秒恢复1%基地护盾。",
+    ["tech.quantum_core.name"] = "量子核心",
+    ["tech.quantum_core.desc"] = "科研速度+50%，核心升级费用-20%。",
+    ["tech.phase_drive.name"] = "相位驱动",
+    ["tech.phase_drive.desc"] = "舰队速度再+50%，获得隐形能力。",
+    ["tech.stellar_sync.name"] = "星际同步",
+    ["tech.stellar_sync.desc"] = "全局产出+25%，科研+30%。",
+    ["tech.stellar_engine.name"] = "恒星引擎",
+    ["tech.stellar_engine.desc"] = "全局移动速度+60%，战斗开局获得初始加速。",
+    ["tech.quantum_factory.name"] = "量子工厂",
+    ["tech.quantum_factory.desc"] = "舰船建造速度翻倍，升级费用-25%。",
+    ["tech.void_fleet.name"] = "虚空舰队",
+    ["tech.void_fleet.desc"] = "敌方舰队生成-30%，敌舰伤害-20%。",
+    ["tech.fortress_protocol_ii.name"] = "要塞协议II",
+    ["tech.fortress_protocol_ii.desc"] = "基地护盾最大值3倍，每秒恢复2%，受攻击时触发反击护盾。",
+    ["tech.chrono_research.name"] = "时序研究",
+    ["tech.chrono_research.desc"] = "科研速度2.5倍，事件频率减半。",
+    ["tech.galactic_ascend.name"] = "银河飞升",
+    ["tech.galactic_ascend.desc"] = "全局伤害2倍，舰队上限+3，每波技能点+2，所有奖励翻倍。",
+
+    -- ========================================================================
+    -- 舰船类型名称与描述
+    -- ========================================================================
+
+    ["ship.fighter.name"] = "战斗机",
+    ["ship.fighter.desc"] = "高速轻型舰船，擅长快速突击。",
+    ["ship.corvette.name"] = "护卫舰",
+    ["ship.corvette.desc"] = "平衡型舰船，适合侧翼支援。",
+    ["ship.destroyer.name"] = "驱逐舰",
+    ["ship.destroyer.desc"] = "主战舰船，正面突击的主力。",
+    ["ship.battlecruiser.name"] = "战列巡洋舰",
+    ["ship.battlecruiser.desc"] = "重型火力舰，后排输出核心。",
+    ["ship.carrier.name"] = "航母",
+    ["ship.carrier.desc"] = "舰载机平台，提供空中支援。",
+    ["ship.void_lord.name"] = "虚空领主",
+    ["ship.void_lord.desc"] = "终极战舰，碾压一切。",
+    ["ship.devastator.name"] = "毁灭者",
+    ["ship.devastator.desc"] = "末日武器，所到之处寸草不生。",
+    ["ship.engineer.name"] = "工程维修舰",
+    ["ship.engineer.desc"] = "支援舰，周期性为周围友舰修复生命。",
+    ["ship.stealth.name"] = "隐形突击舰",
+    ["ship.stealth.desc"] = "高爆发低生存，周期性进入隐形状态。",
+    ["ship.railgun.name"] = "轨道炮舰",
+    ["ship.railgun.desc"] = "超远程单体高伤，充能后发射轨道炮。",
+
+    -- ========================================================================
+    -- 战斗指令名称与描述
+    -- ========================================================================
+
+    ["battlecmd.focus_fire.name"] = "集火目标",
+    ["battlecmd.focus_fire.desc"] = "全舰队集火指定目标：+50% 伤害，+100% 射速，持续 8 秒",
+    ["battlecmd.defense_stance.name"] = "优先防御",
+    ["battlecmd.defense_stance.desc"] = "舰队转入防御姿态：-30% 伤害，+50% 防御，持续 10 秒",
+    ["battlecmd.tactical_retreat.name"] = "后撤重整",
+    ["battlecmd.tactical_retreat.desc"] = "舰队后撤：+30% 移动速度，护盾 +40%，5 秒内无法攻击",
+    ["battlecmd.full_salvo.name"] = "全弹发射",
+    ["battlecmd.full_salvo.desc"] = "一次性发射所有武器：+200% 伤害，消耗所有技能充能",
+    ["battlecmd.emergency_repair.name"] = "紧急修理",
+    ["battlecmd.emergency_repair.desc"] = "紧急修复 30% 最大生命值，冷却 60 秒",
+
+    -- ========================================================================
+    -- Roguelike 卡牌名称与描述
+    -- ========================================================================
+
+    ["roguelike.attack_overdrive.name"] = "攻击过载",
+    ["roguelike.attack_overdrive.desc"] = "所有舰船攻击力 +20%",
+    ["roguelike.reinforced_armor.name"] = "强化装甲",
+    ["roguelike.reinforced_armor.desc"] = "所有舰船防御 +25%",
+    ["roguelike.phase_shield.name"] = "相位护盾",
+    ["roguelike.phase_shield.desc"] = "护盾最大值 +30%，回复 +15%",
+    ["roguelike.resource_boon.name"] = "资源恩惠",
+    ["roguelike.resource_boon.desc"] = "基础资源产出 +40%",
+    ["roguelike.hyperspeed.name"] = "超光速驱动",
+    ["roguelike.hyperspeed.desc"] = "舰队移动速度 +35%，开火速率 +15%",
+    ["roguelike.quantum_factory.name"] = "量子工厂",
+    ["roguelike.quantum_factory.desc"] = "舰船建造速度 +50%，升级费用 -20%",
+    ["roguelike.skill_charge.name"] = "战术充能",
+    ["roguelike.skill_charge.desc"] = "战斗开始时技能充能 +2",
+    ["roguelike.bloodlust.name"] = "嗜血狂热",
+    ["roguelike.bloodlust.desc"] = "攻击力 +50%，但受到伤害 +25%",
+    ["roguelike.bastion_protocol.name"] = "堡垒协议",
+    ["roguelike.bastion_protocol.desc"] = "防御 +60%，护盾 +40%，但移动速度 -30%",
+    ["roguelike.power_drain.name"] = "能量吞噬",
+    ["roguelike.power_drain.desc"] = "资源产出 +100%，但每回合失去 5% 当前生命值",
+    ["roguelike.overclock.name"] = "超频核心",
+    ["roguelike.overclock.desc"] = "开火速率 +75%，但护盾回复 -50%",
+    ["roguelike.battle_lust.name"] = "战意激荡",
+    ["roguelike.battle_lust.desc"] = "每次击败敌舰回复 2% 最大生命值",
+    ["roguelike.critical_mass.name"] = "临界质量",
+    ["roguelike.critical_mass.desc"] = "暴击率 +20%，暴击伤害 +50%",
+    ["roguelike.afterburner.name"] = "后燃推进",
+    ["roguelike.afterburner.desc"] = "闪避率 +15%，首次受到致命伤害时免疫并回复 50% 生命值",
+    ["roguelike.galactic_luck.name"] = "银河好运",
+    ["roguelike.galactic_luck.desc"] = "每次选卡时额外获得 1 张卡选项",
+    ["roguelike.void_strike.name"] = "虚空打击",
+    ["roguelike.void_strike.desc"] = "所有攻击附带 10% 当前生命值的无视防御伤害",
+
+    -- ========================================================================
+    -- 游戏设置文本
+    -- ========================================================================
+
+    ["settings.audio"] = "音频",
+    ["settings.graphics"] = "图像",
+    ["settings.gameplay"] = "游戏性",
+    ["settings.accessibility"] = "辅助功能",
+    ["settings.language"] = "语言",
+    ["settings.master_volume"] = "主音量",
+    ["settings.music_volume"] = "音乐音量",
+    ["settings.sfx_volume"] = "音效音量",
+    ["settings.voice_volume"] = "语音音量",
+    ["settings.graphics_quality"] = "画质",
+    ["settings.resolution"] = "分辨率",
+    ["settings.fullscreen"] = "全屏",
+    ["settings.vsync"] = "垂直同步",
+    ["settings.particle_effects"] = "粒子特效",
+    ["settings.ambient_occlusion"] = "环境光遮蔽",
+    ["settings.bloom"] = "泛光效果",
+    ["settings.game_speed"] = "游戏速度",
+    ["settings.autosave_interval"] = "自动保存间隔",
+    ["settings.show_damage_numbers"] = "显示伤害数字",
+    ["settings.show_tutorial_hints"] = "显示教程提示",
+    ["settings.confirm_before_exit"] = "退出前确认",
+    ["settings.colorblind_mode"] = "色盲模式",
+    ["settings.colorblind_none"] = "无",
+    ["settings.colorblind_red_green"] = "红绿色盲",
+    ["settings.colorblind_blue_yellow"] = "蓝黄色盲",
+    ["settings.font_size"] = "字体大小",
+    ["settings.font_small"] = "小",
+    ["settings.font_medium"] = "中",
+    ["settings.font_large"] = "大",
+    ["settings.high_contrast"] = "高对比度模式",
+    ["settings.reduced_motion"] = "减少动画效果",
+    ["settings.screen_shake"] = "屏幕震动",
+    ["settings.damage_flash"] = "受伤闪烁",
+
+    -- ========================================================================
+    -- 难度名称与描述
+    -- ========================================================================
+
+    ["difficulty.easy.name"] = "简单",
+    ["difficulty.easy.desc"] = "适合新手：敌人较弱，资源产出丰厚。",
+    ["difficulty.normal.name"] = "普通",
+    ["difficulty.normal.desc"] = "标准体验：平衡的挑战与收益。",
+    ["difficulty.hard.name"] = "困难",
+    ["difficulty.hard.desc"] = "高级挑战：敌人更强，资源更稀缺。",
+    ["difficulty.nightmare.name"] = "噩梦",
+    ["difficulty.nightmare.desc"] = "极限挑战：敌人极为强大，资源极度紧张。",
+
+    -- ========================================================================
+    -- 战役章节名称
+    -- ========================================================================
+
+    ["campaign.prologue.name"] = "序章：星火燎原",
+    ["campaign.chapter1.name"] = "第一章：黑暗降临",
+    ["campaign.chapter2.name"] = "第二章：帝国反击",
+    ["campaign.stage.objective.assault"] = "突袭战",
+    ["campaign.stage.objective.defend"] = "防守战",
+    ["campaign.stage.objective.survive"] = "生存战",
+    ["campaign.stage.objective.eliminate"] = "斩首行动",
+    ["campaign.stage.objective.escort"] = "护送战",
+    ["campaign.stage.difficulty.easy"] = "简单",
+    ["campaign.stage.difficulty.medium"] = "普通",
+    ["campaign.stage.difficulty.hard"] = "困难",
+    ["campaign.stage.difficulty.extreme"] = "噩梦",
+
+    -- ========================================================================
+    -- 赛季文本
+    -- ========================================================================
+
+    ["season.current"] = "当前赛季",
+    ["season.next"] = "下一赛季",
+    ["season.ends_in"] = "剩余 {days} 天",
+    ["season.points"] = "赛季积分",
+    ["season.rank"] = "赛季排名",
+    ["season.rewards"] = "赛季奖励",
+    ["season.exclusive"] = "赛季限定",
+
+    -- ========================================================================
+    -- 银河事件文本（新增事件）
+    -- ========================================================================
+
+    ["event.stargate_open.name"] = "星门开启",
+    ["event.stargate_open.desc"] = "星门开启，提供快速移动通道。",
+    ["event.wormhole_appears.name"] = "虫洞出现",
+    ["event.wormhole_appears.desc"] = "神秘虫洞连接两个遥远区域。",
+    ["event.rare_mineral_discovery.name"] = "稀有矿物发现",
+    ["event.rare_mineral_discovery.desc"] = "探测到稀有矿物资源，采矿效率大幅提升。",
+    ["event.solar_storm.name"] = "太阳风暴",
+    ["event.solar_storm.desc"] = "太阳风暴干扰电子设备。",
+    ["event.trade_festival.name"] = "星际贸易节",
+    ["event.trade_festival.desc"] = "贸易税全免，所有交易收益 +50%。",
+    ["event.alien_contact.name"] = "外星接触",
+    ["event.alien_contact.desc"] = "与神秘外星文明建立联系。",
+    ["event.void_rift.name"] = "虚空裂隙",
+    ["event.void_rift.desc"] = "空间出现神秘裂隙，涌出异常能量生物。",
+    ["event.pirate_harbor.name"] = "海盗港",
+    ["event.pirate_harbor.desc"] = "发现海盗藏身处，可缴获丰厚物资。",
+    ["event.mercenary_offer.name"] = "佣兵招募",
+    ["event.mercenary_offer.desc"] = "佣兵舰队提供协助，需要支付报酬。",
+    ["event.ambush.name"] = "伏击预警",
+    ["event.ambush.desc"] = "情报显示前方有伏击阵地，小心通过。",
+    ["event.ancient_ruins.name"] = "远古遗迹",
+    ["event.ancient_ruins.desc"] = "发现失落文明的遗迹，可能藏有珍贵科技。",
+    ["event.abandoned_fleet.name"] = "废弃舰队",
+    ["event.abandoned_fleet.desc"] = "发现被遗弃的战舰残骸，可打捞可用部件。",
+    ["event.comet_shower.name"] = "彗星雨",
+    ["event.comet_shower.desc"] = "大量彗星划过星系，带来稀有冰核资源。",
+    ["event.nebula_passage.name"] = "星云穿越",
+    ["event.nebula_passage.desc"] = "穿越神秘星云，舰队获得短暂能量加成。",
+    ["event.wormhole_stable.name"] = "稳定虫洞",
+    ["event.wormhole_stable.desc"] = "发现稳定的虫洞通道，大幅缩短航行时间。",
+    ["event.distant_signal.name"] = "遥远信号",
+    ["event.distant_signal.desc"] = "接收到来自深空的神秘信号，引导向未知区域。",
+    ["event.diplomatic_gift.name"] = "外交礼物",
+    ["event.diplomatic_gift.desc"] = "友好势力送来珍贵礼物。",
+    ["event.trade_embargo.name"] = "贸易禁运",
+    ["event.trade_embargo.desc"] = "银河经济动荡，贸易收益暂时降低。",
+    ["event.guild_merger.name"] = "公会联盟",
+    ["event.guild_merger.desc"] = "多个公会提议结盟，共同对抗威胁。",
+    ["event.trade_storm.name"] = "贸易风暴",
+    ["event.trade_storm.desc"] = "全星系市场价格剧烈波动。",
+    ["event.mining_boom.name"] = "采矿繁荣期",
+    ["event.mining_boom.desc"] = "矿区大丰收，矿物产量暴增。",
+    ["event.crystal_swarm.name"] = "晶石潮汐",
+    ["event.crystal_swarm.desc"] = "晶石矿脉异常活跃，产量大幅提升。",
+    ["event.warp_anomaly.name"] = "曲速异常",
+    ["event.warp_anomaly.desc"] = "曲速航行出现随机坐标偏移。",
+    ["event.gateway_activation.name"] = "星门激活",
+    ["event.gateway_activation.desc"] = "发现新的跃迁星门连接未知星系。",
+    ["event.stellar_flare.name"] = "恒星耀斑",
+    ["event.stellar_flare.desc"] = "近距离恒星爆发，释放巨大能量。",
+    ["event.void_storm.name"] = "虚空风暴",
+    ["event.void_storm.desc"] = "虚空能量风暴席卷整个星系，机遇与危险并存。",
+    ["event.golden_age.name"] = "黄金时代",
+    ["event.golden_age.desc"] = "银河进入繁荣期，所有产出大幅提升。",
+
+    -- ========================================================================
+    -- 资源类型文本
+    -- ========================================================================
+
+    ["resource.minerals"] = "矿石",
+    ["resource.energy"] = "能源",
+    ["resource.crystal"] = "晶石",
+    ["resource.nuclear"] = "核能",
+    ["resource.credits"] = "星币",
+    ["resource.blue_crystal"] = "蓝晶",
+    ["resource.purple_crystal"] = "紫晶",
+    ["resource.rainbow_crystal"] = "彩虹晶",
+
+    -- ========================================================================
+    -- 战斗环境文本
+    -- ========================================================================
+
+    ["environment.asteroid_field.name"] = "小行星带",
+    ["environment.asteroid_field.desc"] = "移动速度-30%，但提供20%掩体防护。",
+    ["environment.nebula.name"] = "星云区",
+    ["environment.nebula.desc"] = "隐形效果+50%，但探测范围-30%。",
+    ["environment.solar_storm.name"] = "太阳风暴",
+    ["environment.solar_storm.desc"] = "护盾效率-40%，能源恢复-20%。",
+    ["environment.gravity_well.name"] = "重力井",
+    ["environment.gravity_well.desc"] = "所有舰船和弹药速度减半。",
+    ["environment.debris_field.name"] = "残骸区",
+    ["environment.debris_field.desc"] = "提供40%掩体，20%几率从残骸获取资源。",
+    ["environment.ion_storm.name"] = "离子风暴",
+    ["environment.ion_storm.desc"] = "护盾恢复-50%，技能冷却+30%。",
+    ["environment.warp_zone.name"] = "曲速区",
+    ["environment.warp_zone.desc"] = "移动速度翻倍，技能冷却-30%。",
+    ["environment.crystal_field.name"] = "晶体区",
+    ["environment.crystal_field.desc"] = "护盾效率+30%，15%几率额外获得晶石。",
+
+    -- ========================================================================
+    -- 阵型文本
+    -- ========================================================================
+
+    ["formation.vanguard.name"] = "前卫阵型",
+    ["formation.vanguard.desc"] = "舰船分散布置，减小AOE伤害。",
+    ["formation.phalanx.name"] = "方阵",
+    ["formation.phalanx.desc"] = "紧密排列，火力集中。",
+    ["formation.flank.name"] = "两翼包抄",
+    ["formation.flank.desc"] = "从侧翼进攻，机动性提升。",
+    ["formation.crescent.name"] = "新月阵型",
+    ["formation.crescent.desc"] = "弧形布置，兼顾攻防。",
+    ["formation.pinzher.name"] = "钳形攻势",
+    ["formation.pinzher.desc"] = "前后夹击，优先集火。",
+    ["formation.skirmish.name"] = "游击阵型",
+    ["formation.skirmish.desc"] = "保持距离，边打边退。",
+
+    -- ========================================================================
+    -- 快捷信号文本
+    -- ========================================================================
+
+    ["signal.rally"] = "集合",
+    ["signal.retreat"] = "撤退",
+    ["signal.help"] = "求救",
+    ["signal.target"] = "标记目标",
+    ["signal.attack"] = "进攻",
+    ["signal.defend"] = "防守",
+    ["signal.wait"] = "待命",
 }

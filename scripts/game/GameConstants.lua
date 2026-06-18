@@ -68,6 +68,69 @@ CAMPAIGN_CHAPTERS = {
         },
         chapterRewards = { purpleCrystal = 50, rainbowCrystal = 20, skin = "REBEL_COMMANDER" },
     },
+    {
+        id = "CHAPTER_3",
+        name = "第三章：深渊之眼",
+        description = "虚空领主的真正意图逐渐显露，银河陷入前所未有的危机...",
+        requiredWave = 80,
+        stages = {
+            { id = "STAGE_3_1", name = "虚空信号", difficulty = "HARD", unlockWave = 80,
+              enemyComp = { VOID_LORD = 2, STEALTH = 5, DESTROYER = 6 },
+              objective = "ELIMINATE", objectiveTarget = 0,
+              rewards = { blueCrystal = 400, purpleCrystal = 80, credits = 800 } },
+            { id = "STAGE_3_2", name = "深渊之门", difficulty = "EXTREME", unlockWave = 95,
+              enemyComp = { VOID_LORD = 3, DEVASTATOR = 1, BATTLECRUISER = 8 },
+              objective = "DEFEND", objectiveTarget = 15,
+              rewards = { purpleCrystal = 120, rainbowCrystal = 30, credits = 1200 } },
+            { id = "STAGE_3_3", name = "最终决战", difficulty = "EXTREME", unlockWave = 110,
+              enemyComp = { DEVASTATOR = 2, VOID_LORD = 4, CARRIER = 5 },
+              objective = "ELIMINATE", objectiveTarget = 0,
+              rewards = { rainbowCrystal = 100, rareItem = "VOID_LORD_TOKEN" } },
+        },
+        chapterRewards = { rainbowCrystal = 80, title = "深渊征服者", skin = "VOID_HUNTER" },
+    },
+    {
+        id = "CHAPTER_4",
+        name = "第四章：星际黎明",
+        description = "击败虚空领主后，银河迎来了久违的和平。但新的威胁正在暗处酝酿...",
+        requiredWave = 130,
+        stages = {
+            { id = "STAGE_4_1", name = "和平的代价", difficulty = "MEDIUM", unlockWave = 130,
+              enemyComp = { DESTROYER = 10, BATTLECRUISER = 5, CARRIER = 3 },
+              objective = "ASSAULT", objectiveTarget = 0,
+              rewards = { blueCrystal = 500, credits = 1500 } },
+            { id = "STAGE_4_2", name = "内部叛徒", difficulty = "HARD", unlockWave = 145,
+              enemyComp = { BATTLECRUISER = 8, STEALTH = 6, RAILGUN = 2 },
+              objective = "ELIMINATE", objectiveTarget = 0,
+              rewards = { purpleCrystal = 150, credits = 2000 } },
+            { id = "STAGE_4_3", name = "黎明前的黑暗", difficulty = "EXTREME", unlockWave = 160,
+              enemyComp = { RAILGUN = 4, DEVASTATOR = 2, VOID_LORD = 3 },
+              objective = "ELIMINATE", objectiveTarget = 0,
+              rewards = { rainbowCrystal = 50, rareItem = "STRATEGIST_TOKEN" } },
+        },
+        chapterRewards = { purpleCrystal = 200, title = "银河守护者", skin = "GUARDIAN" },
+    },
+    {
+        id = "CHAPTER_5",
+        name = "第五章：终极挑战",
+        description = "传说中最强大的敌人现身，只有真正的银河英雄才能战胜它...",
+        requiredWave = 180,
+        stages = {
+            { id = "STAGE_5_1", name = "传说的开始", difficulty = "EXTREME", unlockWave = 180,
+              enemyComp = { DEVASTATOR = 3, VOID_LORD = 5, RAILGUN = 4 },
+              objective = "ELIMINATE", objectiveTarget = 0,
+              rewards = { rainbowCrystal = 80, credits = 3000 } },
+            { id = "STAGE_5_2", name = "最终试炼", difficulty = "NIGHTMARE", unlockWave = 200,
+              enemyComp = { DEVASTATOR = 5, VOID_LORD = 6, RAILGUN = 5 },
+              objective = "SURVIVE", objectiveTarget = 5,
+              rewards = { rainbowCrystal = 150, rareItem = "TITAN_TOKEN" } },
+            { id = "STAGE_5_3", name = "银河飞升", difficulty = "NIGHTMARE", unlockWave = 220,
+              enemyComp = { DEVASTATOR = 8, VOID_LORD = 8, RAILGUN = 6, ENGINEER = 4 },
+              objective = "ELIMINATE", objectiveTarget = 0,
+              rewards = { rainbowCrystal = 300, title = "银河英雄", avatar = "GALACTIC_HERO" } },
+        },
+        chapterRewards = { rainbowCrystal = 500, title = "银河传奇", avatar = "GALACTIC_LEGEND", skin = "LEGENDARY_COMMANDER" },
+    },
 }
 
 -- 关卡类型
@@ -85,6 +148,7 @@ STAGE_DIFFICULTY = {
     MEDIUM   = { name = "普通", healthMult = 1.0, dmgMult = 1.0, rewardsMult = 1.0 },
     HARD     = { name = "困难", healthMult = 1.3, dmgMult = 1.3, rewardsMult = 1.3 },
     EXTREME  = { name = "噩梦", healthMult = 1.8, dmgMult = 1.8, rewardsMult = 2.0 },
+    NIGHTMARE = { name = "炼狱", healthMult = 2.5, dmgMult = 2.2, rewardsMult = 3.0 },
 }
 
 -- 剧情对话
@@ -119,6 +183,69 @@ CAMPAIGN_DIALOGUE = {
         text = "虚空领主出现了...全军戒备，不惜一切代价击杀它！",
         emotion = "ALERT", portrait = "commander_default",
     },
+    -- 第三章：深渊之眼
+    ["STAGE_3_1_START"] = {
+        speaker = "情报官", speakerTitle = "抵抗军情报官",
+        text = "检测到深渊方向的大量虚空能量波动，那里似乎有什么东西正在苏醒...",
+        emotion = "WORRIED", portrait = "officer_default",
+    },
+    ["STAGE_3_1_END"] = {
+        speaker = "指挥官", speakerTitle = "抵抗军指挥官",
+        text = "这些虚空生物比预想的更强大。但我们别无选择，继续前进！",
+        emotion = "DETERMINED", portrait = "commander_default",
+    },
+    ["STAGE_3_2_START"] = {
+        speaker = "科学家", speakerTitle = "抵抗军首席科学家",
+        text = "这就是深渊之门的能量源...如果让它完全打开，整个银河都将被吞噬！",
+        emotion = "ALERT", portrait = "scientist_default",
+    },
+    ["STAGE_3_3_START"] = {
+        speaker = "虚空领主", speakerTitle = "深渊君主",
+        text = "渺小的生命，你们竟敢挑战深渊？让我看看你们有什么资本...",
+        emotion = "ANGRY", portrait = "void_lord",
+    },
+    ["STAGE_3_3_END"] = {
+        speaker = "指挥官", speakerTitle = "抵抗军指挥官",
+        text = "我们...做到了。深渊领主的威胁终于解除了。但这只是开始...",
+        emotion = "HAPPY", portrait = "commander_default",
+    },
+    -- 第四章：星际黎明
+    ["STAGE_4_1_START"] = {
+        speaker = "副官", speakerTitle = "抵抗军副官",
+        text = "指挥官，银河议会发来通讯，表彰我们的胜利。但内部似乎有些不稳...",
+        emotion = "WORRIED", portrait = "officer_default",
+    },
+    ["STAGE_4_2_START"] = {
+        speaker = "叛徒", speakerTitle = "内鬼",
+        text = "你太天真了，指挥官。这个银河需要真正的统治者，而不是你们这些理想主义者。",
+        emotion = "ANGRY", portrait = "traitor_default",
+    },
+    ["STAGE_4_3_START"] = {
+        speaker = "指挥官", speakerTitle = "抵抗军指挥官",
+        text = "黎明前最黑暗的时刻...但只要我们还站着，就绝不会放弃！",
+        emotion = "DETERMINED", portrait = "commander_default",
+    },
+    -- 第五章：终极挑战
+    ["STAGE_5_1_START"] = {
+        speaker = "古老存在", speakerTitle = "银河守护者",
+        text = "能够走到这里的凡人...你证明了自己的价值。但真正的试炼才刚刚开始。",
+        emotion = "NEUTRAL", portrait = "ancient_one",
+    },
+    ["STAGE_5_2_START"] = {
+        speaker = "指挥官", speakerTitle = "银河英雄",
+        text = "这就是传说中的终极试炼吗？来吧，我不会再退缩！",
+        emotion = "DETERMINED", portrait = "commander_default",
+    },
+    ["STAGE_5_3_START"] = {
+        speaker = "最终Boss", speakerTitle = "银河意志",
+        text = "你终于来了，银河的英雄。我是这片星系的意志，现在，是时候证明你是否配得上这个称号了！",
+        emotion = "ALERT", portrait = "final_boss",
+    },
+    ["STAGE_5_3_END"] = {
+        speaker = "指挥官", speakerTitle = "银河传奇",
+        text = "我...做到了。银河从此迎来了真正的和平。这是我职责的终点，也是新篇章的起点。",
+        emotion = "HAPPY", portrait = "commander_default",
+    },
 }
 
 -- 剧情分支选择
@@ -130,6 +257,24 @@ CAMPAIGN_BRANCHES = {
         choices = {
             { id = "PURSUIT", text = "追击帝国残部", effect = { followUp = "CHAPTER_2_STAGE_1", bonus = { blueCrystal = 50 } } },
             { id = "RETREAT", text = "战略撤退重整", effect = { followUp = "CHAPTER_2_STAGE_1", bonus = { healthRestore = 0.5 } } },
+        },
+    },
+    {
+        id = "BRANCH_CH3_END",
+        chapterId = "CHAPTER_3",
+        triggerAfter = "STAGE_3_3",
+        choices = {
+            { id = "EXPLORE_VOID", text = "探索深渊残余", effect = { followUp = "CHAPTER_4_STAGE_1", bonus = { rainbowCrystal = 30 } } },
+            { id = "HEAL_TROOPS", text = "全军休整", effect = { followUp = "CHAPTER_4_STAGE_1", bonus = { healthRestore = 1.0 } } },
+        },
+    },
+    {
+        id = "BRANCH_CH4_END",
+        chapterId = "CHAPTER_4",
+        triggerAfter = "STAGE_4_3",
+        choices = {
+            { id = "CHASE_TRAITOR", text = "追击叛徒", effect = { followUp = "CHAPTER_5_STAGE_1", bonus = { purpleCrystal = 100 } } },
+            { id = "PREPARE_ARMY", text = "积蓄力量", effect = { followUp = "CHAPTER_5_STAGE_1", bonus = { fleetCapacityBonus = 10 } } },
         },
     },
 }
@@ -428,6 +573,9 @@ RUNTIME_PLAYER_GUILD = {}
 -- ============================================================================
 
 GALAXY_EVENTS = {
+    -- ========================================================================
+    -- 经济类事件
+    -- ========================================================================
     {
         id = "STARGATE_OPEN",
         name = "星门开启",
@@ -509,6 +657,273 @@ GALAXY_EVENTS = {
         effects = {
             { type = "RESEARCH_SPEED", value = 2.0 },
             { type = "RANDOM_TECH", value = 1 },
+        },
+    },
+    -- ========================================================================
+    -- 战斗类事件
+    -- ========================================================================
+    {
+        id = "VOID_RIFT",
+        name = "虚空裂隙",
+        desc = "空间出现神秘裂隙，涌出异常能量生物",
+        duration = 0,
+        probability = 0.025,
+        icon = "event_void",
+        effects = {
+            { type = "ENEMY_WAVE_BOOST", mult = 1.3 },
+            { type = "RARE_DROP_CHANCE", value = 0.15 },
+        },
+    },
+    {
+        id = "PIRATE_HARBOR",
+        name = "海盗港",
+        desc = "发现海盗藏身处，可缴获丰厚物资",
+        duration = 180,
+        probability = 0.02,
+        icon = "event_pirate_harbor",
+        effects = {
+            { type = "BOUNTY_HUNTER_BONUS", value = 200 },
+            { type = "REPUTATION_GAIN", value = 50 },
+        },
+    },
+    {
+        id = "MERCENARY_OFFER",
+        name = "佣兵招募",
+        desc = "佣兵舰队提供协助，需要支付报酬",
+        duration = 300,
+        probability = 0.03,
+        icon = "event_mercenary",
+        effects = {
+            { type = "TEMPORARY_ALLY", shipType = "DESTROYER", count = 3 },
+        },
+    },
+    {
+        id = "AMBUSH",
+        name = "伏击预警",
+        desc = "情报显示前方有伏击阵地，小心通过",
+        duration = 120,
+        probability = 0.04,
+        icon = "event_ambush",
+        effects = {
+            { type = "ENEMY_AMBUSH_CHANCE", value = 0.3 },
+            { type = "FLEET_DEFENSE_BONUS", value = 0.2 },
+        },
+    },
+    -- ========================================================================
+    -- 探索类事件
+    -- ========================================================================
+    {
+        id = "ANCIENT_RUINS",
+        name = "远古遗迹",
+        desc = "发现失落文明的遗迹，可能藏有珍贵科技",
+        duration = 0,
+        probability = 0.018,
+        icon = "event_ruins",
+        effects = {
+            { type = "EXPLORATION_REWARD", bonus = { crystal = 100, credits = 500 } },
+            { type = "RESEARCH_SPEED", value = 1.5 },
+        },
+    },
+    {
+        id = "ABANDONED_FLEET",
+        name = "废弃舰队",
+        desc = "发现被遗弃的战舰残骸，可打捞可用部件",
+        duration = 240,
+        probability = 0.022,
+        icon = "event_wreck",
+        effects = {
+            { type = "SCAVENGE_REWARD", bonus = { metal = 300, shipPart = 1 } },
+        },
+    },
+    {
+        id = "COMET_SHOWER",
+        name = "彗星雨",
+        desc = "大量彗星划过星系，带来稀有冰核资源",
+        duration = 180,
+        probability = 0.025,
+        icon = "event_comet",
+        effects = {
+            { type = "RESOURCE_BONUS", resource = "NUCLEAR", value = 1.8 },
+            { type = "CREDITS_BONUS", value = 300 },
+        },
+    },
+    {
+        id = "NEBULA_PASSAGE",
+        name = "星云穿越",
+        desc = "穿越神秘星云，舰队获得短暂能量加成",
+        duration = 200,
+        probability = 0.035,
+        icon = "event_nebula",
+        effects = {
+            { type = "ENERGY_BOOST", value = 1.5 },
+            { type = "STEALTH_BONUS", value = 1.3 },
+        },
+    },
+    {
+        id = "WORMHOLE_STABLE",
+        name = "稳定虫洞",
+        desc = "发现稳定的虫洞通道，大幅缩短航行时间",
+        duration = 300,
+        probability = 0.015,
+        icon = "event_wormhole_stable",
+        effects = {
+            { type = "TRAVEL_SPEED", value = 3.0 },
+            { type = "EXPLORATION_RANGE", value = 1.5 },
+        },
+    },
+    {
+        id = "DISTANT_SIGNAL",
+        name = "遥远信号",
+        desc = "接收到来自深空的神秘信号，引导向未知区域",
+        duration = 0,
+        probability = 0.012,
+        icon = "event_signal",
+        effects = {
+            { type = "REVEAL_HIDDEN_SYSTEM", value = true },
+            { type = "RESEARCH_SPEED", value = 1.3 },
+        },
+    },
+    -- ========================================================================
+    -- 社交/外交类事件
+    -- ========================================================================
+    {
+        id = "DIPLOMATIC_GIFT",
+        name = "外交礼物",
+        desc = "友好势力送来珍贵礼物",
+        duration = 0,
+        probability = 0.028,
+        icon = "event_gift",
+        effects = {
+            { type = "FREE_RESOURCES", bonus = { blueCrystal = 50, credits = 1000 } },
+        },
+    },
+    {
+        id = "TRADE_EMBARGO",
+        name = "贸易禁运",
+        desc = "银河经济动荡，贸易收益暂时降低",
+        duration = 360,
+        probability = 0.03,
+        icon = "event_embargo",
+        effects = {
+            { type = "TRADE_PENALTY", value = -0.4 },
+            { type = "RESOURCE_BONUS", resource = "MINERALS", value = 1.2 },
+        },
+    },
+    {
+        id = "GUILD_MERGER",
+        name = "公会联盟",
+        desc = "多个公会提议结盟，共同对抗威胁",
+        duration = 0,
+        probability = 0.015,
+        icon = "event_guild",
+        effects = {
+            { type = "GUILD_BONUS", value = 0.25 },
+            { type = "REPUTATION_GAIN", value = 100 },
+        },
+    },
+    -- ========================================================================
+    -- 经济/资源类事件
+    -- ========================================================================
+    {
+        id = "TRADE_STORM",
+        name = "贸易风暴",
+        desc = "全星系市场价格剧烈波动",
+        duration = 60,
+        probability = 0.04,
+        icon = "event_trade_storm",
+        effects = {
+            { type = "TRADE_RANDOM_FLUCTUATION", range = 0.5 },
+        },
+    },
+    {
+        id = "MINING_BOOM",
+        name = "采矿繁荣期",
+        desc = "矿区大丰收，矿物产量暴增",
+        duration = 300,
+        probability = 0.035,
+        icon = "event_mining_boom",
+        effects = {
+            { type = "RESOURCE_BONUS", resource = "MINERALS", value = 2.0 },
+            { type = "ENERGY_DRAIN", value = 0.8 },
+        },
+    },
+    {
+        id = "CRYSTAL_SWARM",
+        name = "晶石潮汐",
+        desc = "晶石矿脉异常活跃，产量大幅提升",
+        duration = 240,
+        probability = 0.028,
+        icon = "event_crystal",
+        effects = {
+            { type = "RESOURCE_BONUS", resource = "CRYSTAL", value = 2.5 },
+            { type = "CREDITS_BONUS", value = 800 },
+        },
+    },
+    {
+        id = "WARP_ANOMALY",
+        name = "曲速异常",
+        desc = "曲速航行出现随机坐标偏移",
+        duration = 180,
+        probability = 0.03,
+        icon = "event_warp_anomaly",
+        effects = {
+            { type = "WARP_INSTABILITY", value = 0.15 },
+            { type = "DISCOVERY_CHANCE", value = 0.25 },
+        },
+    },
+    {
+        id = "GATEWAY_ACTIVATION",
+        name = "星门激活",
+        desc = "发现新的跃迁星门连接未知星系",
+        duration = 0,
+        probability = 0.012,
+        icon = "event_gateway",
+        effects = {
+            { type = "NEW_STARGATE", value = true },
+            { type = "EXPLORATION_REWARD", bonus = { credits = 2000 } },
+        },
+    },
+    {
+        id = "STELLAR_FLARE",
+        name = "恒星耀斑",
+        desc = "近距离恒星爆发，释放巨大能量",
+        duration = 120,
+        probability = 0.025,
+        icon = "event_flare",
+        effects = {
+            { type = "ENERGY_BOOST", value = 2.0 },
+            { type = "SHIELD_PENALTY", value = 0.6 },
+        },
+    },
+    -- ========================================================================
+    -- 稀有/传说级事件
+    -- ========================================================================
+    {
+        id = "VOID_STORM",
+        name = "虚空风暴",
+        desc = "虚空能量风暴席卷整个星系，机遇与危险并存",
+        duration = 300,
+        probability = 0.008,
+        icon = "event_voidstorm",
+        rarity = "legendary",
+        effects = {
+            { type = "VOID_ENERGY", value = 3.0 },
+            { type = "ALL_RESOURCES", value = 1.5 },
+            { type = "ENEMY_WAVE_BOOST", mult = 1.5 },
+        },
+    },
+    {
+        id = "GOLDEN_AGE",
+        name = "黄金时代",
+        desc = "银河进入繁荣期，所有产出大幅提升",
+        duration = 600,
+        probability = 0.005,
+        icon = "event_golden",
+        rarity = "legendary",
+        effects = {
+            { type = "ALL_RESOURCES", value = 2.0 },
+            { type = "TRADE_BONUS", value = 1.0 },
+            { type = "RESEARCH_SPEED", value = 2.0 },
         },
     },
 }

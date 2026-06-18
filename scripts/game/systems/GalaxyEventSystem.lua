@@ -26,6 +26,30 @@ local EventEffects = {
     stealthBonus = 1.0,
     noTax = false,
     researchSpeedMult = 1.0,
+    -- 新增效果字段
+    enemyWaveBoostMult = 1.0,
+    rareDropChance = 0.0,
+    bountyBonus = 0.0,
+    reputationGain = 0.0,
+    temporaryAlly = nil,
+    ambushChance = 0.0,
+    fleetDefenseBonus = 0.0,
+    explorationBonus = nil,
+    scavengeBonus = nil,
+    resourceBonus = nil,
+    creditsBonus = 0.0,
+    energyBoost = 1.0,
+    explorationRange = 1.0,
+    warpInstability = 0.0,
+    discoveryChance = 0.0,
+    newStargateFound = false,
+    hiddenSystemRevealed = false,
+    guildBonus = 0.0,
+    freeResources = nil,
+    voidEnergy = 0.0,
+    allResourceMult = 1.0,
+    tradeFluctuation = 0.0,
+    energyDrain = 1.0,
 }
 
 -- 事件冷却时间（秒）
@@ -263,6 +287,112 @@ function GalaxyEventSystem.applyEffect(effect)
     elseif effect.type == "RANDOM_TECH" then
         -- 外星接触 - 随机获得科技
         -- (科技赠送逻辑)
+
+    -- ========================================================================
+    -- 新增事件效果类型
+    -- ========================================================================
+
+    elseif effect.type == "ENEMY_WAVE_BOOST" then
+        -- 敌人群攻加成（虚空裂隙等）
+        EventEffects.enemyWaveBoostMult = (EventEffects.enemyWaveBoostMult or 1.0) * (effect.mult or 1.0)
+        EventEffects.rareDropChance = (EventEffects.rareDropChance or 0) + (effect.value or 0)
+
+    elseif effect.type == "BOUNTY_HUNTER_BONUS" then
+        -- 海盗悬赏金加成
+        EventEffects.bountyBonus = (EventEffects.bountyBonus or 0) + (effect.value or 0)
+
+    elseif effect.type == "REPUTATION_GAIN" then
+        -- 声望获取加成
+        EventEffects.reputationGain = (EventEffects.reputationGain or 0) + (effect.value or 0)
+
+    elseif effect.type == "TEMPORARY_ALLY" then
+        -- 佣兵临时协助（仅记录状态，战斗时由 FleetManager 处理）
+        EventEffects.temporaryAlly = { shipType = effect.shipType, count = effect.count }
+
+    elseif effect.type == "ENEMY_AMBUSH_CHANCE" then
+        -- 伏击预警（记录状态，战斗时判定）
+        EventEffects.ambushChance = (EventEffects.ambushChance or 0) + (effect.value or 0)
+
+    elseif effect.type == "FLEET_DEFENSE_BONUS" then
+        -- 舰队防御加成
+        EventEffects.fleetDefenseBonus = (EventEffects.fleetDefenseBonus or 0) + (effect.value or 0)
+
+    elseif effect.type == "EXPLORATION_REWARD" then
+        -- 探索奖励（探索类事件触发时发放）
+        EventEffects.explorationBonus = effect.bonus or {}
+
+    elseif effect.type == "SCAVENGE_REWARD" then
+        -- 打捞奖励（废弃舰队事件）
+        EventEffects.scavengeBonus = effect.bonus or {}
+
+    elseif effect.type == "RESOURCE_BONUS" then
+        -- 指定资源加成
+        if effect.resource then
+            EventEffects.resourceBonus = EventEffects.resourceBonus or {}
+            EventEffects.resourceBonus[effect.resource] = (EventEffects.resourceBonus[effect.resource] or 1.0) * (effect.value or 1.0)
+        else
+            -- 全资源加成
+            EventEffects.allResourceMult = (EventEffects.allResourceMult or 1.0) * (effect.value or 1.0)
+        end
+
+    elseif effect.type == "CREDITS_BONUS" then
+        -- 星币奖励
+        EventEffects.creditsBonus = (EventEffects.creditsBonus or 0) + (effect.value or 0)
+
+    elseif effect.type == "ENERGY_BOOST" then
+        -- 能量加成
+        EventEffects.energyBoost = (EventEffects.energyBoost or 1.0) * (effect.value or 1.0)
+
+    elseif effect.type == "EXPLORATION_RANGE" then
+        -- 探索范围加成
+        EventEffects.explorationRange = (EventEffects.explorationRange or 1.0) * (effect.value or 1.0)
+
+    elseif effect.type == "WARP_INSTABILITY" then
+        -- 曲速不稳定
+        EventEffects.warpInstability = (EventEffects.warpInstability or 0) + (effect.value or 0)
+
+    elseif effect.type == "DISCOVERY_CHANCE" then
+        -- 发现概率加成
+        EventEffects.discoveryChance = (EventEffects.discoveryChance or 0) + (effect.value or 0)
+
+    elseif effect.type == "TRADE_PENALTY" then
+        -- 贸易惩罚
+        EventEffects.tradeBonus = EventEffects.tradeBonus + (effect.value or 0)
+
+    elseif effect.type == "NEW_STARGATE" then
+        -- 发现新星门
+        EventEffects.newStargateFound = true
+
+    elseif effect.type == "REVEAL_HIDDEN_SYSTEM" then
+        -- 揭示隐藏星系
+        EventEffects.hiddenSystemRevealed = true
+
+    elseif effect.type == "GUILD_BONUS" then
+        -- 公会加成
+        EventEffects.guildBonus = (EventEffects.guildBonus or 0) + (effect.value or 0)
+
+    elseif effect.type == "FREE_RESOURCES" then
+        -- 免费资源（外交礼物等）
+        EventEffects.freeResources = EventEffects.freeResources or {}
+        for k, v in pairs(effect.bonus or {}) do
+            EventEffects.freeResources[k] = (EventEffects.freeResources[k] or 0) + v
+        end
+
+    elseif effect.type == "VOID_ENERGY" then
+        -- 虚空能量（传说事件）
+        EventEffects.voidEnergy = (EventEffects.voidEnergy or 0) + (effect.value or 0)
+
+    elseif effect.type == "ALL_RESOURCES" then
+        -- 全资源加成
+        EventEffects.allResourceMult = (EventEffects.allResourceMult or 1.0) * (effect.value or 1.0)
+
+    elseif effect.type == "TRADE_RANDOM_FLUCTUATION" then
+        -- 贸易随机波动
+        EventEffects.tradeFluctuation = (EventEffects.tradeFluctuation or 0) + (effect.range or 0)
+
+    elseif effect.type == "ENERGY_DRAIN" then
+        -- 能量消耗
+        EventEffects.energyDrain = (EventEffects.energyDrain or 1.0) * (effect.value or 1.0)
     end
 end
 
@@ -299,6 +429,84 @@ function GalaxyEventSystem.removeEffect(effect)
 
     elseif effect.type == "RESEARCH_SPEED" then
         EventEffects.researchSpeedMult = EventEffects.researchSpeedMult / effect.value
+
+    -- ========================================================================
+    -- 新增事件效果类型的移除逻辑
+    -- ========================================================================
+
+    elseif effect.type == "ENEMY_WAVE_BOOST" then
+        EventEffects.enemyWaveBoostMult = EventEffects.enemyWaveBoostMult / (effect.mult or 1.0)
+        EventEffects.rareDropChance = EventEffects.rareDropChance - (effect.value or 0)
+
+    elseif effect.type == "BOUNTY_HUNTER_BONUS" then
+        EventEffects.bountyBonus = EventEffects.bountyBonus - (effect.value or 0)
+
+    elseif effect.type == "REPUTATION_GAIN" then
+        EventEffects.reputationGain = EventEffects.reputationGain - (effect.value or 0)
+
+    elseif effect.type == "TEMPORARY_ALLY" then
+        EventEffects.temporaryAlly = nil
+
+    elseif effect.type == "ENEMY_AMBUSH_CHANCE" then
+        EventEffects.ambushChance = EventEffects.ambushChance - (effect.value or 0)
+
+    elseif effect.type == "FLEET_DEFENSE_BONUS" then
+        EventEffects.fleetDefenseBonus = EventEffects.fleetDefenseBonus - (effect.value or 0)
+
+    elseif effect.type == "EXPLORATION_REWARD" then
+        EventEffects.explorationBonus = nil
+
+    elseif effect.type == "SCAVENGE_REWARD" then
+        EventEffects.scavengeBonus = nil
+
+    elseif effect.type == "RESOURCE_BONUS" then
+        if effect.resource and EventEffects.resourceBonus then
+            EventEffects.resourceBonus[effect.resource] = EventEffects.resourceBonus[effect.resource] / (effect.value or 1.0)
+        else
+            EventEffects.allResourceMult = EventEffects.allResourceMult / (effect.value or 1.0)
+        end
+
+    elseif effect.type == "CREDITS_BONUS" then
+        EventEffects.creditsBonus = EventEffects.creditsBonus - (effect.value or 0)
+
+    elseif effect.type == "ENERGY_BOOST" then
+        EventEffects.energyBoost = EventEffects.energyBoost / (effect.value or 1.0)
+
+    elseif effect.type == "EXPLORATION_RANGE" then
+        EventEffects.explorationRange = EventEffects.explorationRange / (effect.value or 1.0)
+
+    elseif effect.type == "WARP_INSTABILITY" then
+        EventEffects.warpInstability = EventEffects.warpInstability - (effect.value or 0)
+
+    elseif effect.type == "DISCOVERY_CHANCE" then
+        EventEffects.discoveryChance = EventEffects.discoveryChance - (effect.value or 0)
+
+    elseif effect.type == "TRADE_PENALTY" then
+        EventEffects.tradeBonus = EventEffects.tradeBonus - (effect.value or 0)
+
+    elseif effect.type == "NEW_STARGATE" then
+        EventEffects.newStargateFound = false
+
+    elseif effect.type == "REVEAL_HIDDEN_SYSTEM" then
+        EventEffects.hiddenSystemRevealed = false
+
+    elseif effect.type == "GUILD_BONUS" then
+        EventEffects.guildBonus = EventEffects.guildBonus - (effect.value or 0)
+
+    elseif effect.type == "FREE_RESOURCES" then
+        EventEffects.freeResources = nil
+
+    elseif effect.type == "VOID_ENERGY" then
+        EventEffects.voidEnergy = EventEffects.voidEnergy - (effect.value or 0)
+
+    elseif effect.type == "ALL_RESOURCES" then
+        EventEffects.allResourceMult = EventEffects.allResourceMult / (effect.value or 1.0)
+
+    elseif effect.type == "TRADE_RANDOM_FLUCTUATION" then
+        EventEffects.tradeFluctuation = EventEffects.tradeFluctuation - (effect.range or 0)
+
+    elseif effect.type == "ENERGY_DRAIN" then
+        EventEffects.energyDrain = EventEffects.energyDrain / (effect.value or 1.0)
     end
 end
 
@@ -376,6 +584,27 @@ function GalaxyEventSystem.getEffectBonuses()
         stealthBonus = EventEffects.stealthBonus,
         noTax = EventEffects.noTax,
         researchSpeedMult = EventEffects.researchSpeedMult,
+        -- 新增效果字段
+        enemyWaveBoostMult = EventEffects.enemyWaveBoostMult,
+        rareDropChance = EventEffects.rareDropChance,
+        bountyBonus = EventEffects.bountyBonus,
+        reputationGain = EventEffects.reputationGain,
+        ambushChance = EventEffects.ambushChance,
+        fleetDefenseBonus = EventEffects.fleetDefenseBonus,
+        creditsBonus = EventEffects.creditsBonus,
+        energyBoost = EventEffects.energyBoost,
+        explorationRange = EventEffects.explorationRange,
+        warpInstability = EventEffects.warpInstability,
+        discoveryChance = EventEffects.discoveryChance,
+        newStargateFound = EventEffects.newStargateFound,
+        hiddenSystemRevealed = EventEffects.hiddenSystemRevealed,
+        guildBonus = EventEffects.guildBonus,
+        voidEnergy = EventEffects.voidEnergy,
+        allResourceMult = EventEffects.allResourceMult,
+        tradeFluctuation = EventEffects.tradeFluctuation,
+        energyDrain = EventEffects.energyDrain,
+        resourceBonus = EventEffects.resourceBonus,
+        freeResources = EventEffects.freeResources,
     }
 end
 
@@ -476,6 +705,30 @@ function GalaxyEventSystem.reset()
         stealthBonus = 1.0,
         noTax = false,
         researchSpeedMult = 1.0,
+        -- 新增效果字段
+        enemyWaveBoostMult = 1.0,
+        rareDropChance = 0.0,
+        bountyBonus = 0.0,
+        reputationGain = 0.0,
+        temporaryAlly = nil,
+        ambushChance = 0.0,
+        fleetDefenseBonus = 0.0,
+        explorationBonus = nil,
+        scavengeBonus = nil,
+        resourceBonus = nil,
+        creditsBonus = 0.0,
+        energyBoost = 1.0,
+        explorationRange = 1.0,
+        warpInstability = 0.0,
+        discoveryChance = 0.0,
+        newStargateFound = false,
+        hiddenSystemRevealed = false,
+        guildBonus = 0.0,
+        freeResources = nil,
+        voidEnergy = 0.0,
+        allResourceMult = 1.0,
+        tradeFluctuation = 0.0,
+        energyDrain = 1.0,
     }
 end
 

@@ -319,3 +319,140 @@ end
 -- ============================================================================
 
 return FriendSystem
+
+-- ============================================================================
+-- 快捷信号系统（V3.0 Phase 1 P3-1）
+-- 战斗中快速发送战术信号
+-- ============================================================================
+
+local SignalSystem = {}
+
+-- 信号定义
+SignalSystem.SIGNALS = {
+    RALLY = { id = "RALLY", name = "集合", icon = "signal_rally", key = "1" },
+    RETREAT = { id = "RETREAT", name = "撤退", icon = "signal_retreat", key = "2" },
+    HELP = { id = "HELP", name = "求救", icon = "signal_help", key = "3" },
+    TARGET = { id = "TARGET", name = "标记目标", icon = "signal_target", key = "4" },
+    ATTACK = { id = "ATTACK", name = "进攻", icon = "signal_attack", key = "5" },
+    DEFEND = { id = "DEFEND", name = "防守", icon = "signal_defend", key = "6" },
+    WAIT = { id = "WAIT", name = "待命", icon = "signal_wait", key = "7" },
+}
+
+-- 信号状态
+local SignalState = {
+    sentSignals = {},       -- 已发送的信号历史
+    receivedSignals = {},   -- 接收到的信号历史
+    signalCooldowns = {},   -- 各信号冷却状态
+    lastSignalTime = 0,     -- 上次发送信号的时间
+}
+
+local SIGNAL_COOLDOWN = 2.0  -- 信号冷却时间（秒）
+
+-- 发送信号
+function SignalSystem.sendSignal(signalId, targetPosition)
+    local signal = SignalSystem.SIGNALS[signalId]
+    if not signal then return false, "无效信号" end
+
+    local now = os.time()
+    if now - SignalState.lastSignalTime < SIGNAL_COOLDOWN then
+        return false, "信号冷却中"
+    end
+
+    local signalData = {
+        id = signal.id,
+        name = signal.name,
+        position = targetPosition,
+        timestamp = now,
+        fromPlayer = playerState and playerState.name or "指挥官",
+    }
+
+    table.insert(SignalState.sentSignals, signalData)
+    if #SignalState.sentSignals > 20 then
+        table.remove(SignalState.sentSignals, 1)
+    end
+
+    SignalState.lastSignalTime = now
+    SignalState.signalCooldowns[signalId] = now + SIGNAL_COOLDOWN
+
+    -- 通知 UI 显示信号
+    if _G and _G.GameUI then
+        _G.GameUI.showSignalNotification(signalData)
+    end
+
+    return true, "信号已发送"
+end
+
+-- 接收信号
+function SignalSystem.receiveSignal(signalData)
+    table.insert(SignalState.receivedSignals, signalData)
+    if #SignalState.receivedSignals > 20 then
+        table.remove(SignalState.receivedSignals, 1)
+    end
+
+    -- 通知 UI 显示信号
+    if _G and _G.GameUI then
+        _G.GameUI.showSignalReceived(signalData)
+    end
+end
+
+-- 获取信号历史
+function SignalSystem.getSignalHistory()
+    return {
+        sent = SignalState.sentSignals,
+        received = SignalState.receivedSignals,
+    }
+end
+
+-- 检查信号是否在冷却中
+function SignalSystem.isOnCooldown(signalId)
+    local cooldownEnd = SignalState.signalCooldowns[signalId] or 0
+    return os.time() < cooldownEnd
+end
+
+-- 获取冷却剩余时间
+function SignalSystem.getCooldownRemaining(signalId)
+    local cooldownEnd = SignalState.signalCooldowns[signalId] or 0
+    local remaining = cooldownEnd - os.time()
+    return math.max(0, remaining)
+end
+
+-- 获取所有可用信号
+function SignalSystem.getAllSignals()
+    local signals = {}
+    for id, signal in pairs(SignalSystem.SIGNALS) do
+        signals[id] = {
+            id = signal.id,
+            name = signal.name,
+            icon = signal.icon,
+            key = signal.key,
+            onCooldown = SignalSystem.isOnCooldown(signalId),
+            cooldownRemaining = SignalSystem.getCooldownRemaining(signalId),
+        }
+    end
+    return signals
+end
+
+-- 清除历史
+function SignalSystem.clearHistory()
+    SignalState.sentSignals = {}
+    SignalState.receivedSignals = {}
+end
+
+-- 存档
+function SignalSystem.saveState()
+    if playerState then
+        playerState.signalState = {
+            sentSignals = SignalState.sentSignals,
+            receivedSignals = SignalState.receivedSignals,
+        }
+    end
+end
+
+function SignalSystem.loadState(data)
+    if data then
+        SignalState.sentSignals = data.sentSignals or {}
+        SignalState.receivedSignals = data.receivedSignals or {}
+    end
+end
+
+return SignalSystem
