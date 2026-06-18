@@ -61,7 +61,7 @@ local battleStats_      -- table 引用
 local FORMATION_CONFIG  -- table 引用
 local COMBO_LEVELS      -- table 引用
 local rm_               -- table 引用 (研究管理器 baseBonus)
-local SHIP_TYPES_       -- table 引用 (舰船类型配置表)
+local SHIP_TYPES_ = SHIP_TYPES  -- table 引用 (舰船类型配置表，默认取模块级 Systems.SHIP_TYPES)
 
 -- 标量状态（每帧从 BattleScene 同步进来，修改后回写）
 local vars_ = {}
