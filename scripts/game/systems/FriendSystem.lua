@@ -191,24 +191,25 @@ end
 
 -- 请求支援
 function FriendSystem.requestSupport(friendId)
-    if not FriendState.friends[friendId] then
+    local friend = FriendState.friends[friendId]
+    if not friend then
         return false, "该玩家不是好友"
     end
 
     -- 计算支援奖励
     local baseBonus = 0.1
-    local friendLevel = FriendState.friends[friendId].level or 1
+    local friendLevel = friend.level or 1
     local bonus = baseBonus * (friendLevel / 10)
 
     -- 给予支援加成
-    FriendState.friends[friendId].isHelping = true
-    FriendState.friends[friendId].helpingBonus = bonus
+    friend.isHelping = true
+    friend.helpingBonus = bonus
 
     if NotifyPanel then
         NotifyPanel.push({
             type = "SUCCESS",
             title = "请求已发送",
-            message = FriendState.friends[friendId].name .. " 的舰队将前来支援",
+            message = friend.name .. " 的舰队将前来支援",
         })
     end
 
@@ -217,9 +218,10 @@ end
 
 -- 取消支援
 function FriendSystem.cancelSupport(friendId)
-    if FriendState.friends[friendId] then
-        FriendState.friends[friendId].isHelping = false
-        FriendState.friends[friendId].helpingBonus = 0
+    local friend = FriendState.friends[friendId]
+    if friend then
+        friend.isHelping = false
+        friend.helpingBonus = 0
     end
     return true, "支援已取消"
 end

@@ -248,33 +248,39 @@ function GalaxyEventSystem.applyEffect(effect)
 
     elseif effect.type == "PLANET_RAID" then
         -- 海盗袭击 - 随机星球遭受袭击
-        if GS then
+        if GS and GS.planets then
             local planets = {}
-            for id, planet in pairs(GS.planets or {}) do
-                if planet.type ~= "HOME" then
+            for id, planet in pairs(GS.planets) do
+                if planet and planet.type ~= "HOME" then
                     table.insert(planets, id)
                 end
             end
             if #planets > 0 then
-                local targetPlanet = planets[math.random(#planets)]
-                GS.planets[targetPlanet].underRaid = true
-                GS.planets[targetPlanet].raidEndTime = os.time() + 120
+                local targetId = planets[math.random(#planets)]
+                local targetPlanet = GS.planets[targetId]
+                if targetPlanet then
+                    targetPlanet.underRaid = true
+                    targetPlanet.raidEndTime = os.time() + 120
+                end
             end
         end
 
     elseif effect.type == "RARE_NODE" then
         -- 稀有矿物发现
-        if GS then
+        if GS and GS.planets then
             local planets = {}
-            for id, planet in pairs(GS.planets or {}) do
-                if planet.type == "RESOURCE_RICH" or planet.type == "MINING" then
+            for id, planet in pairs(GS.planets) do
+                if planet and (planet.type == "RESOURCE_RICH" or planet.type == "MINING") then
                     table.insert(planets, id)
                 end
             end
             if #planets > 0 then
-                local targetPlanet = planets[math.random(#planets)]
-                GS.planets[targetPlanet].rareMineral = true
-                GS.planets[targetPlanet].rareMineralEnd = os.time() + (effect.duration or 300)
+                local targetId = planets[math.random(#planets)]
+                local targetPlanet = GS.planets[targetId]
+                if targetPlanet then
+                    targetPlanet.rareMineral = true
+                    targetPlanet.rareMineralEnd = os.time() + (effect.duration or 300)
+                end
             end
         end
 
