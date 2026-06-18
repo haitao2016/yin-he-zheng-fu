@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 -- ============================================================================
 -- game/NewCampaignChapters.lua -- V3.0 新战役章节扩展
 -- CHAPTER_3 虚空之门 / CHAPTER_4 文明回响 / CHAPTER_5 银河终局

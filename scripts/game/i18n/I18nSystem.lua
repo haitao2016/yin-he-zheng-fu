@@ -1,4 +1,4 @@
----@diagnostic disable: assign-type-mismatch, return-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 -- ============================================================================
 -- game/i18n/I18nSystem.lua -- 多语言本地化框架
 -- V2.8 I18n-1

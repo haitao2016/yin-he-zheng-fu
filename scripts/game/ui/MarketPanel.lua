@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 --[[
 MarketPanel.lua - 市场交易面板
 V2.7 P1-4

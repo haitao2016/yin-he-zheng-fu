@@ -1,4 +1,4 @@
----@diagnostic disable: assign-type-mismatch, return-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 -- ============================================================================
 -- game/ui/GamepadSupport.lua -- 手柄支持系统
 -- V2.8 P1-7

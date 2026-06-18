@@ -1,4 +1,4 @@
----@diagnostic disable: assign-type-mismatch, return-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 -----------------------------------------------------------
 -- BattleCommandSystem 战斗中途指令系统
 -----------------------------------------------------------

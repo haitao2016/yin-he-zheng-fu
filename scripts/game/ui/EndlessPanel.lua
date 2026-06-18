@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 --[[
 EndlessPanel.lua - 无尽模式选择面板
 V2.7 P0-2

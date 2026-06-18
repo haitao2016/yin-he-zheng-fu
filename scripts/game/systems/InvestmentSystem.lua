@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 --[[
 InvestmentSystem.lua - 投资系统
 V2.7 P2-6

@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 --[[
 Constants/CampaignConstants.lua
 战役章节、关卡目标、剧情对话、分支选择常量

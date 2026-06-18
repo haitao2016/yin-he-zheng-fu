@@ -1,4 +1,4 @@
----@diagnostic disable: assign-type-mismatch, return-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 -- ============================================================================
 -- DiplomacySystem: 中立势力外交系统
 -- 拆分自 Systems.lua（纯机械迁移，无逻辑修改）

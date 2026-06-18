@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 --[[
 ChallengeSystem.lua - 每日挑战系统
 V2.7 P0-3

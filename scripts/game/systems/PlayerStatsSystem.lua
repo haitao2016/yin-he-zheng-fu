@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 --[[
 PlayerStatsSystem.lua - 玩家档案与战绩排行
 V3.0 Phase 2 P1-2

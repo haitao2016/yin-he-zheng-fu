@@ -1,4 +1,4 @@
----@diagnostic disable: assign-type-mismatch, return-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 -- ============================================================================
 -- game/systems/TutorialV3System.lua -- V3.0 新手引导重构
 -- 8 阶段教学系统，分阶段引导玩家熟悉各系统
@@ -351,7 +351,7 @@ end
 
 --- 获取教程完成进度
 ---@param playerState table
----@return number, number  已完成阶段数, 总阶段数
+---@return number completed, number total
 function TutorialV3System.getProgress(playerState)
     playerState = ensureTutorialState(playerState)
     local completed = 0

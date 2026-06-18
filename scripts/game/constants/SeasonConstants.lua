@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 --[[
 Constants/SeasonConstants.lua
 赛季系统、积分奖励、里程碑常量

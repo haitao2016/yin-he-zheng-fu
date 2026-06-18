@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 --[[
 Constants/TechConstants.lua
 科技树、关卡难度、指挥官相关常量

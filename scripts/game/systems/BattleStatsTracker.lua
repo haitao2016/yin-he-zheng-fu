@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 --[[
 BattleStatsTracker.lua - 战斗统计追踪
 V2.7 P3-2

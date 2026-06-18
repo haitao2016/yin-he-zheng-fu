@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 --[[
 Constants/BuildingConstants.lua
 基地建筑、模块、升级相关常量

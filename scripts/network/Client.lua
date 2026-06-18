@@ -23,6 +23,7 @@ local MegastructureSystem = require("game.MegastructureSystem") -- P2-2 V2.4: �
 local LiverySystem = require("game.LiverySystem")               -- P2-3 V2.4: 舰队涂装
 local GalactopediaSystem = require("game.GalactopediaSystem")   -- P3-1 V2.4: 银河百科
 local LegacySystem = require("game.LegacySystem")               -- P1-3 V2.5: 文明遗产
+local ModuleRegistry = require("game.ModuleRegistry")            -- V3.0: 扩展模块注册器
 local ClientSave  = require("network.ClientSave")   -- 存档/读档逻辑
 local ClientStats = require("network.ClientStats")  -- 统计面板渲染
 local ClientBattle = require("network.ClientBattle") -- P3-1b: 战斗/波次/结算/远征/探索/DDA
@@ -1788,6 +1789,12 @@ local function handleUpdate(eventType, eventData)
             GameUI.RefreshPlanetPanel(sel)
         end
     end
+
+    -- V3.0: 扩展模块统一帧更新
+    ModuleRegistry.UpdateAll(dt, {
+        rm = rm_, rs = rs_, fm = fm_, player = player_,
+        currentScene = currentScene_, evBonus = evBonus_,
+    })
 end
 
 -- ============================================================================
@@ -2429,6 +2436,13 @@ function Client.Start()
         if currentScene_ ~= "galaxy" then return end
         GalaxyScene.OnTouchEnd(tid, tx, ty)
     end)
+
+    -- V3.0: 注册并初始化所有扩展模块
+    ModuleRegistry.RegisterAll()
+    ModuleRegistry.InitAll({
+        rm = rm_, rs = rs_, fm = fm_, player = player_,
+        evBonus = evBonus_, ds = ds_,
+    })
 
     -- 游戏就绪（等待玩家在难度选择界面点击后正式开始）
     print("=== 就绪 | 等待难度选择... ===")

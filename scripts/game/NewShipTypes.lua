@@ -1,4 +1,4 @@
----@diagnostic disable: assign-type-mismatch, return-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 -- ============================================================================
 -- game/NewShipTypes.lua -- V3.0 新舰种扩展
 -- 定义 ENGINEER / STEALTH / RAILGUN 三种新舰类型

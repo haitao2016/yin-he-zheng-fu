@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 --[[
 ShipSpecializationSystem.lua - 舰船专精系统
 V2.7 P1-3

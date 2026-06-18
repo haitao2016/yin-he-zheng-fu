@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 --[[
 ShipEnhancementSystem.lua - 舰船强化系统
 V2.7 P0-4

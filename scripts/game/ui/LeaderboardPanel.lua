@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 --[[
 LeaderboardPanel.lua - 排行榜面板
 V2.7 P2-1

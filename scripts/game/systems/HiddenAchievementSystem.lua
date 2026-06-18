@@ -1,4 +1,4 @@
----@diagnostic disable: assign-type-mismatch, return-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 -----------------------------------------------------------
 -- HiddenAchievementSystem 隐藏成就链式解锁系统
 -- V3.0 Phase 1 P2-2

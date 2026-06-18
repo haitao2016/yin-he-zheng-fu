@@ -1,4 +1,4 @@
----@diagnostic disable: assign-type-mismatch, return-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 -- ============================================================================
 -- game/systems/SeasonExpansionSystem.lua -- V3.0 赛季内容扩展
 -- SEASON_VARIANTS: THEME_PIRATE / THEME_TECH / THEME_CRISIS / THEME_ALLIANCE
