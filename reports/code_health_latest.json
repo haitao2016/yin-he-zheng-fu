@@ -1,0 +1,1001 @@
+{
+  "summary": {
+    "total_files": 93,
+    "total_lines": 49346,
+    "code_lines": 38532,
+    "comment_lines": 6584,
+    "avg_comment_rate": 13.342520163741742,
+    "total_functions": 1083
+  },
+  "large_files": [
+    {
+      "path": "/workspace/scripts/code_health_check.py",
+      "total_lines": 621,
+      "code_lines": 470,
+      "comment_lines": 72,
+      "blank_lines": 79,
+      "comment_rate": 11.594202898550725
+    },
+    {
+      "path": "/workspace/scripts/game/AchievementSystem.lua",
+      "total_lines": 814,
+      "code_lines": 699,
+      "comment_lines": 83,
+      "blank_lines": 32,
+      "comment_rate": 10.196560196560196
+    },
+    {
+      "path": "/workspace/scripts/game/BattleScene.lua",
+      "total_lines": 1626,
+      "code_lines": 1311,
+      "comment_lines": 208,
+      "blank_lines": 107,
+      "comment_rate": 12.792127921279212
+    },
+    {
+      "path": "/workspace/scripts/game/GalaxyEvents.lua",
+      "total_lines": 1504,
+      "code_lines": 1279,
+      "comment_lines": 161,
+      "blank_lines": 64,
+      "comment_rate": 10.704787234042554
+    },
+    {
+      "path": "/workspace/scripts/game/GalaxyScene.lua",
+      "total_lines": 2251,
+      "code_lines": 1797,
+      "comment_lines": 294,
+      "blank_lines": 160,
+      "comment_rate": 13.060861839182586
+    },
+    {
+      "path": "/workspace/scripts/game/GameUI.lua",
+      "total_lines": 1503,
+      "code_lines": 1070,
+      "comment_lines": 284,
+      "blank_lines": 149,
+      "comment_rate": 18.89554224883566
+    },
+    {
+      "path": "/workspace/scripts/game/PirateAI.lua",
+      "total_lines": 731,
+      "code_lines": 543,
+      "comment_lines": 121,
+      "blank_lines": 67,
+      "comment_rate": 16.55266757865937
+    },
+    {
+      "path": "/workspace/scripts/game/battle/BattleAI.lua",
+      "total_lines": 1485,
+      "code_lines": 1201,
+      "comment_lines": 179,
+      "blank_lines": 105,
+      "comment_rate": 12.053872053872054
+    },
+    {
+      "path": "/workspace/scripts/game/battle/RenderHUD.lua",
+      "total_lines": 666,
+      "code_lines": 559,
+      "comment_lines": 36,
+      "blank_lines": 71,
+      "comment_rate": 5.405405405405405
+    },
+    {
+      "path": "/workspace/scripts/game/battle/RenderOverlays.lua",
+      "total_lines": 974,
+      "code_lines": 846,
+      "comment_lines": 24,
+      "blank_lines": 104,
+      "comment_rate": 2.4640657084188913
+    },
+    {
+      "path": "/workspace/scripts/game/galaxy/RenderHUD.lua",
+      "total_lines": 712,
+      "code_lines": 573,
+      "comment_lines": 55,
+      "blank_lines": 84,
+      "comment_rate": 7.724719101123595
+    },
+    {
+      "path": "/workspace/scripts/game/galaxy/RenderStarmap.lua",
+      "total_lines": 948,
+      "code_lines": 769,
+      "comment_lines": 77,
+      "blank_lines": 102,
+      "comment_rate": 8.122362869198312
+    },
+    {
+      "path": "/workspace/scripts/game/systems/DiplomacySystem.lua",
+      "total_lines": 698,
+      "code_lines": 533,
+      "comment_lines": 123,
+      "blank_lines": 42,
+      "comment_rate": 17.621776504297994
+    },
+    {
+      "path": "/workspace/scripts/game/ui/EndGamePanel.lua",
+      "total_lines": 1486,
+      "code_lines": 1195,
+      "comment_lines": 139,
+      "blank_lines": 152,
+      "comment_rate": 9.353970390309556
+    },
+    {
+      "path": "/workspace/scripts/game/ui/FleetPanel.lua",
+      "total_lines": 1690,
+      "code_lines": 1394,
+      "comment_lines": 164,
+      "blank_lines": 132,
+      "comment_rate": 9.70414201183432
+    },
+    {
+      "path": "/workspace/scripts/game/ui/GalaxyPanels.lua",
+      "total_lines": 1394,
+      "code_lines": 1148,
+      "comment_lines": 109,
+      "blank_lines": 137,
+      "comment_rate": 7.819225251076039
+    },
+    {
+      "path": "/workspace/scripts/game/ui/PlanetPanel.lua",
+      "total_lines": 1227,
+      "code_lines": 1025,
+      "comment_lines": 122,
+      "blank_lines": 80,
+      "comment_rate": 9.942950285248573
+    },
+    {
+      "path": "/workspace/scripts/game/ui/ReplayPlayer.lua",
+      "total_lines": 665,
+      "code_lines": 480,
+      "comment_lines": 94,
+      "blank_lines": 91,
+      "comment_rate": 14.135338345864662
+    },
+    {
+      "path": "/workspace/scripts/game/ui/SettingsPanel.lua",
+      "total_lines": 628,
+      "code_lines": 489,
+      "comment_lines": 73,
+      "blank_lines": 66,
+      "comment_rate": 11.624203821656051
+    },
+    {
+      "path": "/workspace/scripts/game/ui/TechPanel.lua",
+      "total_lines": 856,
+      "code_lines": 661,
+      "comment_lines": 124,
+      "blank_lines": 71,
+      "comment_rate": 14.485981308411214
+    },
+    {
+      "path": "/workspace/scripts/game/ui/TopBar.lua",
+      "total_lines": 636,
+      "code_lines": 528,
+      "comment_lines": 71,
+      "blank_lines": 37,
+      "comment_rate": 11.163522012578616
+    },
+    {
+      "path": "/workspace/scripts/game/ui/TutorialSystem.lua",
+      "total_lines": 655,
+      "code_lines": 484,
+      "comment_lines": 98,
+      "blank_lines": 73,
+      "comment_rate": 14.961832061068703
+    },
+    {
+      "path": "/workspace/scripts/network/Client.lua",
+      "total_lines": 2428,
+      "code_lines": 1919,
+      "comment_lines": 354,
+      "blank_lines": 155,
+      "comment_rate": 14.579901153212521
+    },
+    {
+      "path": "/workspace/scripts/network/ClientBattle.lua",
+      "total_lines": 1205,
+      "code_lines": 936,
+      "comment_lines": 178,
+      "blank_lines": 91,
+      "comment_rate": 14.771784232365146
+    },
+    {
+      "path": "/workspace/scripts/network/ClientMenus.lua",
+      "total_lines": 1000,
+      "code_lines": 798,
+      "comment_lines": 113,
+      "blank_lines": 89,
+      "comment_rate": 11.3
+    },
+    {
+      "path": "/workspace/scripts/network/ClientSetup.lua",
+      "total_lines": 1138,
+      "code_lines": 943,
+      "comment_lines": 128,
+      "blank_lines": 67,
+      "comment_rate": 11.247803163444638
+    }
+  ],
+  "long_functions": [
+    {
+      "name": "M.SetSelectedPlanet(p)",
+      "start": 93,
+      "end": 475,
+      "length": 383,
+      "code_lines": 293,
+      "file": "/workspace/scripts/game/ui/GalaxyPanels.lua"
+    },
+    {
+      "name": "BattleContext.Reset()",
+      "start": 10,
+      "end": 241,
+      "length": 232,
+      "code_lines": 154,
+      "file": "/workspace/scripts/game/battle/BattleContext.lua"
+    },
+    {
+      "name": "MegaPanel.IsOpen()",
+      "start": 19,
+      "end": 219,
+      "length": 201,
+      "code_lines": 148,
+      "file": "/workspace/scripts/game/ui/MegaPanel.lua"
+    },
+    {
+      "name": "generate_markdown",
+      "start": 431,
+      "end": 587,
+      "length": 157,
+      "code_lines": 133,
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "name": "CareerPanel.IsOpen()",
+      "start": 27,
+      "end": 192,
+      "length": 166,
+      "code_lines": 119,
+      "file": "/workspace/scripts/game/ui/CareerPanel.lua"
+    },
+    {
+      "name": "drawFloatTexts()",
+      "start": 265,
+      "end": 411,
+      "length": 147,
+      "code_lines": 118,
+      "file": "/workspace/scripts/game/battle/RenderEntities.lua"
+    },
+    {
+      "name": "LegacyPanel.IsOpen()",
+      "start": 67,
+      "end": 220,
+      "length": 154,
+      "code_lines": 110,
+      "file": "/workspace/scripts/game/ui/LegacyPanel.lua"
+    },
+    {
+      "name": "pushToCtx()",
+      "start": 1069,
+      "end": 1176,
+      "length": 108,
+      "code_lines": 102,
+      "file": "/workspace/scripts/game/BattleScene.lua"
+    },
+    {
+      "name": "NemesisRenderPanel.IsVisible()",
+      "start": 18,
+      "end": 154,
+      "length": 137,
+      "code_lines": 100,
+      "file": "/workspace/scripts/game/ui/NemesisRenderPanel.lua"
+    },
+    {
+      "name": "GameUI.IsFleetNaming()",
+      "start": 1341,
+      "end": 1503,
+      "length": 163,
+      "code_lines": 99,
+      "file": "/workspace/scripts/game/GameUI.lua"
+    },
+    {
+      "name": "EmpirePanel.IsVisible()",
+      "start": 19,
+      "end": 149,
+      "length": 131,
+      "code_lines": 92,
+      "file": "/workspace/scripts/game/ui/EmpirePanel.lua"
+    },
+    {
+      "name": "BattleScene.Render()",
+      "start": 1276,
+      "end": 1393,
+      "length": 118,
+      "code_lines": 86,
+      "file": "/workspace/scripts/game/BattleScene.lua"
+    },
+    {
+      "name": "buildSetupHost()",
+      "start": 1810,
+      "end": 1895,
+      "length": 86,
+      "code_lines": 81,
+      "file": "/workspace/scripts/network/Client.lua"
+    }
+  ],
+  "duplicates": [
+    {
+      "file_a": "/workspace/scripts/code_health_check.py",
+      "line_a": 49,
+      "file_b": "/workspace/scripts/code_health_check.py",
+      "line_b": 51,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/code_health_check.py",
+      "line_a": 454,
+      "file_b": "/workspace/scripts/code_health_check.py",
+      "line_b": 484,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/AchievementSystem.lua",
+      "line_a": 13,
+      "file_b": "/workspace/scripts/game/AchievementSystem.lua",
+      "line_b": 20,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/AchievementSystem.lua",
+      "line_a": 123,
+      "file_b": "/workspace/scripts/game/AchievementSystem.lua",
+      "line_b": 144,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/BattleScene.lua",
+      "line_a": 303,
+      "file_b": "/workspace/scripts/game/BattleScene.lua",
+      "line_b": 337,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/BattleScene.lua",
+      "line_a": 337,
+      "file_b": "/workspace/scripts/game/BattleScene.lua",
+      "line_b": 355,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/BattleSkills.lua",
+      "line_a": 187,
+      "file_b": "/workspace/scripts/game/BattleSkills.lua",
+      "line_b": 195,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/BattleSkills.lua",
+      "line_a": 407,
+      "file_b": "/workspace/scripts/game/BattleSkills.lua",
+      "line_b": 446,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/BlackMarketSystem.lua",
+      "line_a": 13,
+      "file_b": "/workspace/scripts/game/BlackMarketSystem.lua",
+      "line_b": 14,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/CampaignSystem.lua",
+      "line_a": 32,
+      "file_b": "/workspace/scripts/game/CampaignSystem.lua",
+      "line_b": 116,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/GalactopediaSystem.lua",
+      "line_a": 22,
+      "file_b": "/workspace/scripts/game/GalactopediaSystem.lua",
+      "line_b": 34,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/GalaxyEvents.lua",
+      "line_a": 72,
+      "file_b": "/workspace/scripts/game/GalaxyEvents.lua",
+      "line_b": 87,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/GalaxyEvents.lua",
+      "line_a": 221,
+      "file_b": "/workspace/scripts/game/GalaxyEvents.lua",
+      "line_b": 249,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/GalaxyScene.lua",
+      "line_a": 115,
+      "file_b": "/workspace/scripts/game/galaxy/GalaxyState.lua",
+      "line_b": 40,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/GalaxyScene.lua",
+      "line_a": 246,
+      "file_b": "/workspace/scripts/game/GalaxyScene.lua",
+      "line_b": 333,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/GameUI.lua",
+      "line_a": 55,
+      "file_b": "/workspace/scripts/game/ui/UICommon.lua",
+      "line_b": 19,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/LeagueSystem.lua",
+      "line_a": 93,
+      "file_b": "/workspace/scripts/game/LeagueSystem.lua",
+      "line_b": 123,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/LegacySystem.lua",
+      "line_a": 78,
+      "file_b": "/workspace/scripts/game/ui/FormationEditor.lua",
+      "line_b": 46,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/LegacySystem.lua",
+      "line_a": 79,
+      "file_b": "/workspace/scripts/game/MutantShipSystem.lua",
+      "line_b": 134,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/MutantShipSystem.lua",
+      "line_a": 134,
+      "file_b": "/workspace/scripts/game/ui/FormationEditor.lua",
+      "line_b": 47,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/LiverySystem.lua",
+      "line_a": 13,
+      "file_b": "/workspace/scripts/game/LiverySystem.lua",
+      "line_b": 29,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/MegastructureSystem.lua",
+      "line_a": 30,
+      "file_b": "/workspace/scripts/game/MegastructureSystem.lua",
+      "line_b": 44,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/MegastructureSystem.lua",
+      "line_a": 30,
+      "file_b": "/workspace/scripts/game/MegastructureSystem.lua",
+      "line_b": 58,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/MutantShipSystem.lua",
+      "line_a": 201,
+      "file_b": "/workspace/scripts/game/MutantShipSystem.lua",
+      "line_b": 220,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/NemesisSystem.lua",
+      "line_a": 21,
+      "file_b": "/workspace/scripts/game/NemesisSystem.lua",
+      "line_b": 36,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/NemesisSystem.lua",
+      "line_a": 166,
+      "file_b": "/workspace/scripts/game/NemesisSystem.lua",
+      "line_b": 192,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/QuestBoard.lua",
+      "line_a": 162,
+      "file_b": "/workspace/scripts/game/QuestBoard.lua",
+      "line_b": 164,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/QuestBoard.lua",
+      "line_a": 162,
+      "file_b": "/workspace/scripts/game/QuestBoard.lua",
+      "line_b": 187,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/StarWeather.lua",
+      "line_a": 19,
+      "file_b": "/workspace/scripts/game/StarWeather.lua",
+      "line_b": 28,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/BattleAI.lua",
+      "line_a": 362,
+      "file_b": "/workspace/scripts/game/battle/BattleAI.lua",
+      "line_b": 372,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/BattleAI.lua",
+      "line_a": 476,
+      "file_b": "/workspace/scripts/game/battle/BattleAI.lua",
+      "line_b": 522,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/BattleAI.lua",
+      "line_a": 1293,
+      "file_b": "/workspace/scripts/game/battle/BattleDeath.lua",
+      "line_b": 202,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/BattleCombatEnemy.lua",
+      "line_a": 178,
+      "file_b": "/workspace/scripts/game/battle/BattleCombatPlayer.lua",
+      "line_b": 273,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/BattleTimers.lua",
+      "line_a": 211,
+      "file_b": "/workspace/scripts/game/battle/BattleTimers.lua",
+      "line_b": 223,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/BattleUtils.lua",
+      "line_a": 116,
+      "file_b": "/workspace/scripts/game/battle/BattleUtils.lua",
+      "line_b": 199,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/RenderEntities.lua",
+      "line_a": 281,
+      "file_b": "/workspace/scripts/game/battle/RenderEntities.lua",
+      "line_b": 291,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/RenderEntities.lua",
+      "line_a": 281,
+      "file_b": "/workspace/scripts/game/battle/RenderEntities.lua",
+      "line_b": 314,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/RenderOverlays.lua",
+      "line_a": 146,
+      "file_b": "/workspace/scripts/game/battle/RenderOverlays.lua",
+      "line_b": 192,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/battle/RenderOverlays.lua",
+      "line_a": 675,
+      "file_b": "/workspace/scripts/game/battle/RenderOverlays.lua",
+      "line_b": 692,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/galaxy/RenderFleets.lua",
+      "line_a": 498,
+      "file_b": "/workspace/scripts/game/galaxy/RenderHUD.lua",
+      "line_b": 306,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/galaxy/RenderHUD.lua",
+      "line_a": 463,
+      "file_b": "/workspace/scripts/game/galaxy/RenderStarmap.lua",
+      "line_b": 856,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/systems/BuildingSystem.lua",
+      "line_a": 142,
+      "file_b": "/workspace/scripts/game/systems/BuildingSystem.lua",
+      "line_b": 178,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/systems/ShipProductionQueue.lua",
+      "line_a": 15,
+      "file_b": "/workspace/scripts/game/ui/GalaxyPanels.lua",
+      "line_b": 1249,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/ui/EmpirePanel.lua",
+      "line_a": 79,
+      "file_b": "/workspace/scripts/game/ui/GalaxyPanels.lua",
+      "line_b": 712,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/ui/EmpirePanel.lua",
+      "line_a": 88,
+      "file_b": "/workspace/scripts/game/ui/LogPanel.lua",
+      "line_b": 80,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/ui/EndGamePanel.lua",
+      "line_a": 141,
+      "file_b": "/workspace/scripts/game/ui/EndGamePanel.lua",
+      "line_b": 339,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/ui/EndGamePanel.lua",
+      "line_a": 275,
+      "file_b": "/workspace/scripts/game/ui/LiveryPanel.lua",
+      "line_b": 103,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/ui/EndGamePanel.lua",
+      "line_a": 275,
+      "file_b": "/workspace/scripts/game/ui/SettingsPanel.lua",
+      "line_b": 433,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/ui/LiveryPanel.lua",
+      "line_a": 103,
+      "file_b": "/workspace/scripts/game/ui/SettingsPanel.lua",
+      "line_b": 433,
+      "lines": 8
+    },
+    {
+      "file_a": "/workspace/scripts/game/ui/EndGamePanel.lua",
+      "line_a": 1201,
+      "file_b": "/workspace/scripts/game/ui/EndGamePanel.lua",
+      "line_b": 1212,
+      "lines": 8
+    }
+  ],
+  "redundant_patterns": [
+    {
+      "line": 54,
+      "code": "'`if cond then x = true else x = false end` 可简化为 `x = cond`'),",
+      "suggestion": "`if cond then x = true else x = false end` 可简化为 `x = cond`",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 282,
+      "code": "if s.victory ~= true then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/AchievementSystem.lua"
+    },
+    {
+      "line": 403,
+      "code": "check = function(s) return s.tier ~= nil end,",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/AchievementSystem.lua"
+    },
+    {
+      "line": 432,
+      "code": "check  = function(s) return s.tier ~= nil and (s.score or 0) >= 7 end,",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/AchievementSystem.lua"
+    },
+    {
+      "line": 121,
+      "code": "if skillPoints_ <= 0 then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/BattleSkills.lua"
+    },
+    {
+      "line": 286,
+      "code": "if idx < 1 or idx > #blueprints_ then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/BlueprintSystem.lua"
+    },
+    {
+      "line": 180,
+      "code": "if not level then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/CampaignSystem.lua"
+    },
+    {
+      "line": 248,
+      "code": "if not state_.showingDialogue then return true end",
+      "suggestion": "`if cond then return true end` 可简化为 `return cond`",
+      "file": "/workspace/scripts/game/CampaignSystem.lua"
+    },
+    {
+      "line": 124,
+      "code": "if not cmd or cmd.level >= COMMANDER_MAX_LEVEL then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/CommanderSystem.lua"
+    },
+    {
+      "line": 262,
+      "code": "if not cmd then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/CommanderSystem.lua"
+    },
+    {
+      "line": 1468,
+      "code": "return endgameCrisis_ ~= nil and not endgameCrisis_.resolved",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/GalaxyEvents.lua"
+    },
+    {
+      "line": 1474,
+      "code": "return endgameCrisis_ ~= nil",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/GalaxyEvents.lua"
+    },
+    {
+      "line": 358,
+      "code": "local orbitR = (pi == nil and 1 or pi) * 0  -- 仅用 size 派生",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/GalaxyScene.lua"
+    },
+    {
+      "line": 547,
+      "code": "if not fm_ then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GalaxyScene.lua"
+    },
+    {
+      "line": 549,
+      "code": "if not fl then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GalaxyScene.lua"
+    },
+    {
+      "line": 551,
+      "code": "if e.shipType == \"EXPLORER\" and e.count > 0 then return true end",
+      "suggestion": "`if cond then return true end` 可简化为 `return cond`",
+      "file": "/workspace/scripts/game/GalaxyScene.lua"
+    },
+    {
+      "line": 1096,
+      "code": "if not planet then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GalaxyScene.lua"
+    },
+    {
+      "line": 1337,
+      "code": "if not fm_ then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GalaxyScene.lua"
+    },
+    {
+      "line": 276,
+      "code": "{ id=\"research_first\", title=\"完成第一项科技\",     desc=\"解锁任意一项科技\",            check=function(gs) return gs.rs and next(gs.rs.unlocked) ~= nil end,              reward={nuclear=200, credits=500} },",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/GameConstants.lua"
+    },
+    {
+      "line": 281,
+      "code": "if not (gs.rs and gs.rs.unlocked) then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GameConstants.lua"
+    },
+    {
+      "line": 301,
+      "code": "if not gs.colonizedPlanets then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GameConstants.lua"
+    },
+    {
+      "line": 305,
+      "code": "if b.key == \"TRADE_HUB\" then return true end",
+      "suggestion": "`if cond then return true end` 可简化为 `return cond`",
+      "file": "/workspace/scripts/game/GameConstants.lua"
+    },
+    {
+      "line": 538,
+      "code": "if not touchDragActive_ or touchDragId_ ~= id then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GameUI.lua"
+    },
+    {
+      "line": 102,
+      "code": "decoded.lp    = math.min(math.max(decoded.lp or 0, 0), LP_CAP)",
+      "suggestion": "可提取为独立的 clamp() 函数以减少重复",
+      "file": "/workspace/scripts/game/LegacySystem.lua"
+    },
+    {
+      "line": 149,
+      "code": "if not b then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/LegacySystem.lua"
+    },
+    {
+      "line": 150,
+      "code": "if b.level >= MAX_LEVEL then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/LegacySystem.lua"
+    },
+    {
+      "line": 90,
+      "code": "if item.unlock == \"free\" then return true end",
+      "suggestion": "`if cond then return true end` 可简化为 `return cond`",
+      "file": "/workspace/scripts/game/LiverySystem.lua"
+    },
+    {
+      "line": 119,
+      "code": "if not def then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/MegastructureSystem.lua"
+    },
+    {
+      "line": 170,
+      "code": "if not state then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/MegastructureSystem.lua"
+    },
+    {
+      "line": 415,
+      "code": "if not state_.activeCaptain then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/NemesisSystem.lua"
+    },
+    {
+      "line": 431,
+      "code": "if not cs or not cs.defeated then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/NemesisSystem.lua"
+    },
+    {
+      "line": 178,
+      "code": "return fm ~= nil and (fm.salvageParts or 0) >= t",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/QuestBoard.lua"
+    },
+    {
+      "line": 182,
+      "code": "if not diplo then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/QuestBoard.lua"
+    },
+    {
+      "line": 521,
+      "code": "local hasMvp = (s.mvp ~= nil and s.mvp.dmg > 0)",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/battle/RenderOverlays.lua"
+    },
+    {
+      "line": 246,
+      "code": "if not planet.buildQueue then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/BuildingSystem.lua"
+    },
+    {
+      "line": 248,
+      "code": "if not job then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/BuildingSystem.lua"
+    },
+    {
+      "line": 94,
+      "code": "if not fl then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/FleetManager.lua"
+    },
+    {
+      "line": 96,
+      "code": "if not old then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/FleetManager.lua"
+    },
+    {
+      "line": 48,
+      "code": "if not t or not t.exclusiveGroup then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResearchSystem.lua"
+    },
+    {
+      "line": 49,
+      "code": "if self.unlocked[id] then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResearchSystem.lua"
+    },
+    {
+      "line": 62,
+      "code": "if not t then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResearchSystem.lua"
+    },
+    {
+      "line": 63,
+      "code": "if self.unlocked[id] then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResearchSystem.lua"
+    },
+    {
+      "line": 64,
+      "code": "if self.active        then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResearchSystem.lua"
+    },
+    {
+      "line": 66,
+      "code": "if not self.unlocked[pre] then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResearchSystem.lua"
+    },
+    {
+      "line": 109,
+      "code": "if (self.resources[res] or 0) < amt then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResourceManager.lua"
+    },
+    {
+      "line": 115,
+      "code": "if not self:canAfford(cost) then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResourceManager.lua"
+    },
+    {
+      "line": 123,
+      "code": "if self.resources[resType] ~= nil then",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/systems/ResourceManager.lua"
+    },
+    {
+      "line": 172,
+      "code": "for k, v in pairs(data.resources) do if self.resources[k] ~= nil then self.resources[k] = v end end",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/systems/ResourceManager.lua"
+    },
+    {
+      "line": 50,
+      "code": "if index < 1 or index > #self.items then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ShipProductionQueue.lua"
+    },
+    {
+      "line": 64,
+      "code": "if index <= 1 or index > #self.items then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ShipProductionQueue.lua"
+    }
+  ],
+  "todos": [
+    {
+      "line": 289,
+      "type": "TODO",
+      "text": "5. TODO / FIXME 统计",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 381,
+      "type": "TODO",
+      "text": "冗余逻辑 / TODO",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 518,
+      "type": "TODO",
+      "text": "—— TODO",
+      "file": "/workspace/scripts/code_health_check.py"
+    }
+  ],
+  "score": 49
+}

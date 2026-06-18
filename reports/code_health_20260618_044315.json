@@ -1,0 +1,1499 @@
+{
+  "summary": {
+    "total_files": 108,
+    "total_lines": 53116,
+    "code_lines": 42271,
+    "comment_lines": 6602,
+    "avg_comment_rate": 12.429399804202124,
+    "total_functions": 1083
+  },
+  "large_files": [
+    {
+      "path": "/workspace/scripts/code_health_check.py",
+      "total_lines": 598,
+      "code_lines": 457,
+      "comment_lines": 67,
+      "blank_lines": 74,
+      "comment_rate": 11.20401337792642
+    },
+    {
+      "path": "/workspace/scripts/game/AchievementSystem.lua",
+      "total_lines": 814,
+      "code_lines": 699,
+      "comment_lines": 83,
+      "blank_lines": 32,
+      "comment_rate": 10.196560196560196
+    },
+    {
+      "path": "/workspace/scripts/game/BattleScene.lua",
+      "total_lines": 1626,
+      "code_lines": 1311,
+      "comment_lines": 208,
+      "blank_lines": 107,
+      "comment_rate": 12.792127921279212
+    },
+    {
+      "path": "/workspace/scripts/game/BattleSkills.lua",
+      "total_lines": 549,
+      "code_lines": 422,
+      "comment_lines": 83,
+      "blank_lines": 44,
+      "comment_rate": 15.1183970856102
+    },
+    {
+      "path": "/workspace/scripts/game/BlueprintSystem.lua",
+      "total_lines": 522,
+      "code_lines": 358,
+      "comment_lines": 128,
+      "blank_lines": 36,
+      "comment_rate": 24.521072796934863
+    },
+    {
+      "path": "/workspace/scripts/game/GalaxyEvents.lua",
+      "total_lines": 1504,
+      "code_lines": 1279,
+      "comment_lines": 161,
+      "blank_lines": 64,
+      "comment_rate": 10.704787234042554
+    },
+    {
+      "path": "/workspace/scripts/game/GalaxyScene.lua",
+      "total_lines": 2251,
+      "code_lines": 1797,
+      "comment_lines": 294,
+      "blank_lines": 160,
+      "comment_rate": 13.060861839182586
+    },
+    {
+      "path": "/workspace/scripts/game/GameUI.lua",
+      "total_lines": 1503,
+      "code_lines": 1070,
+      "comment_lines": 284,
+      "blank_lines": 149,
+      "comment_rate": 18.89554224883566
+    },
+    {
+      "path": "/workspace/scripts/game/NemesisSystem.lua",
+      "total_lines": 501,
+      "code_lines": 378,
+      "comment_lines": 81,
+      "blank_lines": 42,
+      "comment_rate": 16.16766467065868
+    },
+    {
+      "path": "/workspace/scripts/game/PirateAI.lua",
+      "total_lines": 731,
+      "code_lines": 543,
+      "comment_lines": 121,
+      "blank_lines": 67,
+      "comment_rate": 16.55266757865937
+    },
+    {
+      "path": "/workspace/scripts/game/battle/BattleAI.lua",
+      "total_lines": 1485,
+      "code_lines": 1201,
+      "comment_lines": 179,
+      "blank_lines": 105,
+      "comment_rate": 12.053872053872054
+    },
+    {
+      "path": "/workspace/scripts/game/battle/RenderEntities.lua",
+      "total_lines": 536,
+      "code_lines": 447,
+      "comment_lines": 65,
+      "blank_lines": 24,
+      "comment_rate": 12.126865671641792
+    },
+    {
+      "path": "/workspace/scripts/game/battle/RenderHUD.lua",
+      "total_lines": 666,
+      "code_lines": 559,
+      "comment_lines": 36,
+      "blank_lines": 71,
+      "comment_rate": 5.405405405405405
+    },
+    {
+      "path": "/workspace/scripts/game/battle/RenderOverlays.lua",
+      "total_lines": 974,
+      "code_lines": 846,
+      "comment_lines": 24,
+      "blank_lines": 104,
+      "comment_rate": 2.4640657084188913
+    },
+    {
+      "path": "/workspace/scripts/game/galaxy/RenderFleets.lua",
+      "total_lines": 563,
+      "code_lines": 456,
+      "comment_lines": 63,
+      "blank_lines": 44,
+      "comment_rate": 11.190053285968029
+    },
+    {
+      "path": "/workspace/scripts/game/galaxy/RenderHUD.lua",
+      "total_lines": 712,
+      "code_lines": 573,
+      "comment_lines": 55,
+      "blank_lines": 84,
+      "comment_rate": 7.724719101123595
+    },
+    {
+      "path": "/workspace/scripts/game/galaxy/RenderStarmap.lua",
+      "total_lines": 948,
+      "code_lines": 769,
+      "comment_lines": 77,
+      "blank_lines": 102,
+      "comment_rate": 8.122362869198312
+    },
+    {
+      "path": "/workspace/scripts/game/systems/DiplomacySystem.lua",
+      "total_lines": 698,
+      "code_lines": 533,
+      "comment_lines": 123,
+      "blank_lines": 42,
+      "comment_rate": 17.621776504297994
+    },
+    {
+      "path": "/workspace/scripts/game/ui/AchievementPanel.lua",
+      "total_lines": 557,
+      "code_lines": 427,
+      "comment_lines": 64,
+      "blank_lines": 66,
+      "comment_rate": 11.490125673249551
+    },
+    {
+      "path": "/workspace/scripts/game/ui/BasePanel.lua",
+      "total_lines": 594,
+      "code_lines": 501,
+      "comment_lines": 37,
+      "blank_lines": 56,
+      "comment_rate": 6.228956228956229
+    },
+    {
+      "path": "/workspace/scripts/game/ui/EndGamePanel.lua",
+      "total_lines": 1486,
+      "code_lines": 1195,
+      "comment_lines": 139,
+      "blank_lines": 152,
+      "comment_rate": 9.353970390309556
+    },
+    {
+      "path": "/workspace/scripts/game/ui/FleetPanel.lua",
+      "total_lines": 1690,
+      "code_lines": 1394,
+      "comment_lines": 164,
+      "blank_lines": 132,
+      "comment_rate": 9.70414201183432
+    },
+    {
+      "path": "/workspace/scripts/game/ui/FormationEditor.lua",
+      "total_lines": 574,
+      "code_lines": 445,
+      "comment_lines": 71,
+      "blank_lines": 58,
+      "comment_rate": 12.369337979094077
+    },
+    {
+      "path": "/workspace/scripts/game/ui/GalaxyPanels.lua",
+      "total_lines": 1394,
+      "code_lines": 1148,
+      "comment_lines": 109,
+      "blank_lines": 137,
+      "comment_rate": 7.819225251076039
+    },
+    {
+      "path": "/workspace/scripts/game/ui/PlanetPanel.lua",
+      "total_lines": 1227,
+      "code_lines": 1025,
+      "comment_lines": 122,
+      "blank_lines": 80,
+      "comment_rate": 9.942950285248573
+    },
+    {
+      "path": "/workspace/scripts/game/ui/ReplayPlayer.lua",
+      "total_lines": 665,
+      "code_lines": 480,
+      "comment_lines": 94,
+      "blank_lines": 91,
+      "comment_rate": 14.135338345864662
+    },
+    {
+      "path": "/workspace/scripts/game/ui/SettingsPanel.lua",
+      "total_lines": 628,
+      "code_lines": 489,
+      "comment_lines": 73,
+      "blank_lines": 66,
+      "comment_rate": 11.624203821656051
+    },
+    {
+      "path": "/workspace/scripts/game/ui/TechPanel.lua",
+      "total_lines": 856,
+      "code_lines": 661,
+      "comment_lines": 124,
+      "blank_lines": 71,
+      "comment_rate": 14.485981308411214
+    },
+    {
+      "path": "/workspace/scripts/game/ui/TopBar.lua",
+      "total_lines": 636,
+      "code_lines": 528,
+      "comment_lines": 71,
+      "blank_lines": 37,
+      "comment_rate": 11.163522012578616
+    },
+    {
+      "path": "/workspace/scripts/game/ui/TutorialSystem.lua",
+      "total_lines": 655,
+      "code_lines": 484,
+      "comment_lines": 98,
+      "blank_lines": 73,
+      "comment_rate": 14.961832061068703
+    },
+    {
+      "path": "/workspace/scripts/network/Client.lua",
+      "total_lines": 2428,
+      "code_lines": 1919,
+      "comment_lines": 354,
+      "blank_lines": 155,
+      "comment_rate": 14.579901153212521
+    },
+    {
+      "path": "/workspace/scripts/network/ClientBattle.lua",
+      "total_lines": 1205,
+      "code_lines": 936,
+      "comment_lines": 178,
+      "blank_lines": 91,
+      "comment_rate": 14.771784232365146
+    },
+    {
+      "path": "/workspace/scripts/network/ClientMenus.lua",
+      "total_lines": 1000,
+      "code_lines": 798,
+      "comment_lines": 113,
+      "blank_lines": 89,
+      "comment_rate": 11.3
+    },
+    {
+      "path": "/workspace/scripts/network/ClientSetup.lua",
+      "total_lines": 1138,
+      "code_lines": 943,
+      "comment_lines": 128,
+      "blank_lines": 67,
+      "comment_rate": 11.247803163444638
+    }
+  ],
+  "long_functions": [
+    {
+      "name": "M.SetSelectedPlanet(p)",
+      "start": 93,
+      "end": 475,
+      "length": 383,
+      "code_lines": 293,
+      "file": "/workspace/scripts/game/ui/GalaxyPanels.lua"
+    },
+    {
+      "name": "BattleContext.Reset()",
+      "start": 10,
+      "end": 241,
+      "length": 232,
+      "code_lines": 154,
+      "file": "/workspace/scripts/game/battle/BattleContext.lua"
+    },
+    {
+      "name": "MegaPanel.IsOpen()",
+      "start": 19,
+      "end": 219,
+      "length": 201,
+      "code_lines": 148,
+      "file": "/workspace/scripts/game/ui/MegaPanel.lua"
+    },
+    {
+      "name": "generate_markdown",
+      "start": 408,
+      "end": 564,
+      "length": 157,
+      "code_lines": 133,
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "name": "CareerPanel.IsOpen()",
+      "start": 27,
+      "end": 192,
+      "length": 166,
+      "code_lines": 119,
+      "file": "/workspace/scripts/game/ui/CareerPanel.lua"
+    },
+    {
+      "name": "drawFloatTexts()",
+      "start": 265,
+      "end": 411,
+      "length": 147,
+      "code_lines": 118,
+      "file": "/workspace/scripts/game/battle/RenderEntities.lua"
+    },
+    {
+      "name": "LegacyPanel.IsOpen()",
+      "start": 67,
+      "end": 220,
+      "length": 154,
+      "code_lines": 110,
+      "file": "/workspace/scripts/game/ui/LegacyPanel.lua"
+    },
+    {
+      "name": "pushToCtx()",
+      "start": 1069,
+      "end": 1176,
+      "length": 108,
+      "code_lines": 102,
+      "file": "/workspace/scripts/game/BattleScene.lua"
+    },
+    {
+      "name": "NemesisRenderPanel.IsVisible()",
+      "start": 18,
+      "end": 154,
+      "length": 137,
+      "code_lines": 100,
+      "file": "/workspace/scripts/game/ui/NemesisRenderPanel.lua"
+    },
+    {
+      "name": "GameUI.IsFleetNaming()",
+      "start": 1341,
+      "end": 1503,
+      "length": 163,
+      "code_lines": 99,
+      "file": "/workspace/scripts/game/GameUI.lua"
+    },
+    {
+      "name": "EmpirePanel.IsVisible()",
+      "start": 19,
+      "end": 149,
+      "length": 131,
+      "code_lines": 92,
+      "file": "/workspace/scripts/game/ui/EmpirePanel.lua"
+    },
+    {
+      "name": "BattleScene.Render()",
+      "start": 1276,
+      "end": 1393,
+      "length": 118,
+      "code_lines": 86,
+      "file": "/workspace/scripts/game/BattleScene.lua"
+    },
+    {
+      "name": "buildSetupHost()",
+      "start": 1810,
+      "end": 1895,
+      "length": 86,
+      "code_lines": 81,
+      "file": "/workspace/scripts/network/Client.lua"
+    },
+    {
+      "name": "LogPanel.IsVisible()",
+      "start": 19,
+      "end": 125,
+      "length": 107,
+      "code_lines": 77,
+      "file": "/workspace/scripts/game/ui/LogPanel.lua"
+    },
+    {
+      "name": "M.RenderEventPopup()",
+      "start": 218,
+      "end": 307,
+      "length": 90,
+      "code_lines": 70,
+      "file": "/workspace/scripts/game/ui/Overlays.lua"
+    },
+    {
+      "name": "pullFromCtx()",
+      "start": 1180,
+      "end": 1243,
+      "length": 64,
+      "code_lines": 62,
+      "file": "/workspace/scripts/game/BattleScene.lua"
+    },
+    {
+      "name": "BattleScene.GetState()",
+      "start": 1399,
+      "end": 1481,
+      "length": 83,
+      "code_lines": 62,
+      "file": "/workspace/scripts/game/BattleScene.lua"
+    },
+    {
+      "name": "GameUI.Init(opts)",
+      "start": 1138,
+      "end": 1200,
+      "length": 63,
+      "code_lines": 61,
+      "file": "/workspace/scripts/game/GameUI.lua"
+    },
+    {
+      "name": "drawWaveSummary()",
+      "start": 508,
+      "end": 577,
+      "length": 70,
+      "code_lines": 60,
+      "file": "/workspace/scripts/game/battle/RenderOverlays.lua"
+    },
+    {
+      "name": "BasePanel.Render(base,",
+      "start": 21,
+      "end": 100,
+      "length": 80,
+      "code_lines": 60,
+      "file": "/workspace/scripts/game/ui/BasePanel.lua"
+    },
+    {
+      "name": "renderDeployHint(ctx)",
+      "start": 19,
+      "end": 98,
+      "length": 80,
+      "code_lines": 59,
+      "file": "/workspace/scripts/game/ui/GalaxyHud.lua"
+    },
+    {
+      "name": "M.drawSignalButton()",
+      "start": 559,
+      "end": 628,
+      "length": 70,
+      "code_lines": 58,
+      "file": "/workspace/scripts/game/galaxy/RenderHUD.lua"
+    },
+    {
+      "name": "run_analysis",
+      "start": 332,
+      "end": 407,
+      "length": 76,
+      "code_lines": 57,
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "name": "ClientMenus.RenderDifficultyScreen(vg,",
+      "start": 447,
+      "end": 523,
+      "length": 77,
+      "code_lines": 57,
+      "file": "/workspace/scripts/network/ClientMenus.lua"
+    },
+    {
+      "name": "render()",
+      "start": 40,
+      "end": 115,
+      "length": 76,
+      "code_lines": 56,
+      "file": "/workspace/scripts/game/ui/GalactopediaPanel.lua"
+    },
+    {
+      "name": "render()",
+      "start": 14,
+      "end": 93,
+      "length": 80,
+      "code_lines": 56,
+      "file": "/workspace/scripts/game/ui/TimeoutPanel.lua"
+    },
+    {
+      "name": "render()",
+      "start": 18,
+      "end": 88,
+      "length": 71,
+      "code_lines": 54,
+      "file": "/workspace/scripts/game/ui/LiveryPanel.lua"
+    },
+    {
+      "name": "buildInputHost()",
+      "start": 1907,
+      "end": 1965,
+      "length": 59,
+      "code_lines": 54,
+      "file": "/workspace/scripts/network/Client.lua"
+    },
+    {
+      "name": "drawFocusHUD()",
+      "start": 348,
+      "end": 412,
+      "length": 65,
+      "code_lines": 53,
+      "file": "/workspace/scripts/game/battle/RenderHUD.lua"
+    },
+    {
+      "name": "drawSkillUpgrade()",
+      "start": 582,
+      "end": 643,
+      "length": 62,
+      "code_lines": 52,
+      "file": "/workspace/scripts/game/battle/RenderHUD.lua"
+    },
+    {
+      "name": "renderLeaderboard()",
+      "start": 115,
+      "end": 177,
+      "length": 63,
+      "code_lines": 52,
+      "file": "/workspace/scripts/game/ui/EndGamePanel.lua"
+    },
+    {
+      "name": "ClientMenus.RenderMainMenu(vg,",
+      "start": 135,
+      "end": 205,
+      "length": 71,
+      "code_lines": 51,
+      "file": "/workspace/scripts/network/ClientMenus.lua"
+    }
+  ],
+  "duplicates": [
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T09-53-14-619Z.json",
+      "line_a": 8,
+      "file_b": "/workspace/logs/submit/publish_2026-05-12T10-04-03-522Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T09-53-14-619Z.json",
+      "line_a": 8,
+      "file_b": "/workspace/logs/submit/publish_2026-05-12T10-05-31-851Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T09-53-14-619Z.json",
+      "line_a": 8,
+      "file_b": "/workspace/logs/submit/publish_2026-05-12T11-24-03-965Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T09-53-14-619Z.json",
+      "line_a": 8,
+      "file_b": "/workspace/logs/submit/publish_2026-05-12T18-15-59-597Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T09-53-14-619Z.json",
+      "line_a": 8,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T00-32-32-385Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T09-53-14-619Z.json",
+      "line_a": 8,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T03-00-02-887Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T09-53-14-619Z.json",
+      "line_a": 8,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T03-43-12-921Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T09-53-14-619Z.json",
+      "line_a": 8,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T03-48-18-973Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T09-53-14-619Z.json",
+      "line_a": 8,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T12-12-02-777Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T09-53-14-619Z.json",
+      "line_a": 8,
+      "file_b": "/workspace/logs/submit/publish_2026-05-17T02-09-26-554Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T09-53-14-619Z.json",
+      "line_a": 8,
+      "file_b": "/workspace/logs/submit/publish_2026-05-17T02-19-55-850Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T09-53-14-619Z.json",
+      "line_a": 8,
+      "file_b": "/workspace/logs/submit/publish_2026-05-17T02-41-47-281Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-04-03-522Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-12T10-05-31-851Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-04-03-522Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-12T11-24-03-965Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-04-03-522Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-12T18-15-59-597Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-04-03-522Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T00-32-32-385Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-04-03-522Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T03-00-02-887Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-04-03-522Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T03-43-12-921Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-04-03-522Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T03-48-18-973Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-04-03-522Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T12-12-02-777Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-04-03-522Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-17T02-09-26-554Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-04-03-522Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-17T02-19-55-850Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-04-03-522Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-17T02-41-47-281Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-05-31-851Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-12T11-24-03-965Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-05-31-851Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-12T18-15-59-597Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-05-31-851Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T00-32-32-385Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-05-31-851Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T03-00-02-887Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-05-31-851Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T03-43-12-921Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-05-31-851Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T03-48-18-973Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-05-31-851Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T12-12-02-777Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-05-31-851Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-17T02-09-26-554Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-05-31-851Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-17T02-19-55-850Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T10-05-31-851Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-17T02-41-47-281Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T11-24-03-965Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-12T18-15-59-597Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T11-24-03-965Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T00-32-32-385Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T11-24-03-965Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T03-00-02-887Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T11-24-03-965Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T03-43-12-921Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T11-24-03-965Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T03-48-18-973Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T11-24-03-965Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T12-12-02-777Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T11-24-03-965Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-17T02-09-26-554Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T11-24-03-965Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-17T02-19-55-850Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T11-24-03-965Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-17T02-41-47-281Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T18-15-59-597Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T00-32-32-385Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T18-15-59-597Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T03-00-02-887Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T18-15-59-597Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T03-43-12-921Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T18-15-59-597Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T03-48-18-973Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T18-15-59-597Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-13T12-12-02-777Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T18-15-59-597Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-17T02-09-26-554Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T18-15-59-597Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-17T02-19-55-850Z.json",
+      "line_b": 7,
+      "lines": 6
+    },
+    {
+      "file_a": "/workspace/logs/submit/publish_2026-05-12T18-15-59-597Z.json",
+      "line_a": 7,
+      "file_b": "/workspace/logs/submit/publish_2026-05-17T02-41-47-281Z.json",
+      "line_b": 7,
+      "lines": 6
+    }
+  ],
+  "redundant_patterns": [
+    {
+      "line": 52,
+      "code": "'`if cond then x = true else x = false end` 可简化为 `x = cond`'),",
+      "suggestion": "`if cond then x = true else x = false end` 可简化为 `x = cond`",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 282,
+      "code": "if s.victory ~= true then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/AchievementSystem.lua"
+    },
+    {
+      "line": 403,
+      "code": "check = function(s) return s.tier ~= nil end,",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/AchievementSystem.lua"
+    },
+    {
+      "line": 432,
+      "code": "check  = function(s) return s.tier ~= nil and (s.score or 0) >= 7 end,",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/AchievementSystem.lua"
+    },
+    {
+      "line": 121,
+      "code": "if skillPoints_ <= 0 then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/BattleSkills.lua"
+    },
+    {
+      "line": 286,
+      "code": "if idx < 1 or idx > #blueprints_ then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/BlueprintSystem.lua"
+    },
+    {
+      "line": 180,
+      "code": "if not level then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/CampaignSystem.lua"
+    },
+    {
+      "line": 248,
+      "code": "if not state_.showingDialogue then return true end",
+      "suggestion": "`if cond then return true end` 可简化为 `return cond`",
+      "file": "/workspace/scripts/game/CampaignSystem.lua"
+    },
+    {
+      "line": 124,
+      "code": "if not cmd or cmd.level >= COMMANDER_MAX_LEVEL then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/CommanderSystem.lua"
+    },
+    {
+      "line": 262,
+      "code": "if not cmd then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/CommanderSystem.lua"
+    },
+    {
+      "line": 1468,
+      "code": "return endgameCrisis_ ~= nil and not endgameCrisis_.resolved",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/GalaxyEvents.lua"
+    },
+    {
+      "line": 1474,
+      "code": "return endgameCrisis_ ~= nil",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/GalaxyEvents.lua"
+    },
+    {
+      "line": 358,
+      "code": "local orbitR = (pi == nil and 1 or pi) * 0  -- 仅用 size 派生",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/GalaxyScene.lua"
+    },
+    {
+      "line": 547,
+      "code": "if not fm_ then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GalaxyScene.lua"
+    },
+    {
+      "line": 549,
+      "code": "if not fl then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GalaxyScene.lua"
+    },
+    {
+      "line": 551,
+      "code": "if e.shipType == \"EXPLORER\" and e.count > 0 then return true end",
+      "suggestion": "`if cond then return true end` 可简化为 `return cond`",
+      "file": "/workspace/scripts/game/GalaxyScene.lua"
+    },
+    {
+      "line": 1096,
+      "code": "if not planet then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GalaxyScene.lua"
+    },
+    {
+      "line": 1337,
+      "code": "if not fm_ then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GalaxyScene.lua"
+    },
+    {
+      "line": 276,
+      "code": "{ id=\"research_first\", title=\"完成第一项科技\",     desc=\"解锁任意一项科技\",            check=function(gs) return gs.rs and next(gs.rs.unlocked) ~= nil end,              reward={nuclear=200, credits=500} },",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/GameConstants.lua"
+    },
+    {
+      "line": 281,
+      "code": "if not (gs.rs and gs.rs.unlocked) then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GameConstants.lua"
+    },
+    {
+      "line": 301,
+      "code": "if not gs.colonizedPlanets then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GameConstants.lua"
+    },
+    {
+      "line": 305,
+      "code": "if b.key == \"TRADE_HUB\" then return true end",
+      "suggestion": "`if cond then return true end` 可简化为 `return cond`",
+      "file": "/workspace/scripts/game/GameConstants.lua"
+    },
+    {
+      "line": 538,
+      "code": "if not touchDragActive_ or touchDragId_ ~= id then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/GameUI.lua"
+    },
+    {
+      "line": 102,
+      "code": "decoded.lp    = math.min(math.max(decoded.lp or 0, 0), LP_CAP)",
+      "suggestion": "可提取为独立的 clamp() 函数以减少重复",
+      "file": "/workspace/scripts/game/LegacySystem.lua"
+    },
+    {
+      "line": 149,
+      "code": "if not b then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/LegacySystem.lua"
+    },
+    {
+      "line": 150,
+      "code": "if b.level >= MAX_LEVEL then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/LegacySystem.lua"
+    },
+    {
+      "line": 90,
+      "code": "if item.unlock == \"free\" then return true end",
+      "suggestion": "`if cond then return true end` 可简化为 `return cond`",
+      "file": "/workspace/scripts/game/LiverySystem.lua"
+    },
+    {
+      "line": 119,
+      "code": "if not def then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/MegastructureSystem.lua"
+    },
+    {
+      "line": 170,
+      "code": "if not state then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/MegastructureSystem.lua"
+    },
+    {
+      "line": 415,
+      "code": "if not state_.activeCaptain then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/NemesisSystem.lua"
+    },
+    {
+      "line": 431,
+      "code": "if not cs or not cs.defeated then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/NemesisSystem.lua"
+    },
+    {
+      "line": 178,
+      "code": "return fm ~= nil and (fm.salvageParts or 0) >= t",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/QuestBoard.lua"
+    },
+    {
+      "line": 182,
+      "code": "if not diplo then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/QuestBoard.lua"
+    },
+    {
+      "line": 521,
+      "code": "local hasMvp = (s.mvp ~= nil and s.mvp.dmg > 0)",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/battle/RenderOverlays.lua"
+    },
+    {
+      "line": 246,
+      "code": "if not planet.buildQueue then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/BuildingSystem.lua"
+    },
+    {
+      "line": 248,
+      "code": "if not job then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/BuildingSystem.lua"
+    },
+    {
+      "line": 94,
+      "code": "if not fl then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/FleetManager.lua"
+    },
+    {
+      "line": 96,
+      "code": "if not old then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/FleetManager.lua"
+    },
+    {
+      "line": 48,
+      "code": "if not t or not t.exclusiveGroup then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResearchSystem.lua"
+    },
+    {
+      "line": 49,
+      "code": "if self.unlocked[id] then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResearchSystem.lua"
+    },
+    {
+      "line": 62,
+      "code": "if not t then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResearchSystem.lua"
+    },
+    {
+      "line": 63,
+      "code": "if self.unlocked[id] then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResearchSystem.lua"
+    },
+    {
+      "line": 64,
+      "code": "if self.active        then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResearchSystem.lua"
+    },
+    {
+      "line": 66,
+      "code": "if not self.unlocked[pre] then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResearchSystem.lua"
+    },
+    {
+      "line": 109,
+      "code": "if (self.resources[res] or 0) < amt then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResourceManager.lua"
+    },
+    {
+      "line": 115,
+      "code": "if not self:canAfford(cost) then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ResourceManager.lua"
+    },
+    {
+      "line": 123,
+      "code": "if self.resources[resType] ~= nil then",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/systems/ResourceManager.lua"
+    },
+    {
+      "line": 172,
+      "code": "for k, v in pairs(data.resources) do if self.resources[k] ~= nil then self.resources[k] = v end end",
+      "suggestion": "建议使用显式判空（如 `if x then ... end` 或 `if x is None`）",
+      "file": "/workspace/scripts/game/systems/ResourceManager.lua"
+    },
+    {
+      "line": 50,
+      "code": "if index < 1 or index > #self.items then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ShipProductionQueue.lua"
+    },
+    {
+      "line": 64,
+      "code": "if index <= 1 or index > #self.items then return false end",
+      "suggestion": "`if cond then return false end` 可简化为 `return not (cond)`",
+      "file": "/workspace/scripts/game/systems/ShipProductionQueue.lua"
+    }
+  ],
+  "todos": [
+    {
+      "line": 43,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-12T09-53-14-619Z.json"
+    },
+    {
+      "line": 270,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-12T09-53-14-619Z.json"
+    },
+    {
+      "line": 42,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-12T10-04-03-522Z.json"
+    },
+    {
+      "line": 219,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-12T10-04-03-522Z.json"
+    },
+    {
+      "line": 42,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-12T10-05-31-851Z.json"
+    },
+    {
+      "line": 219,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-12T10-05-31-851Z.json"
+    },
+    {
+      "line": 42,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-12T11-24-03-965Z.json"
+    },
+    {
+      "line": 219,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-12T11-24-03-965Z.json"
+    },
+    {
+      "line": 42,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-12T18-15-59-597Z.json"
+    },
+    {
+      "line": 219,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-12T18-15-59-597Z.json"
+    },
+    {
+      "line": 42,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-13T00-32-32-385Z.json"
+    },
+    {
+      "line": 219,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-13T00-32-32-385Z.json"
+    },
+    {
+      "line": 42,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-13T03-00-02-887Z.json"
+    },
+    {
+      "line": 219,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-13T03-00-02-887Z.json"
+    },
+    {
+      "line": 42,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-13T03-43-12-921Z.json"
+    },
+    {
+      "line": 306,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-13T03-43-12-921Z.json"
+    },
+    {
+      "line": 42,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-13T03-48-18-973Z.json"
+    },
+    {
+      "line": 219,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-13T03-48-18-973Z.json"
+    },
+    {
+      "line": 42,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-13T12-12-02-777Z.json"
+    },
+    {
+      "line": 219,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-13T12-12-02-777Z.json"
+    },
+    {
+      "line": 42,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-17T02-09-26-554Z.json"
+    },
+    {
+      "line": 219,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-17T02-09-26-554Z.json"
+    },
+    {
+      "line": 42,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-17T02-19-55-850Z.json"
+    },
+    {
+      "line": 219,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-17T02-19-55-850Z.json"
+    },
+    {
+      "line": 42,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-17T02-41-47-281Z.json"
+    },
+    {
+      "line": 219,
+      "type": "BUG",
+      "text": "\"trial_note\": \"首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。\",",
+      "file": "/workspace/logs/submit/publish_2026-05-17T02-41-47-281Z.json"
+    },
+    {
+      "line": 35,
+      "type": "TODO",
+      "text": "TODO_PATTERN = r'(TODO|FIXME|XXX|HACK|BUG)'",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 285,
+      "type": "TODO",
+      "text": "# 5. TODO / FIXME 统计",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 287,
+      "type": "TODO",
+      "text": "def find_todos(filepath, lines):",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 288,
+      "type": "TODO",
+      "text": "todos = []",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 289,
+      "type": "TODO",
+      "text": "pat = re.compile(TODO_PATTERN, re.IGNORECASE)",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 293,
+      "type": "TODO",
+      "text": "# 只报告代码中的 TODO（注释中的也报告，但标记为注释 TODO）",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 296,
+      "type": "TODO",
+      "text": "todos.append({'line': i + 1, 'type': m.group(1).upper(), 'text': line.strip()})",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 297,
+      "type": "TODO",
+      "text": "return todos",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 358,
+      "type": "TODO",
+      "text": "# 冗余逻辑 / TODO",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 361,
+      "type": "TODO",
+      "text": "todo_hits = []",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 368,
+      "type": "TODO",
+      "text": "t = find_todos(f, lines)",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 371,
+      "type": "TODO",
+      "text": "todo_hits.append(it)",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 399,
+      "type": "TODO",
+      "text": "'todos': todo_hits,",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 495,
+      "type": "TODO",
+      "text": "# —— TODO",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 498,
+      "type": "TODO",
+      "text": "if stats['todos']:",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 499,
+      "type": "TODO",
+      "text": "by_type = Counter(t['type'] for t in stats['todos'])",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 507,
+      "type": "TODO",
+      "text": "for t in stats['todos'][:100]:",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 510,
+      "type": "TODO",
+      "text": "if len(stats['todos']) > 100:",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 511,
+      "type": "TODO",
+      "text": "lines.append(f\"- ... 其余 {len(stats['todos']) - 100} 条省略\")",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 514,
+      "type": "TODO",
+      "text": "lines.append(\"_未检测到 TODO/FIXME 标记。_\")",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 533,
+      "type": "TODO",
+      "text": "if stats['todos']:",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 534,
+      "type": "TODO",
+      "text": "suggestions.append(f\"- **清理待办**: 共 {len(stats['todos'])} 个 TODO/FIXME 标记，\"",
+      "file": "/workspace/scripts/code_health_check.py"
+    },
+    {
+      "line": 1184,
+      "type": "HACK",
+      "text": "debuff = { key = \"AI_HACK\", dur = 120, mag = 0.8, label = \"AI渗透·自动化-20%\" },",
+      "file": "/workspace/scripts/game/GalaxyEvents.lua"
+    },
+    {
+      "line": 66,
+      "type": "XXX",
+      "text": "{ id = \"nemesis_xxx\",icon = \"🔥\", name = \"灭族者\",   unlock = \"nemesis\", condition = \"defeat_5\" },",
+      "file": "/workspace/scripts/game/LiverySystem.lua"
+    }
+  ],
+  "score": 0
+}

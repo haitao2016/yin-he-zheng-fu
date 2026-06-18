@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# 代码健康度检查 - 定时任务入口
+# 用法: ./run_code_health.sh [扫描目录]
+# 每小时自动运行一次，输出到 reports/ 目录
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+SCAN_DIR="${1:-$PROJECT_ROOT}"
+REPORT_DIR="${PROJECT_ROOT}/reports"
+LOG_FILE="${REPORT_DIR}/code_health.log"
+LATEST_LINK="${REPORT_DIR}/latest.md"
+
+mkdir -p "${REPORT_DIR}"
+
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] 开始代码健康度检查" | tee -a "${LOG_FILE}"
+echo "  扫描目录: ${SCAN_DIR}" | tee -a "${LOG_FILE}"
+
+# 执行 Python 脚本
+python3 "${SCRIPT_DIR}/code_health_check.py" --dir "${SCAN_DIR}" 2>&1 | tee -a "${LOG_FILE}"
+
+# 创建 latest 符号链接，方便查看最新报告
+NEW_REPORT=$(ls -t "${REPORT_DIR}"/code_health_*.md 2>/dev/null | head -1)
+if [ -n "${NEW_REPORT}" ]; then
+    ln -sf "${NEW_REPORT}" "${LATEST_LINK}"
+    echo "  最新报告: ${LATEST_LINK} -> ${NEW_REPORT}" | tee -a "${LOG_FILE}"
+fi
+
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] 检查完成" | tee -a "${LOG_FILE}"
+echo "" | tee -a "${LOG_FILE}"
