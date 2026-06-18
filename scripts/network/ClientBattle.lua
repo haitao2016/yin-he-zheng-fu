@@ -603,7 +603,7 @@ function M.OnPirateAttack(pirateLevel, baseId, targetName)
 
     -- P2-3: 教学提示（首次被攻击）
     local TutorialSystem = require("game.ui.TutorialSystem")
-    TutorialSystem.Trigger("first_pirate_attack")
+    TutorialSystem.TriggerPhase("first_pirate_attack")
 
     -- P1-2: STELLAR_FORTRESS 额外防御效果
     local fortressBonus = 0
