@@ -1046,6 +1046,7 @@ function BattleAI.UpdateEnemyFleet(dt)
                         ps.hitFlash = 0.6
                     end
                     battleStats_.dmgTaken = battleStats_.dmgTaken + finalDmg
+                    goto skip_enemy_hit     -- circle 阵不再对 target 单独扣血
                 else
                     -- FRIGATE 合作防御（20% 分担，HP>50% 的护卫舰帮忙扛）
                     local frigateShare = 0
