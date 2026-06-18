@@ -1,0 +1,1965 @@
+{
+  "scan_dir": "/workspace/scripts",
+  "generated_at": "2026-06-18T05:05:16",
+  "summary": {
+    "total_files": 91,
+    "total_lines": 48694,
+    "big_file_count": 25,
+    "long_func_count": 3,
+    "dup_block_count": 35,
+    "redundant_count": 0,
+    "marker_counts": {
+      "TODO": 0,
+      "FIXME": 0,
+      "BUG": 0,
+      "HACK": 0,
+      "XXX": 0
+    }
+  },
+  "big_files": [
+    {
+      "path": "game/AchievementSystem.lua",
+      "lines": 814,
+      "split": {
+        "original": "/workspace/scripts/game/AchievementSystem.lua",
+        "header_lines": 606,
+        "part_files": [
+          "/workspace/scripts/game/AchievementSystem_part01.lua",
+          "/workspace/scripts/game/AchievementSystem_part02.lua",
+          "/workspace/scripts/game/AchievementSystem_part03.lua",
+          "/workspace/scripts/game/AchievementSystem_part04.lua",
+          "/workspace/scripts/game/AchievementSystem_part05.lua"
+        ],
+        "parts_count": 5
+      }
+    },
+    {
+      "path": "game/BattleScene.lua",
+      "lines": 1626,
+      "split": {
+        "original": "/workspace/scripts/game/BattleScene.lua",
+        "header_lines": 401,
+        "part_files": [
+          "/workspace/scripts/game/BattleScene_part01.lua",
+          "/workspace/scripts/game/BattleScene_part02.lua",
+          "/workspace/scripts/game/BattleScene_part03.lua",
+          "/workspace/scripts/game/BattleScene_part04.lua",
+          "/workspace/scripts/game/BattleScene_part05.lua",
+          "/workspace/scripts/game/BattleScene_part06.lua",
+          "/workspace/scripts/game/BattleScene_part07.lua",
+          "/workspace/scripts/game/BattleScene_part08.lua",
+          "/workspace/scripts/game/BattleScene_part09.lua"
+        ],
+        "parts_count": 9
+      }
+    },
+    {
+      "path": "game/GalaxyEvents.lua",
+      "lines": 1504,
+      "split": {
+        "original": "/workspace/scripts/game/GalaxyEvents.lua",
+        "header_lines": 485,
+        "part_files": [
+          "/workspace/scripts/game/GalaxyEvents_part01.lua"
+        ],
+        "parts_count": 1
+      }
+    },
+    {
+      "path": "game/GalaxyScene.lua",
+      "lines": 2251,
+      "split": {
+        "original": "/workspace/scripts/game/GalaxyScene.lua",
+        "header_lines": 167,
+        "part_files": [
+          "/workspace/scripts/game/GalaxyScene_part01.lua",
+          "/workspace/scripts/game/GalaxyScene_part02.lua",
+          "/workspace/scripts/game/GalaxyScene_part03.lua",
+          "/workspace/scripts/game/GalaxyScene_part04.lua",
+          "/workspace/scripts/game/GalaxyScene_part05.lua",
+          "/workspace/scripts/game/GalaxyScene_part06.lua",
+          "/workspace/scripts/game/GalaxyScene_part07.lua",
+          "/workspace/scripts/game/GalaxyScene_part08.lua",
+          "/workspace/scripts/game/GalaxyScene_part09.lua",
+          "/workspace/scripts/game/GalaxyScene_part10.lua",
+          "/workspace/scripts/game/GalaxyScene_part11.lua",
+          "/workspace/scripts/game/GalaxyScene_part12.lua",
+          "/workspace/scripts/game/GalaxyScene_part13.lua",
+          "/workspace/scripts/game/GalaxyScene_part14.lua"
+        ],
+        "parts_count": 14
+      }
+    },
+    {
+      "path": "game/GameUI.lua",
+      "lines": 1503,
+      "split": {
+        "original": "/workspace/scripts/game/GameUI.lua",
+        "header_lines": 297,
+        "part_files": [
+          "/workspace/scripts/game/GameUI_part01.lua",
+          "/workspace/scripts/game/GameUI_part02.lua",
+          "/workspace/scripts/game/GameUI_part03.lua",
+          "/workspace/scripts/game/GameUI_part04.lua",
+          "/workspace/scripts/game/GameUI_part05.lua",
+          "/workspace/scripts/game/GameUI_part06.lua",
+          "/workspace/scripts/game/GameUI_part07.lua",
+          "/workspace/scripts/game/GameUI_part08.lua",
+          "/workspace/scripts/game/GameUI_part09.lua",
+          "/workspace/scripts/game/GameUI_part10.lua",
+          "/workspace/scripts/game/GameUI_part11.lua",
+          "/workspace/scripts/game/GameUI_part12.lua",
+          "/workspace/scripts/game/GameUI_part13.lua",
+          "/workspace/scripts/game/GameUI_part14.lua",
+          "/workspace/scripts/game/GameUI_part15.lua",
+          "/workspace/scripts/game/GameUI_part16.lua",
+          "/workspace/scripts/game/GameUI_part17.lua",
+          "/workspace/scripts/game/GameUI_part18.lua",
+          "/workspace/scripts/game/GameUI_part19.lua",
+          "/workspace/scripts/game/GameUI_part20.lua"
+        ],
+        "parts_count": 20
+      }
+    },
+    {
+      "path": "game/PirateAI.lua",
+      "lines": 731,
+      "split": {
+        "original": "/workspace/scripts/game/PirateAI.lua",
+        "header_lines": 38,
+        "part_files": [
+          "/workspace/scripts/game/PirateAI_part01.lua",
+          "/workspace/scripts/game/PirateAI_part02.lua",
+          "/workspace/scripts/game/PirateAI_part03.lua",
+          "/workspace/scripts/game/PirateAI_part04.lua",
+          "/workspace/scripts/game/PirateAI_part05.lua",
+          "/workspace/scripts/game/PirateAI_part06.lua",
+          "/workspace/scripts/game/PirateAI_part07.lua"
+        ],
+        "parts_count": 7
+      }
+    },
+    {
+      "path": "game/battle/BattleAI.lua",
+      "lines": 1485,
+      "split": {
+        "original": "/workspace/scripts/game/battle/BattleAI.lua",
+        "header_lines": 72,
+        "part_files": [
+          "/workspace/scripts/game/battle/BattleAI_part01.lua",
+          "/workspace/scripts/game/battle/BattleAI_part02.lua",
+          "/workspace/scripts/game/battle/BattleAI_part03.lua"
+        ],
+        "parts_count": 3
+      }
+    },
+    {
+      "path": "game/battle/RenderHUD.lua",
+      "lines": 666,
+      "split": {
+        "original": "/workspace/scripts/game/battle/RenderHUD.lua",
+        "header_lines": 11,
+        "part_files": [
+          "/workspace/scripts/game/battle/RenderHUD_part01.lua"
+        ],
+        "parts_count": 1
+      }
+    },
+    {
+      "path": "game/battle/RenderOverlays.lua",
+      "lines": 974,
+      "split": {
+        "original": "/workspace/scripts/game/battle/RenderOverlays.lua",
+        "header_lines": 8,
+        "part_files": [
+          "/workspace/scripts/game/battle/RenderOverlays_part01.lua"
+        ],
+        "parts_count": 1
+      }
+    },
+    {
+      "path": "game/galaxy/RenderHUD.lua",
+      "lines": 712,
+      "split": {
+        "original": "/workspace/scripts/game/galaxy/RenderHUD.lua",
+        "header_lines": 14,
+        "part_files": [
+          "/workspace/scripts/game/galaxy/RenderHUD_part01.lua"
+        ],
+        "parts_count": 1
+      }
+    },
+    {
+      "path": "game/galaxy/RenderStarmap.lua",
+      "lines": 948,
+      "split": {
+        "original": "/workspace/scripts/game/galaxy/RenderStarmap.lua",
+        "header_lines": 29,
+        "part_files": [
+          "/workspace/scripts/game/galaxy/RenderStarmap_part01.lua",
+          "/workspace/scripts/game/galaxy/RenderStarmap_part02.lua",
+          "/workspace/scripts/game/galaxy/RenderStarmap_part03.lua",
+          "/workspace/scripts/game/galaxy/RenderStarmap_part04.lua"
+        ],
+        "parts_count": 4
+      }
+    },
+    {
+      "path": "game/systems/DiplomacySystem.lua",
+      "lines": 698,
+      "split": {
+        "original": "/workspace/scripts/game/systems/DiplomacySystem.lua",
+        "header_lines": 52,
+        "part_files": [
+          "/workspace/scripts/game/systems/DiplomacySystem_part01.lua",
+          "/workspace/scripts/game/systems/DiplomacySystem_part02.lua",
+          "/workspace/scripts/game/systems/DiplomacySystem_part03.lua",
+          "/workspace/scripts/game/systems/DiplomacySystem_part04.lua",
+          "/workspace/scripts/game/systems/DiplomacySystem_part05.lua",
+          "/workspace/scripts/game/systems/DiplomacySystem_part06.lua"
+        ],
+        "parts_count": 6
+      }
+    },
+    {
+      "path": "game/ui/EndGamePanel.lua",
+      "lines": 1486,
+      "split": {
+        "original": "/workspace/scripts/game/ui/EndGamePanel.lua",
+        "header_lines": 51,
+        "part_files": [
+          "/workspace/scripts/game/ui/EndGamePanel_part01.lua",
+          "/workspace/scripts/game/ui/EndGamePanel_part02.lua",
+          "/workspace/scripts/game/ui/EndGamePanel_part03.lua",
+          "/workspace/scripts/game/ui/EndGamePanel_part04.lua",
+          "/workspace/scripts/game/ui/EndGamePanel_part05.lua",
+          "/workspace/scripts/game/ui/EndGamePanel_part06.lua"
+        ],
+        "parts_count": 6
+      }
+    },
+    {
+      "path": "game/ui/FleetPanel.lua",
+      "lines": 1690,
+      "split": {
+        "original": "/workspace/scripts/game/ui/FleetPanel.lua",
+        "header_lines": 68,
+        "part_files": [
+          "/workspace/scripts/game/ui/FleetPanel_part01.lua",
+          "/workspace/scripts/game/ui/FleetPanel_part02.lua"
+        ],
+        "parts_count": 2
+      }
+    },
+    {
+      "path": "game/ui/GalaxyPanels.lua",
+      "lines": 1394,
+      "split": {
+        "original": "/workspace/scripts/game/ui/GalaxyPanels.lua",
+        "header_lines": 68,
+        "part_files": [
+          "/workspace/scripts/game/ui/GalaxyPanels_part01.lua",
+          "/workspace/scripts/game/ui/GalaxyPanels_part02.lua"
+        ],
+        "parts_count": 2
+      }
+    },
+    {
+      "path": "game/ui/PlanetPanel.lua",
+      "lines": 1227,
+      "split": {
+        "original": "/workspace/scripts/game/ui/PlanetPanel.lua",
+        "header_lines": 20,
+        "part_files": [
+          "/workspace/scripts/game/ui/PlanetPanel_part01.lua"
+        ],
+        "parts_count": 1
+      }
+    },
+    {
+      "path": "game/ui/ReplayPlayer.lua",
+      "lines": 665,
+      "split": {
+        "original": "/workspace/scripts/game/ui/ReplayPlayer.lua",
+        "header_lines": 45,
+        "part_files": [
+          "/workspace/scripts/game/ui/ReplayPlayer_part01.lua",
+          "/workspace/scripts/game/ui/ReplayPlayer_part02.lua",
+          "/workspace/scripts/game/ui/ReplayPlayer_part03.lua",
+          "/workspace/scripts/game/ui/ReplayPlayer_part04.lua",
+          "/workspace/scripts/game/ui/ReplayPlayer_part05.lua",
+          "/workspace/scripts/game/ui/ReplayPlayer_part06.lua",
+          "/workspace/scripts/game/ui/ReplayPlayer_part07.lua",
+          "/workspace/scripts/game/ui/ReplayPlayer_part08.lua",
+          "/workspace/scripts/game/ui/ReplayPlayer_part09.lua",
+          "/workspace/scripts/game/ui/ReplayPlayer_part10.lua",
+          "/workspace/scripts/game/ui/ReplayPlayer_part11.lua",
+          "/workspace/scripts/game/ui/ReplayPlayer_part12.lua"
+        ],
+        "parts_count": 12
+      }
+    },
+    {
+      "path": "game/ui/SettingsPanel.lua",
+      "lines": 628,
+      "split": {
+        "original": "/workspace/scripts/game/ui/SettingsPanel.lua",
+        "header_lines": 49,
+        "part_files": [
+          "/workspace/scripts/game/ui/SettingsPanel_part01.lua"
+        ],
+        "parts_count": 1
+      }
+    },
+    {
+      "path": "game/ui/TechPanel.lua",
+      "lines": 856,
+      "split": {
+        "original": "/workspace/scripts/game/ui/TechPanel.lua",
+        "header_lines": 15,
+        "part_files": [
+          "/workspace/scripts/game/ui/TechPanel_part01.lua",
+          "/workspace/scripts/game/ui/TechPanel_part02.lua",
+          "/workspace/scripts/game/ui/TechPanel_part03.lua"
+        ],
+        "parts_count": 3
+      }
+    },
+    {
+      "path": "game/ui/TopBar.lua",
+      "lines": 636,
+      "split": {
+        "original": "/workspace/scripts/game/ui/TopBar.lua",
+        "header_lines": 47,
+        "part_files": [
+          "/workspace/scripts/game/ui/TopBar_part01.lua",
+          "/workspace/scripts/game/ui/TopBar_part02.lua"
+        ],
+        "parts_count": 2
+      }
+    },
+    {
+      "path": "game/ui/TutorialSystem.lua",
+      "lines": 655,
+      "split": {
+        "original": "/workspace/scripts/game/ui/TutorialSystem.lua",
+        "header_lines": 174,
+        "part_files": [
+          "/workspace/scripts/game/ui/TutorialSystem_part01.lua",
+          "/workspace/scripts/game/ui/TutorialSystem_part02.lua",
+          "/workspace/scripts/game/ui/TutorialSystem_part03.lua",
+          "/workspace/scripts/game/ui/TutorialSystem_part04.lua",
+          "/workspace/scripts/game/ui/TutorialSystem_part05.lua"
+        ],
+        "parts_count": 5
+      }
+    },
+    {
+      "path": "network/Client.lua",
+      "lines": 2428,
+      "split": {
+        "original": "/workspace/scripts/network/Client.lua",
+        "header_lines": 62,
+        "part_files": [
+          "/workspace/scripts/network/Client_part01.lua",
+          "/workspace/scripts/network/Client_part02.lua",
+          "/workspace/scripts/network/Client_part03.lua",
+          "/workspace/scripts/network/Client_part04.lua",
+          "/workspace/scripts/network/Client_part05.lua"
+        ],
+        "parts_count": 5
+      }
+    },
+    {
+      "path": "network/ClientBattle.lua",
+      "lines": 1205,
+      "split": {
+        "original": "/workspace/scripts/network/ClientBattle.lua",
+        "header_lines": 207,
+        "part_files": [
+          "/workspace/scripts/network/ClientBattle_part01.lua",
+          "/workspace/scripts/network/ClientBattle_part02.lua",
+          "/workspace/scripts/network/ClientBattle_part03.lua"
+        ],
+        "parts_count": 3
+      }
+    },
+    {
+      "path": "network/ClientMenus.lua",
+      "lines": 1000,
+      "split": {
+        "original": "/workspace/scripts/network/ClientMenus.lua",
+        "header_lines": 13,
+        "part_files": [
+          "/workspace/scripts/network/ClientMenus_part01.lua",
+          "/workspace/scripts/network/ClientMenus_part02.lua",
+          "/workspace/scripts/network/ClientMenus_part03.lua",
+          "/workspace/scripts/network/ClientMenus_part04.lua",
+          "/workspace/scripts/network/ClientMenus_part05.lua",
+          "/workspace/scripts/network/ClientMenus_part06.lua",
+          "/workspace/scripts/network/ClientMenus_part07.lua",
+          "/workspace/scripts/network/ClientMenus_part08.lua",
+          "/workspace/scripts/network/ClientMenus_part09.lua",
+          "/workspace/scripts/network/ClientMenus_part10.lua",
+          "/workspace/scripts/network/ClientMenus_part11.lua",
+          "/workspace/scripts/network/ClientMenus_part12.lua",
+          "/workspace/scripts/network/ClientMenus_part13.lua",
+          "/workspace/scripts/network/ClientMenus_part14.lua",
+          "/workspace/scripts/network/ClientMenus_part15.lua",
+          "/workspace/scripts/network/ClientMenus_part16.lua",
+          "/workspace/scripts/network/ClientMenus_part17.lua",
+          "/workspace/scripts/network/ClientMenus_part18.lua",
+          "/workspace/scripts/network/ClientMenus_part19.lua",
+          "/workspace/scripts/network/ClientMenus_part20.lua",
+          "/workspace/scripts/network/ClientMenus_part21.lua",
+          "/workspace/scripts/network/ClientMenus_part22.lua",
+          "/workspace/scripts/network/ClientMenus_part23.lua",
+          "/workspace/scripts/network/ClientMenus_part24.lua",
+          "/workspace/scripts/network/ClientMenus_part25.lua",
+          "/workspace/scripts/network/ClientMenus_part26.lua"
+        ],
+        "parts_count": 26
+      }
+    },
+    {
+      "path": "network/ClientSetup.lua",
+      "lines": 1138,
+      "split": {
+        "original": "/workspace/scripts/network/ClientSetup.lua",
+        "header_lines": 48,
+        "part_files": [
+          "/workspace/scripts/network/ClientSetup_part01.lua",
+          "/workspace/scripts/network/ClientSetup_part02.lua"
+        ],
+        "parts_count": 2
+      }
+    }
+  ],
+  "long_functions": {
+    "game/BattleScene.lua": [
+      [
+        "pushToCtx",
+        1069,
+        1176,
+        108
+      ],
+      [
+        "BattleScene.Render",
+        1276,
+        1393,
+        118
+      ]
+    ],
+    "game/battle/BattleContext.lua": [
+      [
+        "BattleContext.Reset",
+        10,
+        241,
+        232
+      ]
+    ]
+  },
+  "duplicate_blocks": [
+    {
+      "fingerprint": "3c8919eed311b1630c0c96abd4985754",
+      "lines": 20,
+      "files": [
+        {
+          "path": "/workspace/scripts/network/ClientSetup.lua",
+          "start": 814,
+          "end": 821
+        },
+        {
+          "path": "/workspace/scripts/network/ClientSetup.lua",
+          "start": 841,
+          "end": 860
+        }
+      ]
+    },
+    {
+      "fingerprint": "cdf27b42b167cf7741b18dddce87fc58",
+      "lines": 16,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/ui/TutorialSystem.lua",
+          "start": 67,
+          "end": 82
+        },
+        {
+          "path": "/workspace/scripts/game/ui/TutorialSystem.lua",
+          "start": 103,
+          "end": 110
+        },
+        {
+          "path": "/workspace/scripts/game/ui/TutorialSystem.lua",
+          "start": 123,
+          "end": 138
+        }
+      ]
+    },
+    {
+      "fingerprint": "3aa88f3f806ebbdb1ed66ee081368ba2",
+      "lines": 16,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/ui/TutorialSystem.lua",
+          "start": 71,
+          "end": 86
+        },
+        {
+          "path": "/workspace/scripts/game/ui/TutorialSystem.lua",
+          "start": 107,
+          "end": 114
+        },
+        {
+          "path": "/workspace/scripts/game/ui/TutorialSystem.lua",
+          "start": 127,
+          "end": 142
+        }
+      ]
+    },
+    {
+      "fingerprint": "006b158270bf1135c94a552f08863c13",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 119,
+          "end": 126
+        },
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 202,
+          "end": 209
+        },
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 250,
+          "end": 257
+        }
+      ]
+    },
+    {
+      "fingerprint": "c152ec19c12818623e0ea49bb8dd952e",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 123,
+          "end": 130
+        },
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 206,
+          "end": 213
+        },
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 254,
+          "end": 261
+        }
+      ]
+    },
+    {
+      "fingerprint": "030f1147aac98e6c053b7db911ac39f0",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 135,
+          "end": 142
+        },
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 218,
+          "end": 225
+        },
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 266,
+          "end": 273
+        }
+      ]
+    },
+    {
+      "fingerprint": "34a7219b11d9a9217043696e907b5650",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/AchievementSystem.lua",
+          "start": 162,
+          "end": 169
+        },
+        {
+          "path": "/workspace/scripts/game/AchievementSystem.lua",
+          "start": 226,
+          "end": 233
+        }
+      ]
+    },
+    {
+      "fingerprint": "f277b3fa3008fdad677de792e4c541fa",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/AchievementSystem.lua",
+          "start": 198,
+          "end": 205
+        },
+        {
+          "path": "/workspace/scripts/game/AchievementSystem.lua",
+          "start": 433,
+          "end": 440
+        }
+      ]
+    },
+    {
+      "fingerprint": "fecd0bb1bcb8e3fdf5ed8013684849c5",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/GalactopediaSystem.lua",
+          "start": 24,
+          "end": 31
+        },
+        {
+          "path": "/workspace/scripts/game/GalactopediaSystem.lua",
+          "start": 40,
+          "end": 47
+        }
+      ]
+    },
+    {
+      "fingerprint": "eca8e01ff7b6cc1810a2ebdb7ae54e6d",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/GalaxyEvents.lua",
+          "start": 550,
+          "end": 557
+        },
+        {
+          "path": "/workspace/scripts/game/GalaxyEvents.lua",
+          "start": 1065,
+          "end": 1072
+        }
+      ]
+    },
+    {
+      "fingerprint": "d53f77278faf7380d446c04c64bfbea9",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/GalaxyEvents.lua",
+          "start": 1190,
+          "end": 1197
+        },
+        {
+          "path": "/workspace/scripts/game/GalaxyEvents.lua",
+          "start": 1246,
+          "end": 1253
+        }
+      ]
+    },
+    {
+      "fingerprint": "fe810c268f431034aa4ac5f063f53ad0",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/GameUI.lua",
+          "start": 61,
+          "end": 68
+        },
+        {
+          "path": "/workspace/scripts/game/ui/UICommon.lua",
+          "start": 25,
+          "end": 32
+        }
+      ]
+    },
+    {
+      "fingerprint": "477b55dc5996888260a6770af837aa0d",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/MutantShipSystem.lua",
+          "start": 204,
+          "end": 211
+        },
+        {
+          "path": "/workspace/scripts/game/MutantShipSystem.lua",
+          "start": 223,
+          "end": 230
+        }
+      ]
+    },
+    {
+      "fingerprint": "1bd16b9432ea77f3a68364b80a3b328d",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/MutantShipSystem.lua",
+          "start": 208,
+          "end": 215
+        },
+        {
+          "path": "/workspace/scripts/game/MutantShipSystem.lua",
+          "start": 227,
+          "end": 234
+        }
+      ]
+    },
+    {
+      "fingerprint": "646fae5f0c272942b705fab44dda5776",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/MutantShipSystem.lua",
+          "start": 314,
+          "end": 321
+        },
+        {
+          "path": "/workspace/scripts/game/MutantShipSystem.lua",
+          "start": 328,
+          "end": 335
+        }
+      ]
+    },
+    {
+      "fingerprint": "8811ccdb179b3115fea014ac42ff8842",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/NemesisSystem.lua",
+          "start": 291,
+          "end": 298
+        },
+        {
+          "path": "/workspace/scripts/game/NemesisSystem.lua",
+          "start": 334,
+          "end": 341
+        }
+      ]
+    },
+    {
+      "fingerprint": "90aadda1df508d9ee78a803804f5dad6",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/battle/BattleAI.lua",
+          "start": 1296,
+          "end": 1303
+        },
+        {
+          "path": "/workspace/scripts/game/battle/BattleDeath.lua",
+          "start": 205,
+          "end": 212
+        }
+      ]
+    },
+    {
+      "fingerprint": "97a70ca30b225256fbd13151663990a6",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/battle/BattleCombatEnemy.lua",
+          "start": 178,
+          "end": 185
+        },
+        {
+          "path": "/workspace/scripts/game/battle/BattleCombatPlayer.lua",
+          "start": 273,
+          "end": 280
+        }
+      ]
+    },
+    {
+      "fingerprint": "9f92c977323ee57135de7a271cb9db06",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 198,
+          "end": 205
+        },
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 246,
+          "end": 253
+        }
+      ]
+    },
+    {
+      "fingerprint": "f9ace19f30630654b05a52a839a10ebb",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 210,
+          "end": 217
+        },
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 258,
+          "end": 265
+        }
+      ]
+    },
+    {
+      "fingerprint": "3391370a51c8169b3b54376ac1cd9a9a",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 214,
+          "end": 221
+        },
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 262,
+          "end": 269
+        }
+      ]
+    },
+    {
+      "fingerprint": "b4700f0a865220ea16e1fbb965936ea3",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 222,
+          "end": 229
+        },
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 270,
+          "end": 277
+        }
+      ]
+    },
+    {
+      "fingerprint": "1bb2cb5144353f1f4b5f87b6573b50cd",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 226,
+          "end": 233
+        },
+        {
+          "path": "/workspace/scripts/game/battle/BattleUtils.lua",
+          "start": 274,
+          "end": 281
+        }
+      ]
+    },
+    {
+      "fingerprint": "6c5a769c12003fcb10ab8ef87e6d2722",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/battle/RenderOverlays.lua",
+          "start": 676,
+          "end": 683
+        },
+        {
+          "path": "/workspace/scripts/game/battle/RenderOverlays.lua",
+          "start": 693,
+          "end": 700
+        }
+      ]
+    },
+    {
+      "fingerprint": "9622933b5ad26a92cb07cc986071602a",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/ui/BasePanel.lua",
+          "start": 73,
+          "end": 80
+        },
+        {
+          "path": "/workspace/scripts/game/ui/PlanetPanel.lua",
+          "start": 303,
+          "end": 310
+        }
+      ]
+    },
+    {
+      "fingerprint": "7428521c512860240d514997874d9492",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/ui/GalactopediaPanel.lua",
+          "start": 43,
+          "end": 50
+        },
+        {
+          "path": "/workspace/scripts/game/ui/LiveryPanel.lua",
+          "start": 21,
+          "end": 28
+        }
+      ]
+    },
+    {
+      "fingerprint": "30fa0dd94f9afc5a632bf145daa8a64a",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/ui/ReplayPlayer.lua",
+          "start": 307,
+          "end": 314
+        },
+        {
+          "path": "/workspace/scripts/game/ui/ReplayPlayer.lua",
+          "start": 326,
+          "end": 333
+        }
+      ]
+    },
+    {
+      "fingerprint": "60b33dde6793bb6832e1ade03280a42c",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/ui/TutorialSystem.lua",
+          "start": 59,
+          "end": 66
+        },
+        {
+          "path": "/workspace/scripts/game/ui/TutorialSystem.lua",
+          "start": 83,
+          "end": 90
+        }
+      ]
+    },
+    {
+      "fingerprint": "dd5899e390febf44269407df0e949b6c",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/game/ui/TutorialSystem.lua",
+          "start": 63,
+          "end": 70
+        },
+        {
+          "path": "/workspace/scripts/game/ui/TutorialSystem.lua",
+          "start": 87,
+          "end": 94
+        }
+      ]
+    },
+    {
+      "fingerprint": "62c16c08aaf25090453f2c670acf54c3",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/network/ClientBattle.lua",
+          "start": 6,
+          "end": 13
+        },
+        {
+          "path": "/workspace/scripts/network/ClientGalaxy.lua",
+          "start": 6,
+          "end": 13
+        }
+      ]
+    },
+    {
+      "fingerprint": "c42136b62ad44d5984bdd94eaedd8268",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/network/ClientBattle.lua",
+          "start": 634,
+          "end": 641
+        },
+        {
+          "path": "/workspace/scripts/network/ClientBattle.lua",
+          "start": 887,
+          "end": 894
+        }
+      ]
+    },
+    {
+      "fingerprint": "aa068b6886d9d8efc3b1c587dfa65da8",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/network/ClientBattle.lua",
+          "start": 638,
+          "end": 645
+        },
+        {
+          "path": "/workspace/scripts/network/ClientBattle.lua",
+          "start": 891,
+          "end": 898
+        }
+      ]
+    },
+    {
+      "fingerprint": "7c0fc59064df46c7cbd35bd4c6b31b19",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/network/ClientBattle.lua",
+          "start": 642,
+          "end": 649
+        },
+        {
+          "path": "/workspace/scripts/network/ClientBattle.lua",
+          "start": 895,
+          "end": 902
+        }
+      ]
+    },
+    {
+      "fingerprint": "32a19a355f67475727ffac70c17966a1",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/network/ClientBattle.lua",
+          "start": 646,
+          "end": 653
+        },
+        {
+          "path": "/workspace/scripts/network/ClientBattle.lua",
+          "start": 899,
+          "end": 906
+        }
+      ]
+    },
+    {
+      "fingerprint": "6bbc86e508ec0bf96bcab823977764aa",
+      "lines": 8,
+      "files": [
+        {
+          "path": "/workspace/scripts/network/ClientBattle.lua",
+          "start": 650,
+          "end": 657
+        },
+        {
+          "path": "/workspace/scripts/network/ClientBattle.lua",
+          "start": 903,
+          "end": 910
+        }
+      ]
+    }
+  ],
+  "redundant_if_return": {},
+  "legacy_markers": {
+    "game/AchievementSystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/AnomalySystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/AudioManager.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/BattleReplaySystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/BattleScene.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/BattleSkills.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/BlackMarketSystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/BlueprintSystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/CampaignSystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/CommanderSystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/GalactopediaSystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/GalaxyEvents.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/GalaxyGenerator.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/GalaxyScene.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/GameConstants.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/GameUI.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/LeagueSystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/LegacySystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/LiverySystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/MegastructureSystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/MutantShipSystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/NemesisSystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/PirateAI.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/QuestBoard.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/StarWeather.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/Systems.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/battle/BattleAI.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/battle/BattleCombatEnemy.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/battle/BattleCombatPlayer.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/battle/BattleContext.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/battle/BattleDeath.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/battle/BattleRender.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/battle/BattleState.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/battle/BattleTimers.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/battle/BattleUtils.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/battle/BattleVFX.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/battle/BattleWinLose.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/battle/RenderEntities.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/battle/RenderEnv.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/battle/RenderHUD.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/battle/RenderOverlays.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/galaxy/GalaxyRender.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/galaxy/GalaxyState.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/galaxy/RenderFleets.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/galaxy/RenderHUD.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/galaxy/RenderStarmap.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/systems/BaseBuildingSystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/systems/BuildingSystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/systems/DiplomacySystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/systems/FleetManager.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/systems/MarketSystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/systems/PlayerProfile.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/systems/ResearchSystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/systems/ResourceManager.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/systems/ShipProductionQueue.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/AchievementPanel.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/BasePanel.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/CareerPanel.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/EmpirePanel.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/EndGamePanel.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/FleetPanel.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/FormationEditor.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/GalactopediaPanel.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/GalaxyHud.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/GalaxyPanels.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/LegacyPanel.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/LiveryPanel.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/LogPanel.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/MegaPanel.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/NemesisRenderPanel.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/NotifyPanel.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/Overlays.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/PlanetPanel.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/ReplayPlayer.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/SettingsPanel.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/TechPanel.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/TimeoutPanel.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/TopBar.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/TutorialSystem.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "game/ui/UICommon.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "main.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "network/Client.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "network/ClientBattle.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "network/ClientGalaxy.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "network/ClientInput.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "network/ClientMenus.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "network/ClientSave.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "network/ClientSetup.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "network/ClientStats.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "network/Server.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    },
+    "network/Shared.lua": {
+      "TODO": [],
+      "FIXME": [],
+      "BUG": [],
+      "HACK": [],
+      "XXX": []
+    }
+  },
+  "file_meta": {
+    "game/AchievementSystem.lua": {
+      "lines": 814
+    },
+    "game/AnomalySystem.lua": {
+      "lines": 331
+    },
+    "game/AudioManager.lua": {
+      "lines": 295
+    },
+    "game/BattleReplaySystem.lua": {
+      "lines": 416
+    },
+    "game/BattleScene.lua": {
+      "lines": 1626
+    },
+    "game/BattleSkills.lua": {
+      "lines": 549
+    },
+    "game/BlackMarketSystem.lua": {
+      "lines": 371
+    },
+    "game/BlueprintSystem.lua": {
+      "lines": 522
+    },
+    "game/CampaignSystem.lua": {
+      "lines": 287
+    },
+    "game/CommanderSystem.lua": {
+      "lines": 343
+    },
+    "game/GalactopediaSystem.lua": {
+      "lines": 240
+    },
+    "game/GalaxyEvents.lua": {
+      "lines": 1504
+    },
+    "game/GalaxyGenerator.lua": {
+      "lines": 478
+    },
+    "game/GalaxyScene.lua": {
+      "lines": 2251
+    },
+    "game/GameConstants.lua": {
+      "lines": 385
+    },
+    "game/GameUI.lua": {
+      "lines": 1503
+    },
+    "game/LeagueSystem.lua": {
+      "lines": 298
+    },
+    "game/LegacySystem.lua": {
+      "lines": 259
+    },
+    "game/LiverySystem.lua": {
+      "lines": 244
+    },
+    "game/MegastructureSystem.lua": {
+      "lines": 328
+    },
+    "game/MutantShipSystem.lua": {
+      "lines": 392
+    },
+    "game/NemesisSystem.lua": {
+      "lines": 501
+    },
+    "game/PirateAI.lua": {
+      "lines": 731
+    },
+    "game/QuestBoard.lua": {
+      "lines": 400
+    },
+    "game/StarWeather.lua": {
+      "lines": 393
+    },
+    "game/Systems.lua": {
+      "lines": 68
+    },
+    "game/battle/BattleAI.lua": {
+      "lines": 1485
+    },
+    "game/battle/BattleCombatEnemy.lua": {
+      "lines": 222
+    },
+    "game/battle/BattleCombatPlayer.lua": {
+      "lines": 336
+    },
+    "game/battle/BattleContext.lua": {
+      "lines": 243
+    },
+    "game/battle/BattleDeath.lua": {
+      "lines": 343
+    },
+    "game/battle/BattleRender.lua": {
+      "lines": 104
+    },
+    "game/battle/BattleState.lua": {
+      "lines": 174
+    },
+    "game/battle/BattleTimers.lua": {
+      "lines": 317
+    },
+    "game/battle/BattleUtils.lua": {
+      "lines": 284
+    },
+    "game/battle/BattleVFX.lua": {
+      "lines": 228
+    },
+    "game/battle/BattleWinLose.lua": {
+      "lines": 240
+    },
+    "game/battle/RenderEntities.lua": {
+      "lines": 536
+    },
+    "game/battle/RenderEnv.lua": {
+      "lines": 212
+    },
+    "game/battle/RenderHUD.lua": {
+      "lines": 666
+    },
+    "game/battle/RenderOverlays.lua": {
+      "lines": 974
+    },
+    "game/galaxy/GalaxyRender.lua": {
+      "lines": 95
+    },
+    "game/galaxy/GalaxyState.lua": {
+      "lines": 209
+    },
+    "game/galaxy/RenderFleets.lua": {
+      "lines": 563
+    },
+    "game/galaxy/RenderHUD.lua": {
+      "lines": 712
+    },
+    "game/galaxy/RenderStarmap.lua": {
+      "lines": 948
+    },
+    "game/systems/BaseBuildingSystem.lua": {
+      "lines": 144
+    },
+    "game/systems/BuildingSystem.lua": {
+      "lines": 271
+    },
+    "game/systems/DiplomacySystem.lua": {
+      "lines": 698
+    },
+    "game/systems/FleetManager.lua": {
+      "lines": 250
+    },
+    "game/systems/MarketSystem.lua": {
+      "lines": 105
+    },
+    "game/systems/PlayerProfile.lua": {
+      "lines": 81
+    },
+    "game/systems/ResearchSystem.lua": {
+      "lines": 176
+    },
+    "game/systems/ResourceManager.lua": {
+      "lines": 175
+    },
+    "game/systems/ShipProductionQueue.lua": {
+      "lines": 114
+    },
+    "game/ui/AchievementPanel.lua": {
+      "lines": 557
+    },
+    "game/ui/BasePanel.lua": {
+      "lines": 594
+    },
+    "game/ui/CareerPanel.lua": {
+      "lines": 294
+    },
+    "game/ui/EmpirePanel.lua": {
+      "lines": 363
+    },
+    "game/ui/EndGamePanel.lua": {
+      "lines": 1486
+    },
+    "game/ui/FleetPanel.lua": {
+      "lines": 1690
+    },
+    "game/ui/FormationEditor.lua": {
+      "lines": 574
+    },
+    "game/ui/GalactopediaPanel.lua": {
+      "lines": 294
+    },
+    "game/ui/GalaxyHud.lua": {
+      "lines": 405
+    },
+    "game/ui/GalaxyPanels.lua": {
+      "lines": 1394
+    },
+    "game/ui/LegacyPanel.lua": {
+      "lines": 316
+    },
+    "game/ui/LiveryPanel.lua": {
+      "lines": 380
+    },
+    "game/ui/LogPanel.lua": {
+      "lines": 300
+    },
+    "game/ui/MegaPanel.lua": {
+      "lines": 260
+    },
+    "game/ui/NemesisRenderPanel.lua": {
+      "lines": 195
+    },
+    "game/ui/NotifyPanel.lua": {
+      "lines": 274
+    },
+    "game/ui/Overlays.lua": {
+      "lines": 477
+    },
+    "game/ui/PlanetPanel.lua": {
+      "lines": 1227
+    },
+    "game/ui/ReplayPlayer.lua": {
+      "lines": 665
+    },
+    "game/ui/SettingsPanel.lua": {
+      "lines": 628
+    },
+    "game/ui/TechPanel.lua": {
+      "lines": 856
+    },
+    "game/ui/TimeoutPanel.lua": {
+      "lines": 141
+    },
+    "game/ui/TopBar.lua": {
+      "lines": 636
+    },
+    "game/ui/TutorialSystem.lua": {
+      "lines": 655
+    },
+    "game/ui/UICommon.lua": {
+      "lines": 152
+    },
+    "main.lua": {
+      "lines": 12
+    },
+    "network/Client.lua": {
+      "lines": 2428
+    },
+    "network/ClientBattle.lua": {
+      "lines": 1205
+    },
+    "network/ClientGalaxy.lua": {
+      "lines": 483
+    },
+    "network/ClientInput.lua": {
+      "lines": 375
+    },
+    "network/ClientMenus.lua": {
+      "lines": 1000
+    },
+    "network/ClientSave.lua": {
+      "lines": 276
+    },
+    "network/ClientSetup.lua": {
+      "lines": 1138
+    },
+    "network/ClientStats.lua": {
+      "lines": 233
+    },
+    "network/Server.lua": {
+      "lines": 255
+    },
+    "network/Shared.lua": {
+      "lines": 42
+    }
+  },
+  "health_score": 0.0
+}

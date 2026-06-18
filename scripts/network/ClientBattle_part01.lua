@@ -1,0 +1,6 @@
+-- Auto-split from ClientBattle.lua by code_health_check.py
+-- 基于大文件拆分规则（超过 600 行）
+
+function M.Init(state)
+    S = state
+end

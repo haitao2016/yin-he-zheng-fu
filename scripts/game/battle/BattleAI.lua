@@ -1483,3 +1483,6 @@ BattleAI.BOSS_BANNER_DUR       = BOSS_BANNER_DUR
 BattleAI.MILESTONE_BANNER_DUR  = MILESTONE_BANNER_DUR
 
 return BattleAI
+
+
+-- NOTE: 此文件已被 code_health_check.py 自动拆分，详见同目录 *_part*.lua 文件。

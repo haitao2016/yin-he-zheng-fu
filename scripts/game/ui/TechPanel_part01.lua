@@ -1,0 +1,7 @@
+-- Auto-split from TechPanel.lua by code_health_check.py
+-- 基于大文件拆分规则（超过 600 行）
+
+function TechPanel.ResetScroll()
+    scrollY_    = 0
+    selectedId_ = nil
+end

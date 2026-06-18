@@ -710,3 +710,6 @@ function M.drawSignalBanners()
 end
 
 return M
+
+
+-- NOTE: 此文件已被 code_health_check.py 自动拆分，详见同目录 *_part*.lua 文件。
