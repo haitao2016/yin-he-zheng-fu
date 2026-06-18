@@ -29,6 +29,9 @@ local BattleCombatEnemy  = require("game.battle.BattleCombatEnemy")
 local BattleDeath        = require("game.battle.BattleDeath")
 local BattleVFX          = require("game.battle.BattleVFX")
 local BattleWinLose      = require("game.battle.BattleWinLose")
+local BattleCommandSystem = require("game.systems.BattleCommandSystem")  -- P1-P2-1: 战斗指令系统
+-- P3-2: 战斗逻辑子模块（Update 委托）
+local cmdSys_          = nil  -- P1-P2-1: 战斗指令系统实例
 local ctx = BattleContext  -- 共享状态上下文（Update 内通过 sync 桥与本地状态同步）
 
 local BattleScene = {}
@@ -74,6 +77,7 @@ local battleSpeed_      = 1.0
 local battleSpeedId_    = "NORMAL"
 local autoBattleEnabled_ = false
 local autoBattleKeyDown_ = false
+local commandKeyDown_   = nil  -- P1-P2-1: 指令快捷键按下状态（防止重复触发）
 -- P1-10: 暂停功能
 local paused_           = false      -- 游戏是否暂停
 local pauseKeyDown_     = false      -- 暂停键是否按下（防止重复触发）
@@ -656,6 +660,8 @@ function BattleScene.Init(opts)
     cmdSkillActive_   = false
     cmdSkillTimer_    = 0
     cmdSkillDef_      = nil
+    -- P1-P2-1: 战斗指令系统初始化
+    cmdSys_ = BattleCommandSystem.new()
 
     -- 加载舰船纹理
     local imageFlags = NVG_IMAGE_PREMULTIPLIED
@@ -1854,6 +1860,9 @@ function BattleScene.Update(dt)
         return
     end
 
+    -- P1-P2-1: 战斗指令系统更新（冷却与持续时间）
+    if cmdSys_ then cmdSys_:update(scaledDt, ctx) end
+
     -- 计时器/背景/环境粒子/连击衰减/增援/自适应音乐/指挥官技能/要塞回复
     BattleTimers.Update(scaledDt, ctx, makeShip)
     -- 玩家舰队战斗（移动/集火/模块/词缀/伤害）
@@ -1885,9 +1894,38 @@ function BattleScene.Update(dt)
                 autoBattleEnabled_ = not autoBattleEnabled_
                 autoBattleKeyDown_ = true
             end
+        -- P1-P2-1: 战斗指令快捷键（Q/W/E/R/T）
+        elseif love.keyboard.isDown("q") or love.keyboard.isDown("Q") then
+            if not commandKeyDown_ then
+                commandKeyDown_ = "Q"
+                RenderHUD.HandleCommandKey("Q")
+            end
+        elseif love.keyboard.isDown("w") or love.keyboard.isDown("W") then
+            if not commandKeyDown_ then
+                commandKeyDown_ = "W"
+                RenderHUD.HandleCommandKey("W")
+            end
+        elseif love.keyboard.isDown("e") or love.keyboard.isDown("E") then
+            if not commandKeyDown_ then
+                commandKeyDown_ = "E"
+                RenderHUD.HandleCommandKey("E")
+            end
+        elseif love.keyboard.isDown("r") or love.keyboard.isDown("R") then
+            if not commandKeyDown_ then
+                commandKeyDown_ = "R"
+                RenderHUD.HandleCommandKey("R")
+            end
+        elseif love.keyboard.isDown("t") or love.keyboard.isDown("T") then
+            if not commandKeyDown_ then
+                commandKeyDown_ = "T"
+                RenderHUD.HandleCommandKey("T")
+            end
+        else
+            commandKeyDown_ = nil
         end
     else
         autoBattleKeyDown_ = false
+        commandKeyDown_ = nil
     end
 
     pullFromCtx()
@@ -2029,6 +2067,7 @@ function BattleScene.Render()
     -- 模块/函数引用（仅首次或变化时需要，但每帧赋值开销极低）
     BS.LiverySystem  = LiverySystem
     BS.BattleSkills  = BattleSkills
+    BS.BattleCommandSystem = cmdSys_  -- P1-P2-1: 战斗指令系统
     BS.rm            = rm_
     BS.rs            = rs_
     BS.notifyFn      = notifyFn_
@@ -2056,6 +2095,35 @@ end
 -- ============================================================================
 -- 状态查询
 -- ============================================================================
+-- P1-P2-1: 战斗指令系统 API
+--- 执行战斗指令
+---@param commandId string 指令ID
+---@return boolean, string 成功与否, 错误信息
+function BattleScene.ExecuteCommand(commandId)
+    if not cmdSys_ then return false, "指令系统未初始化" end
+    local ok, reason = cmdSys_:execute(commandId, ctx)
+    if ok and notifyFn_ then
+        local cmd = cmdSys_ and cmdSys_.cooldowns[commandId]
+        -- 指令执行成功反馈
+    end
+    return ok, reason
+end
+
+--- 获取所有指令的冷却状态
+---@return table 指令冷却状态表
+function BattleScene.GetCommandCooldowns()
+    if not cmdSys_ then return {} end
+    return cmdSys_:getCooldowns()
+end
+
+--- 检查指令是否可用
+---@param commandId string 指令ID
+---@return boolean, string 可用与否, 错误信息
+function BattleScene.CanUseCommand(commandId)
+    if not cmdSys_ then return false, "指令系统未初始化" end
+    return cmdSys_:canUse(commandId, ctx)
+end
+
 function BattleScene.GetState()       return state_ end
 function BattleScene.GetWave()        return waveNum_ end
 function BattleScene.GetPlayerCount() return #playerFleet_ end
@@ -2160,6 +2228,20 @@ function BattleScene.OnClick(mx, my)
         return  -- 战败时屏蔽其他区域点击
     end
     if state_ ~= "fighting" then return end
+
+    -- P1-P2-1: 战斗指令按钮点击检测
+    local cmdBtns = BS and BS.commandBtns
+    if cmdBtns then
+        for _, btn in ipairs(cmdBtns) do
+            if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
+                local ok, reason = BattleScene.ExecuteCommand(btn.id)
+                if not ok and notifyFn_ then
+                    notifyFn_(reason, "warn")
+                end
+                return
+            end
+        end
+    end
 
     -- P2-2: 检测集火取消按钮（顶部状态条右侧 ✕）
     if focusHudBtn_ then

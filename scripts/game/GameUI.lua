@@ -306,6 +306,8 @@ end
 
 function GameUI.UpdateNotifications(dt)
     gameTime_ = gameTime_ + dt
+    -- P2-P1-3: UI 动画计时器更新
+    UICommon.animUpdate(dt)
     -- 结算/排行榜动画计时
     EndGamePanel.Update(dt)
     -- P3-2: 战斗回放播放器计时

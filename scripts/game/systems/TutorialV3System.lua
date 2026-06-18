@@ -311,6 +311,58 @@ function TutorialV3System.getAllStages(playerState)
     return result
 end
 
+-- P3-P3-1: 跳过教程功能
+--- 跳过当前阶段（用于玩家主动跳过或特殊情况）
+---@param playerState table
+---@param stageId string|nil 阶段ID，不填则跳过当前阶段
+---@return boolean
+function TutorialV3System.skipStage(playerState, stageId)
+    playerState = ensureTutorialState(playerState)
+    local targetStage = stageId and STAGE_BY_ID[stageId] or TutorialV3System.getCurrentStage(playerState)
+    if not targetStage then return false end
+
+    playerState.tutorialV3.stagesCompleted[targetStage.id] = true
+    local nextIdx = (targetStage._index or 1) + 1
+    playerState.tutorialV3.currentStageIndex = math.min(nextIdx, #TUTORIAL_STAGES + 1)
+    print("[Tutorial] 跳过教程阶段: " .. targetStage.name)
+    return true
+end
+
+--- 跳过所有剩余教程（用于老玩家或测试）
+---@param playerState table
+---@return boolean
+function TutorialV3System.skipAllTutorial(playerState)
+    playerState = ensureTutorialState(playerState)
+    for _, stage in ipairs(TUTORIAL_STAGES) do
+        playerState.tutorialV3.stagesCompleted[stage.id] = true
+    end
+    playerState.tutorialV3.currentStageIndex = #TUTORIAL_STAGES + 1
+    print("[Tutorial] 跳过所有教程")
+    return true
+end
+
+--- 检查教程是否全部完成
+---@param playerState table
+---@return boolean
+function TutorialV3System.isAllCompleted(playerState)
+    playerState = ensureTutorialState(playerState)
+    return playerState.tutorialV3.currentStageIndex > #TUTORIAL_STAGES
+end
+
+--- 获取教程完成进度
+---@param playerState table
+---@return number, number  已完成阶段数, 总阶段数
+function TutorialV3System.getProgress(playerState)
+    playerState = ensureTutorialState(playerState)
+    local completed = 0
+    for _, stage in ipairs(TUTORIAL_STAGES) do
+        if playerState.tutorialV3.stagesCompleted[stage.id] then
+            completed = completed + 1
+        end
+    end
+    return completed, #TUTORIAL_STAGES
+end
+
 -- ============================================================================
 -- 序列化 / 反序列化
 -- ============================================================================

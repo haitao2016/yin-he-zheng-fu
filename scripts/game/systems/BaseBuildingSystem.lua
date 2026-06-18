@@ -10,8 +10,13 @@ function BaseBuildingSystem.new(rm)
     return setmetatable({ rm = rm }, BaseBuildingSystem)
 end
 
+function BaseBuildingSystem:getModule(key)
+    -- 先查基础模块，再查 Lv8-10 专属模块
+    return BASE_MODULES[key] or BASE_MODULES_LV8_10[key]
+end
+
 function BaseBuildingSystem:getUpgradeCost(key, level)
-    local mod = BASE_MODULES[key]
+    local mod = self:getModule(key)
     if not mod then return {} end
     local k = mod.upgradeK or 1.5
     local cost = {}
@@ -35,7 +40,9 @@ function BaseBuildingSystem:canBuild(key, base)
     if curLv < reqLv then
         return false, "需核心 Lv." .. reqLv
     end
-    if not self.rm:canAfford(BASE_MODULES[key].cost) then return false, "资源不足" end
+    local mod = self:getModule(key)
+    if not mod then return false, "未知模块" end
+    if not self.rm:canAfford(mod.cost) then return false, "资源不足" end
     return true, ""
 end
 
@@ -88,8 +95,16 @@ end
 function BaseBuildingSystem:build(key, base)
     local ok, reason = self:canBuild(key, base)
     if not ok then return false, reason end
-    self.rm:spend(BASE_MODULES[key].cost)
-    local mod = BASE_MODULES[key]
+    local mod = self:getModule(key)
+    self.rm:spend(mod.cost)
+    local installed = {
+        key   = key,
+        level = 1,
+        btype = mod.name or key,
+        pdef  = mod.prod,
+        active = true,
+    }
+    table.insert(base.buildings, installed)
     local bm  = (self.rm.baseBonus and self.rm.baseBonus.buildMult) or 1.0
     local bt  = math.max(1, math.floor(mod.buildTime * bm))
     base.constructing = {
@@ -106,7 +121,7 @@ function BaseBuildingSystem:upgrade(bldIdx, base)
     local b    = base.buildings[bldIdx]
     local cost = self:getUpgradeCost(b.key, b.level)
     self.rm:spend(cost)
-    local mod  = BASE_MODULES[b.key]
+    local mod  = self:getModule(b.key)
     local bm   = (self.rm.baseBonus and self.rm.baseBonus.buildMult) or 1.0
     local bt   = math.max(1, math.floor(mod.buildTime * (mod.upgradeK ^ b.level) * bm))
     base.constructing = {
@@ -131,8 +146,9 @@ function BaseBuildingSystem:update(dt, base)
         elseif job.isUpgrade then
             base.buildings[job.targetIdx].level = job.level
         else
+            local mod = self:getModule(job.key)
             base.buildings[#base.buildings + 1] = {
-                key = job.key, name = BASE_MODULES[job.key].name, level = 1
+                key = job.key, name = (mod and mod.name) or job.key, level = 1
             }
         end
         base.constructing = nil

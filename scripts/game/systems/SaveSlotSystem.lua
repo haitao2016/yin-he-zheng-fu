@@ -1,7 +1,8 @@
 --[[
 SaveSlotSystem.lua - 多槽存档系统
-V2.7 P3-2
+V3.0 P3-P2-1
 支持多槽手动/自动存档
+增强：压缩存档、增量存档、存档元数据
 ]]
 
 local SaveSlotSystem = {}
@@ -9,7 +10,62 @@ local SaveSlotSystem = {}
 SaveSlotSystem.MAX_SAVE_SLOTS = 5
 SaveSlotSystem.AUTO_SAVE_SLOT = 0
 
+-- P3-P2-1: 游戏版本（用于存档兼容性检查）
+SaveSlotSystem.GAME_VERSION = "3.0.0"
+
+-- 默认值表（用于排除默认字段，节省存档空间）
+SaveSlotSystem.DEFAULT_VALUES = {
+    resources = { metal = 0, esource = 0, nuclear = 0, crystal = 0, credits = 0 },
+    fleet = { ships = {} },
+    planets = {},
+    research = { unlocked = {} },
+    achievements = {},
+}
+
 local runtimeSlots = {}
+local lastSaveHash = {}  -- slotId -> 上次存档的数据 hash（用于增量存档）
+
+-- P3-P2-1: 计算数据表 hash（用于增量存档比较）
+local function dataHash(data)
+    if type(data) ~= "table" then return tostring(data) end
+    local keys = {}
+    for k in pairs(data) do keys[#keys + 1] = k end
+    table.sort(keys)
+    local parts = {}
+    for _, k in ipairs(keys) do
+        parts[#parts + 1] = tostring(k) .. "=" .. dataHash(data[k])
+    end
+    return "{" .. table.concat(parts, ",") .. "}"
+end
+
+-- P3-P2-1: 压缩存档数据（排除默认值字段，减少存档体积）
+local function compressSaveData(data)
+    if type(data) ~= "table" then return data end
+    local result = {}
+    for k, v in pairs(data) do
+        if type(v) == "table" then
+            local compressed = compressSaveData(v)
+            -- 跳过空表
+            if next(compressed) then
+                result[k] = compressed
+            end
+        elseif v ~= nil and v ~= 0 and v ~= false and v ~= "" then
+            result[k] = v
+        end
+    end
+    return result
+end
+
+-- P3-P2-1: 检查数据是否有变化（用于增量存档）
+local function hasChanges(slotId, gameData)
+    local currentHash = dataHash(gameData)
+    local lastHash = lastSaveHash[slotId]
+    if lastHash and currentHash == lastHash then
+        return false  -- 没有变化
+    end
+    lastSaveHash[slotId] = currentHash
+    return true
+end
 
 local function nowTimestamp()
     if os and os.time then return os.time() end
@@ -61,10 +117,17 @@ local function cloneSnapshot(gameData)
     return snap
 end
 
-function SaveSlotSystem.saveToSlot(slotId, gameData)
+function SaveSlotSystem.saveToSlot(slotId, gameData, opts)
     slotId = tonumber(slotId) or slotId
+    opts = opts or {}
     local slot = getSlotInternal(slotId)
     if not slot then return false, "无效存档槽" end
+
+    -- P3-P2-1: 增量存档检查（除非强制保存）
+    if not opts.force and not hasChanges(slotId, gameData) then
+        print("[SaveSlot] 槽 " .. tostring(slotId) .. " 数据无变化，跳过存档")
+        return true, slot, "unchanged"
+    end
 
     slot.playerName = (gameData and gameData.playerName) or slot.playerName or "玩家"
     slot.saveTime = nowTimestamp()
@@ -75,11 +138,31 @@ function SaveSlotSystem.saveToSlot(slotId, gameData)
     slot.difficulty = (gameData and gameData.difficulty) or slot.difficulty or "normal"
     slot.mapSeed = (gameData and gameData.mapSeed) or slot.mapSeed or 0
     slot.slotName = (gameData and gameData.slotName) or ("存档 " .. tostring(slotId) .. " - " .. slot.playerName)
-    slot.gameData = cloneSnapshot(gameData)
+
+    -- P3-P2-1: 压缩存档数据（排除默认值字段）
+    local compressedData = compressSaveData(cloneSnapshot(gameData))
+    slot.gameData = compressedData
+
+    -- P3-P2-1: 存档元数据
+    slot.metadata = {
+        gameVersion = SaveSlotSystem.GAME_VERSION,
+        saveTimestamp = slot.saveTime,
+        playTimeSeconds = slot.playTime,
+        -- P3-P2-1: 云端同步预留字段
+        cloudSyncStatus = "local",  -- "local" | "synced" | "pending"
+        cloudSyncTime = nil,
+    }
+
     slot.exists = true
 
-    print("[SaveSlot] 已保存到槽 " .. tostring(slotId) .. " 于 " .. formatTime(slot.saveTime))
-    return true, slot
+    local saveSize = #dataHash(compressedData)  -- 粗略估算
+    print("[SaveSlot] 已保存到槽 " .. tostring(slotId) .. " 于 " .. formatTime(slot.saveTime) .. " (版本 " .. SaveSlotSystem.GAME_VERSION .. ")")
+    return true, slot, "saved"
+end
+
+--- P3-P2-1: 强制保存（忽略增量检查）
+function SaveSlotSystem.saveToSlotForce(slotId, gameData)
+    return SaveSlotSystem.saveToSlot(slotId, gameData, { force = true })
 end
 
 function SaveSlotSystem.autoSave(gameData)

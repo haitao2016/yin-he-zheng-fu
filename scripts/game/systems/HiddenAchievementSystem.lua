@@ -1,359 +1,416 @@
---[[
-HiddenAchievementSystem.lua - 隐藏成就与解锁链
-V2.7 P3-2
-隐藏成就未解锁前显示 ???，通过解锁链循序渐进暴露
-]]
+---@diagnostic disable: assign-type-mismatch, return-type-mismatch
+-----------------------------------------------------------
+-- HiddenAchievementSystem 隐藏成就链式解锁系统
+-- V3.0 Phase 1 P2-2
+-- 12+ 隐藏成就，以 ??? 遮罩未解锁项，支持成就链式解锁
+-----------------------------------------------------------
+require("game.GameConstants")
 
-local HiddenAchievementSystem = {}
-
-HiddenAchievementSystem.HIDDEN_ACHIEVEMENTS = {
+--- 隐藏成就定义
+--- hidden: true 表示未解锁时显示为 ???
+--- chain: 链ID，同链成就必须按顺序解锁
+--- prerequisite: 前置成就ID（同一链中必须先解锁）
+local HIDDEN_ACHIEVEMENTS = {
+    -- ============ 探索链 ============
     {
-        id = "NO_DAMAGE_MASTER",
-        name = "无伤大师",
-        desc = "连续5波无伤过关",
-        icon = "🛡️",
-        category = "combat",
-        condition = function(ps)
-            return (ps and ps.noDamageStreak or 0) >= 5
-        end,
+        id = "EXPLORER_I",
+        hidden = true,
+        chain = "exploration",
+        name = "???",  -- 未解锁时显示 ???
+        realName = "星际探险家 I",
+        desc = "???",
+        realDesc = "探索 5 个星系",
+        icon = "🔭",
+        category = "exploration",
+        prerequisite = nil,
+        condition = function(ps) return (ps.galaxiesExplored or 0) >= 5 end,
+        reward = { blueCrystal = 30 },
+    },
+    {
+        id = "EXPLORER_II",
+        hidden = true,
+        chain = "exploration",
+        name = "???",
+        realName = "星际探险家 II",
+        desc = "???",
+        realDesc = "探索 20 个星系",
+        icon = "🔭",
+        category = "exploration",
+        prerequisite = "EXPLORER_I",
+        condition = function(ps) return (ps.galaxiesExplored or 0) >= 20 end,
+        reward = { blueCrystal = 50 },
+    },
+    {
+        id = "ARCHAEOLOGIST",
+        hidden = true,
+        chain = "exploration",
+        name = "???",
+        realName = "考古学家",
+        desc = "???",
+        realDesc = "发现所有远古遗迹",
+        icon = "🏛️",
+        category = "exploration",
+        prerequisite = "EXPLORER_II",
+        condition = function(ps) return ps.allRelicsDiscovered or false end,
+        reward = { purpleCrystal = 30 },
+    },
+    {
+        id = "HIDDEN_STAR",
+        hidden = true,
+        chain = "exploration",
+        name = "???",
+        realName = "隐秘星辰",
+        desc = "???",
+        realDesc = "发现隐藏星系",
+        icon = "⭐",
+        category = "exploration",
+        prerequisite = "ARCHAEOLOGIST",
+        condition = function(ps) return ps.hiddenGalaxyFound or false end,
         reward = { purpleCrystal = 50, rainbowCrystal = 5 },
     },
+    -- ============ 战斗链 ============
     {
-        id = "COMBO_KING",
-        name = "连击之王",
-        desc = "单场战斗达成30连击",
-        icon = "🔥",
+        id = "FLAWLESS_I",
+        hidden = true,
+        chain = "combat",
+        name = "???",
+        realName = "完美主义者 I",
+        desc = "???",
+        realDesc = "无伤完成一波",
+        icon = "💫",
         category = "combat",
-        condition = function(ps)
-            return (ps and ps.maxCombo or 0) >= 30
-        end,
-        reward = { blueCrystal = 100 },
-        chainNext = "PERFECT_CLEAR",
+        prerequisite = nil,
+        condition = function(ps) return (ps.flawlessWaves or 0) >= 1 end,
+        reward = { blueCrystal = 40 },
     },
     {
-        id = "SPEED_RUNNER",
-        name = "速通达人",
-        desc = "1小时内完成第一章",
-        icon = "⚡",
+        id = "FLAWLESS_II",
+        hidden = true,
+        chain = "combat",
+        name = "???",
+        realName = "完美主义者 II",
+        desc = "???",
+        realDesc = "无伤完成 5 波",
+        icon = "💫",
         category = "combat",
-        condition = function(ps)
-            local t = ps and ps.chapter1Time or math.huge
-            return t > 0 and t <= 3600
-        end,
-        reward = { purpleCrystal = 30, rainbowCrystal = 3 },
-        chainPrev = "COMBO_KING",
+        prerequisite = "FLAWLESS_I",
+        condition = function(ps) return (ps.flawlessWaves or 0) >= 5 end,
+        reward = { blueCrystal = 60 },
     },
     {
-        id = "ECONOMY_MOGUL",
-        name = "经济大亨",
-        desc = "单局累计获得百万资源",
-        icon = "💰",
+        id = "FLAWLESS_MASTER",
+        hidden = true,
+        chain = "combat",
+        name = "???",
+        realName = "完美大师",
+        desc = "???",
+        realDesc = "无伤完成一整章战役",
+        icon = "🏅",
+        category = "combat",
+        prerequisite = "FLAWLESS_II",
+        condition = function(ps) return ps.flawlessChapter or false end,
+        reward = { purpleCrystal = 80, rainbowCrystal = 10 },
+    },
+    -- ============ 经济链 ============
+    {
+        id = "SHIPBUILDER_I",
+        hidden = true,
+        chain = "economy",
+        name = "???",
+        realName = "舰船建造师 I",
+        desc = "???",
+        realDesc = "建造 10 艘舰船",
+        icon = "⚓",
         category = "economy",
-        condition = function(ps)
-            return (ps and ps.singleRunResources or 0) >= 1000000
-        end,
-        reward = { purpleCrystal = 100, rainbowCrystal = 10 },
+        prerequisite = nil,
+        condition = function(ps) return (ps.shipsBuilt or 0) >= 10 end,
+        reward = { blueCrystal = 30 },
     },
     {
-        id = "PEACE_MAKER",
-        name = "和平使者",
-        desc = "不建造任何战斗舰完成一个章节",
-        icon = "🕊️",
-        category = "strategy",
-        condition = function(ps)
-            return ps and ps.noCombatShipChapterComplete or false
-        end,
-        reward = { rainbowCrystal = 20 },
+        id = "SHIPBUILDER_II",
+        hidden = true,
+        chain = "economy",
+        name = "???",
+        realName = "舰船建造师 II",
+        desc = "???",
+        realDesc = "建造 50 艘舰船",
+        icon = "⚓",
+        category = "economy",
+        prerequisite = "SHIPBUILDER_I",
+        condition = function(ps) return (ps.shipsBuilt or 0) >= 50 end,
+        reward = { blueCrystal = 60 },
     },
     {
-        id = "LUCKY_DEVIATOR",
-        name = "幸运偏差",
-        desc = "连续3次随机事件获得最优选项",
-        icon = "🍀",
+        id = "ADMIRAL",
+        hidden = true,
+        chain = "economy",
+        name = "???",
+        realName = "海军上将",
+        desc = "???",
+        realDesc = "组建百舰舰队",
+        icon = "🎖️",
+        category = "economy",
+        prerequisite = "SHIPBUILDER_II",
+        condition = function(ps) return (ps.maxFleetSize or 0) >= 100 end,
+        reward = { purpleCrystal = 100, rainbowCrystal = 15 },
+    },
+    -- ============ 社交链 ============
+    {
+        id = "GUILD_MEMBER",
+        hidden = true,
+        chain = "social",
+        name = "???",
+        realName = "公会新人",
+        desc = "???",
+        realDesc = "完成首个公会任务",
+        icon = "🤝",
+        category = "social",
+        prerequisite = nil,
+        condition = function(ps) return (ps.guildTasksCompleted or 0) >= 1 end,
+        reward = { blueCrystal = 30 },
+    },
+    {
+        id = "GUILD_VETERAN",
+        hidden = true,
+        chain = "social",
+        name = "???",
+        realName = "公会老兵",
+        desc = "???",
+        realDesc = "完成 10 个公会任务",
+        icon = "🤝",
+        category = "social",
+        prerequisite = "GUILD_MEMBER",
+        condition = function(ps) return (ps.guildTasksCompleted or 0) >= 10 end,
+        reward = { blueCrystal = 80 },
+    },
+    {
+        id = "GUILD_LEADER",
+        hidden = true,
+        chain = "social",
+        name = "???",
+        realName = "公会领袖",
+        desc = "???",
+        realDesc = "成为公会会长",
+        icon = "👑",
+        category = "social",
+        prerequisite = "GUILD_VETERAN",
+        condition = function(ps) return ps.isGuildLeader or false end,
+        reward = { purpleCrystal = 150, rainbowCrystal = 20 },
+    },
+    -- ============ 额外隐藏成就（无链） ============
+    {
+        id = "SECRET_TECH",
+        hidden = true,
+        chain = nil,
+        name = "???",
+        realName = "禁忌科技",
+        desc = "???",
+        realDesc = "发现隐藏科技路线",
+        icon = "🔮",
+        category = "research",
+        prerequisite = nil,
+        condition = function(ps) return ps.secretTechDiscovered or false end,
+        reward = { rainbowCrystal = 30 },
+    },
+    {
+        id = "TREASURE_HUNTER",
+        hidden = true,
+        chain = nil,
+        name = "???",
+        realName = "宝藏猎人",
+        desc = "???",
+        realDesc = "在单次探索中发现 3 个稀有资源点",
+        icon = "💎",
         category = "exploration",
-        condition = function(ps)
-            return (ps and ps.luckyStreak or 0) >= 3
-        end,
-        reward = { rainbowCrystal = 15 },
-    },
-    {
-        id = "COLONIZATION_EXPERT",
-        name = "殖民专家",
-        desc = "累计殖民10颗行星",
-        icon = "🌍",
-        category = "exploration",
-        condition = function(ps)
-            return (ps and ps.planetsColonized or 0) >= 10
-        end,
-        reward = { purpleCrystal = 80 },
-    },
-    {
-        id = "SHIP_COLLECTOR",
-        name = "舰船收藏家",
-        desc = "拥有所有类型舰船",
-        icon = "🛥️",
-        category = "fleet",
-        condition = function(ps)
-            return ps and ps.allShipTypesCollected or false
-        end,
-        reward = { purpleCrystal = 50, rainbowCrystal = 5 },
-    },
-    {
-        id = "PERFECT_CLEAR",
-        name = "完美通关",
-        desc = "波次30无伤无舰损",
-        icon = "✨",
-        category = "combat",
-        condition = function(ps)
-            return ps and ps.perfectWave30 or false
-        end,
-        reward = { rainbowCrystal = 10 },
-        chainPrev = "COMBO_KING",
-    },
-    {
-        id = "UNDERDOG",
-        name = "逆袭",
-        desc = "舰队规模低于5艘击败Boss",
-        icon = "💪",
-        category = "combat",
-        condition = function(ps)
-            return ps and ps.bossDefeatedWithSmallFleet or false
-        end,
+        prerequisite = nil,
+        condition = function(ps) return (ps.rareNodesFoundInOneRun or 0) >= 3 end,
         reward = { purpleCrystal = 50 },
     },
     {
-        id = "DEEP_SPACE",
-        name = "深空探索者",
-        desc = "发现3个隐藏星系",
-        icon = "🔭",
-        category = "exploration",
-        condition = function(ps)
-            return (ps and ps.hiddenGalaxiesFound or 0) >= 3
-        end,
-        reward = { rainbowCrystal = 15 },
-        chainPrev = "COLONIZATION_EXPERT",
-    },
-    {
-        id = "MASTER_ENGINEER",
-        name = "工程大师",
-        desc = "将一艘舰船强化到满级",
-        icon = "⚙️",
-        category = "fleet",
-        condition = function(ps)
-            return ps and ps.maxEnhancementReached or false
-        end,
+        id = "PERFECT_DEFENSE",
+        hidden = true,
+        chain = nil,
+        name = "???",
+        realName = "铜墙铁壁",
+        desc = "???",
+        realDesc = "在防御塔协助下完成 10 波战斗，未失去任何舰船",
+        icon = "🏰",
+        category = "combat",
+        prerequisite = nil,
+        condition = function(ps) return (ps.towerDefensePerfectWaves or 0) >= 10 end,
         reward = { blueCrystal = 100 },
     },
-    {
-        id = "DIPLOMAT",
-        name = "外交家",
-        desc = "与10个派系达成友好关系",
-        icon = "🤝",
-        category = "social",
-        condition = function(ps)
-            return (ps and ps.friendlyFactions or 0) >= 10
-        end,
-        reward = { purpleCrystal = 60 },
-    },
-    {
-        id = "MERCHANT_LORD",
-        name = "贸易之王",
-        desc = "建立20条贸易路线",
-        icon = "📦",
-        category = "economy",
-        condition = function(ps)
-            return (ps and ps.tradeRoutesEstablished or 0) >= 20
-        end,
-        reward = { purpleCrystal = 80 },
-    },
-    {
-        id = "GALACTIC_HERO",
-        name = "银河英雄",
-        desc = "同时持有5个传奇成就",
-        icon = "🏆",
-        category = "legendary",
-        condition = function(ps)
-            return (ps and ps.legendaryCount or 0) >= 5
-        end,
-        reward = { rainbowCrystal = 50 },
-        chainPrev = "PERFECT_CLEAR",
-    },
 }
 
-HiddenAchievementSystem.CATEGORIES = {
-    combat = { name = "战斗", icon = "⚔️" },
-    economy = { name = "经济", icon = "💰" },
-    exploration = { name = "探索", icon = "🌌" },
-    fleet = { name = "舰队", icon = "🚀" },
-    strategy = { name = "战略", icon = "🎯" },
-    social = { name = "社交", icon = "🤝" },
-    legendary = { name = "传奇", icon = "🏆" },
-}
+--- 按ID索引
+local ACH_BY_ID = {}
+for _, a in ipairs(HIDDEN_ACHIEVEMENTS) do ACH_BY_ID[a.id] = a end
 
-local function getUnlockedSet(playerState)
-    if not playerState then return {} end
-    playerState.hiddenAchievements = playerState.hiddenAchievements or {}
-    playerState.hiddenAchievements.unlocked = playerState.hiddenAchievements.unlocked or {}
-    return playerState.hiddenAchievements.unlocked
-end
-
-function HiddenAchievementSystem.getHiddenAchievements()
-    local list = {}
-    for _, ach in ipairs(HiddenAchievementSystem.HIDDEN_ACHIEVEMENTS) do
-        table.insert(list, {
-            id = ach.id,
-            name = ach.name,
-            desc = ach.desc,
-            icon = ach.icon,
-            category = ach.category,
-            hidden = true,
-            chainPrev = ach.chainPrev,
-            chainNext = ach.chainNext,
-        })
+--- 按链分组
+local ACH_BY_CHAIN = {}
+for _, a in ipairs(HIDDEN_ACHIEVEMENTS) do
+    if a.chain then
+        ACH_BY_CHAIN[a.chain] = ACH_BY_CHAIN[a.chain] or {}
+        ACH_BY_CHAIN[a.chain][#ACH_BY_CHAIN[a.chain] + 1] = a
     end
-    return list
 end
 
-function HiddenAchievementSystem.isUnlocked(achievementId, playerState)
-    local unlocked = getUnlockedSet(playerState)
-    return not not unlocked[achievementId]
+local HiddenAchievementSystem = {}
+HiddenAchievementSystem.__index = HiddenAchievementSystem
+
+function HiddenAchievementSystem.new()
+    local self = setmetatable({}, HiddenAchievementSystem)
+    self.unlocked = {}      -- { [id] = true }
+    self.chainProgress = {} -- { [chainId] = { current = 0, unlocked = {} } }
+    return self
 end
 
-function HiddenAchievementSystem.canShowPreview(achievementId, playerState)
-    local unlocked = getUnlockedSet(playerState)
-    if unlocked[achievementId] then return true end
-    for _, ach in ipairs(HiddenAchievementSystem.HIDDEN_ACHIEVEMENTS) do
-        if ach.id == achievementId and ach.chainPrev then
-            if unlocked[ach.chainPrev] then return true end
-        end
+--- 检查成就是否可解锁（前置条件满足）
+function HiddenAchievementSystem:isUnlocked(achievementId)
+    return self.unlocked[achievementId] == true
+end
+
+--- 检查成就是否满足解锁条件（包含前置检查）
+function HiddenAchievementSystem:canUnlock(achievementId, playerStats)
+    local ach = ACH_BY_ID[achievementId]
+    if not ach then return false end
+    if self.unlocked[achievementId] then return false end  -- 已解锁
+    -- 前置成就检查
+    if ach.prerequisite then
+        if not self.unlocked[ach.prerequisite] then return false end
+    end
+    -- 条件检查
+    if ach.condition then
+        return ach:condition(playerStats)
     end
     return false
 end
 
-function HiddenAchievementSystem.checkUnlockConditions(playerState, notifyFn)
-    local unlocked = getUnlockedSet(playerState)
-    local newly = {}
-    for _, ach in ipairs(HiddenAchievementSystem.HIDDEN_ACHIEVEMENTS) do
-        if not unlocked[ach.id] and ach.condition and ach.condition(playerState) then
-            unlocked[ach.id] = true
-            table.insert(newly, ach)
-        end
+--- 解锁成就
+function HiddenAchievementSystem:unlock(achievementId, playerStats)
+    if self.unlocked[achievementId] then return false end
+    local ach = ACH_BY_ID[achievementId]
+    if not ach then return false end
+
+    -- 前置检查
+    if ach.prerequisite and not self.unlocked[ach.prerequisite] then
+        return false, "前置成就未完成"
     end
-    if notifyFn then
-        for _, ach in ipairs(newly) do
-            notifyFn("🌟 隐藏成就解锁: " .. ach.name .. "！", "hidden_achievement")
-        end
+
+    -- 条件检查
+    if ach.condition and not ach:condition(playerStats) then
+        return false, "条件未满足"
     end
-    return newly
+
+    self.unlocked[achievementId] = true
+
+    -- 更新链进度
+    if ach.chain then
+        self.chainProgress[ach.chain] = self.chainProgress[ach.chain] or { current = 0, unlocked = {} }
+        self.chainProgress[ach.chain].current = (self.chainProgress[ach.chain].current or 0) + 1
+        self.chainProgress[ach.chain].unlocked[achievementId] = true
+    end
+
+    print("[HiddenAchievement] 解锁隐藏成就: " .. ach.realName .. " (" .. achievementId .. ")")
+    return true, ach
 end
 
-function HiddenAchievementSystem.getAchievementDisplay(achievementId, playerState)
-    local unlocked = getUnlockedSet(playerState)
-    local target = nil
-    for _, ach in ipairs(HiddenAchievementSystem.HIDDEN_ACHIEVEMENTS) do
-        if ach.id == achievementId then target = ach break end
-    end
-    if not target then return nil end
-    if unlocked[achievementId] then
-        return {
-            id = target.id,
-            name = target.name,
-            desc = target.desc,
-            icon = target.icon,
-            category = target.category,
-            hidden = false,
-            unlocked = true,
-        }
-    end
-    if HiddenAchievementSystem.canShowPreview(achievementId, playerState) then
-        return {
-            id = target.id,
-            name = "???",
-            desc = "已满足前置条件，继续探索解锁此成就",
-            icon = target.icon,
-            category = target.category,
-            hidden = true,
-            unlocked = false,
-            hint = true,
-        }
-    end
-    return {
-        id = target.id,
-        name = "???",
-        desc = "未知成就：继续游戏以解锁",
-        icon = "❓",
-        category = target.category,
-        hidden = true,
-        unlocked = false,
-        hint = false,
-    }
-end
-
-function HiddenAchievementSystem.getChainProgress(chainId, playerState)
-    chainId = chainId or "combat"
-    local unlocked = getUnlockedSet(playerState)
-    local chain = {}
-    for _, ach in ipairs(HiddenAchievementSystem.HIDDEN_ACHIEVEMENTS) do
-        if ach.category == chainId or ach.chainPrev or ach.chainNext then
-            table.insert(chain, ach)
-        end
-    end
-    local total = #chain
-    local done = 0
-    local nextAch = nil
-    for _, ach in ipairs(chain) do
-        if unlocked[ach.id] then
-            done = done + 1
-        elseif not nextAch then
-            local prevOk = true
-            if ach.chainPrev then
-                prevOk = not not unlocked[ach.chainPrev]
+--- 每帧检查可解锁的成就
+function HiddenAchievementSystem:checkAll(playerStats)
+    local newlyUnlocked = {}
+    for _, ach in ipairs(HIDDEN_ACHIEVEMENTS) do
+        if not self.unlocked[ach.id] then
+            local ok, result = self:unlock(ach.id, playerStats)
+            if ok and result then
+                newlyUnlocked[#newlyUnlocked + 1] = result
             end
-            if prevOk then nextAch = ach.id end
         end
     end
+    return newlyUnlocked
+end
+
+--- 获取成就显示信息（隐藏时返回 ???）
+function HiddenAchievementSystem:getDisplayInfo(achievementId)
+    local ach = ACH_BY_ID[achievementId]
+    if not ach then return nil end
+    if not self.unlocked[achievementId] and ach.hidden then
+        return {
+            id = ach.id,
+            name = "???",
+            desc = "???",
+            icon = "🔒",
+            hidden = true,
+        }
+    end
     return {
-        chainId = chainId,
-        total = total,
-        completed = done,
-        percent = total > 0 and (done / total) or 0,
-        nextId = nextAch,
+        id = ach.id,
+        name = ach.realName or ach.name,
+        desc = ach.realDesc or ach.desc,
+        icon = ach.icon,
+        hidden = false,
     }
 end
 
-function HiddenAchievementSystem.getProgress(playerState)
-    local unlocked = getUnlockedSet(playerState)
+--- 获取某个链的当前进度
+function HiddenAchievementSystem:getChainProgress(chainId)
+    return self.chainProgress[chainId] or { current = 0, unlocked = {} }
+end
+
+--- 获取某个链下一个可解锁的成就
+function HiddenAchievementSystem:getNextInChain(chainId)
+    local chain = ACH_BY_CHAIN[chainId]
+    if not chain then return nil end
+    for _, ach in ipairs(chain) do
+        if not self.unlocked[ach.id] then
+            return ach
+        end
+    end
+    return nil  -- 全部解锁
+end
+
+--- 获取所有隐藏成就（用于 UI 显示）
+function HiddenAchievementSystem:getAllDisplay(playerStats)
     local result = {}
-    for _, ach in ipairs(HiddenAchievementSystem.HIDDEN_ACHIEVEMENTS) do
-        result[ach.id] = {
-            id = ach.id,
-            name = ach.name,
-            desc = ach.desc,
-            icon = ach.icon,
-            category = ach.category,
-            unlocked = not not unlocked[ach.id],
-        }
+    for _, ach in ipairs(HIDDEN_ACHIEVEMENTS) do
+        result[#result + 1] = self:getDisplayInfo(ach.id)
     end
     return result
 end
 
-function HiddenAchievementSystem.serialize(playerState)
-    if not playerState then return nil end
-    local unlocked = getUnlockedSet(playerState)
-    local list = {}
-    for id, _ in pairs(unlocked) do
-        if unlocked[id] then table.insert(list, id) end
+--- 获取已解锁的隐藏成就数量
+function HiddenAchievementSystem:getUnlockedCount()
+    local count = 0
+    for _, v in pairs(self.unlocked) do
+        if v then count = count + 1 end
     end
-    return { unlocked = list }
+    return count
 end
 
-function HiddenAchievementSystem.deserialize(playerState, data)
-    if not playerState or not data then return end
-    playerState.hiddenAchievements = playerState.hiddenAchievements or {}
-    playerState.hiddenAchievements.unlocked = {}
-    if data.unlocked then
-        for _, id in ipairs(data.unlocked) do
-            playerState.hiddenAchievements.unlocked[id] = true
+--- 获取隐藏成就总数
+function HiddenAchievementSystem:getTotalCount()
+    return #HIDDEN_ACHIEVEMENTS
+end
+
+--- 序列化
+function HiddenAchievementSystem:serialize()
+    return {
+        unlocked = self.unlocked,
+        chainProgress = self.chainProgress,
+    }
+end
+
+--- 反序列化
+function HiddenAchievementSystem:deserialize(data)
+    self.unlocked = {}
+    self.chainProgress = {}
+    if data then
+        if data.unlocked then
+            for id, v in pairs(data.unlocked) do
+                self.unlocked[id] = v
+            end
+        end
+        if data.chainProgress then
+            self.chainProgress = data.chainProgress
         end
     end
 end

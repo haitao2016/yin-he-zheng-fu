@@ -149,4 +149,94 @@ function UICommon.bindFns(fns)
     UICommon.progressBar = fns.progressBar
 end
 
+-- ============================================================================
+-- P2-P1-3: UI/UX 精修 - 动画工具
+-- ============================================================================
+UICommon.animTimers = {}  -- { [animId] = { timer = 0, duration = 0, onUpdate = fn, onComplete = fn } }
+
+--- 注册一个动画
+---@param animId string 动画唯一ID
+---@param duration number 动画持续时间（秒）
+---@param onUpdate function|nil 更新回调 (progress: 0-1)
+---@param onComplete function|nil 完成回调
+function UICommon.animStart(animId, duration, onUpdate, onComplete)
+    UICommon.animTimers[animId] = {
+        timer = 0,
+        duration = duration,
+        onUpdate = onUpdate,
+        onComplete = onComplete,
+    }
+end
+
+--- 取消动画
+function UICommon.animCancel(animId)
+    UICommon.animTimers[animId] = nil
+end
+
+--- 获取动画进度 (0-1)
+function UICommon.animProgress(animId)
+    local a = UICommon.animTimers[animId]
+    if not a then return 0 end
+    return math.min(1.0, a.timer / math.max(0.001, a.duration))
+end
+
+--- 更新所有动画（每帧调用）
+function UICommon.animUpdate(dt)
+    local toRemove = {}
+    for animId, a in pairs(UICommon.animTimers) do
+        a.timer = a.timer + dt
+        if a.onUpdate then
+            local progress = math.min(1.0, a.timer / math.max(0.001, a.duration))
+            a.onUpdate(progress)
+        end
+        if a.timer >= a.duration then
+            if a.onComplete then a.onComplete() end
+            toRemove[#toRemove + 1] = animId
+        end
+    end
+    for _, animId in ipairs(toRemove) do
+        UICommon.animTimers[animId] = nil
+    end
+end
+
+--- 缓动函数
+function UICommon.easeOut(t) return 1 - (1 - t) * (1 - t) end  -- 减速
+function UICommon.easeIn(t) return t * t * t end                   -- 加速
+function UICommon.easeInOut(t) return t < 0.5 and 2*t*t or 1-(-2*t+2)^2/2 end  -- 先慢后快
+
+--- 按钮点击缩放动画回调（scale 1 → 0.95 → 1，0.05s）
+local BUTTON_ANIM_DURATION = 0.05
+function UICommon.buttonClickAnim(animId, scaleFn)
+    if UICommon.animTimers[animId] then return end  -- 动画进行中
+    UICommon.animStart(animId, BUTTON_ANIM_DURATION, function(progress)
+        local scale = 1.0
+        if progress < 0.5 then
+            scale = 1.0 - 0.05 * (progress * 2)
+        else
+            scale = 0.95 + 0.05 * ((progress - 0.5) * 2)
+        end
+        if scaleFn then scaleFn(scale) end
+    end, function()
+        if scaleFn then scaleFn(1.0) end  -- 确保恢复到1.0
+    end)
+end
+
+--- 面板滑入动画（从右侧滑入，duration=0.25s）
+function UICommon.panelSlideIn(animId, panelX, panelW, panelY, panelH, duration, renderFn)
+    local startX = panelX + panelW  -- 从屏幕外开始
+    UICommon.animStart(animId, duration or 0.25, function(progress)
+        local p = UICommon.easeOut(progress)
+        local x = startX - panelW * p
+        renderFn(x, panelY, panelW, panelH)
+    end)
+end
+
+--- 面板淡入动画（duration=0.25s）
+function UICommon.fadeIn(animId, alpha, duration, renderFn)
+    UICommon.animStart(animId, duration or 0.25, function(progress)
+        local p = UICommon.easeOut(progress)
+        renderFn(alpha * p)
+    end)
+end
+
 return UICommon

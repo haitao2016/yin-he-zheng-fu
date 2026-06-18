@@ -41,6 +41,7 @@ local drawRetreatReinforce  = RenderHUD.drawRetreatReinforce
 local drawSkillUpgrade      = RenderHUD.drawSkillUpgrade
 local drawSpeedControl      = RenderHUD.drawSpeedControl
 local drawPauseScreen       = RenderHUD.drawPauseScreen  -- P1-10: 暂停界面
+local drawCommandBar       = RenderHUD.drawCommandBar   -- P1-P2-1: 战斗指令按钮
 
 local drawBossDestroyedEffect  = RenderOverlays.drawBossDestroyedEffect
 local drawFireworks            = RenderOverlays.drawFireworks
@@ -93,6 +94,7 @@ function BattleRender.Render()
     drawFormationBar()
     drawRetreatReinforce()
     drawSpeedControl()
+    drawCommandBar()  -- P1-P2-1: 战斗指令按钮
     BS.BattleSkills.Draw({ vg = BS.vg, state = BS.state, rs = BS.rs, screenW = BS.screenW, screenH = BS.screenH })
     drawBossPhaseBanner()
     drawSuperBossHealthBar()

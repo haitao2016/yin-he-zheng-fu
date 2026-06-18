@@ -62,7 +62,6 @@ ROGUELIKE_CARDS = {
         rarity = "uncommon",
         effect = { type = "buff", stat = "skillChargeBonus", value = 2 }
     },
-
     ---- 减益高回报类 ----
     {
         id = "BLOODLUST",
@@ -96,7 +95,6 @@ ROGUELIKE_CARDS = {
         rarity = "rare",
         effect = { type = "tradeoff", stat = "fireRate", value = 0.75, shieldRegen = -0.50 }
     },
-
     ---- 特殊效果类 ----
     {
         id = "BATTLE_LUST",
@@ -137,7 +135,104 @@ ROGUELIKE_CARDS = {
         icon = "icon_void",
         rarity = "legendary",
         effect = { type = "special", stat = "trueDamagePct", value = 0.10 }
-    }
+    },
+    ---- V3.0 新增卡牌 ----
+    {
+        id = "VOID_RESONANCE",
+        name = "虚空共振",
+        desc = "虚空伤害 +30%，但每次攻击消耗 2% 最大生命值",
+        icon = "icon_void_res",
+        rarity = "epic",
+        effect = { type = "tradeoff", stat = "voidDamageMult", value = 0.30, hpLossPerAttack = 0.02 }
+    },
+    {
+        id = "FORTRESS_MASTERY",
+        name = "要塞精通",
+        desc = "护盾回复 +50%，防御塔伤害 +40%",
+        icon = "icon_fortress",
+        rarity = "uncommon",
+        effect = { type = "buff", stat = "shieldRegen", value = 0.50, towerDamageMult = 0.40 }
+    },
+    {
+        id = "RAPID_FIRE",
+        name = "速射精通",
+        desc = "攻击间隔 -25%，但每次攻击消耗额外 5% 能量",
+        icon = "icon_rapid",
+        rarity = "uncommon",
+        effect = { type = "tradeoff", stat = "attackInterval", value = -0.25, energyCostMult = 0.05 }
+    },
+    {
+        id = "SHIELD_WALL",
+        name = "护盾壁垒",
+        desc = "所有舰船获得 20% 临时护盾，每波重置",
+        icon = "icon_shield_wall",
+        rarity = "epic",
+        effect = { type = "special", stat = "shieldWallPct", value = 0.20 }
+    },
+    {
+        id = "ARSONIST",
+        name = "纵火者",
+        desc = "攻击附带灼烧，8秒内造成 50% 攻击力的持续伤害",
+        icon = "icon_arson",
+        rarity = "rare",
+        effect = { type = "special", stat = "burnDamagePct", value = 0.50, burnDuration = 8 }
+    },
+    {
+        id = "CHAIN_LIGHTNING",
+        name = "链式闪电",
+        desc = "攻击弹射 3 次，每次伤害 -30%",
+        icon = "icon_lightning",
+        rarity = "epic",
+        effect = { type = "special", stat = "chainCount", value = 3, chainDamageFalloff = 0.30 }
+    },
+    {
+        id = "TITAN_POWER",
+        name = "泰坦之力",
+        desc = "旗舰伤害 +80%，但移动速度 -50%",
+        icon = "icon_titan",
+        rarity = "rare",
+        effect = { type = "tradeoff", stat = "flagshipDamageMult", value = 0.80, flagshipSpeedMult = -0.50 }
+    },
+    {
+        id = "AEGISProtocol",
+        name = "宙斯盾协议",
+        desc = "全体护盾 +100%，护盾不被穿透",
+        icon = "icon_aegis",
+        rarity = "legendary",
+        effect = { type = "special", stat = "shieldPierceImmune", value = true }
+    },
+    {
+        id = "LOOT_HUNTER",
+        name = "战利品猎人",
+        desc = "击败敌舰额外掉落 +50% 几率获得资源",
+        icon = "icon_loot",
+        rarity = "uncommon",
+        effect = { type = "special", stat = "lootDropChance", value = 0.50 }
+    },
+    {
+        id = "SECOND_WIND",
+        name = "绝处逢生",
+        desc = "当舰队血量低于 20% 时，回复 50% 最大生命值（每局一次）",
+        icon = "icon_secondwind",
+        rarity = "legendary",
+        effect = { type = "special", stat = "secondWindThreshold", value = 0.20, secondWindHealPct = 0.50 }
+    },
+    {
+        id = "SHIELD_BURST",
+        name = "护盾爆发",
+        desc = "护盾耗尽时释放能量冲击波，伤害附近敌人",
+        icon = "icon_shield_burst",
+        rarity = "rare",
+        effect = { type = "special", stat = "shieldBurstDmg", value = 0.30 }
+    },
+    {
+        id = "ENERGY_SURGE",
+        name = "能量涌动",
+        desc = "能量上限 +60%，能量回复 +40%",
+        icon = "icon_energy",
+        rarity = "uncommon",
+        effect = { type = "buff", stat = "energyMaxMult", value = 0.60, energyRegenMult = 0.40 }
+    },
 }
 
 local ROGUELIKE_CARDS_BY_ID = {}
@@ -157,12 +252,21 @@ RoguelikeCardSystem.__index = RoguelikeCardSystem
 function RoguelikeCardSystem.new()
     local self = setmetatable({}, RoguelikeCardSystem)
     self.selected = {}
+    self.currentDraw = {}  -- 本次可选择的卡牌
     return self
 end
 
 --- 从卡池随机抽取 count 张卡（不重复，不与已选择的卡重复）
-function RoguelikeCardSystem:drawCards(count)
+--- 会根据当前已选卡中的 extraCardDraw 效果增加抽卡数量
+function RoguelikeCardSystem:drawCards(count, gameState)
     count = count or 3
+    -- 计算额外抽卡加成
+    local extraDraws = 0
+    if gameState and gameState.baseBonus then
+        extraDraws = gameState.baseBonus.extraCardDraw or 0
+    end
+    local totalCount = count + extraDraws
+
     local pool = {}
     for _, c in ipairs(ROGUELIKE_CARDS) do
         if not self.selected[c.id] then
@@ -172,7 +276,7 @@ function RoguelikeCardSystem:drawCards(count)
     end
     local result = {}
     local used = {}
-    while #result < count and #pool > 0 do
+    while #result < totalCount and #pool > 0 do
         local idx = math.random(1, #pool)
         local pick = pool[idx]
         if not used[pick.id] then
@@ -180,15 +284,30 @@ function RoguelikeCardSystem:drawCards(count)
             result[#result + 1] = pick
         end
         table.remove(pool, idx)
-        if #pool == 0 and #result < count then
+        if #pool == 0 and #result < totalCount then
             for _, c in ipairs(ROGUELIKE_CARDS) do
                 if not used[c.id] then result[#result + 1] = c end
-                if #result >= count then break end
+                if #result >= totalCount then break end
             end
             break
         end
     end
+    self.currentDraw = result
     return result
+end
+
+--- 获取本次可选择的卡牌
+function RoguelikeCardSystem:getCurrentDraw()
+    return self.currentDraw
+end
+
+--- 波次结束后触发选牌界面（集成用）
+function RoguelikeCardSystem:onWaveEnd(waveNum, gameState)
+    -- 每 3 波触发一次选牌
+    if waveNum > 0 and waveNum % 3 == 0 then
+        return self:drawCards(3, gameState)
+    end
+    return {}
 end
 
 --- 应用选定卡牌
@@ -247,6 +366,64 @@ function RoguelikeCardSystem:applyCard(cardId, gameState)
         end
         if e.trueDamagePct then
             gameState.baseBonus.trueDamagePct = (gameState.baseBonus.trueDamagePct or 0) + e.trueDamagePct
+        end
+        -- V3.0 新增字段处理
+        if e.voidDamageMult then
+            gameState.baseBonus.voidDamageMult = (gameState.baseBonus.voidDamageMult or 1.0) * (1 + e.voidDamageMult)
+        end
+        if e.hpLossPerAttack then
+            gameState.baseBonus.hpLossPerAttack = (gameState.baseBonus.hpLossPerAttack or 0) + e.hpLossPerAttack
+        end
+        if e.towerDamageMult then
+            gameState.baseBonus.towerDamageMult = (gameState.baseBonus.towerDamageMult or 1.0) * (1 + e.towerDamageMult)
+        end
+        if e.attackInterval then
+            gameState.baseBonus.attackIntervalMult = (gameState.baseBonus.attackIntervalMult or 1.0) * (1 + e.attackInterval)
+        end
+        if e.energyCostMult then
+            gameState.baseBonus.energyCostMult = (gameState.baseBonus.energyCostMult or 1.0) * (1 + e.energyCostMult)
+        end
+        if e.shieldWallPct then
+            gameState.baseBonus.shieldWallPct = (gameState.baseBonus.shieldWallPct or 0) + e.shieldWallPct
+        end
+        if e.burnDamagePct then
+            gameState.baseBonus.burnDamagePct = (gameState.baseBonus.burnDamagePct or 0) + e.burnDamagePct
+        end
+        if e.burnDuration then
+            gameState.baseBonus.burnDuration = math.max(gameState.baseBonus.burnDuration or 0, e.burnDuration)
+        end
+        if e.chainCount then
+            gameState.baseBonus.chainCount = math.max(gameState.baseBonus.chainCount or 0, e.chainCount)
+        end
+        if e.chainDamageFalloff then
+            gameState.baseBonus.chainDamageFalloff = (gameState.baseBonus.chainDamageFalloff or 1.0) * (1 - e.chainDamageFalloff)
+        end
+        if e.flagshipDamageMult then
+            gameState.baseBonus.flagshipDamageMult = (gameState.baseBonus.flagshipDamageMult or 1.0) * (1 + e.flagshipDamageMult)
+        end
+        if e.flagshipSpeedMult then
+            gameState.baseBonus.flagshipSpeedMult = (gameState.baseBonus.flagshipSpeedMult or 1.0) * (1 + e.flagshipSpeedMult)
+        end
+        if e.shieldPierceImmune then
+            gameState.baseBonus.shieldPierceImmune = true
+        end
+        if e.lootDropChance then
+            gameState.baseBonus.lootDropChance = (gameState.baseBonus.lootDropChance or 0) + e.lootDropChance
+        end
+        if e.secondWindThreshold then
+            gameState.baseBonus.secondWindThreshold = math.min(gameState.baseBonus.secondWindThreshold or 1.0, e.secondWindThreshold)
+        end
+        if e.secondWindHealPct then
+            gameState.baseBonus.secondWindHealPct = (gameState.baseBonus.secondWindHealPct or 0) + e.secondWindHealPct
+        end
+        if e.shieldBurstDmg then
+            gameState.baseBonus.shieldBurstDmg = (gameState.baseBonus.shieldBurstDmg or 0) + e.shieldBurstDmg
+        end
+        if e.energyMaxMult then
+            gameState.baseBonus.energyMaxMult = (gameState.baseBonus.energyMaxMult or 1.0) * (1 + e.energyMaxMult)
+        end
+        if e.energyRegenMult then
+            gameState.baseBonus.energyRegenMult = (gameState.baseBonus.energyRegenMult or 1.0) * (1 + e.energyRegenMult)
         end
         print("[Roguelike] 获得卡牌: " .. card.name)
     end

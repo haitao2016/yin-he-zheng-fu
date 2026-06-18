@@ -969,4 +969,136 @@ RenderHUD.drawSkillUpgrade     = drawSkillUpgrade
 RenderHUD.drawSpeedControl     = drawSpeedControl
 RenderHUD.drawPauseScreen      = drawPauseScreen  -- P1-10: 暂停界面
 
+-- P1-P2-1: 战斗指令按钮渲染
+local BATTLE_COMMANDS_HUD = {
+    { id = "FOCUS_FIRE",       name = "集火",  icon = "🔥", key = "Q" },
+    { id = "DEFENSE_STANCE",   name = "防御",  icon = "🛡", key = "W" },
+    { id = "TACTICAL_RETREAT", name = "后撤",  icon = "↩", key = "E" },
+    { id = "FULL_SALVO",       name = "齐射",  icon = "⚡", key = "R" },
+    { id = "EMERGENCY_REPAIR", name = "维修",  icon = "🔧", key = "T" },
+}
+
+local commandBtns_ = {}  -- 按钮区域列表（由 OnClick 使用）
+
+--- 绘制战斗指令按钮栏
+local function drawCommandBar()
+    if BS.state ~= "fighting" then return end
+    local cmdSys = BS.BattleCommandSystem
+    if not cmdSys then return end
+
+    local vg = BS.vg
+    if not vg then return end
+
+    local cooldowns = cmdSys:getCooldowns()
+
+    -- 按钮尺寸与布局
+    local btnW, btnH = 72, 60
+    local gap = 8
+    local totalW = #BATTLE_COMMANDS_HUD * btnW + (#BATTLE_COMMANDS_HUD - 1) * gap
+    local startX = (BS.screenW - totalW) / 2
+    local btnY = BS.screenH - btnH - 10
+
+    commandBtns_ = {}
+
+    for i, info in ipairs(BATTLE_COMMANDS_HUD) do
+        local btnX = startX + (i - 1) * (btnW + gap)
+        local cd = cooldowns[info.id] or { cooldown = 0, active = 0, ready = true, name = info.name }
+        local isReady = cd.ready and cd.active <= 0
+        local isActive = cd.active > 0
+
+        -- 按钮背景
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, btnX, btnY, btnW, btnH, 6)
+        if isActive then
+            nvgFillColor(vg, nvgRGBA(80, 200, 120, 200))  -- 激活中：绿色
+        elseif isReady then
+            nvgFillColor(vg, nvgRGBA(40, 60, 80, 220))    -- 可用：深蓝
+        else
+            nvgFillColor(vg, nvgRGBA(30, 30, 40, 180))    -- 冷却中：暗色
+        end
+        nvgFill(vg)
+
+        -- 按钮边框
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, btnX, btnY, btnW, btnH, 6)
+        if isActive then
+            nvgStrokeColor(vg, nvgRGBA(100, 255, 150, 255))
+        elseif isReady then
+            nvgStrokeColor(vg, nvgRGBA(80, 140, 200, 200))
+        else
+            nvgStrokeColor(vg, nvgRGBA(60, 60, 80, 150))
+        end
+        nvgStrokeWidth(vg, 1.5)
+        nvgStroke(vg)
+
+        -- 冷却遮罩（倒计时进度条）
+        if cd.cooldown > 0 and not isReady then
+            local maxCd = 90  -- 假设最大冷却为 90 秒（FULL_SALVO）
+            local fillPct = math.max(0, 1 - cd.cooldown / maxCd)
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, btnX, btnY + btnH - 8, btnW * fillPct, 8, 3)
+            nvgFillColor(vg, nvgRGBA(100, 100, 120, 200))
+            nvgFill(vg)
+        end
+
+        -- 激活持续时间条
+        if isActive then
+            local activePct = cd.active / 10  -- 假设最大激活时间为 10 秒
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, btnX, btnY + 4, btnW * activePct, 4, 2)
+            nvgFillColor(vg, nvgRGBA(100, 255, 150, 255))
+            nvgFill(vg)
+        end
+
+        -- 图标
+        nvgFontFace(vg, "sans")
+        nvgFontSize(vg, 20)
+        nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+        nvgText(vg, btnX + btnW/2, btnY + 18, info.icon)
+
+        -- 名称
+        nvgFontSize(vg, 11)
+        nvgFillColor(vg, nvgRGBA(200, 210, 230, 255))
+        nvgText(vg, btnX + btnW/2, btnY + 35, info.name)
+
+        -- 冷却时间或快捷键
+        nvgFontSize(vg, 10)
+        if cd.cooldown > 0 and not isReady then
+            nvgFillColor(vg, nvgRGBA(255, 150, 100, 255))
+            nvgText(vg, btnX + btnW/2, btnY + 50, string.format("%.0fs", cd.cooldown))
+        else
+            nvgFillColor(vg, nvgRGBA(150, 160, 180, 200))
+            nvgText(vg, btnX + btnW/2, btnY + 50, "[" .. info.key .. "]")
+        end
+
+        -- 记录按钮区域
+        commandBtns_[#commandBtns_ + 1] = { x = btnX, y = btnY, w = btnW, h = btnH, id = info.id }
+
+        -- 激活中的指令发光效果
+        if isActive then
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, btnX - 2, btnY - 2, btnW + 4, btnH + 4, 8)
+            nvgStrokeColor(vg, nvgRGBA(100, 255, 150, 100))
+            nvgStrokeWidth(vg, 2)
+            nvgStroke(vg)
+        end
+    end
+
+    -- 保存按钮区域到 BS（供 OnClick 使用）
+    BS.commandBtns = commandBtns_
+end
+
+-- 键盘快捷键处理（供 BattleScene 键盘事件调用）
+function RenderHUD.HandleCommandKey(key)
+    if BS.state ~= "fighting" then return end
+    local keyMap = { Q = "FOCUS_FIRE", W = "DEFENSE_STANCE", E = "TACTICAL_RETREAT", R = "FULL_SALVO", T = "EMERGENCY_REPAIR" }
+    local cmdId = keyMap[key]
+    if cmdId then
+        BattleScene.ExecuteCommand(cmdId)
+    end
+end
+
+RenderHUD.drawCommandBar = drawCommandBar
+
 return RenderHUD

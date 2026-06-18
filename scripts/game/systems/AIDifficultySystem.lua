@@ -22,6 +22,14 @@ DIFFICULTY_TIERS = {
         resourceMult = 1.5,
         eventMult = 0.6,
         bossPowerMult = 0.8,
+        enemyAI = {
+            attackFrequency = 0.7,
+            targetPriority = "HIGHEST_HP",
+            moveStrategy = "AGGRESSIVE",
+            skillUsageRate = 0.5,
+            retreatThreshold = 0.2,
+            comboChance = 0.3,
+        },
         unlockCondition = nil,
         rewardBonus = 0.5,
     },
@@ -36,8 +44,15 @@ DIFFICULTY_TIERS = {
         resourceMult = 1.0,
         eventMult = 1.0,
         bossPowerMult = 1.0,
+        enemyAI = {
+            attackFrequency = 1.0,
+            targetPriority = "NEAREST",
+            moveStrategy = "COORDINATED",
+            skillUsageRate = 1.0,
+            retreatThreshold = 0.15,
+            comboChance = 0.5,
+        },
         unlockCondition = nil,
-        rewardBonus = 1.0,
     },
     HARD = {
         id = "HARD",
@@ -50,6 +65,14 @@ DIFFICULTY_TIERS = {
         resourceMult = 0.85,
         eventMult = 1.3,
         bossPowerMult = 1.4,
+        enemyAI = {
+            attackFrequency = 1.3,
+            targetPriority = "LOWEST_HP",
+            moveStrategy = "AGGRESSIVE",
+            skillUsageRate = 1.5,
+            retreatThreshold = 0.1,
+            comboChance = 0.7,
+        },
         unlockCondition = { completedNormal = true, minLevel = 10 },
         rewardBonus = 1.5,
     },
@@ -64,6 +87,14 @@ DIFFICULTY_TIERS = {
         resourceMult = 0.65,
         eventMult = 1.6,
         bossPowerMult = 1.8,
+        enemyAI = {
+            attackFrequency = 1.6,
+            targetPriority = "STRONGEST",
+            moveStrategy = "DEFENSIVE",
+            skillUsageRate = 2.0,
+            retreatThreshold = 0.05,
+            comboChance = 0.9,
+        },
         unlockCondition = { completedHard = true, minLevel = 30, campaignChapter3 = true },
         rewardBonus = 2.5,
     },
@@ -194,6 +225,76 @@ function AIDifficultySystem.getEnemyScaleAtWave(waveNum)
     }
 end
 
+-- 获取敌方 AI 行为参数
+function AIDifficultySystem.getEnemyAIParams()
+    local tier = DIFFICULTY_TIERS[RuntimeDifficultyState.currentDifficulty] or DIFFICULTY_TIERS.NORMAL
+    return tier.enemyAI or {
+        attackFrequency = 1.0,
+        targetPriority = "NEAREST",
+        moveStrategy = "COORDINATED",
+        skillUsageRate = 1.0,
+        retreatThreshold = 0.15,
+        comboChance = 0.5,
+    }
+end
+
+-- ============================================================================
+-- 舰队 AI 辅助设置（玩家可选的自动战斗辅助）
+-- ============================================================================
+
+local FleetAIAssist = {
+    autoAttack = false,       -- 自动攻击最近的敌人
+    autoHeal = false,         -- 自动使用维修技能
+    autoSkill = false,        -- 自动释放技能
+    autoShield = false,        -- 自动使用护盾技能
+    autoCure = false,         -- 自动驱散负面状态
+    aggroThreshold = 0.8,     -- 自动攻击触发血量阈值（1.0=始终）
+    healThreshold = 0.5,       -- 自动治疗触发血量阈值
+}
+
+-- 设置舰队 AI 辅助选项
+function AIDifficultySystem.setFleetAIAssist(key, value)
+    if FleetAIAssist[key] ~= nil then
+        FleetAIAssist[key] = value
+        return true
+    end
+    return false
+end
+
+-- 批量设置舰队 AI 辅助
+function AIDifficultySystem.setFleetAIAssistAll(settings)
+    for k, v in pairs(settings) do
+        if FleetAIAssist[k] ~= nil then
+            FleetAIAssist[k] = v
+        end
+    end
+end
+
+-- 获取舰队 AI 辅助设置
+function AIDifficultySystem.getFleetAIAssist()
+    local assist = {}
+    for k, v in pairs(FleetAIAssist) do
+        assist[k] = v
+    end
+    return assist
+end
+
+-- 根据当前难度返回推荐舰队 AI 设置
+function AIDifficultySystem.getRecommendedFleetAI(difficultyLevel)
+    local tier = DIFFICULTY_TIERS[difficultyLevel or RuntimeDifficultyState.currentDifficulty]
+    if not tier then return FleetAIAssist end
+    -- 根据难度自动推荐不同的辅助等级
+    if tier.id == "EASY" then
+        return { autoAttack = true, autoHeal = true, autoSkill = true, autoShield = true, autoCure = true, aggroThreshold = 1.0, healThreshold = 0.7 }
+    elseif tier.id == "NORMAL" then
+        return { autoAttack = true, autoHeal = true, autoSkill = false, autoShield = true, autoCure = true, aggroThreshold = 0.9, healThreshold = 0.5 }
+    elseif tier.id == "HARD" then
+        return { autoAttack = false, autoHeal = false, autoSkill = false, autoShield = false, autoCure = false, aggroThreshold = 0.8, healThreshold = 0.3 }
+    else -- NIGHTMARE
+        return { autoAttack = false, autoHeal = false, autoSkill = false, autoShield = false, autoCure = false, aggroThreshold = 0.6, healThreshold = 0.2 }
+    end
+end
+
 -- ============================================================================
 -- 存档
 -- ============================================================================
@@ -201,6 +302,7 @@ end
 function AIDifficultySystem.serialize()
     return {
         currentDifficulty = RuntimeDifficultyState.currentDifficulty,
+        fleetAIAssist = FleetAIAssist,
     }
 end
 
@@ -208,6 +310,13 @@ function AIDifficultySystem.deserialize(data)
     if data == nil then return false end
     if data.currentDifficulty and DIFFICULTY_TIERS[data.currentDifficulty] then
         RuntimeDifficultyState.currentDifficulty = data.currentDifficulty
+    end
+    if data.fleetAIAssist then
+        for k, v in pairs(data.fleetAIAssist) do
+            if FleetAIAssist[k] ~= nil then
+                FleetAIAssist[k] = v
+            end
+        end
     end
     return true
 end

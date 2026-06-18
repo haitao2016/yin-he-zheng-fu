@@ -52,6 +52,68 @@ M.BASE_CORE_UPGRADE_COSTS = {
     [7] = { minerals = 3500, energy = 1800, crystal = 600, nuclear = 200, buildTime = 150 },
     [8] = { minerals = 5000, energy = 2500, crystal = 900, nuclear = 400, buildTime = 200 },
     [9] = { minerals = 7000, energy = 3500, crystal = 1300, nuclear = 700, buildTime = 250 },
+    [10] = { minerals = 10000, energy = 5000, crystal = 2000, nuclear = 1000, buildTime = 300 },
 }
+
+-- 基地核心等级对应模块槽位数
+M.BASE_CORE_MODULE_SLOTS = {
+    [1] = 2, [2] = 3, [3] = 3, [4] = 4, [5] = 4,
+    [6] = 5, [7] = 5, [8] = 6, [9] = 6, [10] = 7,
+}
+
+-- Lv8-10 专属模块
+M.BASE_MODULE_UNLOCK_LEVEL = {
+    POWER_PLANT = 1, MINING_RIG = 1,
+    RESEARCH_LAB = 2, SHIPYARD = 2, WAREHOUSE = 2,
+    DEFENSE_TOWER = 3,
+    -- Lv8 专属模块
+    NUCLEAR_REACTOR = 8,
+    -- Lv9 专属模块
+    VOID_ENGINE = 9,
+    -- Lv10 专属模块
+    TITAN_FORGE = 10,
+}
+
+-- Lv8-10 专属模块定义
+M.BASE_MODULES_LV8_10 = {
+    NUCLEAR_REACTOR = {
+        name = "核聚变反应堆",
+        cost = { minerals = 5000, nuclear = 500 },
+        buildTime = 150,
+        upgradeK = 1.6,
+        prod = { energy = 100 },
+        effect = { energyMult = 2.0 },
+        desc = "产出巨量能源，能源效率翻倍",
+    },
+    VOID_ENGINE = {
+        name = "虚空引擎",
+        cost = { minerals = 8000, crystal = 1000, nuclear = 500 },
+        buildTime = 200,
+        upgradeK = 1.8,
+        prod = {},
+        effect = { movementSpeedBonus = 0.5, stealthBonus = 0.3 },
+        desc = "舰队速度+50%，隐形能力+30%",
+    },
+    TITAN_FORGE = {
+        name = "泰坦锻造炉",
+        cost = { minerals = 12000, crystal = 2000, nuclear = 1000 },
+        buildTime = 300,
+        upgradeK = 2.0,
+        prod = {},
+        effect = { shipHealthBonus = 0.5, defenseBonus = 0.3 },
+        desc = "所有舰船生命+50%，防御+30%",
+    },
+}
+
+-- 基地模块列表（含 Lv8-10）
+M.BASE_MODULE_ORDER_FULL = {
+    "POWER_PLANT", "MINING_RIG", "RESEARCH_LAB", "SHIPYARD", "DEFENSE_TOWER", "WAREHOUSE",
+    "NUCLEAR_REACTOR", "VOID_ENGINE", "TITAN_FORGE",
+}
+
+-- 计算指定核心等级的模块槽位上限
+function M.BaseModuleSlots(coreLevel)
+    return M.BASE_CORE_MODULE_SLOTS[coreLevel or 1] or 2
+end
 
 return M

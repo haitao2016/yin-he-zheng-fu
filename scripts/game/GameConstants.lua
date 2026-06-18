@@ -35,9 +35,13 @@ BUILD_ORDER = BuildingConstants.BUILD_ORDER
 BUILDING_SPECS = BuildingConstants.BUILDING_SPECS
 BASE_MODULES = BuildingConstants.BASE_MODULES
 BASE_MODULE_ORDER = BuildingConstants.BASE_MODULE_ORDER
+BASE_MODULE_ORDER_FULL = BuildingConstants.BASE_MODULE_ORDER_FULL
 BASE_MODULE_UNLOCK_LEVEL = BuildingConstants.BASE_MODULE_UNLOCK_LEVEL
+BASE_MODULES_LV8_10 = BuildingConstants.BASE_MODULES_LV8_10
 BASE_CORE_MAX_LEVEL = BuildingConstants.BASE_CORE_MAX_LEVEL
 BASE_CORE_UPGRADE_COSTS = BuildingConstants.BASE_CORE_UPGRADE_COSTS
+BASE_CORE_MODULE_SLOTS = BuildingConstants.BASE_CORE_MODULE_SLOTS
+BaseModuleSlots = BuildingConstants.BaseModuleSlots
 
 -- ============================================================================
 -- 科技树、关卡难度、指挥官

@@ -11,7 +11,13 @@ function ResearchSystem.new(rm, bs)
     local self = setmetatable({ rm=rm, bs=bs, planetGetter=nil }, ResearchSystem)
     self.unlocked = {}
     self.active   = nil
+    self.onCompleteCallback = nil  -- P2-P1-1: 研究完成动画回调
     return self
+end
+
+--- P2-P1-1: 设置研究完成动画回调
+function ResearchSystem:setOnCompleteCallback(fn)
+    self.onCompleteCallback = fn
 end
 
 --- P2-6: 记录当前基地核心等级（用于 Tier5 科技解锁校验）
@@ -194,11 +200,51 @@ function ResearchSystem:update(dt)
             if bonus.skillPointBonus then
                 self.rm.baseBonus = self.rm.baseBonus or {}
                 self.rm.baseBonus.skillPointBonus = (self.rm.baseBonus.skillPointBonus or 0) + bonus.skillPointBonus
-                print("[Research] 文明飞跃激活：每波技能点+" .. tostring(self.rm.baseBonus.skillPointBonus))
+                print("[Research] 文明飞跃激活：每波技能点+" .. tostring(bonus.skillPointBonus))
+            end
+            -- P0-1: PHASE_DRIVE 隐形能力
+            if bonus.stealthEnabled then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.stealthEnabled = true
+                print("[Research] 相位驱动激活：舰队获得隐形能力")
+            end
+            -- P0-1: STELLAR_ENGINE 战斗开局加速
+            if bonus.battleStartSpeedBoost then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.battleStartSpeedBoost = (self.rm.baseBonus.battleStartSpeedBoost or 0) + bonus.battleStartSpeedBoost
+                print("[Research] 恒星引擎激活：战斗开局速度+" .. tostring(bonus.battleStartSpeedBoost))
+            end
+            -- P0-1: VOID_FLEET 敌舰生成减少
+            if bonus.enemySpawnMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.enemySpawnMult = (self.rm.baseBonus.enemySpawnMult or 1.0) * bonus.enemySpawnMult
+                print("[Research] 虚空舰队激活：敌舰生成×" .. tostring(bonus.enemySpawnMult))
+            end
+            -- P0-1: CHRONO_RESEARCH 事件频率
+            if bonus.eventFrequencyMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.eventFrequencyMult = (self.rm.baseBonus.eventFrequencyMult or 1.0) * bonus.eventFrequencyMult
+                print("[Research] 时序研究激活：事件频率×" .. tostring(bonus.eventFrequencyMult))
+            end
+            -- P0-1: GALACTIC_ASCEND 奖励翻倍
+            if bonus.rewardMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.rewardMult = (self.rm.baseBonus.rewardMult or 1.0) * bonus.rewardMult
+                print("[Research] 银河飞升激活：奖励×" .. tostring(bonus.rewardMult))
+            end
+            -- P0-1: FORTRESS_PROTOCOL_II 反击护盾
+            if bonus.counterShield then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.counterShield = true
+                print("[Research] 要塞协议II激活：反击护盾已解锁")
             end
         end
-        print("[Research] 完成: " .. TECHS[id].name)
-        return id
+        -- P2-P1-1: 研究完成动画回调
+        if self.onCompleteCallback then
+            self:onCompleteCallback(techId, TECHS[techId])
+        end
+        print("[Research] 完成: " .. TECHS[techId].name)
+        return techId
     end
     return nil
 end
