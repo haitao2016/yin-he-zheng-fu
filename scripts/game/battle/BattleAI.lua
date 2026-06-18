@@ -172,13 +172,16 @@ local function spawnExplosion(ship)
         r = 255, g = 255, b = 255,
         size = isBig and 22 or 12, ptype = "flash"
     }
-    -- 碎片
+    -- 碎片（根据队伍选择颜色）
     for _ = 1, count do
         local ang = math.random() * math.pi * 2
         local spd = speed * (0.3 + math.random() * 0.9)
-        local r = 200 + math.random(55)
-        local g = 80 + math.random(120)
-        local b = math.random(60)
+        local r, g, b
+        if ship.team == "player" then
+            r, g, b = 80 + math.random(60), 160 + math.random(60), 255  -- 蓝色系（玩家）
+        else
+            r, g, b = 255, 80 + math.random(80), math.random(40)  -- 红色系（敌人）
+        end
         explParticles_[#explParticles_ + 1] = {
             x = ship.x + (math.random() - 0.5) * 6,
             y = ship.y + (math.random() - 0.5) * 6,
