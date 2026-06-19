@@ -88,6 +88,42 @@ M.CAMPAIGN_CHAPTERS = {
         },
         chapterRewards = { rainbowCrystal = 500, title = "银河传奇", avatar = "GALACTIC_LEGEND", skin = "LEGENDARY_COMMANDER" },
     },
+    -- ============================================================================
+    -- V3.0 P2-2: 新战役章节（第6-8章）
+    -- ============================================================================
+    {
+        id = "CHAPTER_6", name = "第六章：星际贸易联盟",
+        description = "银河贸易联盟的邀请带来了新的机遇与挑战...",
+        requiredWave = 250,
+        stages = {
+            { id = "STAGE_6_1", name = "贸易港的麻烦", difficulty = "MEDIUM", unlockWave = 250, enemyComp = { PIRATE_BOSS = 1, FIGHTER = 15, DESTROYER = 8 }, objective = "ASSAULT", objectiveTarget = 0, rewards = { credits = 5000, blueCrystal = 300 } },
+            { id = "STAGE_6_2", name = "商业间谍", difficulty = "HARD", unlockWave = 270, enemyComp = { STEALTH = 8, DESTROYER = 6, CORVETTE = 4 }, objective = "ELIMINATE", objectiveTarget = 0, rewards = { credits = 8000, purpleCrystal = 100 } },
+            { id = "STAGE_6_3", name = "市场危机", difficulty = "EXTREME", unlockWave = 290, enemyComp = { BATTLECRUISER = 10, CARRIER = 5, PIRATE_BOSS = 1 }, objective = "DEFEND", objectiveTarget = 12, rewards = { credits = 10000, rainbowCrystal = 50 } },
+        },
+        chapterRewards = { credits = 20000, title = "商业大亨", skin = "TRADER_LORD" },
+    },
+    {
+        id = "CHAPTER_7", name = "第七章：虚空边境",
+        description = "虚空边境出现变异敌人，银河再次面临危机...",
+        requiredWave = 320,
+        stages = {
+            { id = "STAGE_7_1", name = "变异感染者", difficulty = "HARD", unlockWave = 320, enemyComp = { MUTANT_VOID = 10, VOID_LORD = 3, DESTROYER = 8 }, objective = "ELIMINATE", objectiveTarget = 0, rewards = { purpleCrystal = 200, mutantChance = 0.3 } },
+            { id = "STAGE_7_2", name = "虚空裂隙", difficulty = "EXTREME", unlockWave = 350, enemyComp = { MUTANT_VOID = 15, VOID_LORD = 5, DEVASTATOR = 2 }, objective = "ELIMINATE", objectiveTarget = 0, rewards = { rainbowCrystal = 80, mutantChance = 0.5 } },
+            { id = "STAGE_7_3", name = "虚空领主复苏", difficulty = "NIGHTMARE", unlockWave = 380, enemyComp = { VOID_LORD_SUPREME = 1, MUTANT_VOID = 20, DEVASTATOR = 4 }, objective = "ELIMINATE", objectiveTarget = 0, rewards = { rainbowCrystal = 150, rareItem = "VOID_ESSENCE" } },
+        },
+        chapterRewards = { rainbowCrystal = 200, title = "虚空行者", skin = "VOID_WALKER" },
+    },
+    {
+        id = "CHAPTER_8", name = "第八章：银河危机",
+        description = "银河面临最严峻的考验，宿敌的真正实力终于显露...",
+        requiredWave = 420,
+        stages = {
+            { id = "STAGE_8_1", name = "宿敌现身", difficulty = "EXTREME", unlockWave = 420, enemyComp = { NEMESIS_BOSS = 1, BATTLECRUISER = 12, CARRIER = 6 }, objective = "ASSAULT", objectiveTarget = 0, rewards = { rainbowCrystal = 150, title = "宿敌猎人" } },
+            { id = "STAGE_8_2", name = "最终决战", difficulty = "NIGHTMARE", unlockWave = 450, enemyComp = { NEMESIS_BOSS_SUPREME = 1, DEVASTATOR = 6, VOID_LORD = 8 }, objective = "ELIMINATE", objectiveTarget = 0, rewards = { rainbowCrystal = 300, rareItem = "NEMESIS_TOKEN" } },
+            { id = "STAGE_8_3", name = "银河重塑", difficulty = "NIGHTMARE", unlockWave = 500, enemyComp = { GALAXY_WILL = 1, DEVASTATOR = 10, VOID_LORD = 10, RAILGUN = 8 }, objective = "ELIMINATE", objectiveTarget = 0, rewards = { rainbowCrystal = 500, title = "银河救世主", avatar = "GALAXY_SAVIOR" } },
+        },
+        chapterRewards = { rainbowCrystal = 1000, title = "银河传奇", avatar = "ULTIMATE_LEGEND", skin = "GALACTIC_GOD" },
+    },
 }
 
 -- 剧情对话
@@ -108,6 +144,16 @@ M.CAMPAIGN_DIALOGUE = {
     ["STAGE_5_2_START"] = { speaker = "指挥官", speakerTitle = "银河英雄", text = "这就是传说中的终极试炼吗？来吧，我不会再退缩！", emotion = "DETERMINED", portrait = "commander_default" },
     ["STAGE_5_3_START"] = { speaker = "最终Boss", speakerTitle = "银河意志", text = "你终于来了，银河的英雄。我是这片星系的意志，现在，是时候证明你是否配得上这个称号了！", emotion = "ALERT", portrait = "final_boss" },
     ["STAGE_5_3_END"] = { speaker = "指挥官", speakerTitle = "银河传奇", text = "我...做到了。银河从此迎来了真正的和平。这是我职责的终点，也是新篇章的起点。", emotion = "HAPPY", portrait = "commander_default" },
+    -- V3.0 新章节对话
+    ["STAGE_6_1_START"] = { speaker = "贸易商", speakerTitle = "银河贸易联盟代表", text = "欢迎，银河英雄。贸易联盟需要你的帮助来解决一些...麻烦。", emotion = "NEUTRAL", portrait = "trader_default" },
+    ["STAGE_6_2_START"] = { speaker = "副官", speakerTitle = "情报官", text = "指挥官，有间谍潜入了我们的舰队。他们在窃取贸易机密！", emotion = "WORRIED", portrait = "officer_default" },
+    ["STAGE_6_3_START"] = { speaker = "黑市商人", speakerTitle = "银河黑市首领", text = "哈！贸易联盟的防线不堪一击。这市场迟早是我们的！", emotion = "ANGRY", portrait = "pirate_default" },
+    ["STAGE_7_1_START"] = { speaker = "科学家", speakerTitle = "虚空研究者", text = "这些是...被虚空感染的舰船！它们比普通敌人更加狂暴和危险。", emotion = "ALERT", portrait = "scientist_default" },
+    ["STAGE_7_2_START"] = { speaker = "指挥官", speakerTitle = "银河英雄", text = "虚空裂隙...如果不阻止它，整个银河都会被虚空吞噬。", emotion = "DETERMINED", portrait = "commander_default" },
+    ["STAGE_7_3_START"] = { speaker = "虚空领主", speakerTitle = "虚空君主", text = "愚蠢的凡人...你们以为能阻止虚空的扩张？太天真了！", emotion = "ANGRY", portrait = "void_lord" },
+    ["STAGE_8_1_START"] = { speaker = "神秘声音", speakerTitle = "未知存在", text = "终于...你就是我等待的那个存在。银河的命运将因你而改变。", emotion = "NEUTRAL", portrait = "ancient_one" },
+    ["STAGE_8_2_START"] = { speaker = "宿敌", speakerTitle = "银河的阴影", text = "好久不见，银河英雄。这一次，你不会再有胜算。", emotion = "ANGRY", portrait = "nemesis_default" },
+    ["STAGE_8_3_START"] = { speaker = "银河意志", speakerTitle = "银河本体", text = "证明你自己，凡人。只有真正的救世主才配重塑银河的命运。", emotion = "NEUTRAL", portrait = "galaxy_will" },
 }
 
 -- 剧情分支

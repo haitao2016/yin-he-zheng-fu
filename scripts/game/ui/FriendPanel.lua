@@ -69,13 +69,20 @@ function FriendPanel.draw(vg)
     end)
 
     -- 标签
-    local tabs = { { id = "FRIENDS", name = "好友" }, { id = "REQUESTS", name = "请求" }, { id = "SEARCH", name = "搜索" } }
+    local tabs = { 
+        { id = "FRIENDS", name = "好友" }, 
+        { id = "REQUESTS", name = "请求" }, 
+        { id = "SEARCH", name = "搜索" },
+        { id = "GIFTS", name = "礼物" },       -- V3.0 P1-1
+        { id = "MATCHES", name = "友谊赛" },   -- V3.0 P1-1
+        { id = "REPORTS", name = "战报" },     -- V3.0 P1-1
+    }
     local tabY = py + 55
-    local tabW = 80
-    local tabStartX = px + 15
+    local tabW = 65
+    local tabStartX = px + 10
 
     for i, tab in ipairs(tabs) do
-        local tx = tabStartX + (i - 1) * (tabW + 5)
+        local tx = tabStartX + (i - 1) * (tabW + 3)
         local selected = panel.tab == tab.id
 
         nvgBeginPath(vg)
@@ -83,7 +90,7 @@ function FriendPanel.draw(vg)
         nvgFillColor(vg, selected and nvgRGBA(60, 100, 180, 220) or nvgRGBA(35, 45, 65, 200))
         nvgFill(vg)
 
-        nvgFontSize(vg, 11)
+        nvgFontSize(vg, 10)
         nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
         nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
         nvgText(vg, tx + tabW / 2, tabY + 13, tab.name)
@@ -102,6 +109,12 @@ function FriendPanel.draw(vg)
         FriendPanel.drawRequests(vg, px + 15, contentY, pw - 30, contentH)
     elseif panel.tab == "SEARCH" then
         FriendPanel.drawSearch(vg, px + 15, contentY, pw - 30, contentH)
+    elseif panel.tab == "GIFTS" then
+        FriendPanel.drawGifts(vg, px + 15, contentY, pw - 30, contentH)
+    elseif panel.tab == "MATCHES" then
+        FriendPanel.drawMatches(vg, px + 15, contentY, pw - 30, contentH)
+    elseif panel.tab == "REPORTS" then
+        FriendPanel.drawReports(vg, px + 15, contentY, pw - 30, contentH)
     end
 end
 
@@ -340,6 +353,233 @@ end
 function FriendPanel.doSearch()
     local FS = require("game.systems.FriendSystem")
     panel.searchResults = FS.searchPlayers(panel.searchQuery or "")
+end
+
+-- ============================================================================
+-- V3.0 P1-1: 好友系统 2.0 UI
+-- ============================================================================
+
+--- 礼物标签页
+function FriendPanel.drawGifts(vg, x, y, w, h)
+    local FS = require("game.systems.FriendSystem")
+    local FSV2 = require("game.systems.FriendSystem")
+    
+    local friends = FS.getFriends()
+    
+    -- 顶部提示
+    nvgFontFace(vg, "sans")
+    nvgFontSize(vg, 12)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER)
+    nvgFillColor(vg, nvgRGBA(180, 200, 220, 255))
+    nvgText(vg, x + w/2, y + 15, "每日可向好友赠送礼物，增加友谊值（无消耗）")
+    
+    if #friends == 0 then
+        nvgFontSize(vg, 14)
+        nvgFillColor(vg, nvgRGBA(150, 150, 170, 255))
+        nvgText(vg, x + w/2, y + h/2 + 20, "暂无好友")
+        return
+    end
+    
+    local itemH = 50
+    local startY = y + 40
+    
+    for i, friend in ipairs(friends) do
+        local itemY = startY + (i - 1) * (itemH + 5)
+        if itemY + itemH > y + h then break end
+        
+        -- 背景
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, x, itemY, w, itemH, 5)
+        nvgFillColor(vg, nvgRGBA(30, 40, 60, 200))
+        nvgFill(vg)
+        
+        -- 名称
+        nvgFontSize(vg, 12)
+        nvgTextAlign(vg, NVG_ALIGN.LEFT)
+        nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+        nvgText(vg, x + 10, itemY + 18, friend.name)
+        
+        -- 友谊值
+        local friendship = FSV2.getFriendship(friend.id)
+        nvgFontSize(vg, 10)
+        nvgFillColor(vg, nvgRGBA(180, 200, 220, 255))
+        nvgText(vg, x + 10, itemY + 35, "友谊值: " .. friendship .. "/100")
+        
+        -- 友谊进度条
+        local barW = 80
+        local barX = x + 100
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, barX, itemY + 30, barW, 8, 3)
+        nvgFillColor(vg, nvgRGBA(50, 50, 80, 200))
+        nvgFill(vg)
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, barX, itemY + 30, barW * (friendship / 100), 8, 3)
+        local barColor = friendship >= 80 and nvgRGBA(255, 180, 80, 255) 
+            or friendship >= 50 and nvgRGBA(100, 200, 100, 255)
+            or nvgRGBA(80, 150, 255, 255)
+        nvgFillColor(vg, barColor)
+        nvgFill(vg)
+        
+        -- 称号
+        local title = FSV2.getFriendTitle(friend.id)
+        nvgFontSize(vg, 10)
+        nvgFillColor(vg, nvgRGBA(255, 220, 100, 255))
+        nvgText(vg, x + 190, itemY + 35, title)
+        
+        -- 送礼按钮
+        local canGift, _ = FSV2.canSendGift(friend.id)
+        local btnX = x + w - 70
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, btnX, itemY + 12, 60, 26, 4)
+        nvgFillColor(vg, canGift and nvgRGBA(255, 180, 80, 220) or nvgRGBA(100, 100, 120, 200))
+        nvgFill(vg)
+        nvgFontSize(vg, 10)
+        nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+        nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+        nvgText(vg, btnX + 30, itemY + 25, canGift and "送礼" or "冷却中")
+        addHit(btnX, itemY + 12, 60, 26, function()
+            if canGift then
+                local ok, msg = FSV2.sendGift(friend.id)
+                if ok and NotifyPanel then
+                    NotifyPanel.push({ type = "SUCCESS", title = "礼物已送达", message = msg })
+                end
+            end
+        end)
+    end
+end
+
+--- 友谊赛标签页
+function FriendPanel.drawMatches(vg, x, y, w, h)
+    local FSV2 = require("game.systems.FriendSystem")
+    local FS = require("game.systems.FriendSystem")
+    
+    -- 顶部提示
+    nvgFontFace(vg, "sans")
+    nvgFontSize(vg, 12)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER)
+    nvgFillColor(vg, nvgRGBA(180, 200, 220, 255))
+    nvgText(vg, x + w/2, y + 15, "与好友进行友谊赛，胜负不计入排名")
+    
+    -- 挑战按钮
+    local btnY = y + 35
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, x, btnY, w, 30, 5)
+    nvgFillColor(vg, nvgRGBA(80, 140, 200, 220))
+    nvgFill(vg)
+    nvgFontSize(vg, 12)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+    nvgText(vg, x + w/2, btnY + 15, "发起友谊赛挑战")
+    addHit(x, btnY, w, 30, function()
+        panel.tab = "FRIENDS"  -- 切换到好友列表选择对手
+        panel.selectingChallenge = true
+    end)
+    
+    -- 友谊赛历史
+    nvgFontSize(vg, 12)
+    nvgTextAlign(vg, NVG_ALIGN.LEFT)
+    nvgFillColor(vg, nvgRGBA(180, 200, 220, 255))
+    nvgText(vg, x, y + 85, "历史记录:")
+    
+    local history = FSV2.getMatchHistory()
+    if #history == 0 then
+        nvgFontSize(vg, 14)
+        nvgTextAlign(vg, NVG_ALIGN.CENTER)
+        nvgFillColor(vg, nvgRGBA(150, 150, 170, 255))
+        nvgText(vg, x + w/2, y + h/2, "暂无友谊赛记录")
+        return
+    end
+    
+    local itemH = 40
+    local startY = y + 100
+    
+    for i, match in ipairs(history) do
+        local itemY = startY + (i - 1) * (itemH + 3)
+        if itemY + itemH > y + h then break end
+        
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, x, itemY, w, itemH, 4)
+        nvgFillColor(vg, nvgRGBA(30, 40, 60, 200))
+        nvgFill(vg)
+        
+        nvgFontSize(vg, 11)
+        nvgTextAlign(vg, NVG_ALIGN.LEFT)
+        nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+        nvgText(vg, x + 10, itemY + 15, match.challengerName .. " vs " .. match.challengedName)
+        
+        nvgFontSize(vg, 10)
+        local resultColor = match.result == "DRAW" and nvgRGBA(200, 200, 200, 255)
+            or (match.result == "CHALLENGER_WIN" and match.challengerId == (playerState and playerState.id)) and nvgRGBA(100, 255, 100, 255)
+            or nvgRGBA(255, 100, 100, 255)
+        nvgFillColor(vg, resultColor)
+        local resultText = match.result == "CHALLENGER_WIN" and "挑战者胜"
+            or match.result == "CHALLENGED_WIN" and "应战者胜"
+            or "平局"
+        nvgText(vg, x + 10, itemY + 30, resultText .. " (" .. (match.challengerScore or 0) .. "-" .. (match.challengedScore or 0) .. ")")
+    end
+end
+
+--- 战报标签页
+function FriendPanel.drawReports(vg, x, y, w, h)
+    local FSV2 = require("game.systems.FriendSystem")
+    local FS = require("game.systems.FriendSystem")
+    
+    local friends = FS.getFriends()
+    
+    -- 顶部提示
+    nvgFontFace(vg, "sans")
+    nvgFontSize(vg, 12)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER)
+    nvgFillColor(vg, nvgRGBA(180, 200, 220, 255))
+    nvgText(vg, x + w/2, y + 15, "查看好友最近战绩")
+    
+    if #friends == 0 then
+        nvgFontSize(vg, 14)
+        nvgFillColor(vg, nvgRGBA(150, 150, 170, 255))
+        nvgText(vg, x + w/2, y + h/2, "暂无好友")
+        return
+    end
+    
+    local itemH = 60
+    local startY = y + 40
+    
+    for i, friend in ipairs(friends) do
+        local itemY = startY + (i - 1) * (itemH + 5)
+        if itemY + itemH > y + h then break end
+        
+        -- 背景
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, x, itemY, w, itemH, 5)
+        nvgFillColor(vg, nvgRGBA(30, 40, 60, 200))
+        nvgFill(vg)
+        
+        -- 名称
+        nvgFontSize(vg, 12)
+        nvgTextAlign(vg, NVG_ALIGN.LEFT)
+        nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+        nvgText(vg, x + 10, itemY + 18, friend.name)
+        
+        -- 战报摘要
+        local summary = FSV2.getFriendBattleSummary(friend.id)
+        nvgFontSize(vg, 10)
+        nvgFillColor(vg, nvgRGBA(180, 200, 220, 255))
+        nvgText(vg, x + 10, itemY + 38, 
+            string.format("战绩: %d场 | 胜: %d | 平均波次: %d", 
+                summary.totalBattles, summary.victories, summary.avgWaves))
+        
+        -- 友谊加成
+        local friendship = FSV2.getFriendship(friend.id)
+        local bonus = 0
+        for _, reward in ipairs(FSV2.FRIENDSHIP_REWARD_THRESHOLD or {}) do
+            if friendship >= reward.threshold then
+                bonus = reward.bonus
+            end
+        end
+        if bonus > 0 then
+            nvgFillColor(vg, nvgRGBA(100, 255, 100, 255))
+            nvgText(vg, x + w - 80, itemY + 38, "+" .. math.floor(bonus * 100) .. "%")
+        end
+    end
 end
 
 return FriendPanel
