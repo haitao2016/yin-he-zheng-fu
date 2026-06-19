@@ -249,6 +249,7 @@ local RarityWeight = {
 local RoguelikeCardSystem = {}
 RoguelikeCardSystem.__index = RoguelikeCardSystem
 
+---@return RoguelikeCardSystem
 function RoguelikeCardSystem.new()
     local self = setmetatable({}, RoguelikeCardSystem)
     self.selected = {}
@@ -258,6 +259,9 @@ end
 
 --- 从卡池随机抽取 count 张卡（不重复，不与已选择的卡重复）
 --- 会根据当前已选卡中的 extraCardDraw 效果增加抽卡数量
+---@param count number
+---@param gameState table
+---@return table
 function RoguelikeCardSystem:drawCards(count, gameState)
     count = count or 3
     -- 计算额外抽卡加成
@@ -297,12 +301,16 @@ function RoguelikeCardSystem:drawCards(count, gameState)
 end
 
 --- 获取本次可选择的卡牌
+---@return table
 function RoguelikeCardSystem:getCurrentDraw()
     return self.currentDraw
 end
 
 --- 波次结束后触发选牌界面（集成用）
 -- P0-3: 每 3 波触发一次选牌，第 1 波后必触发（玩家开局就能选卡）
+---@param waveNum number
+---@param gameState table
+---@return table
 function RoguelikeCardSystem:onWaveEnd(waveNum, gameState)
     if waveNum <= 0 then return {} end
     -- 第一波后必触发（给玩家首次选卡机会），之后每 3 波触发
@@ -320,6 +328,9 @@ function RoguelikeCardSystem:skipCurrentDraw()
 end
 
 --- 应用选定卡牌
+---@param cardId string
+---@param gameState table
+---@return boolean, string
 function RoguelikeCardSystem:applyCard(cardId, gameState)
     local card = ROGUELIKE_CARDS_BY_ID[cardId]
     if not card then return false, "未知卡牌" end
@@ -440,6 +451,7 @@ function RoguelikeCardSystem:applyCard(cardId, gameState)
 end
 
 --- 获取已选卡牌列表
+---@return table
 function RoguelikeCardSystem:getCardHistory()
     local list = {}
     for id, _ in pairs(self.selected) do
@@ -450,12 +462,14 @@ function RoguelikeCardSystem:getCardHistory()
     return list
 end
 
+---@return table
 function RoguelikeCardSystem:serialize()
     local list = {}
     for id, _ in pairs(self.selected) do list[#list + 1] = id end
     return { selected = list }
 end
 
+---@param data table
 function RoguelikeCardSystem:deserialize(data)
     self.selected = {}
     if data and data.selected then

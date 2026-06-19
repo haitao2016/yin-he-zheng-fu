@@ -58,6 +58,7 @@ for _, c in ipairs(BATTLE_COMMANDS) do BATTLE_COMMANDS_BY_ID[c.id] = c end
 local BattleCommandSystem = {}
 BattleCommandSystem.__index = BattleCommandSystem
 
+---@return BattleCommandSystem
 function BattleCommandSystem.new()
     local self = setmetatable({}, BattleCommandSystem)
     self.cooldowns = {}
@@ -70,6 +71,9 @@ function BattleCommandSystem.new()
 end
 
 --- 检查指令是否可用
+---@param commandId string
+---@param battleState table
+---@return boolean, string
 function BattleCommandSystem:canUse(commandId, battleState)
     local cmd = BATTLE_COMMANDS_BY_ID[commandId]
     if not cmd then return false, "未知指令" end
@@ -83,6 +87,9 @@ function BattleCommandSystem:canUse(commandId, battleState)
 end
 
 --- 执行指令并应用效果（P0-4: 支持效果过期后自动回滚）
+---@param commandId string
+---@param battleState table
+---@return boolean, string
 function BattleCommandSystem:execute(commandId, battleState)
     local ok, reason = self:canUse(commandId, battleState)
     if not ok then return false, reason end
@@ -136,6 +143,8 @@ function BattleCommandSystem:execute(commandId, battleState)
 end
 
 --- 每帧更新冷却与持续时间（P0-4: 新增效果过期回滚）
+---@param dt number
+---@param battleState table
 function BattleCommandSystem:update(dt, battleState)
     for id, _ in pairs(self.cooldowns) do
         if self.cooldowns[id] > 0 then
@@ -169,6 +178,7 @@ function BattleCommandSystem:update(dt, battleState)
 end
 
 --- 返回所有指令冷却状态
+---@return table
 function BattleCommandSystem:getCooldowns()
     local result = {}
     for _, cmd in ipairs(BATTLE_COMMANDS) do
@@ -182,10 +192,12 @@ function BattleCommandSystem:getCooldowns()
     return result
 end
 
+---@return table
 function BattleCommandSystem:serialize()
     return { cooldowns = self.cooldowns, active = self.active }
 end
 
+---@param data table
 function BattleCommandSystem:deserialize(data)
     self.cooldowns = {}
     self.active    = {}

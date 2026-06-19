@@ -1018,6 +1018,271 @@ function CommanderSystem.loadAll(commanderData, skillTreeData)
 end
 
 -- ============================================================================
+-- V3.2 P2-4: 指挥官与舰队协同加成
+-- ============================================================================
+
+local SYNERGY_COMBOS = {
+    ADMIRAL_CHEN = {
+        BATTLECRUISER = {
+            name = "重装阵线",
+            desc = "陈将军率领战列舰部队",
+            bonuses = { dmgMult = 0.15, maxHealthMult = 0.10 },
+        },
+        DESTROYER = {
+            name = "闪电突袭",
+            desc = "陈将军率领驱逐舰部队",
+            bonuses = { speedMult = 0.20, critChance = 0.10 },
+        },
+    },
+    REBEL_LEADER = {
+        CRUISER = {
+            name = "游击战术",
+            desc = "反叛军领袖率领巡洋舰部队",
+            bonuses = { dmgMult = 0.12, energyRegen = 0.15 },
+        },
+        CARRIER = {
+            name = "空中压制",
+            desc = "反叛军领袖率领航空母舰部队",
+            bonuses = { fighterDmgMult = 0.25 },
+        },
+    },
+    SCIENTIST = {
+        SCIENCE_SHIP = {
+            name = "科研加速",
+            desc = "科学家率领科研船部队",
+            bonuses = { researchSpeedMult = 0.30 },
+        },
+        ESCORT = {
+            name = "护盾工程",
+            desc = "科学家率领护卫舰部队",
+            bonuses = { shieldMult = 0.20 },
+        },
+    },
+    GLOBAL = {
+        FLAGSHIP = {
+            name = "旗舰指挥",
+            desc = "任意指挥官率领旗舰部队",
+            bonuses = { globalStatsMult = 0.10 },
+            applyToAll = true,
+        },
+    },
+}
+
+local SynergyState = {
+    activeBonuses = {},
+    tempBonuses = {},
+}
+
+---@param fleet table
+---@return table
+function CommanderSystem.detectFleetComposition(fleet)
+    local composition = {}
+    if not fleet then return composition end
+    local ships = fleet.ships or fleet
+    if type(ships) == "table" then
+        for _, entry in ipairs(ships) do
+            if entry and entry.shipType then
+                composition[entry.shipType] = (composition[entry.shipType] or 0) + (entry.count or 1)
+            elseif type(entry) == "string" then
+                composition[entry] = (composition[entry] or 0) + 1
+            end
+        end
+    end
+    if BS and BS.playerFleet and type(BS.playerFleet) == "table" then
+        for _, ship in ipairs(BS.playerFleet) do
+            if ship and ship.stype then
+                composition[ship.stype] = (composition[ship.stype] or 0) + 1
+            end
+        end
+    end
+    return composition
+end
+
+---@param commanderId string
+---@param fleet table
+---@return table
+function CommanderSystem.getSynergyBonuses(commanderId, fleet)
+    local totalBonuses = {}
+    local composition = CommanderSystem.detectFleetComposition(fleet)
+    local combos = SYNERGY_COMBOS[commanderId] or {}
+    for shipType, combo in pairs(combos) do
+        if composition[shipType] and composition[shipType] > 0 and combo.bonuses then
+            for bonusKey, bonusValue in pairs(combo.bonuses) do
+                totalBonuses[bonusKey] = (totalBonuses[bonusKey] or 0) + bonusValue
+            end
+        end
+    end
+    local globalCombos = SYNERGY_COMBOS.GLOBAL or {}
+    for shipType, combo in pairs(globalCombos) do
+        if composition[shipType] and composition[shipType] > 0 and combo.bonuses then
+            for bonusKey, bonusValue in pairs(combo.bonuses) do
+                totalBonuses[bonusKey] = (totalBonuses[bonusKey] or 0) + bonusValue
+            end
+        end
+    end
+    if SynergyState.tempBonuses[commanderId] then
+        for bonusKey, bonusValue in pairs(SynergyState.tempBonuses[commanderId]) do
+            totalBonuses[bonusKey] = (totalBonuses[bonusKey] or 0) + bonusValue
+        end
+    end
+    return totalBonuses
+end
+
+---@param ship table
+---@param bonuses table
+---@return table
+function CommanderSystem.applySynergyBonuses(ship, bonuses)
+    if not ship or not bonuses then return ship end
+    ship.synergyBonuses = ship.synergyBonuses or {}
+    for bonusKey, bonusValue in pairs(bonuses) do
+        ship.synergyBonuses[bonusKey] = bonusValue
+        if bonusKey == "dmgMult" then
+            ship.damage = (ship.damage or ship.baseDamage or 0) * (1 + bonusValue)
+        elseif bonusKey == "maxHealthMult" then
+            ship.maxHealth = (ship.maxHealth or ship.baseHealth or 0) * (1 + bonusValue)
+        elseif bonusKey == "speedMult" then
+            ship.speed = (ship.speed or ship.baseSpeed or 0) * (1 + bonusValue)
+        elseif bonusKey == "critChance" then
+            ship.critChance = (ship.critChance or 0) + bonusValue
+        elseif bonusKey == "energyRegen" then
+            ship.energyRegen = (ship.energyRegen or 0) * (1 + bonusValue)
+        elseif bonusKey == "fighterDmgMult" then
+            ship.fighterDamage = (ship.fighterDamage or 0) * (1 + bonusValue)
+        elseif bonusKey == "researchSpeedMult" then
+            ship.researchSpeed = (ship.researchSpeed or 0) * (1 + bonusValue)
+        elseif bonusKey == "shieldMult" then
+            ship.shield = (ship.shield or ship.baseShield or 0) * (1 + bonusValue)
+        elseif bonusKey == "globalStatsMult" then
+            ship.damage = (ship.damage or ship.baseDamage or 0) * (1 + bonusValue)
+            ship.maxHealth = (ship.maxHealth or ship.baseHealth or 0) * (1 + bonusValue)
+            ship.speed = (ship.speed or ship.baseSpeed or 0) * (1 + bonusValue)
+        end
+    end
+    return ship
+end
+
+---@param ship table
+---@return table
+function CommanderSystem.removeSynergyBonuses(ship)
+    if not ship then return ship end
+    if ship.synergyBonuses then
+        for bonusKey, _ in pairs(ship.synergyBonuses) do
+            if bonusKey == "dmgMult" then
+                ship.damage = ship.baseDamage or ship.damage
+            elseif bonusKey == "maxHealthMult" then
+                ship.maxHealth = ship.baseHealth or ship.maxHealth
+            elseif bonusKey == "speedMult" then
+                ship.speed = ship.baseSpeed or ship.speed
+            elseif bonusKey == "critChance" then
+                ship.critChance = 0
+            elseif bonusKey == "energyRegen" then
+                ship.energyRegen = ship.baseEnergyRegen or ship.energyRegen
+            elseif bonusKey == "fighterDmgMult" then
+                ship.fighterDamage = ship.baseFighterDamage or ship.fighterDamage
+            elseif bonusKey == "researchSpeedMult" then
+                ship.researchSpeed = ship.baseResearchSpeed or ship.researchSpeed
+            elseif bonusKey == "shieldMult" then
+                ship.shield = ship.baseShield or ship.shield
+            elseif bonusKey == "globalStatsMult" then
+                ship.damage = ship.baseDamage or ship.damage
+                ship.maxHealth = ship.baseHealth or ship.maxHealth
+                ship.speed = ship.baseSpeed or ship.speed
+            end
+        end
+        ship.synergyBonuses = nil
+    end
+    return ship
+end
+
+---@param commanderId string
+---@param fleet table
+---@return table
+function CommanderSystem.getFleetSynergySummary(commanderId, fleet)
+    local summary = {
+        commanderId = commanderId,
+        composition = {},
+        activeCombos = {},
+        totalBonuses = {},
+        comboCount = 0,
+    }
+    summary.composition = CommanderSystem.detectFleetComposition(fleet)
+    local combos = SYNERGY_COMBOS[commanderId] or {}
+    for shipType, combo in pairs(combos) do
+        if summary.composition[shipType] and summary.composition[shipType] > 0 then
+            summary.comboCount = summary.comboCount + 1
+            table.insert(summary.activeCombos, {
+                shipType = shipType,
+                count = summary.composition[shipType],
+                name = combo.name,
+                desc = combo.desc,
+                bonuses = combo.bonuses,
+            })
+        end
+    end
+    local globalCombos = SYNERGY_COMBOS.GLOBAL or {}
+    for shipType, combo in pairs(globalCombos) do
+        if summary.composition[shipType] and summary.composition[shipType] > 0 then
+            summary.comboCount = summary.comboCount + 1
+            table.insert(summary.activeCombos, {
+                shipType = shipType,
+                count = summary.composition[shipType],
+                name = combo.name,
+                desc = combo.desc,
+                bonuses = combo.bonuses,
+                isGlobal = true,
+            })
+        end
+    end
+    summary.totalBonuses = CommanderSystem.getSynergyBonuses(commanderId, fleet)
+    return summary
+end
+
+---@param commanderId string
+---@return table
+function CommanderSystem.getRecommendedShipTypes(commanderId)
+    local recommended = {}
+    local combos = SYNERGY_COMBOS[commanderId] or {}
+    for shipType, combo in pairs(combos) do
+        table.insert(recommended, {
+            shipType = shipType,
+            name = combo.name,
+            desc = combo.desc,
+            bonuses = combo.bonuses,
+        })
+    end
+    local globalCombos = SYNERGY_COMBOS.GLOBAL or {}
+    for shipType, combo in pairs(globalCombos) do
+        table.insert(recommended, {
+            shipType = shipType,
+            name = combo.name,
+            desc = combo.desc,
+            bonuses = combo.bonuses,
+            isGlobal = true,
+        })
+    end
+    return recommended
+end
+
+---@param commanderId string
+---@param fleet table
+---@param bonusType string
+---@param value number
+---@return table
+function CommanderSystem.applyTemporarySynergy(commanderId, fleet, bonusType, value)
+    if not SynergyState.tempBonuses[commanderId] then
+        SynergyState.tempBonuses[commanderId] = {}
+    end
+    SynergyState.tempBonuses[commanderId][bonusType] = (SynergyState.tempBonuses[commanderId][bonusType] or 0) + (value or 0)
+    local totalBonuses = CommanderSystem.getSynergyBonuses(commanderId, fleet)
+    if BS and BS.playerFleet then
+        for _, ship in ipairs(BS.playerFleet) do
+            CommanderSystem.applySynergyBonuses(ship, totalBonuses)
+        end
+    end
+    return totalBonuses
+end
+
+-- ============================================================================
 -- 导出
 -- ============================================================================
 

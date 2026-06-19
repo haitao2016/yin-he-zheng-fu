@@ -426,4 +426,135 @@ function SaveSlotSystem.deserialize(data)
     end
 end
 
+---@param data table
+---@return number
+local function detectSaveDataVersion(data)
+    if not data or type(data) ~= "table" then return 1 end
+    local meta = data.__meta or data.metadata or {}
+    if meta.version then return tonumber(meta.version) or 1 end
+    if meta.saveFormatVersion then return tonumber(meta.saveFormatVersion) or 1 end
+    if data.r or data.p or data.c or data.t or data.f or data.a or data.b then
+        return 2
+    end
+    if data.v3_marker or (data.meta and data.meta.v3) then
+        return 3
+    end
+    if data.resources or data.planets or data.commanders or data.tech or data.fleets then
+        return 1
+    end
+    return 1
+end
+
+---@param slot table
+---@return table
+local function buildMigrateInput(slot)
+    if not slot then return {} end
+    local input = {}
+    for k, v in pairs(slot) do
+        input[k] = v
+    end
+    input.__meta = input.__meta or {}
+    input.__meta.saveFormatVersion = slot.metadata and slot.metadata.saveFormatVersion or 1
+    return input
+end
+
+---@param slotId number|string
+---@return table|nil, string
+function SaveSlotSystem.migrateSlot(slotId)
+    slotId = tonumber(slotId) or slotId
+    local slot = runtimeSlots[tostring(slotId)]
+    if not slot or not slot.exists then
+        return nil, "存档槽不存在"
+    end
+    local current = slot.metadata and slot.metadata.saveFormatVersion or 1
+    if current >= SaveSlotSystem.SAVE_FORMAT_VERSION then
+        return slot, "already_latest"
+    end
+    local input = buildMigrateInput(slot)
+    input.gameData = slot.gameData
+    local ok, result = pcall(function()
+        local toolOk, SaveMigrationTool = pcall(require, "game.systems.SaveMigrationTool")
+        if toolOk and SaveMigrationTool and SaveMigrationTool.migrate then
+            local migrated, status, version = SaveMigrationTool.migrate(input)
+            if status == "SUCCESS" then
+                slot.gameData = migrated and migrated.gameData or slot.gameData
+                slot.metadata = slot.metadata or {}
+                slot.metadata.saveFormatVersion = version or SaveSlotSystem.SAVE_FORMAT_VERSION
+                slot.metadata.migrated = true
+                slot.metadata.migratedAt = os and os.time() or 0
+                if SaveSlotSystem.OPTIMIZATION.enableChecksum then
+                    slot.metadata.checksum = checksum32(dataHash(slot.gameData))
+                end
+                return slot, "migrated"
+            elseif status == "ROLLBACK" then
+                return slot, "rollback"
+            else
+                return nil, "migration_failed"
+            end
+        else
+            if current == 1 and slot.gameData then
+                if type(slot.gameData) == "table" then
+                    local compressed = compressSaveDataV2(cloneSnapshot(slot.gameData))
+                    slot.gameData = compressed
+                    slot.metadata = slot.metadata or {}
+                    slot.metadata.saveFormatVersion = SaveSlotSystem.SAVE_FORMAT_VERSION
+                    slot.metadata.compressionFormat = "v2"
+                    slot.metadata.migrated = true
+                    slot.metadata.migratedAt = os and os.time() or 0
+                    if SaveSlotSystem.OPTIMIZATION.enableChecksum then
+                        slot.metadata.checksum = checksum32(dataHash(slot.gameData))
+                    end
+                    return slot, "migrated_inline"
+                end
+            end
+            return slot, "no_migration_available"
+        end
+    end)
+    if not ok then
+        return nil, "migration_error: " .. tostring(result)
+    end
+    return result, "done"
+end
+
+---@param slotId number|string
+---@return table|nil, string|table
+function SaveSlotSystem.autoMigrateIfNeeded(slotId)
+    slotId = tonumber(slotId) or slotId
+    local slot = runtimeSlots[tostring(slotId)]
+    if not slot or not slot.exists then
+        if slotId ~= nil then
+            return nil, "存档槽不存在"
+        end
+    end
+    local currentVersion = 1
+    if slot and slot.metadata then
+        currentVersion = tonumber(slot.metadata.saveFormatVersion) or 1
+    end
+    if currentVersion >= SaveSlotSystem.SAVE_FORMAT_VERSION then
+        if slot and slot.gameData then
+            local formatVersion = (slot.metadata and slot.metadata.saveFormatVersion) or 1
+            if formatVersion >= 2 then
+                local decompressed = decompressSaveDataV2(slot.gameData)
+                return decompressed, slot
+            else
+                return slot.gameData, slot
+            end
+        end
+        return nil, "no_data"
+    end
+    local migratedSlot, status = SaveSlotSystem.migrateSlot(slotId)
+    if not migratedSlot then
+        if slot and slot.gameData then
+            return slot.gameData, slot
+        end
+        return nil, status
+    end
+    local formatVersion = (migratedSlot.metadata and migratedSlot.metadata.saveFormatVersion) or 1
+    if formatVersion >= 2 and migratedSlot.gameData then
+        local decompressed = decompressSaveDataV2(migratedSlot.gameData)
+        return decompressed, migratedSlot
+    end
+    return migratedSlot.gameData, migratedSlot
+end
+
 return SaveSlotSystem

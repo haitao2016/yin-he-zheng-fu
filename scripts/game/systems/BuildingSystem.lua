@@ -7,10 +7,15 @@ require("game.GameConstants")
 local BuildingSystem = {}
 BuildingSystem.__index = BuildingSystem
 
+---@param rm table  ResourceManager 实例
+---@return BuildingSystem
 function BuildingSystem.new(rm)
     return setmetatable({ rm=rm }, BuildingSystem)
 end
 
+---@param key string  建筑类型 key
+---@param level number 当前等级
+---@return table  升级所需资源表
 function BuildingSystem:getUpgradeCost(key, level)
     local bd   = BUILDINGS[key]
     local cost = {}
@@ -23,16 +28,23 @@ function BuildingSystem:getUpgradeCost(key, level)
 end
 
 --- P1-3: 获取建筑显示名称（供 UI 渲染队列条目时使用）
+---@param key string
+---@return string
 function BuildingSystem:getBuildingName(key)
     return BUILDINGS[key] and BUILDINGS[key].name or key
 end
 
 --- P2-3: 获取建筑类型可用专精列表
+---@param key string
+---@return table
 function BuildingSystem:getSpecsForBuilding(key)
     return BUILDING_SPECS[key] or {}
 end
 
 --- 获取指定建筑在星球上的累计等级（某类建筑可能有多个，但目前每类一个）
+---@param key string
+---@param planet table
+---@return number
 function BuildingSystem:getBuildingLevelOn(key, planet)
     if not planet or not planet.buildings then return 0 end
     for _, b in ipairs(planet.buildings) do
@@ -42,6 +54,9 @@ function BuildingSystem:getBuildingLevelOn(key, planet)
 end
 
 --- 汇总所有已殖民行星上指定类型建筑的累计等级（用于全局效果）
+---@param key string
+---@param planets table
+---@return number
 function BuildingSystem:getTotalLevelAcrossPlanets(key, planets)
     if not planets then return 0 end
     local total = 0
@@ -52,6 +67,8 @@ function BuildingSystem:getTotalLevelAcrossPlanets(key, planets)
 end
 
 --- 获取新建筑的文本描述（供 UI 按钮提示）
+---@param key string
+---@return string
 function BuildingSystem:getBuildingDescription(key)
     local bd = BUILDINGS[key]
     if not bd then return "" end
@@ -72,7 +89,8 @@ function BuildingSystem:getBuildingDescription(key)
 end
 
 --- 聚合新建筑提供的全局修正（由资源/科研/战斗系统在每帧或事件时调用）
--- @return { refineMult, researchSpeedBonus, researchPointMult, turretCount, shieldBonus, teleportEnabled }
+---@param planets table
+---@return table
 function BuildingSystem:aggregatePlanetEffects(planets)
     local eff = {
         refineMult         = 1.0,
@@ -113,6 +131,7 @@ function BuildingSystem:aggregatePlanetEffects(planets)
 end
 
 --- 获取防御炮塔配置（战斗中生成友方炮塔用）
+---@return table
 function BuildingSystem:getTurretStats()
     local bd = BUILDINGS.DEFENSE_TURRET
     if not bd then return { dmg = 25, range = 300, rate = 1.5, hp = 100 } end
@@ -120,6 +139,9 @@ function BuildingSystem:getTurretStats()
 end
 
 --- P2-3: 查找专精定义（按建筑类型 key + 专精 key）
+---@param bKey string
+---@param specKey string
+---@return table|nil
 function BuildingSystem:findSpec(bKey, specKey)
     for _, sp in ipairs(BUILDING_SPECS[bKey] or {}) do
         if sp.key == specKey then return sp end
@@ -129,6 +151,8 @@ end
 
 --- P2-3: 重算单个建筑产量（科技倍率 + 专精效果）
 --- 会先撤销旧贡献再写入新值到 rm.rates
+---@param b table
+---@param planet table
 function BuildingSystem:_recalcBuildingProd(b, planet)
     local bd = BUILDINGS[b.key]
     if not bd then return end
@@ -169,6 +193,10 @@ function BuildingSystem:_recalcBuildingProd(b, planet)
 end
 
 --- P2-3: 为建筑设置专精（消耗晶石 SPEC_COST）
+---@param bldIdx number
+---@param planet table
+---@param specKey string
+---@return boolean, string
 function BuildingSystem:setSpec(bldIdx, planet, specKey)
     local b = planet.buildings[bldIdx]
     if not b then return false, "无效建筑" end
@@ -189,6 +217,9 @@ end
 local BUILD_QUEUE_MAX = 3
 
 --- 检查是否可以新建（支持队列：constructing 满但 queue 未满也可以）
+---@param key string
+---@param planet table
+---@return boolean, string
 function BuildingSystem:canBuild(key, planet)
     if not planet.colonized  then return false, "尚未殖民" end
     -- P1-3: 允许队列排队，队列满时才拒绝
@@ -210,6 +241,9 @@ function BuildingSystem:canBuild(key, planet)
     return true, ""
 end
 
+---@param key string
+---@param planet table
+---@return boolean, string
 function BuildingSystem:build(key, planet)
     local ok, reason = self:canBuild(key, planet)
     if not ok then return false, reason end
@@ -238,6 +272,9 @@ function BuildingSystem:build(key, planet)
 end
 
 --- 检查升级（canUpgrade 保持单槽校验，允许排队时调整）
+---@param bldIdx number
+---@param planet table
+---@return boolean, string
 function BuildingSystem:canUpgrade(bldIdx, planet)
     local b    = planet.buildings[bldIdx]
     if not b then return false, "无效建筑" end
@@ -249,6 +286,9 @@ function BuildingSystem:canUpgrade(bldIdx, planet)
     return true, ""
 end
 
+---@param bldIdx number
+---@param planet table
+---@return boolean, string
 function BuildingSystem:upgrade(bldIdx, planet)
     local ok, reason = self:canUpgrade(bldIdx, planet)
     if not ok then return false, reason end
@@ -273,6 +313,8 @@ function BuildingSystem:upgrade(bldIdx, planet)
     return true, ""
 end
 
+---@param planet table
+---@param techId string
 function BuildingSystem:applyTechBonus(planet, techId)
     local bonus = TECHS[techId] and TECHS[techId].bonus
     if not bonus then return end
@@ -294,6 +336,9 @@ function BuildingSystem:applyTechBonus(planet, techId)
     end
 end
 
+---@param dt number
+---@param planet table
+---@return string|nil
 function BuildingSystem:update(dt, planet)
     if not planet.constructing then return nil end
     local job = planet.constructing
@@ -329,6 +374,9 @@ function BuildingSystem:update(dt, planet)
 end
 
 -- P1-3: 取消队列中某个建造任务（退还资源，index 为 buildQueue 中的 1-based 位置）
+---@param qIdx number
+---@param planet table
+---@return boolean, string
 function BuildingSystem:cancelQueued(qIdx, planet)
     if not planet.buildQueue then return false end
     local job = planet.buildQueue[qIdx]

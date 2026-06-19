@@ -183,6 +183,9 @@ local RuntimeDifficultyState = {
 -- 解锁条件检查
 -- ============================================================================
 
+---@param tier table
+---@param gameState table
+---@return boolean
 local function checkUnlockCondition(tier, gameState)
     if tier == nil or tier.unlockCondition == nil then
         return true
@@ -214,6 +217,10 @@ local function checkUnlockCondition(tier, gameState)
 end
 
 -- V3.1-P1-4: 动态难度调整（DDA）增强版
+---@param playerHpRatio number
+---@param waveProgress number
+---@param consecutiveLosses number
+---@return table
 function AIDifficultySystem.dynamicAdjust(playerHpRatio, waveProgress, consecutiveLosses)
     local tier = DIFFICULTY_TIERS[RuntimeDifficultyState.currentDifficulty]
     if not tier then return { dmgMult = 1.0, hpMult = 1.0, spawnMult = 1.0 } end
@@ -253,6 +260,9 @@ end
 -- 核心 API
 -- ============================================================================
 
+---@param level string
+---@param gameState table
+---@return boolean, string
 function AIDifficultySystem.setDifficulty(level, gameState)
     if level == nil then return false, "难度标识不能为空" end
     local tier = DIFFICULTY_TIERS[level]
@@ -266,10 +276,13 @@ function AIDifficultySystem.setDifficulty(level, gameState)
     return true, "难度已切换为: " .. tier.name
 end
 
+---@return string
 function AIDifficultySystem.getCurrentDifficulty()
     return RuntimeDifficultyState.currentDifficulty
 end
 
+---@param gameState table
+---@return table
 function AIDifficultySystem.getDifficultyMods(gameState)
     local level = RuntimeDifficultyState.currentDifficulty
     local tier = DIFFICULTY_TIERS[level]
@@ -289,6 +302,8 @@ function AIDifficultySystem.getDifficultyMods(gameState)
     }
 end
 
+---@param gameState table
+---@return table
 function AIDifficultySystem.getAvailableDifficulties(gameState)
     local list = {}
     for _, key in ipairs(DIFFICULTY_ORDER) do
@@ -306,6 +321,8 @@ function AIDifficultySystem.getAvailableDifficulties(gameState)
     return list
 end
 
+---@param level string
+---@return string
 function AIDifficultySystem.getDifficultyLabel(level)
     local tier = DIFFICULTY_TIERS[level]
     if tier == nil then
@@ -314,6 +331,8 @@ function AIDifficultySystem.getDifficultyLabel(level)
     return tier.name
 end
 
+---@param level string
+---@return table|nil
 function AIDifficultySystem.getDifficultyInfo(level)
     local tier = DIFFICULTY_TIERS[level]
     if tier == nil then return nil end
@@ -329,6 +348,9 @@ function AIDifficultySystem.getDifficultyInfo(level)
 end
 
 -- V3.1-P1-4: 增强版波次成长曲线计算
+---@param waveNum number
+---@param playerLevel number
+---@return table
 function AIDifficultySystem.getEnemyScaleAtWave(waveNum, playerLevel)
     local tier = DIFFICULTY_TIERS[RuntimeDifficultyState.currentDifficulty] or DIFFICULTY_TIERS.NORMAL
     local levelScaling = 1.0
@@ -369,6 +391,8 @@ function AIDifficultySystem.getEnemyScaleAtWave(waveNum, playerLevel)
 end
 
 -- V3.1-P1-4: 获取难度对比信息（用于 UI 显示）
+---@param difficultyId string
+---@return table|nil
 function AIDifficultySystem.getDifficultyComparison(difficultyId)
     local tier = DIFFICULTY_TIERS[difficultyId]
     if not tier then return nil end
@@ -405,6 +429,8 @@ function AIDifficultySystem.getDifficultyComparison(difficultyId)
 end
 
 -- V3.1-P1-4: 获取难度预览信息（用于难度选择界面）
+---@param difficultyId string
+---@return table|nil
 function AIDifficultySystem.getDifficultyPreview(difficultyId)
     local tier = DIFFICULTY_TIERS[difficultyId]
     if not tier then return nil end
@@ -430,6 +456,10 @@ function AIDifficultySystem.getDifficultyPreview(difficultyId)
 end
 
 -- V3.1-P1-4: 获取难度推荐（基于玩家历史表现）
+---@param playerLevel number
+---@param historicalWins number
+---@param historicalLosses number
+---@return string
 function AIDifficultySystem.getRecommendedDifficulty(playerLevel, historicalWins, historicalLosses)
     local totalGames = historicalWins + historicalLosses
     if totalGames < 3 then
@@ -457,6 +487,7 @@ function AIDifficultySystem.getRecommendedDifficulty(playerLevel, historicalWins
 end
 
 -- 获取敌方 AI 行为参数
+---@return table
 function AIDifficultySystem.getEnemyAIParams()
     local tier = DIFFICULTY_TIERS[RuntimeDifficultyState.currentDifficulty] or DIFFICULTY_TIERS.NORMAL
     return tier.enemyAI or {
@@ -484,6 +515,9 @@ local FleetAIAssist = {
 }
 
 -- 设置舰队 AI 辅助选项
+---@param key string
+---@param value any
+---@return boolean
 function AIDifficultySystem.setFleetAIAssist(key, value)
     if FleetAIAssist[key] ~= nil then
         FleetAIAssist[key] = value
@@ -493,6 +527,7 @@ function AIDifficultySystem.setFleetAIAssist(key, value)
 end
 
 -- 批量设置舰队 AI 辅助
+---@param settings table
 function AIDifficultySystem.setFleetAIAssistAll(settings)
     for k, v in pairs(settings) do
         if FleetAIAssist[k] ~= nil then
@@ -502,6 +537,7 @@ function AIDifficultySystem.setFleetAIAssistAll(settings)
 end
 
 -- 获取舰队 AI 辅助设置
+---@return table
 function AIDifficultySystem.getFleetAIAssist()
     local assist = {}
     for k, v in pairs(FleetAIAssist) do
@@ -511,6 +547,8 @@ function AIDifficultySystem.getFleetAIAssist()
 end
 
 -- 根据当前难度返回推荐舰队 AI 设置
+---@param difficultyLevel string
+---@return table
 function AIDifficultySystem.getRecommendedFleetAI(difficultyLevel)
     local tier = DIFFICULTY_TIERS[difficultyLevel or RuntimeDifficultyState.currentDifficulty]
     if not tier then return FleetAIAssist end
@@ -530,6 +568,8 @@ end
 -- V3.1-P1-4: 会话统计更新
 -- ============================================================================
 
+---@param result string
+---@param waveReached number
 function AIDifficultySystem.updateSessionStats(result, waveReached)
     local stats = RuntimeDifficultyState.sessionStats
 
@@ -557,6 +597,7 @@ function AIDifficultySystem.updateSessionStats(result, waveReached)
     end
 end
 
+---@return table
 function AIDifficultySystem.getSessionStats()
     local stats = RuntimeDifficultyState.sessionStats
     local totalGames = stats.wins + stats.losses
@@ -587,6 +628,7 @@ end
 -- 存档
 -- ============================================================================
 
+---@return table
 function AIDifficultySystem.serialize()
     return {
         currentDifficulty = RuntimeDifficultyState.currentDifficulty,
@@ -596,6 +638,8 @@ function AIDifficultySystem.serialize()
     }
 end
 
+---@param data table
+---@return boolean
 function AIDifficultySystem.deserialize(data)
     if data == nil then return false end
     if data.currentDifficulty and DIFFICULTY_TIERS[data.currentDifficulty] then

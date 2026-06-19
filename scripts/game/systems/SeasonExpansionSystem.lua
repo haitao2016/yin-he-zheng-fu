@@ -276,6 +276,7 @@ function SeasonExpansionSystem.addPoints(amount)
 end
 
 --- 获取当前赛季积分
+---@return number
 function SeasonExpansionSystem.getPoints()
     return RuntimeState.seasonPoints or 0
 end
@@ -284,6 +285,7 @@ end
 -- 序列化 / 反序列化
 -- ============================================================================
 
+---@return table
 function SeasonExpansionSystem.serialize()
     return {
         currentVariantId = RuntimeState.currentVariantId,
@@ -294,6 +296,7 @@ function SeasonExpansionSystem.serialize()
     }
 end
 
+---@param data table
 function SeasonExpansionSystem.deserialize(data)
     if not data or type(data) ~= "table" then return end
     RuntimeState.currentVariantId = data.currentVariantId

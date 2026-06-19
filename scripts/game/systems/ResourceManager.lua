@@ -314,4 +314,165 @@ function ResourceManager:deserialize(data)
     end
 end
 
+---@param self table
+function ResourceManager:initSupplyDemand()
+    self.supplyLevels = self.supplyLevels or {}
+    self.demandLevels = self.demandLevels or {}
+    for res, _ in pairs(self.resources) do
+        if self.supplyLevels[res] == nil then self.supplyLevels[res] = 0 end
+        if self.demandLevels[res] == nil then self.demandLevels[res] = 0 end
+    end
+    if RARE_RES_ORDER then
+        for _, res in ipairs(RARE_RES_ORDER) do
+            if self.supplyLevels[res] == nil then self.supplyLevels[res] = 0 end
+            if self.demandLevels[res] == nil then self.demandLevels[res] = 0 end
+        end
+    end
+    self.colonyProduction = self.colonyProduction or {}
+    self.productionHistory = self.productionHistory or {}
+    self.consumptionHistory = self.consumptionHistory or {}
+    self.totalProduction = self.totalProduction or {}
+    self.totalConsumption = self.totalConsumption or {}
+end
+
+---@param self table
+---@param colony string
+---@param resource string
+---@param amount number
+function ResourceManager:recordColonyProduction(colony, resource, amount)
+    if not colony or not resource then return end
+    self:initSupplyDemand()
+    self.colonyProduction[colony] = self.colonyProduction[colony] or {}
+    self.colonyProduction[colony][resource] = (self.colonyProduction[colony][resource] or 0) + amount
+    self.supplyLevels[resource] = (self.supplyLevels[resource] or 0) + amount
+    self.totalProduction[resource] = (self.totalProduction[resource] or 0) + amount
+end
+
+---@param self table
+---@param resource string
+---@param amount number
+function ResourceManager:trackProduction(resource, amount)
+    if not resource then return end
+    self:initSupplyDemand()
+    self.supplyLevels[resource] = (self.supplyLevels[resource] or 0) + amount
+    self.totalProduction[resource] = (self.totalProduction[resource] or 0) + amount
+    self.productionHistory[resource] = self.productionHistory[resource] or {}
+    table.insert(self.productionHistory[resource], { value = amount, time = os.time() })
+    if #self.productionHistory[resource] > 50 then table.remove(self.productionHistory[resource], 1) end
+end
+
+---@param self table
+---@param resource string
+---@param amount number
+function ResourceManager:trackConsumption(resource, amount)
+    if not resource then return end
+    self:initSupplyDemand()
+    self.demandLevels[resource] = (self.demandLevels[resource] or 0) + amount
+    self.totalConsumption[resource] = (self.totalConsumption[resource] or 0) + amount
+    self.consumptionHistory[resource] = self.consumptionHistory[resource] or {}
+    table.insert(self.consumptionHistory[resource], { value = amount, time = os.time() })
+    if #self.consumptionHistory[resource] > 50 then table.remove(self.consumptionHistory[resource], 1) end
+end
+
+---@param self table
+---@return table
+function ResourceManager:getSupplyDemandStats()
+    self:initSupplyDemand()
+    local stats = {}
+    local function addStats(res)
+        local supply = self.supplyLevels[res] or 0
+        local demand = self.demandLevels[res] or 0
+        local ratio = 1.0
+        if demand > 0 then ratio = supply / demand
+        elseif supply > 0 then ratio = math.huge end
+        stats[res] = {
+            resource = res,
+            supply = supply,
+            demand = demand,
+            ratio = ratio,
+            net = supply - demand,
+            totalProduction = self.totalProduction[res] or 0,
+            totalConsumption = self.totalConsumption[res] or 0,
+        }
+    end
+    for res, _ in pairs(self.resources) do addStats(res) end
+    if RARE_RES_ORDER then
+        for _, res in ipairs(RARE_RES_ORDER) do addStats(res) end
+    end
+    return stats
+end
+
+---@param self table
+---@param resource string
+---@return number
+function ResourceManager:computeSupplyDemandRatio(resource)
+    self:initSupplyDemand()
+    local supply = self.supplyLevels[resource] or 0
+    local demand = self.demandLevels[resource] or 0
+    if demand <= 0 and supply <= 0 then return 1.0 end
+    if demand <= 0 then return 2.0 end
+    return supply / demand
+end
+
+---@param self table
+---@return table
+function ResourceManager:getColonyProductionBreakdown()
+    self:initSupplyDemand()
+    local breakdown = {}
+    for colony, resources in pairs(self.colonyProduction) do
+        local total = 0
+        for _, amt in pairs(resources) do total = total + amt end
+        breakdown[colony] = { resources = resources, total = total }
+    end
+    return breakdown
+end
+
+---@param self table
+---@param resource string
+---@param horizon number
+---@return number,string,table
+function ResourceManager:predictPriceTrend(resource, horizon)
+    self:initSupplyDemand()
+    horizon = tonumber(horizon) or 5
+    local prodHist = self.productionHistory[resource] or {}
+    local consHist = self.consumptionHistory[resource] or {}
+    local function average(hist, window)
+        if not hist or #hist == 0 then return 0 end
+        local n = math.min(window, #hist)
+        if n <= 0 then return 0 end
+        local sum = 0
+        for i = #hist - n + 1, #hist do sum = sum + (hist[i] and hist[i].value or 0) end
+        return sum / n
+    end
+    local recentSupply = average(prodHist, horizon)
+    local recentDemand = average(consHist, horizon)
+    local longSupply = average(prodHist, 20)
+    local longDemand = average(consHist, 20)
+    local ratio = 1.0
+    if recentDemand > 0 then ratio = recentSupply / recentDemand
+    elseif recentSupply > 0 then ratio = 2.0 end
+    local longRatio = 1.0
+    if longDemand > 0 then longRatio = longSupply / longDemand
+    elseif longSupply > 0 then longRatio = 2.0 end
+    local delta = ratio - longRatio
+    local basePriceMult = 1.0 / math.max(0.1, ratio)
+    local trendScore = 0
+    if delta > 0.1 then trendScore = -0.05
+    elseif delta < -0.1 then trendScore = 0.05 end
+    if ratio < 0.7 then trendScore = trendScore + 0.08 end
+    if ratio > 1.5 then trendScore = trendScore - 0.05 end
+    local trend = "stable"
+    if trendScore > 0.03 then trend = "up"
+    elseif trendScore < -0.03 then trend = "down" end
+    return trendScore, trend, {
+        currentRatio = ratio,
+        longRatio = longRatio,
+        delta = delta,
+        recentSupply = recentSupply,
+        recentDemand = recentDemand,
+        horizon = horizon,
+        predictedPriceMult = basePriceMult,
+    }
+end
+
 return ResourceManager

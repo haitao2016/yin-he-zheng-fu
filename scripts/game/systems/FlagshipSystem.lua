@@ -94,6 +94,9 @@ FlagshipSystem.SHIP_TYPE_SKILL = {
 local activeSkillCooldowns = {}
 
 -- 设置旗舰
+---@param ship table
+---@param playerState table
+---@return boolean, string
 function FlagshipSystem.setFlagship(ship, playerState)
     playerState.flagshipId = ship.id
     playerState.flagshipType = ship.stype
@@ -109,6 +112,8 @@ function FlagshipSystem.setFlagship(ship, playerState)
 end
 
 -- 清除旗舰
+---@param playerState table
+---@param fleet table
 function FlagshipSystem.clearFlagship(playerState, fleet)
     -- 清除旧旗舰标记
     if playerState.flagshipId and fleet then
@@ -126,6 +131,8 @@ function FlagshipSystem.clearFlagship(playerState, fleet)
 end
 
 -- 计算旗舰加成
+---@param shipType string
+---@return table
 function FlagshipSystem.calculateBonus(shipType)
     local bonus = {}
     
@@ -146,6 +153,7 @@ function FlagshipSystem.calculateBonus(shipType)
 end
 
 -- 应用旗舰加成
+---@param ship table
 function FlagshipSystem.applyBonus(ship)
     local playerState = UICommon and UICommon.playerState
     if not playerState or not playerState.flagshipBonus then return end
@@ -165,6 +173,9 @@ function FlagshipSystem.applyBonus(ship)
 end
 
 -- 获取当前旗舰
+---@param playerState table
+---@param fleet table
+---@return table|nil
 function FlagshipSystem.getFlagship(playerState, fleet)
     if not playerState.flagshipId then return nil end
     
@@ -180,6 +191,8 @@ function FlagshipSystem.getFlagship(playerState, fleet)
 end
 
 -- 旗舰鼓舞效果（应用于友军）
+---@param playerState table
+---@param ally table
 function FlagshipSystem.applyLeadership(playerState, ally)
     if not playerState.flagshipBonus or not playerState.flagshipBonus.leadership then
         return
@@ -189,11 +202,17 @@ function FlagshipSystem.applyLeadership(playerState, ally)
 end
 
 -- P1-2: 获取舰船类型对应的技能 ID
+---@param shipType string
+---@return string
 function FlagshipSystem.getSkillForShipType(shipType)
     return FlagshipSystem.SHIP_TYPE_SKILL[shipType] or "RALLYING_CRY"
 end
 
 -- P1-2: 使用旗舰技能
+---@param playerState table
+---@param fleet table
+---@param battleState table
+---@return boolean, string
 function FlagshipSystem.useSkill(playerState, fleet, battleState)
     if not playerState or not playerState.flagshipId then
         return false, "没有旗舰"
@@ -230,6 +249,7 @@ function FlagshipSystem.useSkill(playerState, fleet, battleState)
 end
 
 -- P1-2: 每帧更新技能冷却
+---@param dt number
 function FlagshipSystem.update(dt)
     for key, cd in pairs(activeSkillCooldowns) do
         if cd > 0 then
@@ -239,6 +259,8 @@ function FlagshipSystem.update(dt)
 end
 
 -- P1-2: 获取技能冷却状态
+---@param playerState table
+---@return number
 function FlagshipSystem.getSkillCooldown(playerState)
     if not playerState or not playerState.flagshipId then return 0 end
     local skillId = FlagshipSystem.getSkillForShipType(playerState.flagshipType or "FIGHTER")
@@ -247,10 +269,12 @@ function FlagshipSystem.getSkillCooldown(playerState)
 end
 
 -- P1-2: 序列化/反序列化技能冷却
+---@return table
 function FlagshipSystem.serialize()
     return { cooldowns = activeSkillCooldowns }
 end
 
+---@param data table
 function FlagshipSystem.deserialize(data)
     if data and data.cooldowns then
         activeSkillCooldowns = data.cooldowns

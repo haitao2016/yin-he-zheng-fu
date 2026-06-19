@@ -47,6 +47,8 @@ MerchantSystem.MERCHANT_TYPES = {
 MerchantSystem.APPEAR_CHANCE = 0.10  -- 10% 概率每波出现
 
 -- 检查商人是否出现
+---@param playerState table
+---@return boolean
 function MerchantSystem.checkAppear(playerState)
     if playerState.merchantActive then return true end
     if math.random() < MerchantSystem.APPEAR_CHANCE then
@@ -57,6 +59,7 @@ function MerchantSystem.checkAppear(playerState)
 end
 
 -- 生成商人
+---@param playerState table
 function MerchantSystem.spawnMerchant(playerState)
     local merchantType = MerchantSystem.MERCHANT_TYPES[math.random(#MerchantSystem.MERCHANT_TYPES)]
     
@@ -73,6 +76,8 @@ function MerchantSystem.spawnMerchant(playerState)
 end
 
 -- 获取当前商人
+---@param playerState table
+---@return table|nil
 function MerchantSystem.getCurrentMerchant(playerState)
     if not playerState.merchantActive then return nil end
     
@@ -98,6 +103,11 @@ function MerchantSystem.getCurrentMerchant(playerState)
 end
 
 -- 购买商品
+---@param playerState table
+---@param itemId string
+---@param rm table
+---@param notifyFn function
+---@return boolean, string
 function MerchantSystem.purchase(playerState, itemId, rm, notifyFn)
     local merchant = MerchantSystem.getCurrentMerchant(playerState)
     if not merchant then return false, "商人已离开" end
@@ -141,6 +151,9 @@ function MerchantSystem.purchase(playerState, itemId, rm, notifyFn)
 end
 
 -- 应用商品效果
+---@param itemId string
+---@param playerState table
+---@param rm table
 function MerchantSystem.applyItemEffect(itemId, playerState, rm)
     if itemId == "WEAPON_UPGRADE" then
         playerState.globalDmgBonus = (playerState.globalDmgBonus or 0) + 0.10
@@ -163,6 +176,7 @@ function MerchantSystem.applyItemEffect(itemId, playerState, rm)
 end
 
 -- 关闭商人
+---@param playerState table
 function MerchantSystem.closeMerchant(playerState)
     playerState.merchantActive = false
     playerState.merchantType = nil

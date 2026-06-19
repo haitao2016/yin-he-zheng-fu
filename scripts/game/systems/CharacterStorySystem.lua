@@ -796,3 +796,372 @@ function CharacterStoryV2.loadState(data)
 end
 
 return CharacterStoryV2
+
+local CommanderStorySystem = {}
+
+STORY_CHAINS = {
+    ADMIRAL_CHEN = {
+        id = "ADMIRAL_CHEN",
+        name = "陈将军",
+        title = "帝国舰队指挥官",
+        stages = {
+            {
+                id = "CHEN_1",
+                title = "新兵毕业",
+                description = "陈将军从帝国军事学院毕业，开始了他的军旅生涯。",
+                unlockCondition = { type = "WAVE_REACH", value = 5 },
+                reward = { credits = 500, exp = 200 },
+                nextStage = "CHEN_2",
+                duration = 1,
+            },
+            {
+                id = "CHEN_2",
+                title = "首战告捷",
+                description = "陈将军首次指挥舰队取得首场胜利，崭露头角。",
+                unlockCondition = { type = "WAVE_REACH", value = 15 },
+                reward = { credits = 1000, exp = 500 },
+                nextStage = "CHEN_3",
+                duration = 2,
+            },
+            {
+                id = "CHEN_3",
+                title = "舰队重组",
+                description = "陈将军重组舰队，建立新的战术体系。",
+                unlockCondition = { type = "RESOURCES", credits = 5000 },
+                reward = { credits = 2000, exp = 1000 },
+                nextStage = "CHEN_4",
+                duration = 3,
+            },
+            {
+                id = "CHEN_4",
+                title = "战役胜利",
+                description = "陈将军指挥决定性战役，击溃敌军主力。",
+                unlockCondition = { type = "TECH", techId = "TACTICS_3" },
+                reward = { credits = 5000, exp = 2000 },
+                nextStage = "CHEN_5",
+                duration = 5,
+            },
+            {
+                id = "CHEN_5",
+                title = "成为传奇指挥官",
+                description = "陈将军成为银河传奇，名垂青史。",
+                unlockCondition = { type = "WAVE_REACH", value = 100 },
+                reward = { credits = 10000, exp = 5000 },
+                nextStage = nil,
+                duration = 10,
+            },
+        },
+    },
+    REBEL_LEADER = {
+        id = "REBEL_LEADER",
+        name = "艾琳·诺克斯",
+        title = "自由联盟领袖",
+        stages = {
+            {
+                id = "REBEL_1",
+                title = "觉醒",
+                description = "艾琳开始质疑帝国，思想觉醒。",
+                unlockCondition = { type = "WAVE_REACH", value = 8 },
+                reward = { credits = 500, exp = 200 },
+                nextStage = "REBEL_2",
+                duration = 1,
+            },
+            {
+                id = "REBEL_2",
+                title = "集结",
+                description = "艾琳集结志同道合的反抗者。",
+                unlockCondition = { type = "WAVE_REACH", value = 20 },
+                reward = { credits = 1000, exp = 500 },
+                nextStage = "REBEL_3",
+                duration = 2,
+            },
+            {
+                id = "REBEL_3",
+                title = "反攻",
+                description = "发动对帝国的反攻作战。",
+                unlockCondition = { type = "RESOURCES", credits = 8000 },
+                reward = { credits = 2000, exp = 1000 },
+                nextStage = "REBEL_4",
+                duration = 3,
+            },
+            {
+                id = "REBEL_4",
+                title = "联盟",
+                description = "与其他反抗势力达成联盟。",
+                unlockCondition = { type = "TECH", techId = "ALLIANCE_2" },
+                reward = { credits = 5000, exp = 2000 },
+                nextStage = "REBEL_5",
+                duration = 5,
+            },
+            {
+                id = "REBEL_5",
+                title = "独立",
+                description = "自由联盟宣告独立，建立新秩序。",
+                unlockCondition = { type = "WAVE_REACH", value = 120 },
+                reward = { credits = 10000, exp = 5000 },
+                nextStage = nil,
+                duration = 10,
+            },
+        },
+    },
+    SCIENTIST = {
+        id = "SCIENTIST",
+        name = "科学家",
+        title = "星际科学院院长",
+        stages = {
+            {
+                id = "SCI_1",
+                title = "科研突破",
+                description = "取得首个重大科研突破。",
+                unlockCondition = { type = "WAVE_REACH", value = 10 },
+                reward = { credits = 500, exp = 200 },
+                nextStage = "SCI_2",
+                duration = 1,
+            },
+            {
+                id = "SCI_2",
+                title = "新理论",
+                description = "提出革命性的新科学理论。",
+                unlockCondition = { type = "WAVE_REACH", value = 25 },
+                reward = { credits = 1000, exp = 500 },
+                nextStage = "SCI_3",
+                duration = 2,
+            },
+            {
+                id = "SCI_3",
+                title = "超级武器",
+                description = "开发出改变战争格局的超级武器。",
+                unlockCondition = { type = "RESOURCES", credits = 10000 },
+                reward = { credits = 2000, exp = 1000 },
+                nextStage = "SCI_4",
+                duration = 3,
+            },
+            {
+                id = "SCI_4",
+                title = "和平使用",
+                description = "将技术用于和平发展，造福人类。",
+                unlockCondition = { type = "TECH", techId = "PEACE_1" },
+                reward = { credits = 5000, exp = 2000 },
+                nextStage = "SCI_5",
+                duration = 5,
+            },
+            {
+                id = "SCI_5",
+                title = "星际学院院长",
+                description = "成为星际科学院院长，培养新一代科学家。",
+                unlockCondition = { type = "WAVE_REACH", value = 150 },
+                reward = { credits = 10000, exp = 5000 },
+                nextStage = nil,
+                duration = 10,
+            },
+        },
+    },
+}
+
+local CommanderStoryState = {
+    currentStages = {},
+    completedStages = {},
+    stageUnlocked = {},
+}
+
+---@param commanderId string
+---@return table
+function CommanderStorySystem.getCommanderStoryProgress(commanderId)
+    local chain = STORY_CHAINS[commanderId]
+    if not chain then return { totalStages = 0, completedCount = 0, currentStage = nil } end
+    local completedCount = 0
+    for _, stage in ipairs(chain.stages) do
+        if CommanderStoryState.completedStages[stage.id] then
+            completedCount = completedCount + 1
+        end
+    end
+    return {
+        commanderId = commanderId,
+        totalStages = #chain.stages,
+        completedCount = completedCount,
+        currentStage = CommanderStoryState.currentStages[commanderId] or chain.stages[1].id,
+        isComplete = completedCount >= #chain.stages,
+    }
+end
+
+---@param commanderId string
+---@return table|nil
+function CommanderStorySystem.getCurrentStage(commanderId)
+    local chain = STORY_CHAINS[commanderId]
+    if not chain then return nil end
+    local currentId = CommanderStoryState.currentStages[commanderId] or chain.stages[1].id
+    for _, stage in ipairs(chain.stages) do
+        if stage.id == currentId then
+            return stage
+        end
+    end
+    return nil
+end
+
+---@param commanderId string
+---@param stageId string
+---@param playerState table
+---@return boolean
+function CommanderStorySystem.canUnlockStage(commanderId, stageId, playerState)
+    local chain = STORY_CHAINS[commanderId]
+    if not chain then return false end
+    local targetStage = nil
+    for _, stage in ipairs(chain.stages) do
+        if stage.id == stageId then
+            targetStage = stage
+            break
+        end
+    end
+    if not targetStage then return false end
+    if CommanderStoryState.completedStages[stageId] then return false end
+    local condition = targetStage.unlockCondition
+    if not condition then return true end
+    if condition.type == "WAVE_REACH" then
+        return playerState and playerState.currentWave and playerState.currentWave >= condition.value
+    elseif condition.type == "RESOURCES" then
+        return playerState and playerState.credits and playerState.credits >= (condition.credits or 0)
+    elseif condition.type == "TECH" then
+        return playerState and playerState.techs and playerState.techs[condition.techId] == true
+    end
+    return false
+end
+
+---@param commanderId string
+---@param stageId string
+---@param playerState table
+---@return boolean
+---@return string
+---@return table|nil
+function CommanderStorySystem.completeStage(commanderId, stageId, playerState)
+    local chain = STORY_CHAINS[commanderId]
+    if not chain then return false, "指挥官不存在", nil end
+    local targetStage = nil
+    for _, stage in ipairs(chain.stages) do
+        if stage.id == stageId then
+            targetStage = stage
+            break
+        end
+    end
+    if not targetStage then return false, "阶段不存在", nil end
+    if CommanderStoryState.completedStages[stageId] then return false, "阶段已完成", nil end
+    if not CommanderStorySystem.canUnlockStage(commanderId, stageId, stageId, playerState) then return false, "阶段尚未解锁", nil end
+    CommanderStoryState.completedStages[stageId] = true
+    local reward = CommanderStorySystem.grantStoryReward(commanderId, stageId, playerState)
+    if targetStage.nextStage then
+        CommanderStoryState.currentStages[commanderId] = targetStage.nextStage
+        CommanderStoryState.stageUnlocked[targetStage.nextStage] = true
+    else
+        CommanderStoryState.currentStages[commanderId] = nil
+    end
+    if playerState then
+        playerState.commanderStoryState = {
+            currentStages = CommanderStoryState.currentStages,
+            completedStages = CommanderStoryState.completedStages,
+            stageUnlocked = CommanderStoryState.stageUnlocked,
+        }
+    end
+    return true, "阶段完成：" .. targetStage.title, reward
+end
+
+---@param commanderId string
+---@param stageId string
+---@param playerState table
+---@return table
+function CommanderStorySystem.grantStoryReward(commanderId, stageId, playerState)
+    local chain = STORY_CHAINS[commanderId]
+    if not chain then return {} end
+    local targetStage = nil
+    for _, stage in ipairs(chain.stages) do
+        if stage.id == stageId then
+            targetStage = stage
+            break
+        end
+    end
+    if not targetStage or not targetStage.reward then return {} end
+    local reward = targetStage.reward
+    if playerState then
+        if reward.credits then
+            playerState.credits = (playerState.credits or 0) + reward.credits
+        end
+        if reward.exp then
+            playerState.exp = (playerState.exp or 0) + reward.exp
+        end
+        playerState.commanderStoryRewards = playerState.commanderStoryRewards or {}
+        playerState.commanderStoryRewards[stageId] = reward
+    end
+    return reward
+end
+
+---@param playerState table
+---@return table
+function CommanderStorySystem.getAllCommanderStories(playerState)
+    local result = {}
+    for commanderId, chain in pairs(STORY_CHAINS) do
+        local progress = CommanderStorySystem.getCommanderStoryProgress(commanderId)
+        local stages = {}
+        for _, stage in ipairs(chain.stages) do
+            table.insert(stages, {
+                id = stage.id,
+                title = stage.title,
+                description = stage.description,
+                completed = CommanderStoryState.completedStages[stage.id] == true,
+                unlocked = CommanderStoryState.stageUnlocked[stage.id] or CommanderStoryState.completedStages[stage.id] or (CommanderStoryState.currentStages[commanderId] == stage.id,
+            })
+        end
+        table.insert(result, {
+            commanderId = commanderId,
+            name = chain.name,
+            title = chain.title,
+            progress = progress,
+            stages = stages,
+        })
+    end
+    return result
+end
+
+---@param playerState table
+---@return table
+function CommanderStorySystem.getActiveStorySummaries(playerState)
+    local summaries = {}
+    for commanderId, chain in pairs(STORY_CHAINS) do
+        local progress = CommanderStorySystem.getCommanderStoryProgress(commanderId)
+        if not progress.isComplete then
+            local current = CommanderStorySystem.getCurrentStage(commanderId)
+            table.insert(summaries, {
+                commanderId = commanderId,
+                name = chain.name,
+                currentStage = current and current.title,
+                progress = string.format("%d/%d", progress.completedCount, progress.totalStages,
+                canAdvance = current and CommanderStorySystem.canUnlockStage(commanderId, current.id, playerState) or false,
+            })
+        end
+    end
+    return summaries
+end
+
+---@param playerState table
+---@return table
+function CommanderStorySystem.autoAdvanceStories(playerState)
+    local advanced = {}
+    for commanderId, chain in pairs(STORY_CHAINS) do
+        local progress = CommanderStorySystem.getCommanderStoryProgress(commanderId)
+        if not progress.isComplete then
+            local current = CommanderStorySystem.getCurrentStage(commanderId)
+            if current and CommanderStorySystem.canUnlockStage(commanderId, current.id, playerState) then
+                local ok, msg, reward = CommanderStorySystem.completeStage(commanderId, current.id, playerState)
+                if ok then
+                    table.insert(advanced, {
+                        commanderId = commanderId,
+                        stageId = current.id,
+                        title = current.title,
+                        message = msg,
+                        reward = reward,
+                    })
+                end
+            end
+        end
+    end
+    return advanced
+end
+
+return CommanderStorySystem

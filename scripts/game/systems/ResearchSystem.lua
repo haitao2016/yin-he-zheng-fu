@@ -7,6 +7,9 @@ require("game.GameConstants")
 local ResearchSystem = {}
 ResearchSystem.__index = ResearchSystem
 
+---@param rm table  ResourceManager 实例
+---@param bs table  BuildingSystem 实例
+---@return ResearchSystem
 function ResearchSystem.new(rm, bs)
     local self = setmetatable({ rm=rm, bs=bs, planetGetter=nil }, ResearchSystem)
     self.unlocked = {}
@@ -16,20 +19,25 @@ function ResearchSystem.new(rm, bs)
 end
 
 --- P2-P1-1: 设置研究完成动画回调
+---@param fn function
 function ResearchSystem:setOnCompleteCallback(fn)
     self.onCompleteCallback = fn
 end
 
 --- P2-6: 记录当前基地核心等级（用于 Tier5 科技解锁校验）
+---@param lv number
 function ResearchSystem:setCoreLevel(lv)
     if self.rm then self.rm.coreLevel = lv end
 end
 
 --- 设置动态行星列表获取函数（每次科技完成时调用，确保包含新殖民的行星）
+---@param fn function
 function ResearchSystem:setPlanetGetter(fn)
     self.planetGetter = fn
 end
 
+---@param id string  科技 ID
+---@return boolean, string  可研究? 以及原因
 function ResearchSystem:canResearch(id)
     local t = TECHS[id]
     if not t then return false, "未知科技" end
@@ -75,6 +83,8 @@ function ResearchSystem:isExcluded(id)
 end
 
 -- 前置科技是否全部完成（不检查资源）
+---@param id string
+---@return boolean
 function ResearchSystem:prereqsMet(id)
     local t = TECHS[id]
     if not t then return false end
@@ -86,6 +96,8 @@ function ResearchSystem:prereqsMet(id)
     return true
 end
 
+---@param id string  科技 ID
+---@return boolean, string
 function ResearchSystem:start(id)
     local ok, reason = self:canResearch(id)
     if not ok then return false, reason end
@@ -99,6 +111,8 @@ function ResearchSystem:start(id)
     return true, ""
 end
 
+---@param dt number  距上次更新的时间（秒）
+---@return string|nil  完成的科技 ID 或 nil
 function ResearchSystem:update(dt)
     if not self.active then return nil end
     -- S1 QUANTUM_CORE: researchSpeedMult 与科研中心的 researchMult 叠乘
@@ -269,6 +283,7 @@ function ResearchSystem:update(dt)
 end
 
 -- 序列化 / 反序列化
+---@return table
 function ResearchSystem:serialize()
     local unlockedList = {}
     for id, _ in pairs(self.unlocked) do unlockedList[#unlockedList+1] = id end
@@ -277,6 +292,7 @@ function ResearchSystem:serialize()
     return { unlocked = unlockedList, active = active }
 end
 
+---@param data table
 function ResearchSystem:deserialize(data)
     if not data then return end
     self.unlocked = {}

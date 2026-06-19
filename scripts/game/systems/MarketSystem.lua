@@ -369,4 +369,138 @@ function MarketSystem.getMarketInfo(playerState)
     }
 end
 
+---@param resource string
+---@param rm table
+---@return number
+function MarketSystem.supplyDemandImpactOnPrice(resource, rm)
+    if not rm or not resource then return 1.0 end
+    local ratio = 1.0
+    if rm.computeSupplyDemandRatio then
+        ratio = rm:computeSupplyDemandRatio(resource)
+    elseif rm.supplyLevels then
+        local supply = rm.supplyLevels[resource] or 0
+        local demand = rm.demandLevels[resource] or 0
+        if demand > 0 then ratio = supply / demand
+        elseif supply > 0 then ratio = 2.0 end
+    end
+    ratio = tonumber(ratio) or 1.0
+    if ratio <= 0 then ratio = 0.1 end
+    local impact = 1.0 / ratio
+    impact = math.max(0.5, math.min(2.0, impact))
+    return impact
+end
+
+---@param playerState table
+---@param rm table
+function MarketSystem.updateMarketFromSupplyDemand(playerState, rm)
+    if not playerState or not rm then return end
+    playerState.marketPrices = playerState.marketPrices or MarketSystem.getInitialPrices()
+    playerState.marketEvents = playerState.marketEvents or {}
+    local shortageResources = {}
+    local surplusResources = {}
+    for res, base in pairs(MarketSystem.MARKET_CONFIG.basePrice) do
+        local current = playerState.marketPrices[res] or base
+        local impact = MarketSystem.supplyDemandImpactOnPrice(res, rm)
+        local targetPrice = current * impact
+        local minPrice = base * MarketSystem.MARKET_CONFIG.priceRange.min
+        local maxPrice = base * MarketSystem.MARKET_CONFIG.priceRange.max
+        targetPrice = math.max(minPrice, math.min(maxPrice, targetPrice))
+        local newPrice = current * 0.85 + targetPrice * 0.15
+        newPrice = math.max(minPrice, math.min(maxPrice, newPrice))
+        newPrice = math.floor(newPrice * 100) / 100
+        playerState.marketPrices[res] = newPrice
+        appendPriceHistory(playerState, res, newPrice)
+        local ratio = 1.0
+        if rm.computeSupplyDemandRatio then
+            ratio = rm:computeSupplyDemandRatio(res)
+        elseif rm.supplyLevels then
+            local s = rm.supplyLevels[res] or 0
+            local d = rm.demandLevels[res] or 0
+            if d > 0 then ratio = s / d end
+        end
+        if ratio < 0.5 then table.insert(shortageResources, res) end
+        if ratio > 2.0 then table.insert(surplusResources, res) end
+    end
+    if #shortageResources > 0 then
+        MarketSystem.triggerSupplyDemandEvent(playerState, "SHORTAGE", shortageResources)
+    end
+    if #surplusResources > 0 then
+        MarketSystem.triggerSupplyDemandEvent(playerState, "SURPLUS", surplusResources)
+    end
+end
+
+---@param playerState table
+---@param eventType string
+---@param resources table
+function MarketSystem.triggerSupplyDemandEvent(playerState, eventType, resources)
+    if not playerState or not eventType or not resources or #resources == 0 then return end
+    local template = MARKET_EVENT_TYPES[eventType]
+    if not template then
+        template = {
+            id = eventType,
+            name = eventType == "SHORTAGE" and "资源短缺" or "供应过剩",
+            desc = eventType == "SHORTAGE" and "供应紧张，价格上涨" or "市场供应充足，价格下跌",
+            priceMult = eventType == "SHORTAGE" and 1.3 or 0.8,
+        }
+    end
+    local now = os.time()
+    for _, existing in ipairs(playerState.marketEvents or {}) do
+        if existing.id == template.id and now < existing.expireTime then return end
+    end
+    table.insert(playerState.marketEvents, {
+        id = template.id,
+        name = template.name,
+        desc = template.desc,
+        priceMult = template.priceMult,
+        affectedResources = resources,
+        startTime = now,
+        expireTime = now + MarketSystem.MARKET_CONFIG.eventDuration,
+        supplyDemandTriggered = true,
+    })
+end
+
+---@param playerState table
+---@param rm table
+---@return table
+function MarketSystem.getMarketAnalysis(playerState, rm)
+    local analysis = {}
+    for res, _ in pairs(MarketSystem.MARKET_CONFIG.basePrice) do
+        local change, trend, history = MarketSystem.getPriceTrend(playerState, res)
+        local supply = 0
+        local demand = 0
+        local ratio = 1.0
+        local predictedTrend = "stable"
+        local priceImpact = 1.0
+        if rm then
+            if rm.supplyLevels then supply = rm.supplyLevels[res] or 0 end
+            if rm.demandLevels then demand = rm.demandLevels[res] or 0 end
+            if rm.computeSupplyDemandRatio then ratio = rm:computeSupplyDemandRatio(res) end
+            if rm.predictPriceTrend then
+                local _, pt = rm:predictPriceTrend(res, 5)
+                predictedTrend = pt
+            end
+            priceImpact = MarketSystem.supplyDemandImpactOnPrice(res, rm)
+        end
+        table.insert(analysis, {
+            resource = res,
+            name = MarketSystem.RESOURCE_NAMES[res] or res,
+            currentPrice = playerState.marketPrices[res] or MarketSystem.MARKET_CONFIG.basePrice[res],
+            changePercent = math.floor(change * 100 + 0.5),
+            trend = trend,
+            isRare = isRareResource(res),
+            supply = supply,
+            demand = demand,
+            ratio = ratio,
+            predictedTrend = predictedTrend,
+            supplyDemandImpact = priceImpact,
+        })
+    end
+    return {
+        resources = analysis,
+        events = playerState.marketEvents or {},
+        dailyStats = playerState.dailyTradeStats,
+        dailyLimit = MarketSystem.MARKET_CONFIG.dailyTradeLimit,
+    }
+end
+
 return MarketSystem

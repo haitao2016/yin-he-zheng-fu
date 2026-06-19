@@ -6,15 +6,22 @@ require("game.GameConstants")
 local BaseBuildingSystem = {}
 BaseBuildingSystem.__index = BaseBuildingSystem
 
+---@param rm table  ResourceManager 实例
+---@return BaseBuildingSystem
 function BaseBuildingSystem.new(rm)
     return setmetatable({ rm = rm }, BaseBuildingSystem)
 end
 
+---@param key string  模块 key
+---@return table|nil
 function BaseBuildingSystem:getModule(key)
     -- 先查基础模块，再查 Lv8-10 专属模块
     return BASE_MODULES[key] or BASE_MODULES_LV8_10[key]
 end
 
+---@param key string
+---@param level number
+---@return table
 function BaseBuildingSystem:getUpgradeCost(key, level)
     local mod = self:getModule(key)
     if not mod then return {} end
@@ -26,6 +33,9 @@ function BaseBuildingSystem:getUpgradeCost(key, level)
     return cost
 end
 
+---@param key string
+---@param base table
+---@return boolean, string
 function BaseBuildingSystem:canBuild(key, base)
     if base.constructing            then return false, "队列忙碌" end
     local maxSlots = BaseModuleSlots(base.coreLevel)
@@ -47,6 +57,8 @@ function BaseBuildingSystem:canBuild(key, base)
 end
 
 --- 检查是否可升级核心等级
+---@param base table
+---@return boolean, string, table?
 function BaseBuildingSystem:canUpgradeCore(base)
     local lv = base.coreLevel or 1
     if lv >= BASE_CORE_MAX_LEVEL then return false, "已达最高等级" end
@@ -65,6 +77,8 @@ function BaseBuildingSystem:canUpgradeCore(base)
 end
 
 --- 执行核心等级升级（进入建造队列）
+---@param base table
+---@return boolean, string
 function BaseBuildingSystem:upgradeCore(base)
     local ok, reason, resCost = self:canUpgradeCore(base)
     if not ok then return false, reason end
@@ -83,6 +97,9 @@ function BaseBuildingSystem:upgradeCore(base)
     return true, ""
 end
 
+---@param bldIdx number
+---@param base table
+---@return boolean, string
 function BaseBuildingSystem:canUpgrade(bldIdx, base)
     local b = base.buildings[bldIdx]
     if not b then return false, "无效模块" end
@@ -92,6 +109,9 @@ function BaseBuildingSystem:canUpgrade(bldIdx, base)
     return true, ""
 end
 
+---@param key string
+---@param base table
+---@return boolean, string
 function BaseBuildingSystem:build(key, base)
     local ok, reason = self:canBuild(key, base)
     if not ok then return false, reason end
@@ -115,6 +135,9 @@ function BaseBuildingSystem:build(key, base)
     return true, ""
 end
 
+---@param bldIdx number
+---@param base table
+---@return boolean, string
 function BaseBuildingSystem:upgrade(bldIdx, base)
     local ok, reason = self:canUpgrade(bldIdx, base)
     if not ok then return false, reason end
@@ -133,6 +156,8 @@ function BaseBuildingSystem:upgrade(bldIdx, base)
 end
 
 --- 应用模块的 effect 加成到 rm.baseBonus（Lv8-10 专属模块用）
+---@param mod table
+---@param isRemove boolean
 function BaseBuildingSystem:applyModuleEffect(mod, isRemove)
     if not mod or not mod.effect or not self.rm then return end
     self.rm.baseBonus = self.rm.baseBonus or {}
@@ -150,6 +175,7 @@ function BaseBuildingSystem:applyModuleEffect(mod, isRemove)
 end
 
 --- 收集并应用基地所有模块的 effect 加成（游戏启动或加载存档后调用）
+---@param base table
 function BaseBuildingSystem:recalcModuleEffects(base)
     if not self.rm or not base or not base.buildings then return end
     for _, b in ipairs(base.buildings) do
@@ -161,6 +187,9 @@ function BaseBuildingSystem:recalcModuleEffects(base)
 end
 
 --- 返回完成的模块 key（完成时），否则返回 nil
+---@param dt number
+---@param base table
+---@return string|nil
 function BaseBuildingSystem:update(dt, base)
     if not base.constructing then return nil end
     local job = base.constructing

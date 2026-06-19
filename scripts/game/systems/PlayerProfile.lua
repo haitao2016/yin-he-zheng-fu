@@ -6,6 +6,7 @@ require("game.GameConstants")
 local PlayerProfile = {}
 PlayerProfile.__index = PlayerProfile
 
+---@return PlayerProfile
 function PlayerProfile.new()
     local self = setmetatable({}, PlayerProfile)
     local n = tostring(GetLoginName() or "")
@@ -28,6 +29,8 @@ local LEVEL_REWARDS = {
     milestone= { metal=2000, esource=1000, nuclear=200 },  -- 5/10/15/20级
 }
 
+---@param amount number
+---@return boolean, number|nil, string|nil, table|nil
 function PlayerProfile:addExp(amount)
     self.exp = self.exp + amount
     local rewards = nil
@@ -55,6 +58,7 @@ function PlayerProfile:addExp(amount)
 end
 
 --- 序列化
+---@return table
 function PlayerProfile:serialize()
     return {
         level     = self.level,
@@ -67,6 +71,7 @@ function PlayerProfile:serialize()
 end
 
 --- 从存档恢复
+---@param data table
 function PlayerProfile:deserialize(data)
     if not data then return end
     self.level     = data.level     or 1

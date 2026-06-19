@@ -144,6 +144,7 @@ for _, c in ipairs(ACHIEVEMENT_CHAINS) do ACHIEVEMENT_CHAINS_BY_ID[c.id] = c end
 local AchievementChainSystem = {}
 AchievementChainSystem.__index = AchievementChainSystem
 
+---@return AchievementChainSystem
 function AchievementChainSystem.new()
     local self = setmetatable({}, AchievementChainSystem)
     self.claimedRewards = {}
@@ -151,6 +152,8 @@ function AchievementChainSystem.new()
 end
 
 --- 返回每条链的已达成进度
+---@param playerState table
+---@return table
 function AchievementChainSystem:checkChainProgress(playerState)
     local unlocked = (playerState and playerState.achievements) or {}
     local result = {}
@@ -172,6 +175,9 @@ function AchievementChainSystem:checkChainProgress(playerState)
 end
 
 --- 返回链中下一个未完成的成就 id
+---@param chainId string
+---@param playerState table
+---@return string|nil
 function AchievementChainSystem:getNextInChain(chainId, playerState)
     local chain = ACHIEVEMENT_CHAINS_BY_ID[chainId]
     if not chain then return nil end
@@ -183,6 +189,9 @@ function AchievementChainSystem:getNextInChain(chainId, playerState)
 end
 
 --- 检查整条链是否完成
+---@param chainId string
+---@param playerState table
+---@return boolean
 function AchievementChainSystem:isChainComplete(chainId, playerState)
     local chain = ACHIEVEMENT_CHAINS_BY_ID[chainId]
     if not chain then return false end
@@ -194,18 +203,22 @@ function AchievementChainSystem:isChainComplete(chainId, playerState)
 end
 
 --- 获取链完成时的奖励列表
+---@param chainId string
+---@return table
 function AchievementChainSystem:getChainRewards(chainId)
     local chain = ACHIEVEMENT_CHAINS_BY_ID[chainId]
     if not chain then return {} end
     return chain.chainRewards or {}
 end
 
+---@return table
 function AchievementChainSystem:serialize()
     local list = {}
     for id, _ in pairs(self.claimedRewards) do list[#list + 1] = id end
     return { claimedRewards = list }
 end
 
+---@param data table
 function AchievementChainSystem:deserialize(data)
     self.claimedRewards = {}
     if data and data.claimedRewards then
@@ -218,6 +231,9 @@ end
 -- ============================================================================
 
 --- 获取指定链的可用里程碑奖励
+---@param chainId string
+---@param playerState table
+---@return table
 function AchievementChainSystem:getAvailableMilestones(chainId, playerState)
     local chain = ACHIEVEMENT_CHAINS_BY_ID[chainId]
     if not chain then return {} end
@@ -243,6 +259,9 @@ function AchievementChainSystem:getAvailableMilestones(chainId, playerState)
 end
 
 --- 获取指定链的最终奖励（如果可用且未领取）
+---@param chainId string
+---@param playerState table
+---@return table|nil
 function AchievementChainSystem:getAvailableFinalReward(chainId, playerState)
     local chain = ACHIEVEMENT_CHAINS_BY_ID[chainId]
     if not chain then return nil end
@@ -264,6 +283,9 @@ function AchievementChainSystem:getAvailableFinalReward(chainId, playerState)
 end
 
 --- 领取奖励（通用）
+---@param rewardKey string
+---@param reward any
+---@return boolean, any
 function AchievementChainSystem:claimReward(rewardKey, reward)
     if self.claimedRewards[rewardKey] then return false, "已领取" end
     self.claimedRewards[rewardKey] = true
@@ -272,6 +294,8 @@ function AchievementChainSystem:claimReward(rewardKey, reward)
 end
 
 --- 获取总进度（所有链的综合）
+---@param playerState table
+---@return table
 function AchievementChainSystem:getTotalProgress(playerState)
     local progress = self:checkChainProgress(playerState)
     local totalDone = 0
@@ -289,6 +313,8 @@ function AchievementChainSystem:getTotalProgress(playerState)
 end
 
 --- 获取所有可用奖励（里程碑 + 最终奖励）
+---@param playerState table
+---@return table
 function AchievementChainSystem:getAllAvailableRewards(playerState)
     local all = {}
     for _, chain in ipairs(ACHIEVEMENT_CHAINS) do
