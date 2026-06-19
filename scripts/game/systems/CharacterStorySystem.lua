@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
+---@diagnostic disable: assign-type-mismatch, return-type-mismatch
 -- ============================================================================
 -- game/systems/CharacterStorySystem.lua -- 角色故事系统
 -- V2.8 P1-1
@@ -380,3 +380,419 @@ end
 -- ============================================================================
 
 return CharacterStorySystem
+
+-- ============================================================================
+-- V3.0 P2-1: 角色故事扩展
+-- 羁绊系统/立绘/传记
+-- ============================================================================
+
+local CharacterStoryV2 = {}
+
+-- ============================================================================
+-- 羁绊系统常量
+-- ============================================================================
+BOND_SYSTEM = {
+    MAX_LEVEL = 10,
+    LEVEL_THRESHOLDS = { 0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500 },
+    BATTLE_ACTIONS = {
+        WIN_BATTLE = 10,           -- 战斗胜利
+        LOSE_BATTLE = 5,           -- 战斗失败
+        USE_COMMANDER_SKILL = 3,   -- 使用指挥官技能
+        KILL_BOSS = 20,            -- 击杀Boss
+        PROTECT_ALLY = 5,          -- 保护友军
+    },
+    TITLES = {
+        { level = 2, title = "初识", color = {0.5, 0.5, 0.5} },
+        { level = 4, title = "战友", color = {0.3, 0.7, 0.3} },
+        { level = 6, title = "挚友", color = {0.3, 0.5, 0.9} },
+        { level = 8, title = "知己", color = {0.7, 0.5, 0.9} },
+        { level = 10, title = "灵魂伴侣", color = {1.0, 0.8, 0.2} },
+    },
+}
+
+-- 角色立绘定义
+CHARACTER_PORTRAITS = {
+    -- 使用 ASCII art 风格
+    COMM = {
+        name = "指挥官",
+        ascii = {
+            [[
+    ╔═══════════╗
+    ║  ◉     ◉  ║
+    ║     ▽     ║
+    ║  ╰─────╯  ║
+    ║   ╱   ╲   ║
+    ║  ╱ ═══ ╲  ║
+    ║    ║║     ║
+    ╚═══════════╝
+            ]],
+            -- 受伤状态
+            [[
+    ╔═══════════╗
+    ║  ◉  ✕  ◉  ║
+    ║     ▽     ║
+    ║  ╰─────╯  ║
+    ║   ╱   ╲   ║
+    ║  ╱ ═══ ╲  ║
+    ║    ║║     ║
+    ╚═══════════╝
+            ]],
+            -- 喜悦状态
+            [[
+    ╔═══════════╗
+    ║  ◉     ◉  ║
+    ║    ═══    ║
+    ║  ╰─────╯  ║
+    ║   ╱   ╲   ║
+    ║  ╱ ═══ ╲  ║
+    ║    ║║     ║
+    ╚═══════════╝
+            ]],
+        },
+        defaultEmotion = 1,
+        emotionMap = { normal = 1, hurt = 2, happy = 3 },
+    },
+    OFFICER = {
+        name = "副官",
+        ascii = {
+            [[
+    ╔═══════════╗
+    ║  ◉     ◉  ║
+    ║     ▽     ║
+    ║  ╰──┬──╯  ║
+    ║   ╱   ╲   ║
+    ║  ╱ ═══ ╲  ║
+    ║    ║║     ║
+    ╚═══════════╝
+            ]],
+        },
+        defaultEmotion = 1,
+    },
+}
+
+-- 传记定义
+CHARACTER_BIOGRAPHIES = {
+    COMM = {
+        title = "指挥官的崛起",
+        unlockLevel = 10,
+        content = [[
+【早年经历】
+出生于银河边缘殖民地的普通矿工家庭。从小就对星空充满向往，常常在夜晚仰望天空。
+
+【加入抵抗军】
+帝国入侵那天，你的家园被毁。在混乱中，你展现出了惊人的领导才能，组织幸存者进行抵抗。
+
+【成为指挥官】
+在多次成功防守后，你被推举为抵抗军的临时指挥官。从那一刻起，你的命运与整个银河紧紧相连。
+
+【核心信念】
+"无论敌人多么强大，只要我们团结一心，就没有什么是不可能的。"
+        ]],
+    },
+    OFFICER = {
+        title = "情报官的秘密",
+        unlockLevel = 10,
+        content = [[
+【帝国的阴影】
+曾是帝国情报部门的精英特工，掌握着大量机密信息。
+
+【觉醒与逃离】
+在一次任务中，你发现了帝国的真正目的——毁灭银河系中所有的智慧生命。你选择背叛帝国，带着机密档案逃离。
+
+【加入抵抗军】
+你的情报为抵抗军带来了巨大帮助，但你始终背负着过去的罪孽。
+
+【核心信念】
+"过去无法改变，但未来由我们书写。"
+        ]],
+    },
+}
+
+-- ============================================================================
+-- 羁绊运行时状态
+-- ============================================================================
+local BondState = {
+    bonds = {},          -- { [characterId] = { level = 1, exp = 0, lastBattle = 0 } }
+    portraits = {},      -- { [characterId] = currentEmotion }
+    biographyUnlocked = {}, -- { [characterId] = true }
+}
+
+-- ============================================================================
+-- 羁绊系统
+-- ============================================================================
+
+--- 获取羁绊信息
+function CharacterStoryV2.getBond(characterId)
+    local bond = BondState.bonds[characterId]
+    if not bond then
+        bond = { level = 0, exp = 0, totalExp = 0 }
+        BondState.bonds[characterId] = bond
+    end
+    return bond
+end
+
+--- 增加羁绊经验
+function CharacterStoryV2.addBondExp(characterId, amount, source)
+    local bond = CharacterStoryV2.getBond(characterId)
+    bond.exp = bond.exp + amount
+    bond.totalExp = bond.totalExp + amount
+    
+    -- 检查升级
+    while bond.level < BOND_SYSTEM.MAX_LEVEL do
+        local nextThreshold = BOND_SYSTEM.LEVEL_THRESHOLDS[bond.level + 1] or 99999
+        if bond.totalExp >= nextThreshold then
+            bond.level = bond.level + 1
+            CharacterStoryV2.onLevelUp(characterId, bond.level)
+        else
+            break
+        end
+    end
+    
+    -- 触发羁绊对话
+    if source and math.random() < 0.3 then
+        CharacterStoryV2.triggerBondDialogue(characterId, source)
+    end
+    
+    return bond.level, bond.exp
+end
+
+--- 升级时触发
+function CharacterStoryV2.onLevelUp(characterId, newLevel)
+    local character = nil
+    for _, char in ipairs(CHARACTERS) do
+        if char.id == characterId then
+            character = char
+            break
+        end
+    end
+    
+    -- 查找对应的称号
+    local title = "初识"
+    for _, t in ipairs(BOND_SYSTEM.TITLES) do
+        if newLevel >= t.level then
+            title = t.title
+        end
+    end
+    
+    -- 通知
+    if NotifyPanel then
+        NotifyPanel.push({
+            type = "BOND_LEVEL_UP",
+            title = "羁绊升级",
+            message = string.format("%s 与「%s」的羁绊达到 Lv.%d「%s」！", 
+                playerState and playerState.name or "指挥官",
+                character and character.name or characterId,
+                newLevel, title),
+        })
+    end
+    
+    -- 解锁传记
+    if newLevel >= BOND_SYSTEM.MAX_LEVEL then
+        BondState.biographyUnlocked[characterId] = true
+    end
+end
+
+--- 获取羁绊称号
+function CharacterStoryV2.getBondTitle(characterId)
+    local bond = CharacterStoryV2.getBond(characterId)
+    local title = "陌生人"
+    
+    for _, t in ipairs(BOND_SYSTEM.TITLES) do
+        if bond.level >= t.level then
+            title = t.title
+        end
+    end
+    
+    return title, bond.level
+end
+
+--- 获取羁绊加成
+function CharacterStoryV2.getBondBonus(characterId)
+    local bond = CharacterStoryV2.getBond(characterId)
+    local bonus = 0
+    
+    -- 羁绊等级越高，加成越高
+    bonus = bond.level * 0.02  -- 每级2%加成
+    
+    return bonus
+end
+
+--- 获取所有羁绊加成总和
+function CharacterStoryV2.getTotalBondBonus()
+    local total = 0
+    for charId, _ in pairs(BondState.bonds) do
+        total = total + CharacterStoryV2.getBondBonus(charId)
+    end
+    return math.min(total, 0.5)  -- 最多50%加成
+end
+
+--- 触发羁绊对话
+function CharacterStoryV2.triggerBondDialogue(characterId, source)
+    local bondLevel = CharacterStoryV2.getBond(characterId).level
+    if bondLevel < 1 then return nil end
+    
+    -- 根据羁绊等级和来源选择对话
+    local dialogues = {
+        BATTLE_WIN = {
+            { minLevel = 1, text = "干得漂亮，指挥官！" },
+            { minLevel = 3, text = "又有敌人倒下了呢~" },
+            { minLevel = 6, text = "我们真是绝佳的搭档。" },
+            { minLevel = 8, text = "只要有你在，我什么都不怕。" },
+        },
+        BATTLE_LOSE = {
+            { minLevel = 1, text = "别灰心，下次一定赢！" },
+            { minLevel = 4, text = "失败是成功之母嘛~" },
+            { minLevel = 7, text = "我会一直陪着你。" },
+        },
+    }
+    
+    local dialogSet = dialogues[source]
+    if not dialogSet then return nil end
+    
+    -- 找到符合条件的对话
+    local selectedDialog = nil
+    for i = #dialogSet, 1, -1 do
+        if bondLevel >= dialogSet[i].minLevel then
+            selectedDialog = dialogSet[i]
+            break
+        end
+    end
+    
+    return selectedDialog and selectedDialog.text or nil
+end
+
+-- ============================================================================
+-- 表情系统
+-- ============================================================================
+
+--- 设置角色表情
+function CharacterStoryV2.setEmotion(characterId, emotion)
+    local portrait = CHARACTER_PORTRAITS[characterId]
+    if not portrait then return false end
+    
+    local emotionIndex = portrait.emotionMap and portrait.emotionMap[emotion]
+    if emotionIndex then
+        BondState.portraits[characterId] = emotionIndex
+        return true
+    end
+    
+    return false
+end
+
+--- 获取角色当前表情
+function CharacterStoryV2.getEmotion(characterId)
+    return BondState.portraits[characterId] or 
+        (CHARACTER_PORTRAITS[characterId] and CHARACTER_PORTRAITS[characterId].defaultEmotion) or 1
+end
+
+--- 获取角色立绘
+function CharacterStoryV2.getPortrait(characterId)
+    local portrait = CHARACTER_PORTRAITS[characterId]
+    if not portrait then return nil end
+    
+    local emotionIndex = CharacterStoryV2.getEmotion(characterId)
+    local asciiArt = portrait.ascii[emotionIndex] or portrait.ascii[1]
+    
+    return {
+        characterId = characterId,
+        name = portrait.name,
+        ascii = asciiArt,
+        emotionIndex = emotionIndex,
+    }
+end
+
+-- ============================================================================
+-- 传记系统
+-- ============================================================================
+
+--- 检查传记是否解锁
+function CharacterStoryV2.isBiographyUnlocked(characterId)
+    return BondState.biographyUnlocked[characterId] == true
+end
+
+--- 获取角色传记
+function CharacterStoryV2.getBiography(characterId)
+    if not CharacterStoryV2.isBiographyUnlocked(characterId) then
+        return nil
+    end
+    
+    return CHARACTER_BIOGRAPHIES[characterId]
+end
+
+--- 获取所有已解锁传记的角色列表
+function CharacterStoryV2.getUnlockedBiographies()
+    local unlocked = {}
+    for charId, _ in pairs(BondState.biographyUnlocked) do
+        if BondState.biographyUnlocked[charId] then
+            table.insert(unlocked, {
+                characterId = charId,
+                biography = CHARACTER_BIOGRAPHIES[charId],
+            })
+        end
+    end
+    return unlocked
+end
+
+-- ============================================================================
+-- 完整角色信息
+-- ============================================================================
+
+--- 获取完整角色信息（包含羁绊和传记）
+function CharacterStoryV2.getFullCharacterInfo(characterId)
+    local character = nil
+    for _, char in ipairs(CHARACTERS) do
+        if char.id == characterId then
+            character = char
+            break
+        end
+    end
+    
+    if not character then return nil end
+    
+    local bond = CharacterStoryV2.getBond(characterId)
+    local title, titleLevel = CharacterStoryV2.getBondTitle(characterId)
+    local portrait = CharacterStoryV2.getPortrait(characterId)
+    local biography = CharacterStoryV2.getBiography(characterId)
+    local bonus = CharacterStoryV2.getBondBonus(characterId)
+    
+    return {
+        id = character.id,
+        name = character.name,
+        title = character.title,
+        faction = character.faction,
+        bond = {
+            level = bond.level,
+            exp = bond.exp,
+            totalExp = bond.totalExp,
+            title = title,
+            bonus = bonus,
+        },
+        portrait = portrait,
+        biography = biography,
+        biographyUnlocked = CharacterStoryV2.isBiographyUnlocked(characterId),
+    }
+end
+
+-- ============================================================================
+-- 存档
+-- ============================================================================
+
+function CharacterStoryV2.saveState()
+    if playerState then
+        playerState.characterStoryV2 = {
+            bonds = BondState.bonds,
+            portraits = BondState.portraits,
+            biographyUnlocked = BondState.biographyUnlocked,
+        }
+    end
+end
+
+function CharacterStoryV2.loadState(data)
+    if data then
+        BondState.bonds = data.bonds or {}
+        BondState.portraits = data.portraits or {}
+        BondState.biographyUnlocked = data.biographyUnlocked or {}
+    end
+end
+
+return CharacterStoryV2

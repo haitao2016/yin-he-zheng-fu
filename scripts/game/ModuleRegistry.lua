@@ -103,6 +103,11 @@ function ModuleRegistry.RegisterAll()
     -- 平台集成
     reg("Steam",             "game.systems.SteamIntegration",     { category = "platform" })
 
+    -- V3.1: 新增模块
+    reg("GalaxyInput",       "game.galaxy.GalaxyInput",           { category = "gameplay" })
+    reg("AIBattle",          "game.systems.AIBattleSystem",       { category = "battle" })
+    reg("PerformanceOpt",    "game.systems.PerformanceOptimizer", { category = "infra" })
+
     -- 新成就系统（V3 版本，与 game.AchievementSystem 共存）
     reg("AchievementV3",     "game.systems.AchievementSystem",   { category = "progress" })
 

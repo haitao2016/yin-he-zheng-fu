@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
+---@diagnostic disable: assign-type-mismatch, return-type-mismatch
 -- ============================================================================
 -- game/systems/AIDifficultySystem.lua -- AI 难度分级系统
 -- V2.8 Diff-1
@@ -98,10 +98,35 @@ DIFFICULTY_TIERS = {
         unlockCondition = { completedHard = true, minLevel = 30, campaignChapter3 = true },
         rewardBonus = 2.5,
     },
+    INSANE = {
+        id = "INSANE",
+        name = "炼狱",
+        nameEn = "Insane",
+        desc = "终极挑战：敌人拥有完美战术与碾压属性，资源极度稀缺。仅为真正的指挥官准备。",
+        enemySpawnMult = 2.0,
+        enemyDmgMult = 2.3,
+        enemyHpMult = 2.2,
+        resourceMult = 0.45,
+        eventMult = 2.0,
+        bossPowerMult = 2.3,
+        enemyAI = {
+            attackFrequency = 2.0,
+            targetPriority = "OPTIMAL",
+            moveStrategy = "PREDICTIVE",
+            skillUsageRate = 2.5,
+            retreatThreshold = 0.0,
+            comboChance = 1.0,
+            feintRate = 0.4,
+            focusFireChance = 0.8,
+            flankChance = 0.6,
+        },
+        unlockCondition = { completedNightmare = true, minLevel = 50, campaignAllChapters = true },
+        rewardBonus = 4.0,
+    },
 }
 
 -- 难度顺序列表（用于 UI 遍历）
-local DIFFICULTY_ORDER = { "EASY", "NORMAL", "HARD", "NIGHTMARE" }
+local DIFFICULTY_ORDER = { "EASY", "NORMAL", "HARD", "NIGHTMARE", "INSANE" }
 
 -- ============================================================================
 -- 运行时状态
@@ -135,7 +160,32 @@ local function checkUnlockCondition(tier, gameState)
     if cond.campaignChapter3 and not gameState.campaignChapter3Cleared then
         return false
     end
+    -- P1-1: 炼狱难度的解锁条件检查
+    if cond.completedNightmare and not gameState.nightmareCompleted then
+        return false
+    end
+    if cond.campaignAllChapters and not gameState.campaignAllCleared then
+        return false
+    end
     return true
+end
+
+-- P1-1: 动态难度调整：根据玩家表现动态微调难度系数（仅在高难度下激活）
+function AIDifficultySystem.dynamicAdjust(playerHpRatio, waveProgress)
+    local tier = DIFFICULTY_TIERS[RuntimeDifficultyState.currentDifficulty]
+    if not tier then return { dmgMult = 1.0, hpMult = 1.0 } end
+    -- 仅困难及以上难度启用动态调整
+    if tier.id ~= "HARD" and tier.id ~= "NIGHTMARE" and tier.id ~= "INSANE" then
+        return { dmgMult = 1.0, hpMult = 1.0 }
+    end
+    -- 玩家血量低于 30% 时，降低敌人压力（防止玩家崩溃）
+    if playerHpRatio < 0.3 then
+        return { dmgMult = 0.8, hpMult = 0.85 }
+    -- 玩家血量高于 80% 且波次进展缓慢时，增加挑战
+    elseif playerHpRatio > 0.8 and (waveProgress or 0) < 0.5 then
+        return { dmgMult = 1.1, hpMult = 1.05 }
+    end
+    return { dmgMult = 1.0, hpMult = 1.0 }
 end
 
 -- ============================================================================
