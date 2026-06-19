@@ -196,7 +196,7 @@ function GalaxyInput:handleClick(mx, my)
         end
     end
 
-    if c.selectedFleetId_ and c.fleetObjs_[c.selectedFleetId_ then
+    if c.selectedFleetId_ and c.fleetObjs_[c.selectedFleetId_] then
         local obj = c.fleetObjs_[c.selectedFleetId_]
         local sx, sy = c.w2s(obj.x, obj.y)
         if c.dist(mx, my, sx, sy) < 22 then
