@@ -302,12 +302,21 @@ function RoguelikeCardSystem:getCurrentDraw()
 end
 
 --- 波次结束后触发选牌界面（集成用）
+-- P0-3: 每 3 波触发一次选牌，第 1 波后必触发（玩家开局就能选卡）
 function RoguelikeCardSystem:onWaveEnd(waveNum, gameState)
-    -- 每 3 波触发一次选牌
-    if waveNum > 0 and waveNum % 3 == 0 then
-        return self:drawCards(3, gameState)
+    if waveNum <= 0 then return {} end
+    -- 第一波后必触发（给玩家首次选卡机会），之后每 3 波触发
+    if waveNum == 1 or waveNum % 3 == 0 then
+        local cards = self:drawCards(3, gameState)
+        print("[Roguelike] 第 " .. waveNum .. " 波结束，刷新 " .. #cards .. " 张卡牌选项")
+        return cards
     end
     return {}
+end
+
+--- 跳过当前卡牌选择（保留已选记录）
+function RoguelikeCardSystem:skipCurrentDraw()
+    self.currentDraw = {}
 end
 
 --- 应用选定卡牌

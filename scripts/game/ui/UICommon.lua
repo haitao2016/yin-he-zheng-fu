@@ -199,10 +199,35 @@ function UICommon.animUpdate(dt)
     end
 end
 
---- 缓动函数
+--- 缓动函数（P1-3: 扩展）
 function UICommon.easeOut(t) return 1 - (1 - t) * (1 - t) end  -- 减速
 function UICommon.easeIn(t) return t * t * t end                   -- 加速
 function UICommon.easeInOut(t) return t < 0.5 and 2*t*t or 1-(-2*t+2)^2/2 end  -- 先慢后快
+function UICommon.easeOutBounce(t)  -- 弹跳
+    local n1 = 7.5625
+    local d1 = 2.75
+    if t < 1 / d1 then
+        return n1 * t * t
+    elseif t < 2 / d1 then
+        t = t - 1.5 / d1
+        return n1 * t * t + 0.75
+    elseif t < 2.5 / d1 then
+        t = t - 2.25 / d1
+        return n1 * t * t + 0.9375
+    else
+        t = t - 2.625 / d1
+        return n1 * t * t + 0.984375
+    end
+end
+function UICommon.easeOutElastic(t)  -- 弹性
+    local c4 = 2 * math.pi / 3
+    if t == 0 then return 0
+    elseif t == 1 then return 1
+    else return (2 ^ (-10 * t)) * math.sin((t * 10 - 0.75) * c4) + 1
+    end
+end
+function UICommon.linear(t) return t end
+function UICommon.pulse(t) return 0.5 + 0.5 * math.sin(t * math.pi * 2) end  -- 脉冲0-1-0
 
 --- 按钮点击缩放动画回调（scale 1 → 0.95 → 1，0.05s）
 local BUTTON_ANIM_DURATION = 0.05
@@ -237,6 +262,151 @@ function UICommon.fadeIn(animId, alpha, duration, renderFn)
         local p = UICommon.easeOut(progress)
         renderFn(alpha * p)
     end)
+end
+
+-- ============================================================================
+-- P1-3: 增强动画工具
+-- ============================================================================
+
+--- 面板滑出动画（从当前位置滑出到右侧）
+function UICommon.panelSlideOut(animId, panelX, panelW, panelY, panelH, duration, renderFn, onComplete)
+    UICommon.animStart(animId, duration or 0.20, function(progress)
+        local p = UICommon.easeIn(progress)
+        local x = panelX + panelW * p
+        renderFn(x, panelY, panelW, panelH)
+    end, onComplete)
+end
+
+--- 面板滑入动画（从左侧）
+function UICommon.panelSlideInLeft(animId, panelX, panelW, panelY, panelH, duration, renderFn)
+    local startX = panelX - panelW
+    UICommon.animStart(animId, duration or 0.25, function(progress)
+        local p = UICommon.easeOut(progress)
+        local x = startX + panelW * p
+        renderFn(x, panelY, panelW, panelH)
+    end)
+end
+
+--- 面板从底部滑入
+function UICommon.panelSlideUp(animId, panelX, panelW, panelY, panelH, duration, renderFn)
+    local startY = panelY + panelH
+    UICommon.animStart(animId, duration or 0.30, function(progress)
+        local p = UICommon.easeOut(progress)
+        local y = startY - panelH * p
+        renderFn(panelX, y, panelW, panelH)
+    end)
+end
+
+--- 面板淡出动画
+function UICommon.fadeOut(animId, alpha, duration, renderFn, onComplete)
+    UICommon.animStart(animId, duration or 0.20, function(progress)
+        local p = UICommon.easeIn(progress)
+        renderFn(alpha * (1 - p))
+    end, onComplete)
+end
+
+--- 按钮点击缩放+弹性动画
+function UICommon.buttonBounceAnim(animId, scaleFn, duration)
+    if UICommon.animTimers[animId] then return end
+    duration = duration or 0.25
+    UICommon.animStart(animId, duration, function(progress)
+        local scale = 1.0
+        if progress < 0.3 then
+            scale = 1.0 - 0.15 * (progress / 0.3)
+        else
+            scale = 0.85 + 0.15 * UICommon.easeOutBounce((progress - 0.3) / 0.7)
+        end
+        if scaleFn then scaleFn(scale) end
+    end, function()
+        if scaleFn then scaleFn(1.0) end
+    end)
+end
+
+--- 按钮悬浮脉冲动画（循环）
+function UICommon.buttonHoverPulse(baseScale, hoverTime)
+    hoverTime = hoverTime or 0
+    return baseScale + 0.03 * math.sin(hoverTime * 4)
+end
+
+--- 按钮悬浮滑出+缩放
+function UICommon.buttonHoverScale(scaleFn, baseScale, hoverScale, hoverTime)
+    hoverTime = hoverTime or 0
+    local targetScale = baseScale or 1.0
+    if hoverTime > 0 then
+        local t = math.min(1.0, hoverTime / 0.15)
+        targetScale = baseScale + (hoverScale - baseScale) * UICommon.easeOut(t)
+    end
+    if scaleFn then scaleFn(targetScale) end
+    return targetScale
+end
+
+--- 文字闪烁动画
+function UICommon.textGlow(animId, baseAlpha, duration, renderFn)
+    UICommon.animStart(animId, duration or 1.0, function(progress)
+        local p = UICommon.pulse(progress * 2)
+        renderFn(baseAlpha * (0.5 + 0.5 * p))
+    end)
+end
+
+--- 元素缩放入场
+function UICommon.scaleIn(animId, baseScale, duration, renderFn)
+    UICommon.animStart(animId, duration or 0.30, function(progress)
+        local p = UICommon.easeOutElastic(progress)
+        renderFn((baseScale or 1.0) * (0.5 + 0.5 * p))
+    end)
+end
+
+--- 元素缩放出场
+function UICommon.scaleOut(animId, baseScale, duration, renderFn, onComplete)
+    UICommon.animStart(animId, duration or 0.20, function(progress)
+        local p = UICommon.easeIn(progress)
+        renderFn((baseScale or 1.0) * (1.0 - p))
+    end, onComplete)
+end
+
+--- 旋转动画
+function UICommon.rotateAnim(animId, duration, renderFn)
+    UICommon.animStart(animId, duration, function(progress)
+        local angle = progress * 360
+        renderFn(angle)
+    end)
+end
+
+--- 摇晃动画
+function UICommon.shakeAnim(animId, intensity, duration, renderFn)
+    intensity = intensity or 5
+    UICommon.animStart(animId, duration or 0.30, function(progress)
+        local shakeX = (math.random() - 0.5) * intensity * (1 - progress)
+        local shakeY = (math.random() - 0.5) * intensity * (1 - progress)
+        renderFn(shakeX, shakeY)
+    end, function()
+        renderFn(0, 0)
+    end)
+end
+
+--- 进度条动画填充
+function UICommon.progressFill(animId, targetProgress, duration, renderFn)
+    UICommon.animStart(animId, duration or 0.50, function(progress)
+        local p = UICommon.easeInOut(progress)
+        renderFn(targetProgress * p)
+    end)
+end
+
+--- 获取所有正在运行的动画数量
+function UICommon.getActiveAnimCount()
+    local count = 0
+    for _ in pairs(UICommon.animTimers) do count = count + 1 end
+    return count
+end
+
+--- 检查指定动画是否在运行
+function UICommon.isAnimActive(animId)
+    return UICommon.animTimers[animId] ~= nil
+end
+
+--- 停止所有动画
+function UICommon.cancelAllAnims()
+    UICommon.animTimers = {}
 end
 
 return UICommon

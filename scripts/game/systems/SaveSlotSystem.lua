@@ -12,6 +12,7 @@ SaveSlotSystem.AUTO_SAVE_SLOT = 0
 
 -- P3-P2-1: 游戏版本（用于存档兼容性检查）
 SaveSlotSystem.GAME_VERSION = "3.0.0"
+SaveSlotSystem.SAVE_FORMAT_VERSION = 2  -- P2-3: 存档格式版本
 
 -- 默认值表（用于排除默认字段，节省存档空间）
 SaveSlotSystem.DEFAULT_VALUES = {
@@ -22,10 +23,108 @@ SaveSlotSystem.DEFAULT_VALUES = {
     achievements = {},
 }
 
-local runtimeSlots = {}
-local lastSaveHash = {}  -- slotId -> 上次存档的数据 hash（用于增量存档）
+-- P2-3: 存档优化配置
+SaveSlotSystem.OPTIMIZATION = {
+    enableCompression = true,
+    enableChecksum = true,
+    enableDeltaSave = true,
+    maxDeltaSavesPerSlot = 3,
+    compressThresholdBytes = 1024,
+}
 
--- P3-P2-1: 计算数据表 hash（用于增量存档比较）
+local runtimeSlots = {}
+local lastSaveHash = {}
+
+-- ============================================================================
+-- P2-3: 增强的压缩与校验算法
+-- ============================================================================
+
+-- 简单的 32 位校验和（类 FNV-1a）
+local function checksum32(data)
+    local hash = 2166136261
+    local s = type(data) == "string" and data or (data and tostring(data) or "")
+    for i = 1, #s do
+        local b = string.byte(s, i)
+        hash = (hash ~ b) % 4294967296
+        hash = (hash * 16777619) % 4294967296
+    end
+    return hash
+end
+
+-- P2-3: 键名压缩映射（将常用键名替换为短标识符，显著减少存档体积）
+local KEY_COMPRESS_MAP = {
+    resources = "r",
+    fleet = "f",
+    planets = "p",
+    research = "rs",
+    achievements = "a",
+    playerName = "pn",
+    playTime = "pt",
+    currentWave = "cw",
+    currentChapter = "cc",
+    mapSeed = "ms",
+    difficulty = "d",
+    ships = "s",
+    unlocked = "u",
+    slotName = "sn",
+    health = "h",
+    attack = "at",
+    defense = "df",
+    speed = "sp",
+    type = "tp",
+    level = "lv",
+    name = "nm",
+    owner = "ow",
+    colonized = "cl",
+    metal = "m",
+    energy = "e",
+    crystal = "cr",
+    nuclear = "nc",
+    credits = "cd",
+    x = "x",
+    y = "y",
+    id = "i",
+}
+local KEY_DECOMPRESS_MAP = {}
+for long, short in pairs(KEY_COMPRESS_MAP) do KEY_DECOMPRESS_MAP[short] = long end
+
+-- P2-3: 递归压缩数据（键名压缩 + 默认值省略）
+local function compressSaveDataV2(data, depth)
+    depth = depth or 0
+    if depth > 100 then return data end  -- 防止递归溢出
+    if type(data) ~= "table" then return data end
+    local result = {}
+    for k, v in pairs(data) do
+        if k == "__cache" then goto continue end  -- 跳过缓存字段
+        local key = KEY_COMPRESS_MAP[k] or k
+        if type(v) == "table" then
+            local compressed = compressSaveDataV2(v, depth + 1)
+            if next(compressed) then result[key] = compressed end
+        elseif v ~= nil and v ~= 0 and v ~= false and v ~= "" then
+            result[key] = v
+        end
+        ::continue::
+    end
+    return result
+end
+
+-- P2-3: 解压存档数据
+local function decompressSaveDataV2(data, depth)
+    depth = depth or 0
+    if depth > 100 then return data end
+    if type(data) ~= "table" then return data end
+    local result = {}
+    for k, v in pairs(data) do
+        local key = KEY_DECOMPRESS_MAP[k] or k
+        if type(v) == "table" then
+            result[key] = decompressSaveDataV2(v, depth + 1)
+        else
+            result[key] = v
+        end
+    end
+    return result
+end
+
 local function dataHash(data)
     if type(data) ~= "table" then return tostring(data) end
     local keys = {}
@@ -38,30 +137,11 @@ local function dataHash(data)
     return "{" .. table.concat(parts, ",") .. "}"
 end
 
--- P3-P2-1: 压缩存档数据（排除默认值字段，减少存档体积）
-local function compressSaveData(data)
-    if type(data) ~= "table" then return data end
-    local result = {}
-    for k, v in pairs(data) do
-        if type(v) == "table" then
-            local compressed = compressSaveData(v)
-            -- 跳过空表
-            if next(compressed) then
-                result[k] = compressed
-            end
-        elseif v ~= nil and v ~= 0 and v ~= false and v ~= "" then
-            result[k] = v
-        end
-    end
-    return result
-end
-
--- P3-P2-1: 检查数据是否有变化（用于增量存档）
 local function hasChanges(slotId, gameData)
     local currentHash = dataHash(gameData)
     local lastHash = lastSaveHash[slotId]
     if lastHash and currentHash == lastHash then
-        return false  -- 没有变化
+        return false
     end
     lastSaveHash[slotId] = currentHash
     return true
@@ -123,7 +203,6 @@ function SaveSlotSystem.saveToSlot(slotId, gameData, opts)
     local slot = getSlotInternal(slotId)
     if not slot then return false, "无效存档槽" end
 
-    -- P3-P2-1: 增量存档检查（除非强制保存）
     if not opts.force and not hasChanges(slotId, gameData) then
         print("[SaveSlot] 槽 " .. tostring(slotId) .. " 数据无变化，跳过存档")
         return true, slot, "unchanged"
@@ -139,24 +218,28 @@ function SaveSlotSystem.saveToSlot(slotId, gameData, opts)
     slot.mapSeed = (gameData and gameData.mapSeed) or slot.mapSeed or 0
     slot.slotName = (gameData and gameData.slotName) or ("存档 " .. tostring(slotId) .. " - " .. slot.playerName)
 
-    -- P3-P2-1: 压缩存档数据（排除默认值字段）
-    local compressedData = compressSaveData(cloneSnapshot(gameData))
+    -- P2-3: 使用 V2 压缩格式（键名压缩 + 默认值省略）
+    local compressedData = compressSaveDataV2(cloneSnapshot(gameData))
     slot.gameData = compressedData
 
-    -- P3-P2-1: 存档元数据
+    -- P2-3: 存档元数据与校验和
+    local chksum = SaveSlotSystem.OPTIMIZATION.enableChecksum and checksum32(dataHash(compressedData)) or nil
     slot.metadata = {
         gameVersion = SaveSlotSystem.GAME_VERSION,
+        saveFormatVersion = SaveSlotSystem.SAVE_FORMAT_VERSION,
         saveTimestamp = slot.saveTime,
         playTimeSeconds = slot.playTime,
-        -- P3-P2-1: 云端同步预留字段
-        cloudSyncStatus = "local",  -- "local" | "synced" | "pending"
+        checksum = chksum,
+        compressionFormat = "v2",
+        dataSize = #dataHash(compressedData),  -- 粗略估算
+        cloudSyncStatus = "local",
         cloudSyncTime = nil,
     }
 
     slot.exists = true
 
-    local saveSize = #dataHash(compressedData)  -- 粗略估算
-    print("[SaveSlot] 已保存到槽 " .. tostring(slotId) .. " 于 " .. formatTime(slot.saveTime) .. " (版本 " .. SaveSlotSystem.GAME_VERSION .. ")")
+    print("[SaveSlot] 已保存到槽 " .. tostring(slotId) .. " 于 " .. formatTime(slot.saveTime) ..
+          " (版本 " .. SaveSlotSystem.GAME_VERSION .. ", 格式 v" .. SaveSlotSystem.SAVE_FORMAT_VERSION .. ")")
     return true, slot, "saved"
 end
 
@@ -176,7 +259,26 @@ function SaveSlotSystem.loadFromSlot(slotId)
         return nil, "存档槽不存在"
     end
     print("[SaveSlot] 从槽 " .. tostring(slotId) .. " 读取存档")
-    return slot.gameData, slot
+
+    -- P2-3: 校验和验证
+    if slot.metadata and slot.metadata.checksum and SaveSlotSystem.OPTIMIZATION.enableChecksum then
+        local expected = slot.metadata.checksum
+        local actual = checksum32(dataHash(slot.gameData))
+        if expected ~= actual then
+            print("[SaveSlot] 警告: 校验和不匹配 (expected=" .. tostring(expected) .. ", actual=" .. tostring(actual) .. ")")
+        end
+    end
+
+    -- P2-3: 解压 V2 格式（如果需要）
+    local formatVersion = (slot.metadata and slot.metadata.saveFormatVersion) or 1
+    if formatVersion >= 2 then
+        local decompressed = decompressSaveDataV2(slot.gameData)
+        print("[SaveSlot] 使用 V2 压缩格式解压")
+        return decompressed, slot
+    else
+        -- V1 格式（直接返回）
+        return slot.gameData, slot
+    end
 end
 
 function SaveSlotSystem.deleteSlot(slotId, confirm)
@@ -237,6 +339,62 @@ end
 
 function SaveSlotSystem.getAutoSaveSlot()
     return SaveSlotSystem.getSlot(SaveSlotSystem.AUTO_SAVE_SLOT)
+end
+
+-- P2-3: 获取存档统计信息（所有槽的汇总）
+function SaveSlotSystem.getSaveStats()
+    local totalSlots = SaveSlotSystem.MAX_SAVE_SLOTS
+    local used = 0
+    local latest = nil
+    local oldest = nil
+    local totalSize = 0
+    for i = 1, totalSlots do
+        local slot = SaveSlotSystem.getSlot(i)
+        if slot then
+            used = used + 1
+            totalSize = totalSize + (slot.metadata and slot.metadata.dataSize or 0)
+            if not latest or slot.saveTime > latest.saveTime then latest = slot end
+            if not oldest or slot.saveTime < oldest.saveTime then oldest = slot end
+        end
+    end
+    return {
+        totalSlots = totalSlots,
+        usedSlots = used,
+        freeSlots = totalSlots - used,
+        latestSlot = latest,
+        oldestSlot = oldest,
+        totalSize = totalSize,
+        formatVersion = SaveSlotSystem.SAVE_FORMAT_VERSION,
+        gameVersion = SaveSlotSystem.GAME_VERSION,
+    }
+end
+
+-- P2-3: 验证存档完整性
+function SaveSlotSystem.validateSlot(slotId)
+    slotId = tonumber(slotId) or slotId
+    local slot = runtimeSlots[tostring(slotId)]
+    if not slot or not slot.exists then return false, "存档不存在" end
+    if not slot.metadata then return false, "缺少元数据" end
+    if slot.metadata.gameVersion and slot.metadata.gameVersion ~= SaveSlotSystem.GAME_VERSION then
+        print("[SaveSlot] 警告: 游戏版本不匹配")
+    end
+    if slot.metadata.checksum then
+        local actual = checksum32(dataHash(slot.gameData))
+        if slot.metadata.checksum ~= actual then
+            return false, "校验和不匹配: 存档可能损坏"
+        end
+    end
+    return true, "存档完整"
+end
+
+-- P2-3: 复制存档到另一个槽
+function SaveSlotSystem.copySlot(fromSlotId, toSlotId, newSlotName)
+    local data, slot = SaveSlotSystem.loadFromSlot(fromSlotId)
+    if not data then return false, slot end
+    local copyData = cloneSnapshot(data)
+    if newSlotName then copyData.slotName = newSlotName end
+    copyData.slotName = (newSlotName and newSlotName or (slot and slot.slotName or "复制")) .. " (副本)"
+    return SaveSlotSystem.saveToSlotForce(toSlotId, copyData)
 end
 
 function SaveSlotSystem.serialize()

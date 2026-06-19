@@ -132,6 +132,34 @@ function BaseBuildingSystem:upgrade(bldIdx, base)
     return true, ""
 end
 
+--- 应用模块的 effect 加成到 rm.baseBonus（Lv8-10 专属模块用）
+function BaseBuildingSystem:applyModuleEffect(mod, isRemove)
+    if not mod or not mod.effect or not self.rm then return end
+    self.rm.baseBonus = self.rm.baseBonus or {}
+    for effectKey, value in pairs(mod.effect) do
+        if type(value) == "number" then
+            if isRemove then
+                self.rm.baseBonus[effectKey] = (self.rm.baseBonus[effectKey] or 0) - value
+            else
+                self.rm.baseBonus[effectKey] = (self.rm.baseBonus[effectKey] or 0) + value
+            end
+        else
+            self.rm.baseBonus[effectKey] = isRemove and nil or value
+        end
+    end
+end
+
+--- 收集并应用基地所有模块的 effect 加成（游戏启动或加载存档后调用）
+function BaseBuildingSystem:recalcModuleEffects(base)
+    if not self.rm or not base or not base.buildings then return end
+    for _, b in ipairs(base.buildings) do
+        local mod = self:getModule(b.key)
+        if mod and mod.effect then
+            self:applyModuleEffect(mod, false)
+        end
+    end
+end
+
 --- 返回完成的模块 key（完成时），否则返回 nil
 function BaseBuildingSystem:update(dt, base)
     if not base.constructing then return nil end
@@ -141,15 +169,24 @@ function BaseBuildingSystem:update(dt, base)
     if job.remaining <= 0 then
         local doneKey = job.key
         if job.isCoreUpgrade then
-            -- 核心等级升级完成
             base.coreLevel = job.level
         elseif job.isUpgrade then
             base.buildings[job.targetIdx].level = job.level
+            local mod = self:getModule(job.key)
+            if mod and mod.effect and self.rm then
+                for effectKey, value in pairs(mod.effect) do
+                    if type(value) == "number" then
+                        self.rm.baseBonus = self.rm.baseBonus or {}
+                        self.rm.baseBonus[effectKey] = (self.rm.baseBonus[effectKey] or 0) + value * 0.5
+                    end
+                end
+            end
         else
             local mod = self:getModule(job.key)
             base.buildings[#base.buildings + 1] = {
                 key = job.key, name = (mod and mod.name) or job.key, level = 1
             }
+            if mod and mod.effect then self:applyModuleEffect(mod, false) end
         end
         base.constructing = nil
         return doneKey

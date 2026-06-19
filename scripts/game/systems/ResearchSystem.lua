@@ -238,13 +238,32 @@ function ResearchSystem:update(dt)
                 self.rm.baseBonus.counterShield = true
                 print("[Research] 要塞协议II激活：反击护盾已解锁")
             end
+            -- P0-1: 基地护盾恢复
+            if bonus.shieldFlat then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.shieldFlat = (self.rm.baseBonus.shieldFlat or 0) + bonus.shieldFlat
+            end
+            -- P0-1: 殖民速度 + 资源上限 (COLONY_BIOTECH)
+            if bonus.colonySpeedMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.colonySpeedMult = (self.rm.baseBonus.colonySpeedMult or 1.0) * bonus.colonySpeedMult
+            end
+            if bonus.resourceCapMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.resourceCapMult = (self.rm.baseBonus.resourceCapMult or 1.0) * bonus.resourceCapMult
+            end
+            -- P0-1: 战斗中生命恢复 (NANO_REPAIR)
+            if bonus.battleRegenPct then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.battleRegenPct = (self.rm.baseBonus.battleRegenPct or 0) + bonus.battleRegenPct
+            end
         end
         -- P2-P1-1: 研究完成动画回调
         if self.onCompleteCallback then
-            self:onCompleteCallback(techId, TECHS[techId])
+            self:onCompleteCallback(id, TECHS[id])
         end
-        print("[Research] 完成: " .. TECHS[techId].name)
-        return techId
+        print("[Research] 完成: " .. TECHS[id].name)
+        return id
     end
     return nil
 end

@@ -23,11 +23,11 @@ end
 -- ============================================================================
 -- 每 Tier 的科技 id 列表（P1-3: Tier3 新增 VOID_ANCHOR，Tier4 新增 STELLAR_SYNC，P2-6: Tier5 新增 6 个高阶科技）
 local TIER_NODES = {
-    { "DEEP_MINING", "SOLAR_EFFICIENCY", "CRYSTAL_PROCESS", "HULL_ALLOY" },                        -- Tier1
-    { "SHIELD_REINFORCE", "RAPID_REFINE", "COLONY_BIOTECH", "NANO_REPAIR" },                        -- Tier2
-    { "WARP_DRIVE", "ADVANCED_WEAPONS", "DEFENSE_MATRIX", "VOID_ANCHOR" },                         -- Tier3 P1-3
-    { "QUANTUM_CORE", "PHASE_DRIVE", "NOVA_CANNON", "FORTRESS_PROTOCOL", "STELLAR_SYNC" },         -- Tier4 P1-3
-    { "STELLAR_ENGINE", "QUANTUM_FACTORY", "VOID_FLEET", "FORTRESS_PROTOCOL_II", "CHRONO_RESEARCH", "GALACTIC_ASCEND" }, -- Tier5 P2-6
+    { "DEEP_MINING", "SOLAR_EFFICIENCY", "CRYSTAL_PROCESS", "HULL_ALLOY" },                        -- Tier1 基础
+    { "SHIELD_REINFORCE", "RAPID_REFINE", "COLONY_BIOTECH", "NANO_REPAIR" },                        -- Tier2 中级
+    { "WARP_DRIVE", "ADVANCED_WEAPONS", "DEFENSE_MATRIX", "VOID_ANCHOR" },                         -- Tier3 高级
+    { "QUANTUM_CORE", "NOVA_CANNON", "FORTRESS_PROTOCOL", "STELLAR_SYNC", "PHASE_DRIVE" },         -- Tier4 顶级（双路线）
+    { "STELLAR_ENGINE", "QUANTUM_FACTORY", "VOID_FLEET", "FORTRESS_PROTOCOL_II", "CHRONO_RESEARCH", "GALACTIC_ASCEND" }, -- Tier5 终极
 }
 
 -- P1-1: 扩大间距，避免节点重叠导致连线不可见

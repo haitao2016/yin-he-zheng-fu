@@ -82,7 +82,7 @@ function BattleCommandSystem:canUse(commandId, battleState)
     return true, ""
 end
 
---- 执行指令并应用效果
+--- 执行指令并应用效果（P0-4: 支持效果过期后自动回滚）
 function BattleCommandSystem:execute(commandId, battleState)
     local ok, reason = self:canUse(commandId, battleState)
     if not ok then return false, reason end
@@ -94,20 +94,27 @@ function BattleCommandSystem:execute(commandId, battleState)
         battleState.battleCommands[commandId] = { remaining = cmd.duration, startedAt = os.time() }
         battleState.baseBonus = battleState.baseBonus or {}
         local e = cmd.effect
+        -- 记录用于过期回滚的加成值
+        local applied = {}
         if e.attackMult then
             battleState.baseBonus.attackMult = (battleState.baseBonus.attackMult or 0) + e.attackMult
+            applied.attackMult = e.attackMult
         end
         if e.defenseMult then
             battleState.baseBonus.defenseMult = (battleState.baseBonus.defenseMult or 0) + e.defenseMult
+            applied.defenseMult = e.defenseMult
         end
         if e.fireRateMult then
             battleState.baseBonus.fireRateMult = (battleState.baseBonus.fireRateMult or 0) + e.fireRateMult
+            applied.fireRateMult = e.fireRateMult
         end
         if e.speedMult then
-            battleState.baseBonus.speedMult = (battleState.baseBonus.speedMult or 1.0) * (1 + e.speedMult)
+            battleState.baseBonus.speedMult = (battleState.baseBonus.speedMult or 0) + e.speedMult
+            applied.speedMult = e.speedMult
         end
         if e.shieldMult then
-            battleState.baseBonus.shieldMult = (battleState.baseBonus.shieldMult or 1.0) * (1 + e.shieldMult)
+            battleState.baseBonus.shieldMult = (battleState.baseBonus.shieldMult or 0) + e.shieldMult
+            applied.shieldMult = e.shieldMult
         end
         if e.healPct and battleState.fleet then
             battleState.fleet.hp = math.min(battleState.fleet.maxHp or battleState.fleet.hp,
@@ -120,12 +127,15 @@ function BattleCommandSystem:execute(commandId, battleState)
             battleState.attackDisabledTimer = cmd.duration
         end
         if e.stance then battleState.currentStance = e.stance end
+        -- 存储本次加成以用于过期回滚
+        self.appliedBonus = self.appliedBonus or {}
+        self.appliedBonus[commandId] = applied
         print("[BattleCommand] 执行指令: " .. cmd.name)
     end
     return true, ""
 end
 
---- 每帧更新冷却与持续时间
+--- 每帧更新冷却与持续时间（P0-4: 新增效果过期回滚）
 function BattleCommandSystem:update(dt, battleState)
     for id, _ in pairs(self.cooldowns) do
         if self.cooldowns[id] > 0 then
@@ -135,6 +145,22 @@ function BattleCommandSystem:update(dt, battleState)
     for id, _ in pairs(self.active) do
         if self.active[id] > 0 then
             self.active[id] = math.max(0, self.active[id] - dt)
+            -- 效果过期 → 回滚加成
+            if self.active[id] <= 0 and battleState and self.appliedBonus and self.appliedBonus[id] then
+                battleState.baseBonus = battleState.baseBonus or {}
+                for key, val in pairs(self.appliedBonus[id]) do
+                    battleState.baseBonus[key] = (battleState.baseBonus[key] or 0) - val
+                end
+                self.appliedBonus[id] = nil
+                if battleState.currentStance and id ~= "FOCUS_FIRE" and id ~= "DEFENSE_STANCE" and id ~= "FULL_SALVO" then
+                    -- 仅该指令设置的 stance 才需要清理
+                end
+                -- 清理当前姿态（如果是该指令设置的）
+                local cmd = BATTLE_COMMANDS_BY_ID[id]
+                if cmd and cmd.effect and cmd.effect.stance and battleState.currentStance == cmd.effect.stance then
+                    battleState.currentStance = nil
+                end
+            end
         end
     end
     if battleState and battleState.attackDisabledTimer and battleState.attackDisabledTimer > 0 then
