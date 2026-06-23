@@ -1,0 +1,249 @@
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
+--[[
+InvestmentSystem.lua - 投资系统
+V2.7 P2-6
+向星球投资获得长期回报
+]]
+
+local InvestmentSystem = {}
+
+-- 投资选项定义（5种）
+InvestmentSystem.INVESTMENT_OPTIONS = {
+    {
+        id = "MINING_BOOST",
+        name = "矿业投资",
+        desc = "提升该星球矿产产出",
+        cost = { metal = 500, esource = 200 },
+        duration = 3600,  -- 1小时
+        effect = { mineralMult = 1.5 },
+        icon = "⛏️",
+    },
+    {
+        id = "ENERGY_BOOST",
+        name = "能源投资",
+        desc = "提升该星球能源产出",
+        cost = { metal = 400, esource = 300 },
+        duration = 3600,
+        effect = { energyMult = 1.5 },
+        icon = "⚡",
+    },
+    {
+        id = "RESEARCH_BOOST",
+        name = "科研投资",
+        desc = "提升该星球科研速度",
+        cost = { metal = 600, esource = 400, nuclear = 100 },
+        duration = 7200,  -- 2小时
+        effect = { researchMult = 2.0 },
+        icon = "🔬",
+    },
+    {
+        id = "TRADE_BOOST",
+        name = "贸易投资",
+        desc = "提升贸易路线收益",
+        cost = { metal = 800, esource = 500 },
+        duration = 3600,
+        effect = { tradeMult = 1.3 },
+        icon = "📦",
+    },
+    {
+        id = "DEFENSE_BOOST",
+        name = "防御投资",
+        desc = "提升该星球防御能力",
+        cost = { metal = 1000, esource = 600, nuclear = 200 },
+        duration = 7200,
+        effect = { defenseMult = 1.5, turretCount = 2 },
+        icon = "🛡️",
+    },
+}
+
+-- 开始投资
+function InvestmentSystem.startInvestment(planetId, investmentId, playerState, rm)
+    local investment = nil
+    for _, inv in ipairs(InvestmentSystem.INVESTMENT_OPTIONS) do
+        if inv.id == investmentId then investment = inv; break end
+    end
+    if not investment then return false, "投资选项不存在" end
+    
+    -- 检查资源
+    for res, amount in pairs(investment.cost) do
+        if not rm:canAfford(res, amount) then
+            return false, "资源不足: " .. (RES_LABELS[res] or res)
+        end
+    end
+    
+    -- 消耗资源
+    rm:spend(investment.cost)
+    
+    -- 记录投资
+    playerState.investments = playerState.investments or {}
+    playerState.investments[planetId] = playerState.investments[planetId] or {}
+    
+    table.insert(playerState.investments[planetId], {
+        id = investmentId,
+        name = investment.name,
+        effect = investment.effect,
+        startTime = os.time(),
+        endTime = os.time() + investment.duration,
+        duration = investment.duration,
+        icon = investment.icon,
+    })
+    
+    return true, "投资成功！将持续 " .. math.floor(investment.duration / 60) .. " 分钟"
+end
+
+-- 更新投资状态（每帧调用）
+function InvestmentSystem.updateInvestments(dt, playerState)
+    if not playerState.investments then return end
+    
+    local currentTime = os.time()
+    for planetId, investments in pairs(playerState.investments) do
+        for i = #investments, 1, -1 do
+            local inv = investments[i]
+            if currentTime > inv.endTime then
+                table.remove(investments, i)
+            end
+        end
+        -- 如果星球投资列表为空，清理
+        if #investments == 0 then
+            playerState.investments[planetId] = nil
+        end
+    end
+end
+
+-- 获取星球投资效果（聚合所有活跃投资）
+function InvestmentSystem.getPlanetEffects(planetId, playerState)
+    local effects = {}
+    
+    if playerState.investments and playerState.investments[planetId] then
+        for _, inv in ipairs(playerState.investments[planetId]) do
+            if os.time() <= inv.endTime then
+                for k, v in pairs(inv.effect) do
+                    -- 效果累乘
+                    if effects[k] then
+                        effects[k] = effects[k] * v
+                    else
+                        effects[k] = v
+                    end
+                end
+            end
+        end
+    end
+    
+    return effects
+end
+
+-- 获取星球活跃投资列表
+function InvestmentSystem.getActiveInvestments(planetId, playerState)
+    local active = {}
+    
+    if playerState.investments and playerState.investments[planetId] then
+        for _, inv in ipairs(playerState.investments[planetId]) do
+            if os.time() <= inv.endTime then
+                table.insert(active, {
+                    id = inv.id,
+                    name = inv.name,
+                    icon = inv.icon,
+                    remaining = inv.endTime - os.time(),
+                    duration = inv.duration,
+                    progress = (inv.endTime - os.time()) / inv.duration,
+                })
+            end
+        end
+    end
+    
+    return active
+end
+
+-- 获取投资选项详情
+function InvestmentSystem.getInvestmentOption(investmentId)
+    for _, inv in ipairs(InvestmentSystem.INVESTMENT_OPTIONS) do
+        if inv.id == investmentId then return inv end
+    end
+    return nil
+end
+
+-- 获取所有投资选项列表
+function InvestmentSystem.getAllOptions()
+    local list = {}
+    for _, inv in ipairs(InvestmentSystem.INVESTMENT_OPTIONS) do
+        list[#list + 1] = {
+            id = inv.id,
+            name = inv.name,
+            desc = inv.desc,
+            cost = inv.cost,
+            duration = inv.duration,
+            effect = inv.effect,
+            icon = inv.icon,
+            durationMinutes = math.floor(inv.duration / 60),
+        }
+    end
+    return list
+end
+
+-- 检查是否可以投资
+function InvestmentSystem.canInvest(planetId, investmentId, playerState, rm)
+    local investment = InvestmentSystem.getInvestmentOption(investmentId)
+    if not investment then return false, "投资选项不存在" end
+    
+    -- 检查资源
+    for res, amount in pairs(investment.cost) do
+        if not rm:canAfford(res, amount) then
+            return false, "资源不足: " .. (RES_LABELS[res] or res)
+        end
+    end
+    
+    return true, "可以投资"
+end
+
+-- 获取星球投资总数
+function InvestmentSystem.getPlanetInvestmentCount(planetId, playerState)
+    if not playerState.investments or not playerState.investments[planetId] then
+        return 0
+    end
+    return #playerState.investments[planetId]
+end
+
+-- 序列化投资数据
+function InvestmentSystem.serialize(playerState)
+    if not playerState.investments then return nil end
+    
+    local data = {}
+    for planetId, investments in pairs(playerState.investments) do
+        data[planetId] = {}
+        for _, inv in ipairs(investments) do
+            data[planetId][#data[planetId] + 1] = {
+                id = inv.id,
+                name = inv.name,
+                effect = inv.effect,
+                startTime = inv.startTime,
+                endTime = inv.endTime,
+                duration = inv.duration,
+                icon = inv.icon,
+            }
+        end
+    end
+    return data
+end
+
+-- 反序列化投资数据
+function InvestmentSystem.deserialize(data, playerState)
+    if not data then return end
+    
+    playerState.investments = {}
+    for planetId, investments in pairs(data) do
+        playerState.investments[planetId] = {}
+        for _, inv in ipairs(investments) do
+            playerState.investments[planetId][#playerState.investments[planetId] + 1] = {
+                id = inv.id,
+                name = inv.name,
+                effect = inv.effect,
+                startTime = inv.startTime,
+                endTime = inv.endTime,
+                duration = inv.duration,
+                icon = inv.icon,
+            }
+        end
+    end
+end
+
+return InvestmentSystem

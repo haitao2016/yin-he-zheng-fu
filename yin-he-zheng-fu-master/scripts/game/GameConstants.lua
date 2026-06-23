@@ -1,0 +1,385 @@
+---@diagnostic disable: assign-type-mismatch, return-type-mismatch
+-- ============================================================================
+-- game/GameConstants.lua  -- 全局游戏常量（从 Systems.lua 拆分）
+-- ============================================================================
+
+-- ============================================================================
+-- 全局常量
+-- ============================================================================
+BUILDINGS = {
+    MINE         = { name="自动化矿井",   cost={metal=100,esource=50},               prod={minerals=10},  buildTime=5,  upgradeK=1.5 },
+    POWER_PLANT  = { name="太阳能阵列",   cost={metal=80},                           prod={energy=15},    buildTime=3,  upgradeK=1.4 },
+    SHIELD_GEN   = { name="护盾发生器",   cost={metal=300,esource=400,nuclear=100},  prod={},             buildTime=12, upgradeK=1.8 },
+    TRADE_HUB    = { name="星际交易所",   cost={metal=500,esource=300,nuclear=80},   prod={credits=5},    buildTime=15, upgradeK=1.6 },
+}
+BUILD_ORDER = {"MINE","POWER_PLANT","SHIELD_GEN","TRADE_HUB"}
+
+-- P2-3: 建筑专精定义（每类行星建筑 3 种专精，Lv.3+ 解锁）
+BUILDING_SPECS = {
+    MINE = {
+        { key="DEEP_DRILL",   name="深层钻探", desc="+15%矿石产量",  effect={mineralsMult=1.15} },
+        { key="AUTO_SORT",    name="自动分拣", desc="+8矿石/s",      effect={mineralsFlat=8} },
+        { key="VEIN_SCAN",    name="矿脉扫描", desc="+25%晶石",      effect={crystalMult=1.25} },
+    },
+    POWER_PLANT = {
+        { key="THERMO_CYCLE", name="热核循环", desc="+20%能源",       effect={energyMult=1.20} },
+        { key="SOLAR_BOOST",  name="太阳增幅", desc="+12能源/s",      effect={energyFlat=12} },
+        { key="DARK_MATTER",  name="暗物质炉", desc="+10%能源晶石",   effect={energyMult=1.10, crystalMult=1.05} },
+    },
+    SHIELD_GEN = {
+        { key="SUPERCONDUCT", name="超导护盾", desc="+300基地护盾",   effect={shieldBonus=300} },
+        { key="REGEN_FIELD",  name="再生力场", desc="护盾恢复×1.5",  effect={shieldRegenMult=1.5} },
+        { key="PHASE_WALL",   name="相位屏障", desc="防御力+15%",    effect={defenseBonus=0.15} },
+    },
+    TRADE_HUB = {
+        { key="WARP_CHANNEL", name="星际通道", desc="+30%星币",       effect={creditsMult=1.30} },
+        { key="BLACK_MARKET", name="黑市网络", desc="+20星币/s",      effect={creditsFlat=20} },
+        { key="TECH_BROKER",  name="技术中介", desc="科研速度+20%",  effect={researchSpeedBonus=0.20} },
+    },
+}
+SPEC_COST = 50   -- P2-3: 激活专精消耗晶石数量
+
+-- ============================================================================
+-- 星航基地模块（与行星建筑完全独立）
+-- ============================================================================
+BASE_MODULES = {
+    COMMAND_CENTER  = { name="指挥中枢",   cost={metal=200,  esource=100},              desc="提升舰队上限+1",       buildTime=8,  upgradeK=1.8 },
+    ENERGY_CORE     = { name="能量核心",   cost={metal=150,  esource=50},               desc="精炼所有原矿（矿石/能量块/水晶），精炼倍率+0.5×/级", buildTime=5,  upgradeK=1.5 },
+    MINERAL_SILO    = { name="资源仓储",   cost={metal=100},                            desc="原矿存储上限×2/级（矿石/能量块/水晶）", buildTime=4,  upgradeK=1.4 },
+    MATERIAL_DEPOT  = { name="材料仓库",   cost={metal=120, esource=60},               desc="精炼资源上限×2/级（金属/能源/核能）", buildTime=5,  upgradeK=1.4 },
+    DEFENSE_CANNON  = { name="防御炮台",   cost={metal=300,  esource=200},              desc="基地防御力+50/级（累计）",           buildTime=10, upgradeK=1.6 },
+    HANGAR          = { name="飞船机库",   cost={metal=400,  esource=150, nuclear=50},  desc="解锁更大舰船建造",                   buildTime=12, upgradeK=2.0 },
+    WARP_GATE       = { name="曲速闸门",   cost={metal=800,  esource=500, nuclear=200}, desc="开启星系间跳跃",                     buildTime=20, upgradeK=2.5 },
+    SOLAR_ARRAY     = { name="太阳能阵列",   cost={metal=80},                             desc="直接产出能源+3/s/级（无需精炼）",  buildTime=5,  upgradeK=1.4 },
+    RESEARCH_CENTER = { name="科研中心",   cost={metal=150,  nuclear=50},               desc="科研速度×1.2/级（累乘）",            buildTime=8,  upgradeK=1.6 },
+    SHIPYARD        = { name="星际造船厂", cost={metal=500,  esource=200},              desc="舰船建造速度×1.5/级（累乘）",        buildTime=15, upgradeK=2.0 },
+    BASE_SHIELD     = { name="护盾发生器", cost={metal=300,  esource=400, nuclear=100}, desc="基地护盾值+200/级（累计）",          buildTime=12, upgradeK=1.8 },
+    BUILD_CENTER    = { name="行星探索中心", cost={metal=250,  esource=150, nuclear=80},  desc="所有建造时间×0.75/级（最低25%）",  buildTime=10, upgradeK=1.7 },
+    EXCHANGE_CENTER      = { name="资源互换中心",  cost={metal=300, esource=200, nuclear=100},                       desc="按比例互换金属/能源/核能",                                        buildTime=10, upgradeK=1.5 },
+    REFINERY             = { name="资源精炼厂",    cost={metal=250, esource=150},                                    desc="原矿精炼为可用资源，每升一级转化速率×1.5（Lv1=1× Lv2=1.5× Lv3=2×…）", buildTime=8,  upgradeK=1.6 },
+    -- P1-2: Lv8-10 专属模块
+    PARTICLE_ACCELERATOR = { name="粒子加速器",    cost={metal=3000, nuclear=1200, esource=2000},                    desc="全局科研速度×2.5，精炼速率+50%",                                  buildTime=40, upgradeK=2.0 },
+    WARP_GATE_PRIME      = { name="主曲速门",      cost={metal=5000, nuclear=2500, esource=3000},                    desc="舰队可瞬移至任意星球（冷却120s）",                                buildTime=55, upgradeK=2.5 },
+    STELLAR_FORTRESS     = { name="恒星要塞",      cost={metal=8000, nuclear=4000, esource=5000},                    desc="基地防御力×2（翻倍），敌方来袭损失额外20%舰队",                   buildTime=70, upgradeK=3.0 },
+}
+BASE_MODULE_ORDER = {"ENERGY_CORE","COMMAND_CENTER","MINERAL_SILO","MATERIAL_DEPOT","REFINERY","DEFENSE_CANNON","HANGAR","WARP_GATE",
+                     "SOLAR_ARRAY","RESEARCH_CENTER","SHIPYARD","BASE_SHIELD","BUILD_CENTER","EXCHANGE_CENTER",
+                     "PARTICLE_ACCELERATOR","WARP_GATE_PRIME","STELLAR_FORTRESS"}
+
+-- ============================================================================
+-- 基地核心等级系统
+-- ============================================================================
+BASE_MODULE_UNLOCK_LEVEL = {
+    COMMAND_CENTER  = 2,
+    SOLAR_ARRAY     = 1,
+    ENERGY_CORE     = 1,
+    MINERAL_SILO    = 2,
+    MATERIAL_DEPOT  = 2,
+    RESEARCH_CENTER = 3,
+    DEFENSE_CANNON  = 3,
+    HANGAR          = 4,
+    BUILD_CENTER    = 4,
+    REFINERY        = 2,
+    EXCHANGE_CENTER = 5,
+    SHIPYARD        = 3,
+    BASE_SHIELD          = 6,
+    WARP_GATE            = 7,
+    PARTICLE_ACCELERATOR = 8,
+    WARP_GATE_PRIME      = 9,
+    STELLAR_FORTRESS     = 10,
+}
+
+BASE_CORE_MAX_LEVEL = 10
+
+--- 根据核心等级计算模块槽位上限（Lv1=8，每级+1，最高15）
+function BaseModuleSlots(coreLevel)
+    return math.min(15, 7 + (coreLevel or 1))
+end
+
+BASE_CORE_UPGRADE_COSTS = {
+    [1] = { metal=300,   esource=150,               buildTime=10  },
+    [2] = { metal=600,   esource=300,  nuclear=50,   buildTime=18  },
+    [3] = { metal=1000,  esource=500,  nuclear=150,  buildTime=28  },
+    [4] = { metal=1500,  esource=800,  nuclear=300,  buildTime=40  },
+    [5] = { metal=2500,  esource=1200, nuclear=500,  buildTime=55  },
+    [6] = { metal=4000,  esource=2000, nuclear=1000, buildTime=75  },
+    [7] = { metal=6500,  esource=3500, nuclear=1800, buildTime=100 },
+    [8] = { metal=10000, esource=5500, nuclear=3000, buildTime=130 },
+    [9] = { metal=15000, esource=8000, nuclear=5000, buildTime=165 },
+}
+
+BASE_CORE_UNLOCK_PREVIEW = {
+    [1]  = {"ENERGY_CORE","SOLAR_ARRAY"},
+    [2]  = {"COMMAND_CENTER","MINERAL_SILO","MATERIAL_DEPOT","REFINERY"},
+    [3]  = {"RESEARCH_CENTER","DEFENSE_CANNON","SHIPYARD"},
+    [4]  = {"HANGAR","BUILD_CENTER"},
+    [5]  = {"EXCHANGE_CENTER"},
+    [6]  = {"BASE_SHIELD"},
+    [7]  = {"WARP_GATE"},
+    [8]  = {"PARTICLE_ACCELERATOR"},
+    [9]  = {"WARP_GATE_PRIME"},
+    [10] = {"STELLAR_FORTRESS"},
+}
+
+EXCHANGE_RATES = {
+    metal   = { esource=1.5,  nuclear=0.3  },
+    esource = { metal=0.6,    nuclear=0.2  },
+    nuclear = { metal=3.0,    esource=4.5  },
+}
+EXCHANGE_AMOUNT = 100
+
+TECHS = {
+    -- Tier 1
+    DEEP_MINING      = { name="深层采矿",   desc="矿井产量+20%",              cost={nuclear=50,  esource=100},          time=20, prereqs={},                                      bonus={building="MINE", prodMult=1.2} },
+    SOLAR_EFFICIENCY = { name="高效光伏",   desc="电站产量+15%",              cost={nuclear=80,  metal=200},             time=30, prereqs={},                                      bonus={building="POWER_PLANT", prodMult=1.15} },
+    CRYSTAL_PROCESS  = { name="水晶提纯",   desc="水晶→核能精炼效率+30%",     cost={esource=80,  metal=150},             time=25, prereqs={},                                      bonus={refineMult="crystal", val=1.3} },
+    HULL_ALLOY       = { name="合金船壳",   desc="所有舰船最大耐久+25%",      cost={metal=200,   nuclear=60},            time=30, prereqs={},                                      bonus={shipHealthMult=1.25} },
+    -- Tier 2
+    SHIELD_REINFORCE = { name="护盾强化",   desc="基地护盾+300，防御+20%",    cost={nuclear=150, metal=400},             time=45, prereqs={"SOLAR_EFFICIENCY"},                    bonus={shieldBonus=300, defenseBonus=0.2} },
+    RAPID_REFINE     = { name="快速精炼",   desc="精炼速率×1.5（原矿→精炼）", cost={nuclear=120, esource=200},           time=40, prereqs={"DEEP_MINING"},                         bonus={globalRefineMult=1.5} },
+    COLONY_BIOTECH   = { name="殖民生物技术", desc="殖民星球人口增长速率+40%", cost={esource=150, nuclear=80},            time=35, prereqs={"CRYSTAL_PROCESS"},                     bonus={colonyPopMult=1.4} },
+    NANO_REPAIR      = { name="纳米修复",   desc="所有战舰最大耐久+20%",      cost={metal=200,   esource=100},           time=30, prereqs={"HULL_ALLOY"},                          bonus={shipHealthMult=1.20} },
+    -- Tier 3
+    WARP_DRIVE       = { name="曲速引擎",   desc="舰队移动速度+50%",          cost={nuclear=300, esource=500},           time=60, prereqs={"SHIELD_REINFORCE","RAPID_REFINE"},     bonus={fleetSpeedMult=1.5},  exclusiveGroup="TIER3" },
+    ADVANCED_WEAPONS = { name="高级武器系统", desc="所有战舰攻击力+30%",      cost={metal=500,   nuclear=200},           time=55, prereqs={"HULL_ALLOY","RAPID_REFINE"},           bonus={shipDmgMult=1.3},     exclusiveGroup="TIER3" },
+    DEFENSE_MATRIX   = { name="防御矩阵",   desc="基地护盾+400，防御+30%",    cost={nuclear=200, metal=500},             time=50, prereqs={"SHIELD_REINFORCE","NANO_REPAIR"},      bonus={shieldBonus=400, defenseBonus=0.3}, exclusiveGroup="TIER3" },
+    VOID_ANCHOR      = { name="虚空锚定",   desc="战舰攻击力+20%，敌方舰队减速20%",
+                         cost={nuclear=280, esource=400, metal=200}, time=60,
+                         prereqs={"SHIELD_REINFORCE","RAPID_REFINE"},
+                         bonus={shipDmgMult=1.2, enemySpeedDebuff=0.8}, exclusiveGroup="TIER3" },
+    -- Tier 4
+    QUANTUM_CORE     = { name="量子核心",   desc="基地核心升级费用-20%，科研速度+50%", cost={nuclear=600, esource=800, metal=1000}, time=90, prereqs={"WARP_DRIVE","ADVANCED_WEAPONS"}, bonus={coreUpgradeCostMult=0.8, researchSpeedMult=1.5}, exclusiveGroup="TIER4_UTIL" },
+    PHASE_DRIVE      = { name="相位驱动",   desc="精炼速率×1.4，舰队速度+40%",         cost={nuclear=500, esource=600, metal=800},  time=80, prereqs={"WARP_DRIVE","NANO_REPAIR"},          bonus={globalRefineMult=1.4, fleetSpeedMult=1.4} },
+    NOVA_CANNON      = { name="新星炮",     desc="战舰AOE半径+80%，每波战斗开始获得1次星陨打击技能",
+                         cost={nuclear=500, metal=800, esource=400}, time=85,
+                         prereqs={"ADVANCED_WEAPONS"},
+                         bonus={aoeRadiusMult=1.8, battleStartSkillCharge=1} },
+    FORTRESS_PROTOCOL= { name="要塞协议",   desc="基地最大护盾×2.2，战斗中每10s护盾自动恢复5%",
+                         cost={nuclear=400, metal=600, esource=600}, time=80,
+                         prereqs={"DEFENSE_MATRIX"},
+                         bonus={shieldMaxMult=2.2, shieldRegenPct=0.05} },
+    STELLAR_SYNC     = { name="星际同步",   desc="全局资源产出+25%，科研速度+30%",
+                         cost={nuclear=500, esource=700, metal=800}, time=85,
+                         prereqs={"VOID_ANCHOR","DEFENSE_MATRIX"},
+                         bonus={globalProdMult=1.25, researchSpeedMult=1.3}, exclusiveGroup="TIER4_UTIL" },
+}
+TECH_ORDER = {
+    "DEEP_MINING","SOLAR_EFFICIENCY","CRYSTAL_PROCESS","HULL_ALLOY",
+    "SHIELD_REINFORCE","RAPID_REFINE","COLONY_BIOTECH","NANO_REPAIR",
+    "WARP_DRIVE","ADVANCED_WEAPONS","DEFENSE_MATRIX","VOID_ANCHOR",
+    "QUANTUM_CORE","PHASE_DRIVE","NOVA_CANNON","FORTRESS_PROTOCOL","STELLAR_SYNC",
+}
+
+RANKS = {"见习指挥官","资深舰长","舰队少将","星系统治者","银河霸主"}
+EXP_PER_LEVEL = 1000
+
+RES_ORDER  = {"metal","esource","nuclear"}
+RES_LABELS = { metal="金属", esource="能源", nuclear="核能" }
+RES_TAGS   = { metal="矿石", esource="能量块", nuclear="水晶" }
+RES_REFINED_LABELS = { metal="金属(精)", esource="能源(精)", nuclear="核能(精)" }
+RES_COLORS = { metal={180,180,180}, esource={255,255,0}, nuclear={0,255,255} }
+
+SHIP_TYPES = {
+    SCOUT         = { name="侦察舰", speed=180, health=50,   maxHealth=50,   range=100,  dmg=6,  color={100,200,255}, buildTime=14 },
+    FRIGATE       = { name="护卫舰", speed=100, health=150,  maxHealth=150,  range=200,  dmg=10, color={80,160,255},  buildTime=25 },
+    DESTROYER     = { name="驱逐舰", speed=60,  health=400,  maxHealth=400,  range=300,  dmg=18, color={40,100,220},  buildTime=55 },
+    BATTLECRUISER = { name="战列舰", speed=35,  health=1200, maxHealth=1200, range=380,  dmg=45, color={160,80,255},  buildTime=120,
+                      aoeRadius=60, shotRate=0.5 },
+    ENGINEER     = { name="工程舰", speed=40,  health=80,  maxHealth=80,  range=0,    dmg=0,  color={255,200,80},  buildTime=18,
+                     mineRate={minerals=8, energy=4} },
+    EXPLORER     = { name="探索舰", speed=120, health=100, maxHealth=100, range=0,    dmg=0,  color={120,255,160}, buildTime=22,
+                     isExplorer=true },
+    CARRIER      = { name="母舰",   speed=18,  health=3000, maxHealth=3000, range=320, dmg=60, color={200,150,255}, buildTime=180,
+                     aoeRadius=80, shotRate=0.3 },
+    INTERCEPTOR  = { name="拦截舰", speed=240, health=80,   maxHealth=80,   range=180, dmg=14, color={255,220,80},  buildTime=20,
+                     shotRate=1.5 },
+}
+SHIP_QUEUE_ORDER = {"ENGINEER","EXPLORER","SCOUT","INTERCEPTOR","FRIGATE","DESTROYER","BATTLECRUISER","CARRIER"}
+SHIP_COSTS = {
+    SCOUT         = { metal=100,  esource=50  },
+    FRIGATE       = { metal=250,  esource=100 },
+    DESTROYER     = { metal=600,  esource=300 },
+    BATTLECRUISER = { metal=1800, esource=800,  nuclear=200 },
+    ENGINEER      = { metal=180,  esource=80  },
+    EXPLORER      = { metal=300,  esource=120 },
+    CARRIER       = { metal=2500, esource=1000, nuclear=400 },
+    INTERCEPTOR   = { metal=120,  esource=60  },
+}
+
+-- ============================================================================
+-- P1-1: 舰船改装模块系统
+-- ============================================================================
+MODULE_CAT = { ATTACK = "attack", DEFENSE = "defense", UTILITY = "utility" }
+
+SHIP_MODULES = {
+    -- 攻击模块 (5)
+    PIERCE_WARHEAD  = { name="穿透弹头",   cat=MODULE_CAT.ATTACK,  cost=5, replaceCost=3, icon="🔥",
+        desc="攻击无视15%护盾", effect={type="pierceShield", value=0.15} },
+    RAPID_FIRE      = { name="速射装置",   cat=MODULE_CAT.ATTACK,  cost=5, replaceCost=3, icon="⚡",
+        desc="射速+25%", effect={type="shotRateMult", value=1.25} },
+    PLASMA_BURN     = { name="等离子灼烧", cat=MODULE_CAT.ATTACK,  cost=5, replaceCost=3, icon="☄️",
+        desc="攻击附带3s灼烧(每秒2%最大生命)", effect={type="burn", dps=0.02, duration=3.0} },
+    PRECISION       = { name="精准打击",   cat=MODULE_CAT.ATTACK,  cost=5, replaceCost=3, icon="🎯",
+        desc="伤害+20%，射速-10%", effect={type="dmgUp", dmgMult=1.20, rateMult=0.90} },
+    PULSE_OVERLOAD  = { name="脉冲过载",   cat=MODULE_CAT.ATTACK,  cost=5, replaceCost=3, icon="💥",
+        desc="每5次攻击触发一次双倍伤害", effect={type="pulseOverload", interval=5, mult=2.0} },
+    -- 防御模块 (5)
+    NANO_ARMOR      = { name="纳米装甲",   cat=MODULE_CAT.DEFENSE, cost=5, replaceCost=3, icon="🛡️",
+        desc="最大生命+25%", effect={type="hpMult", value=1.25} },
+    ENERGY_SHIELD   = { name="能量护盾",   cat=MODULE_CAT.DEFENSE, cost=5, replaceCost=3, icon="🔮",
+        desc="获得20%最大生命的护盾", effect={type="shield", value=0.20} },
+    EMERGENCY_REPAIR= { name="应急维修",   cat=MODULE_CAT.DEFENSE, cost=5, replaceCost=3, icon="🔧",
+        desc="生命<30%时每秒回复2%最大生命", effect={type="emergencyHeal", threshold=0.30, healRate=0.02} },
+    REFLECT_COAT    = { name="反射镀层",   cat=MODULE_CAT.DEFENSE, cost=5, replaceCost=3, icon="✨",
+        desc="受击时15%概率反弹50%伤害", effect={type="reflect", chance=0.15, ratio=0.50} },
+    STEALTH_PAINT   = { name="隐匿涂装",   cat=MODULE_CAT.DEFENSE, cost=5, replaceCost=3, icon="👻",
+        desc="战斗开始3s内不被攻击", effect={type="stealth", duration=3.0} },
+    -- 辅助模块 (5)
+    TACTICAL_LINK   = { name="战术链路",   cat=MODULE_CAT.UTILITY, cost=5, replaceCost=3, icon="📡",
+        desc="同编队友军+8%伤害", effect={type="allyDmgAura", value=0.08} },
+    RECON_PROBE     = { name="侦察探针",   cat=MODULE_CAT.UTILITY, cost=5, replaceCost=3, icon="🛰️",
+        desc="标记敌人使其受伤+12%持续4s", effect={type="markEnemy", value=0.12, duration=4.0} },
+    TRACTOR_BEAM    = { name="牵引光束",   cat=MODULE_CAT.UTILITY, cost=5, replaceCost=3, icon="🌀",
+        desc="减速命中目标20%持续2s", effect={type="slow", value=0.20, duration=2.0} },
+    OVERCLOCK_ENGINE= { name="超频引擎",   cat=MODULE_CAT.UTILITY, cost=5, replaceCost=3, icon="🚀",
+        desc="移动速度+30%", effect={type="speedMult", value=1.30} },
+    QUANTUM_ANCHOR  = { name="量子锚定",   cat=MODULE_CAT.UTILITY, cost=5, replaceCost=3, icon="⚓",
+        desc="击杀时回复5%最大生命", effect={type="killHeal", value=0.05} },
+}
+
+SHIP_MODULES_BY_CAT = { attack={}, defense={}, utility={} }
+for k, v in pairs(SHIP_MODULES) do
+    SHIP_MODULES_BY_CAT[v.cat][#SHIP_MODULES_BY_CAT[v.cat]+1] = k
+end
+for _, list in pairs(SHIP_MODULES_BY_CAT) do table.sort(list) end
+
+-- ============================================================================
+-- 星球类型加成表
+-- ============================================================================
+PLANET_TYPE_BONUS = {
+    Terran        = { mineralMult=1.3,   label="矿石产量+30%"   },
+    Oceanic       = { crystalMult=1.5,   label="水晶产量+50%"   },
+    Volcanic      = { nuclearMult=1.4,   label="核能精炼+40%"   },
+    Desert        = { mineralMult=1.3,   label="矿石产量+30%"   },
+    Barren        = { buildCostMult=0.85, label="建造费用-15%"  },
+    ["Gas Giant"] = { esourceMult=1.6,   label="能源精炼+60%"   },
+}
+
+-- ============================================================================
+-- 阶段性目标定义
+-- ============================================================================
+STAGE_GOALS = {
+    { id="first_colony",   title="建立第一个殖民地",  desc="探索并殖民一颗星球",         check=function(gs) return (gs.profile and gs.profile.colonized or 0) >= 1 end,  reward={metal=500,  esource=300} },
+    { id="first_refinery", title="建造精炼厂",         desc="在基地建造资源精炼厂",        check=function(gs) return gs.base and gs.base.buildings and (function() for _,b in ipairs(gs.base.buildings) do if b.key=="REFINERY" then return true end end return false end)() end, reward={nuclear=100, esource=200} },
+    { id="first_ship",     title="建造第一艘舰船",     desc="完成一艘舰船的建造",          check=function(gs) return (gs.totalShipsBuilt or 0) >= 1 end,                    reward={metal=300,  esource=150} },
+    { id="fleet_5",        title="舰队扩编",           desc="拥有至少5艘舰船（含储备）",  check=function(gs) return (gs.totalShipsBuilt or 0) >= 5 end,                    reward={metal=600,  esource=300,  nuclear=50} },
+    { id="research_first", title="完成第一项科技",     desc="解锁任意一项科技",            check=function(gs) return gs.rs and next(gs.rs.unlocked) ~= nil end,              reward={nuclear=200, credits=500} },
+    { id="core_lv3",       title="基地核心Lv.3",       desc="将基地核心升级至3级",         check=function(gs) return gs.base and (gs.base.coreLevel or 1) >= 3 end,          reward={metal=1000, esource=500,  nuclear=200} },
+    { id="colony_3",       title="三星联盟",           desc="殖民3颗星球",                 check=function(gs) return (gs.profile and gs.profile.colonized or 0) >= 3 end,  reward={credits=1000, metal=800} },
+    { id="research_5",   title="科技先驱",     desc="解锁任意5项科技",
+      check=function(gs)
+          if not (gs.rs and gs.rs.unlocked) then return false end
+          local n = 0; for _ in pairs(gs.rs.unlocked) do n = n + 1 end; return n >= 5
+      end,
+      reward={nuclear=400, credits=1000} },
+    { id="quantum_core", title="量子突破",     desc="研究完成量子核心科技",
+      check=function(gs)
+          return gs.rs and gs.rs.unlocked and gs.rs.unlocked["QUANTUM_CORE"] == true
+      end,
+      reward={metal=2000, esource=1000, nuclear=600, credits=2000} },
+    { id="colony_8",     title="星系帝国",     desc="殖民8颗星球",
+      check=function(gs) return (gs.profile and gs.profile.colonized or 0) >= 8 end,
+      reward={credits=3000, metal=2000, esource=1000} },
+    { id="pirates_50",   title="星域清道夫",   desc="累计击毁50艘海盗舰船",
+      check=function(gs) return (gs.totalEnemiesKilled or 0) >= 50 end,
+      reward={metal=1500, nuclear=300, credits=1000} },
+    { id="endless_3",    title="永恒征服者",   desc="无尽模式存活至第3轮",
+      check=function(gs) return (gs.endlessRound or 0) >= 3 end,
+      reward={metal=3000, esource=1500, nuclear=800, credits=3000} },
+    { id="trade_hub",    title="星际商人",     desc="在任意星球建造星际交易所",
+      check=function(gs)
+          if not gs.colonizedPlanets then return false end
+          for _, planet in ipairs(gs.colonizedPlanets) do
+              if planet.buildings then
+                  for _, b in ipairs(planet.buildings) do
+                      if b.key == "TRADE_HUB" then return true end
+                  end
+              end
+          end
+          return false
+      end,
+      reward={credits=2000, esource=500} },
+    { id="fleet_15",     title="钢铁舰队",     desc="累计建造15艘舰船",
+      check=function(gs) return (gs.totalShipsBuilt or 0) >= 15 end,
+      reward={metal=2500, esource=1200, nuclear=400} },
+    { id="nuclear_5000", title="核能霸主",     desc="核燃料储量达到5000",
+      check=function(gs)
+          return gs.rm and gs.rm.resources and (gs.rm.resources.nuclear or 0) >= 5000
+      end,
+      reward={credits=2500, metal=1000} },
+}
+
+-- ============================================================================
+-- P1-3: 指挥官系统常量
+-- ============================================================================
+COMMANDER_MAX_LEVEL = 10
+COMMANDER_MAX_SLOTS = 4
+COMMANDER_RETIRE_REWARD = 3
+
+COMMANDER_EXP_TABLE = {
+    [1] = 50,   [2] = 120,  [3] = 220,  [4] = 360,  [5] = 540,
+    [6] = 780,  [7] = 1080, [8] = 1450, [9] = 1900, [10] = math.huge,
+}
+
+COMMANDER_SPECS = {
+    tactical = {
+        key = "tactical", name = "战术专精", icon = "⚔",
+        desc = "强化编队攻击与技能伤害",
+        perLevel = { dmgMult = 0.03 },
+        passive = "编队攻击力 +3%/级",
+        skill = {
+            name = "精准打击", icon = "🎯", cooldown = 90,
+            desc = "全编队攻击力×1.5，持续8秒",
+            duration = 8, effectMult = 1.5, effectKey = "dmg",
+        },
+    },
+    defense = {
+        key = "defense", name = "防御专精", icon = "🛡",
+        desc = "强化编队生存与护盾",
+        perLevel = { healthMult = 0.04 },
+        passive = "编队生命值 +4%/级",
+        skill = {
+            name = "紧急护盾", icon = "🔰", cooldown = 120,
+            desc = "全编队无敌6秒",
+            duration = 6, effectMult = 0.0, effectKey = "invuln",
+        },
+    },
+    logistics = {
+        key = "logistics", name = "后勤专精", icon = "📦",
+        desc = "强化资源获取与维修",
+        perLevel = { resourceMult = 0.05 },
+        passive = "战斗资源掉落 +5%/级",
+        skill = {
+            name = "战场回收", icon = "♻", cooldown = 0,
+            desc = "击杀敌舰时额外获得30%资源（被动）",
+            duration = 0, effectMult = 1.3, effectKey = "salvage",
+        },
+    },
+}
+
+COMMANDER_NAMES = {
+    "阿尔法·雷恩", "贝塔·索拉", "伽马·韦恩", "德尔塔·凯恩",
+    "泽塔·摩根", "西塔·布雷克", "伊塔·诺瓦", "卡帕·奥瑞",
+    "拉姆达·克洛", "西格玛·芬恩", "陶·海姆", "欧米伽·塞斯",
+    "星火·将军", "暗鸦·少校", "曙光·上尉", "铁壁·中校",
+}
+
+COMMANDER_SOURCE = {
+    CAMPAIGN  = "campaign",
+    NEMESIS   = "nemesis",
+    STREAK    = "streak",
+    MARKET    = "market",
+    INITIAL   = "initial",
+}
+
+COMMANDER_MARKET_COST = 2000

@@ -1,0 +1,50 @@
+{
+  "$schema": "../schemas/project.schema.json",
+  "project_id": "p_98r1",
+  "author": {
+    "id": "1259204981"
+  },
+  "entry": "main.lua",
+  "version": "1.0.32",
+  "taptap_publish": {
+    "title": "银河征服",
+    "description": "一款星际题材的多人在线策略游戏，率领舰队征服河系，与玩家联盟对战，争夺宇宙霸权。",
+    "category": "strategy",
+    "screen_orientation": "landscape",
+    "collection_type": "sce",
+    "trial_note": "首次制作游戏BUG还有很多没有修复，很多功能没有实现，有好的建议清告知，不喜勿喷。",
+    "app_platforms": "1,2",
+    "gameplay_demo_video_source": "https://tapcode-sce.spark.xd.com/videos/p_98r1/1778643343868-rec_607c1c44-99ca-4e54-b731-e29299149e75.mp4",
+    "developer_id": 385689,
+    "app_id": 855678,
+    "miniapp_id": "tapmcdfygkujpyog0s"
+  },
+  "assets": {
+    "icon": "./game_material/ICON_2026-05-13T03-36-49_01.png",
+    "screenshots": [
+      "./game_material/SCREENSHOT_2026-05-13T03-36-49_01.png",
+      "./game_material/SCREENSHOT_2026-05-13T03-36-49_02.jpg",
+      "./game_material/SCREENSHOT_2026-05-13T03-36-49_03.png"
+    ],
+    "promotional_image": "./game_material/PROMO_2026-05-13T03-36-49_01.jpg",
+    "icon_url": "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/ICON_2026-05-13T03-36-49_01.png",
+    "screenshot_urls": [
+      "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/SCREENSHOT_2026-05-13T03-36-49_01.png",
+      "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/SCREENSHOT_2026-05-13T03-36-49_02.jpg",
+      "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/SCREENSHOT_2026-05-13T03-36-49_03.png"
+    ],
+    "promotional_image_url": "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/PROMO_2026-05-13T03-36-49_01.jpg",
+    "cover_horizontal": "./game_material/COVER_HORIZONTAL_2026-05-17T02-39-23_01.png",
+    "cover_horizontal_url": "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/COVER_HORIZONTAL_2026-05-17T02-39-23_01.png",
+    "cover_vertical": "./.project/game_material/COVER_VERTICAL_2026-05-13T03-43-24_01.png",
+    "cover_vertical_url": "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/COVER_VERTICAL_2026-05-13T03-43-24_01.png"
+  },
+  "test_qrcode": {
+    "url": "https://tapcode-sce.spark.xd.com/qrcode/p_98r1_1781767672952.png",
+    "generated_at": "2026-06-18T07:27:53.091Z"
+  },
+  "metadata": {
+    "updated_at": "2026-06-18T07:27:53.091Z",
+    "promo_dependent_hash": "0e9089b51e4f256f8e6f323339e02af9"
+  }
+}
