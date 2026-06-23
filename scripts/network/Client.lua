@@ -75,7 +75,9 @@ local refreshTimer_   = 0
 local selectedPlanet_ = nil
 local lastShownRemaining_ = -1   -- 上次传给 UI 的整秒值，相同时跳过调用
 
--- 游戏系统实例
+-- 游戏系统实例（防御：确保模块 .new 存在，避免局部变量溢出导致的 nil）
+assert(Sys.ResourceManager and Sys.ResourceManager.new, "[Client] ResourceManager.new missing")
+assert(Sys.ResearchSystem and Sys.ResearchSystem.new, "[Client] ResearchSystem.new missing")
 local rm_      = Sys.ResourceManager.new()
 local bs_      = Sys.BuildingSystem.new(rm_)       -- 行星建造系统
 local bbs_     = Sys.BaseBuildingSystem.new(rm_)   -- 基地建造系统（独立）
