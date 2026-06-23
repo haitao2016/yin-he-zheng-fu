@@ -11,6 +11,7 @@ local cjson = require "cjson"
 ---@field military    LegacyTreeBranch
 ---@field economy     LegacyTreeBranch
 ---@field diplomacy   LegacyTreeBranch
+---@field technology  LegacyTreeBranch
 
 ---@class LegacyData
 ---@field lp       integer      -- current unspent LP
@@ -33,6 +34,11 @@ local cjson = require "cjson"
 ---@field diploPositiveBonus    number    -- diplomacy L3: positive diplomatic event rate bonus (0..1)
 ---@field questRefreshReduction number    -- diplomacy L4: quest board refresh CD reduction (seconds)
 ---@field crisisCountdownBonus  number    -- diplomacy L5: crisis countdown extension (seconds)
+---@field researchSpeedBonus    number    -- technology L1: research speed multiplier bonus (0..1)
+---@field startingTechBonus     integer   -- technology L2: start with +N techs unlocked
+---@field explorationBonus      number    -- technology L3: exploration reward multiplier (0..1)
+---@field anomalyDetection      number    -- technology L4: anomaly detection range bonus (0..1)
+---@field legendaryDropRate     number    -- technology L5: legendary item drop rate bonus (0..1)
 
 -- ---------------------------------------------------------------------------
 -- Constants
@@ -42,7 +48,7 @@ local SAVE_FILE     = "legacy_data.json"
 local LP_CAP        = 999
 local RESET_COST    = 50
 local MAX_LEVEL     = 5
-local BRANCHES      = { "military", "economy", "diplomacy" }
+local BRANCHES      = { "military", "economy", "diplomacy", "technology" }
 
 --- LP cost to reach each level (index = target level 1..5)
 local UPGRADE_COST  = { 10, 25, 50, 100, 200 }
@@ -70,6 +76,7 @@ local function newData()
             military   = { level = 0 },
             economy    = { level = 0 },
             diplomacy  = { level = 0 },
+            technology = { level = 0 },
         },
     }
 end
@@ -132,6 +139,7 @@ function LegacySystem.GetTree()
         military   = { level = data.tree.military.level },
         economy    = { level = data.tree.economy.level },
         diplomacy  = { level = data.tree.diplomacy.level },
+        technology = { level = data.tree.technology.level },
     }
 end
 
@@ -226,6 +234,7 @@ function LegacySystem.GetBonuses()
     local mil  = data.tree.military.level
     local eco  = data.tree.economy.level
     local dip  = data.tree.diplomacy.level
+    local tech = data.tree.technology.level
 
     ---@type LegacyBonuses
     local b = {
@@ -247,6 +256,12 @@ function LegacySystem.GetBonuses()
         diploPositiveBonus    = dip >= 3 and 0.10 or 0,
         questRefreshReduction = dip >= 4 and 30   or 0,
         crisisCountdownBonus  = dip >= 5 and 30   or 0,
+        -- Technology branch
+        researchSpeedBonus    = tech >= 1 and 0.15 or 0,
+        startingTechBonus     = tech >= 2 and 1    or 0,
+        explorationBonus      = tech >= 3 and 0.25 or 0,
+        anomalyDetection      = tech >= 4 and 0.30 or 0,
+        legendaryDropRate     = tech >= 5 and 0.15 or 0,
     }
     return b
 end
