@@ -1,105 +1,507 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
------------------------------------------------------------
--- MarketSystem (从 Systems.lua 机械拆分)
------------------------------------------------------------
-require("game.GameConstants")
-
-local BASE_RATES = {
-    metal   = { buy=2.0,  sell=0.5 },
-    esource = { buy=3.0,  sell=1.0 },
-    nuclear = { buy=10.0, sell=4.0 },
-}
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
+--[[
+MarketSystem.lua - 动态市场系统（V3.2 P0-4 扩展版）
+资源价格随供需波动，支持稀有资源交易、价格趋势、市场事件
+]]
 
 local MarketSystem = {}
-MarketSystem.__index = MarketSystem
 
-function MarketSystem.new(rm)
-    local self = setmetatable({ rm=rm, timer=0 }, MarketSystem)
-    self.rates      = {}
-    self.history    = {}  -- 记录近期买价快照（最多6条）
-    self.priceFlash = {}  -- P2-3: 价格大幅波动提示计时器（秒）
-    for res, r in pairs(BASE_RATES) do
-        self.rates[res]      = { buy=r.buy, sell=r.sell }
-        self.history[res]    = { r.buy }  -- 初始时放一条基准价
-        self.priceFlash[res] = 0
-    end
-    return self
+-- 市场配置
+MarketSystem.MARKET_CONFIG = {
+    updateInterval = 60,     -- 价格更新间隔（秒）
+    volatility = 0.15,       -- 价格波动幅度
+    eventChance = 0.1,        -- 每次更新时有 10% 概率触发市场事件
+    eventDuration = 120,      -- 事件持续时间（秒）
+    maxPriceHistory = 20,     -- 保留最近 20 个采样点
+    dailyTradeLimit = 5000,   -- 每日交易限额（以金属计价）
+    basePrice = {
+        metal = 1,
+        esource = 2,
+        nuclear = 5,
+        blueCrystal = 50,
+        purpleCrystal = 200,
+        rainbowCrystal = 1000,
+    },
+    priceRange = {
+        min = 0.5,
+        max = 2.0,
+    },
+}
+
+-- 资源名称映射
+MarketSystem.RESOURCE_NAMES = {
+    metal = "金属",
+    esource = "能源晶体",
+    nuclear = "核燃料",
+    blueCrystal = "蓝晶石",
+    purpleCrystal = "紫晶石",
+    rainbowCrystal = "彩虹晶",
+}
+
+-- 市场事件类型定义
+local MARKET_EVENT_TYPES = {
+    SHORTAGE = {
+        id = "SHORTAGE",
+        name = "资源短缺",
+        desc = "供应紧张，价格显著上涨",
+        priceMult = 1.5,
+        affectedResources = { "esource", "nuclear" },
+    },
+    SURPLUS = {
+        id = "SURPLUS",
+        name = "供应过剩",
+        desc = "市场充斥，价格下跌",
+        priceMult = 0.7,
+        affectedResources = { "metal", "esource" },
+    },
+    WAR_DEMAND = {
+        id = "WAR_DEMAND",
+        name = "战争需求",
+        desc = "战略物资价格飙升",
+        priceMult = 1.8,
+        affectedResources = { "nuclear", "blueCrystal" },
+    },
+    RARE_DISCOVERY = {
+        id = "RARE_DISCOVERY",
+        name = "稀有矿脉发现",
+        desc = "稀有资源价格短暂下降",
+        priceMult = 0.8,
+        affectedResources = { "purpleCrystal", "rainbowCrystal" },
+    },
+}
+
+-- 判断是否为稀有资源
+local function isRareResource(resource)
+    return resource == "blueCrystal" or resource == "purpleCrystal" or resource == "rainbowCrystal"
 end
 
-function MarketSystem:update(dt)
-    -- P2-3: 衰减所有 priceFlash 计时器
-    for res, _ in pairs(self.priceFlash) do
-        if self.priceFlash[res] > 0 then
-            self.priceFlash[res] = math.max(0, self.priceFlash[res] - dt)
-        end
+-- 获取今日日期（字符串），用于每日限额追踪
+local function todayKey()
+    return os.date("%Y-%m-%d", os.time())
+end
+
+-- 初始化市场
+function MarketSystem.init(playerState)
+    playerState.marketPrices = playerState.marketPrices or MarketSystem.getInitialPrices()
+    playerState.marketLastUpdate = playerState.marketLastUpdate or os.time()
+    playerState.marketPriceHistory = playerState.marketPriceHistory or {}
+    playerState.marketEvents = playerState.marketEvents or {}
+    playerState.dailyTradeStats = playerState.dailyTradeStats or { date = todayKey(), totalBought = 0, totalSold = 0 }
+
+    -- 确保每个资源至少有基础历史记录
+    for res, _ in pairs(MarketSystem.MARKET_CONFIG.basePrice) do
+        playerState.marketPriceHistory[res] = playerState.marketPriceHistory[res] or { playerState.marketPrices[res] or MarketSystem.MARKET_CONFIG.basePrice[res] }
     end
 
-    -- P2-1: 每日挑战 — 市场汇率固定为最优（买价最低、卖价最高）
-    if self.rm.baseBonus and self.rm.baseBonus.challengeBestMarket then
-        for res, r in pairs(self.rates) do
-            local base = BASE_RATES[res]
-            r.buy  = base.buy  * 0.4   -- 最低买入价（玩家花最少）
-            r.sell = base.buy  * 0.4 * 0.6  -- 对应卖出价（保持60%差价）
-            -- 让卖价也尽量高（用基准卖价×1.5 但不超过买价60%）
-            r.sell = math.min(base.sell * 1.5, r.buy * 0.6)
-        end
-        return  -- 跳过正常波动
+    -- 检查是否需要重置每日限额
+    if playerState.dailyTradeStats.date ~= todayKey() then
+        playerState.dailyTradeStats = { date = todayKey(), totalBought = 0, totalSold = 0 }
     end
+end
 
-    self.timer = self.timer + dt
-    if self.timer >= 12 then   -- 每12秒波动一次，让玩家有感知
-        self.timer = 0
-        for res, r in pairs(self.rates) do
-            local prevBuy = r.buy   -- P2-3: 记录变动前价格
-            -- 记录历史（买价快照）
-            local h = self.history[res]
-            h[#h+1] = r.buy
-            if #h > 6 then table.remove(h, 1) end
-            -- 滑动波动：当前价 × 随机因子，带均值回归避免无限漂移
-            local change   = 1.0 + (math.random() * 0.5 - 0.25)   -- ±25%
-            local base     = BASE_RATES[res]
-            local revert   = 0.25   -- 25% 拉力归向基准价
-            r.buy  = math.max(base.buy  * 0.4, r.buy  * change * (1 - revert) + base.buy  * revert)
-            r.sell = math.max(base.sell * 0.4, r.sell * change * (1 - revert) + base.sell * revert)
-            -- 卖价始终 ≤ 买价的 60%（交易所差价）
-            r.sell = math.min(r.sell, r.buy * 0.6)
-            -- P2-3: 变动 > 15% 触发价格闪烁提示（8秒）
-            local changePct = math.abs(r.buy - prevBuy) / prevBuy
-            if changePct >= 0.15 then
-                self.priceFlash[res] = 8.0
+-- 获取初始价格
+function MarketSystem.getInitialPrices()
+    local prices = {}
+    for res, base in pairs(MarketSystem.MARKET_CONFIG.basePrice) do
+        prices[res] = base
+    end
+    return prices
+end
+
+-- 记录价格历史
+local function appendPriceHistory(playerState, resource, price)
+    local history = playerState.marketPriceHistory[resource] or {}
+    table.insert(history, price)
+    while #history > MarketSystem.MARKET_CONFIG.maxPriceHistory do
+        table.remove(history, 1)
+    end
+    playerState.marketPriceHistory[resource] = history
+end
+
+-- 检查并清理过期事件
+local function cleanExpiredEvents(playerState)
+    local now = os.time()
+    local activeEvents = {}
+    for _, evt in ipairs(playerState.marketEvents or {}) do
+        if now < evt.expireTime then
+            table.insert(activeEvents, evt)
+        end
+    end
+    playerState.marketEvents = activeEvents
+end
+
+-- 获取资源当前的事件加成倍率
+local function getEventMultiplier(playerState, resource)
+    local mult = 1.0
+    for _, evt in ipairs(playerState.marketEvents or {}) do
+        for _, affected in ipairs(evt.affectedResources or {}) do
+            if affected == resource then
+                mult = mult * (evt.priceMult or 1.0)
             end
         end
     end
+    return mult
 end
 
---- 获取某资源的价格趋势符号（"↑" / "↓" / "→"）
-function MarketSystem:getTrend(resType)
-    local h = self.history[resType]
-    if not h or #h < 2 then return "→" end
-    local last = h[#h]
-    local prev = h[#h - 1]
-    if last > prev * 1.05 then return "↑"
-    elseif last < prev * 0.95 then return "↓"
-    else return "→" end
+-- 随机触发市场事件
+local function tryTriggerMarketEvent(playerState)
+    if math.random() > MarketSystem.MARKET_CONFIG.eventChance then return end
+
+    local eventKeys = {}
+    for key, _ in pairs(MARKET_EVENT_TYPES) do table.insert(eventKeys, key) end
+    local chosenKey = eventKeys[math.random(1, #eventKeys)]
+    local template = MARKET_EVENT_TYPES[chosenKey]
+
+    table.insert(playerState.marketEvents, {
+        id = template.id,
+        name = template.name,
+        desc = template.desc,
+        priceMult = template.priceMult,
+        affectedResources = template.affectedResources,
+        startTime = os.time(),
+        expireTime = os.time() + MarketSystem.MARKET_CONFIG.eventDuration,
+    })
 end
 
-function MarketSystem:sell(resType, amount)
-    local r = self.rates[resType]
-    if not r then return false, "不可交易" end
-    if (self.rm.resources[resType] or 0) < amount then return false, "资源不足" end
-    self.rm.resources[resType] = self.rm.resources[resType] - amount
-    self.rm:add("credits", amount * r.sell)
-    return true, math.floor(amount * r.sell)
+-- 更新市场价格
+function MarketSystem.updateMarket(playerState)
+    local now = os.time()
+    if playerState.marketLastUpdate and (now - playerState.marketLastUpdate) < MarketSystem.MARKET_CONFIG.updateInterval then
+        cleanExpiredEvents(playerState)
+        return
+    end
+
+    playerState.marketLastUpdate = now
+    cleanExpiredEvents(playerState)
+    tryTriggerMarketEvent(playerState)
+
+    -- 更新每个资源的价格
+    for res, base in pairs(MarketSystem.MARKET_CONFIG.basePrice) do
+        local current = playerState.marketPrices[res] or base
+        local volatility = MarketSystem.MARKET_CONFIG.volatility
+
+        -- 随机波动
+        local change = 1 + (math.random() - 0.5) * 2 * volatility
+        local newPrice = current * change
+
+        -- 应用事件倍率
+        local eventMult = getEventMultiplier(playerState, res)
+        newPrice = newPrice * eventMult
+
+        -- 限制范围
+        local minPrice = base * MarketSystem.MARKET_CONFIG.priceRange.min
+        local maxPrice = base * MarketSystem.MARKET_CONFIG.priceRange.max
+        newPrice = math.max(minPrice, math.min(maxPrice, newPrice))
+
+        newPrice = math.floor(newPrice * 100) / 100
+        playerState.marketPrices[res] = newPrice
+        appendPriceHistory(playerState, res, newPrice)
+    end
 end
 
-function MarketSystem:buy(resType, amount)
-    local r = self.rates[resType]
-    if not r then return false, "不可交易" end
-    local cost = amount * r.buy
-    if not self.rm:canAfford({credits=cost}) then return false, "星币不足" end
-    self.rm:spend({credits=cost})
-    self.rm:add(resType, amount)
-    return true, math.floor(cost)
+-- 检查每日限额
+local function checkDailyLimit(playerState, totalValue)
+    local stats = playerState.dailyTradeStats
+    if stats.date ~= todayKey() then
+        playerState.dailyTradeStats = { date = todayKey(), totalBought = 0, totalSold = 0 }
+        return true
+    end
+    return (stats.totalBought + totalValue) <= MarketSystem.MARKET_CONFIG.dailyTradeLimit
+end
+
+-- 购买资源
+function MarketSystem.buy(playerState, resource, amount, rm)
+    local price = playerState.marketPrices[resource]
+    if not price then return false, "资源不存在" end
+
+    local totalCost = math.floor(price * amount)
+    if not checkDailyLimit(playerState, totalCost) then
+        return false, "今日交易限额不足（限额 " .. MarketSystem.MARKET_CONFIG.dailyTradeLimit .. " 金属）"
+    end
+
+    -- 检查资源是否足够（用另一种资源支付，这里用 metal 作为通用货币）
+    local currency = "metal"
+    if not rm:canAfford(currency, totalCost) then
+        return false, "货币不足，需要 " .. totalCost .. " 金属"
+    end
+
+    -- 扣除货币
+    rm:spendResources({ [currency] = totalCost })
+
+    -- 添加资源
+    if isRareResource(resource) then
+        rm:addRare(resource, amount)
+    else
+        rm:addResource(resource, amount)
+    end
+
+    -- 更新每日统计
+    playerState.dailyTradeStats.totalBought = playerState.dailyTradeStats.totalBought + totalCost
+
+    -- 记录交易
+    playerState.marketTransactions = playerState.marketTransactions or {}
+    table.insert(playerState.marketTransactions, {
+        type = "buy",
+        resource = resource,
+        amount = amount,
+        price = price,
+        totalValue = totalCost,
+        time = os.time(),
+    })
+
+    return true, "购买成功！花费 " .. totalCost .. " 金属，获得 " .. amount .. " " .. (MarketSystem.RESOURCE_NAMES[resource] or resource)
+end
+
+-- 出售资源
+function MarketSystem.sell(playerState, resource, amount, rm)
+    local price = playerState.marketPrices[resource]
+    if not price then return false, "资源不存在" end
+
+    -- 检查资源是否足够
+    local hasEnough = false
+    if isRareResource(resource) then
+        hasEnough = rm.rareResources and (rm.rareResources[resource] or 0) >= amount
+    else
+        hasEnough = rm:canAfford(resource, amount)
+    end
+
+    if not hasEnough then
+        return false, "资源不足"
+    end
+
+    -- 出售价格（略低于购买价）
+    local sellPrice = math.floor(price * amount * 0.9)
+
+    -- 扣除资源
+    if isRareResource(resource) then
+        rm:spendRare(resource, amount)
+    else
+        rm:spendResources({ [resource] = amount })
+    end
+
+    -- 添加金属
+    rm:addResource("metal", sellPrice)
+
+    -- 更新每日统计
+    playerState.dailyTradeStats.totalSold = playerState.dailyTradeStats.totalSold + sellPrice
+
+    -- 记录交易
+    playerState.marketTransactions = playerState.marketTransactions or {}
+    table.insert(playerState.marketTransactions, {
+        type = "sell",
+        resource = resource,
+        amount = amount,
+        price = price,
+        totalValue = sellPrice,
+        time = os.time(),
+    })
+
+    return true, "出售成功！出售 " .. amount .. " " .. (MarketSystem.RESOURCE_NAMES[resource] or resource) .. "，获得 " .. sellPrice .. " 金属"
+end
+
+-- 获取价格趋势
+function MarketSystem.getPriceTrend(playerState, resource)
+    local history = playerState.marketPriceHistory and playerState.marketPriceHistory[resource]
+    if not history or #history == 0 then
+        return 0, "stable", {}
+    end
+    local first = history[1]
+    local last = history[#history]
+    local change = (last - first) / first
+    local trend = "stable"
+    if change > 0.05 then trend = "up"
+    elseif change < -0.05 then trend = "down"
+    end
+    return change, trend, history
+end
+
+-- 获取市场分析报告
+function MarketSystem.getMarketAnalysis(playerState)
+    local analysis = {}
+    for res, _ in pairs(MarketSystem.MARKET_CONFIG.basePrice) do
+        local change, trend, history = MarketSystem.getPriceTrend(playerState, res)
+        table.insert(analysis, {
+            resource = res,
+            name = MarketSystem.RESOURCE_NAMES[res] or res,
+            currentPrice = playerState.marketPrices[res] or MarketSystem.MARKET_CONFIG.basePrice[res],
+            changePercent = math.floor(change * 100 + 0.5),
+            trend = trend,
+            isRare = isRareResource(res),
+        })
+    end
+    return {
+        resources = analysis,
+        events = playerState.marketEvents or {},
+        dailyStats = playerState.dailyTradeStats,
+        dailyLimit = MarketSystem.MARKET_CONFIG.dailyTradeLimit,
+    }
+end
+
+-- 获取最近交易历史
+function MarketSystem.getTradeHistory(playerState, limit)
+    limit = limit or 10
+    local txs = playerState.marketTransactions or {}
+    local result = {}
+    for i = #txs, math.max(1, #txs - limit + 1), -1 do
+        local tx = txs[i]
+        if tx then
+            table.insert(result, {
+                type = tx.type,
+                resource = tx.resource,
+                resourceName = MarketSystem.RESOURCE_NAMES[tx.resource] or tx.resource,
+                amount = tx.amount,
+                price = tx.price,
+                totalValue = tx.totalValue or (tx.price and math.floor(tx.price * tx.amount) or 0),
+                time = tx.time,
+            })
+        end
+    end
+    return result
+end
+
+-- 获取市场信息
+function MarketSystem.getMarketInfo(playerState)
+    return {
+        prices = playerState.marketPrices,
+        lastUpdate = playerState.marketLastUpdate,
+        nextUpdateIn = MarketSystem.MARKET_CONFIG.updateInterval - ((os.time() - (playerState.marketLastUpdate or os.time())) % MarketSystem.MARKET_CONFIG.updateInterval),
+        dailyStats = playerState.dailyTradeStats,
+        dailyLimit = MarketSystem.MARKET_CONFIG.dailyTradeLimit,
+    }
+end
+
+---@param resource string
+---@param rm table
+---@return number
+function MarketSystem.supplyDemandImpactOnPrice(resource, rm)
+    if not rm or not resource then return 1.0 end
+    local ratio = 1.0
+    if rm.computeSupplyDemandRatio then
+        ratio = rm:computeSupplyDemandRatio(resource)
+    elseif rm.supplyLevels then
+        local supply = rm.supplyLevels[resource] or 0
+        local demand = rm.demandLevels[resource] or 0
+        if demand > 0 then ratio = supply / demand
+        elseif supply > 0 then ratio = 2.0 end
+    end
+    ratio = tonumber(ratio) or 1.0
+    if ratio <= 0 then ratio = 0.1 end
+    local impact = 1.0 / ratio
+    impact = math.max(0.5, math.min(2.0, impact))
+    return impact
+end
+
+---@param playerState table
+---@param rm table
+function MarketSystem.updateMarketFromSupplyDemand(playerState, rm)
+    if not playerState or not rm then return end
+    playerState.marketPrices = playerState.marketPrices or MarketSystem.getInitialPrices()
+    playerState.marketEvents = playerState.marketEvents or {}
+    local shortageResources = {}
+    local surplusResources = {}
+    for res, base in pairs(MarketSystem.MARKET_CONFIG.basePrice) do
+        local current = playerState.marketPrices[res] or base
+        local impact = MarketSystem.supplyDemandImpactOnPrice(res, rm)
+        local targetPrice = current * impact
+        local minPrice = base * MarketSystem.MARKET_CONFIG.priceRange.min
+        local maxPrice = base * MarketSystem.MARKET_CONFIG.priceRange.max
+        targetPrice = math.max(minPrice, math.min(maxPrice, targetPrice))
+        local newPrice = current * 0.85 + targetPrice * 0.15
+        newPrice = math.max(minPrice, math.min(maxPrice, newPrice))
+        newPrice = math.floor(newPrice * 100) / 100
+        playerState.marketPrices[res] = newPrice
+        appendPriceHistory(playerState, res, newPrice)
+        local ratio = 1.0
+        if rm.computeSupplyDemandRatio then
+            ratio = rm:computeSupplyDemandRatio(res)
+        elseif rm.supplyLevels then
+            local s = rm.supplyLevels[res] or 0
+            local d = rm.demandLevels[res] or 0
+            if d > 0 then ratio = s / d end
+        end
+        if ratio < 0.5 then table.insert(shortageResources, res) end
+        if ratio > 2.0 then table.insert(surplusResources, res) end
+    end
+    if #shortageResources > 0 then
+        MarketSystem.triggerSupplyDemandEvent(playerState, "SHORTAGE", shortageResources)
+    end
+    if #surplusResources > 0 then
+        MarketSystem.triggerSupplyDemandEvent(playerState, "SURPLUS", surplusResources)
+    end
+end
+
+---@param playerState table
+---@param eventType string
+---@param resources table
+function MarketSystem.triggerSupplyDemandEvent(playerState, eventType, resources)
+    if not playerState or not eventType or not resources or #resources == 0 then return end
+    local template = MARKET_EVENT_TYPES[eventType]
+    if not template then
+        template = {
+            id = eventType,
+            name = eventType == "SHORTAGE" and "资源短缺" or "供应过剩",
+            desc = eventType == "SHORTAGE" and "供应紧张，价格上涨" or "市场供应充足，价格下跌",
+            priceMult = eventType == "SHORTAGE" and 1.3 or 0.8,
+        }
+    end
+    local now = os.time()
+    for _, existing in ipairs(playerState.marketEvents or {}) do
+        if existing.id == template.id and now < existing.expireTime then return end
+    end
+    table.insert(playerState.marketEvents, {
+        id = template.id,
+        name = template.name,
+        desc = template.desc,
+        priceMult = template.priceMult,
+        affectedResources = resources,
+        startTime = now,
+        expireTime = now + MarketSystem.MARKET_CONFIG.eventDuration,
+        supplyDemandTriggered = true,
+    })
+end
+
+---@param playerState table
+---@param rm table
+---@return table
+function MarketSystem.getMarketAnalysis(playerState, rm)
+    local analysis = {}
+    for res, _ in pairs(MarketSystem.MARKET_CONFIG.basePrice) do
+        local change, trend, history = MarketSystem.getPriceTrend(playerState, res)
+        local supply = 0
+        local demand = 0
+        local ratio = 1.0
+        local predictedTrend = "stable"
+        local priceImpact = 1.0
+        if rm then
+            if rm.supplyLevels then supply = rm.supplyLevels[res] or 0 end
+            if rm.demandLevels then demand = rm.demandLevels[res] or 0 end
+            if rm.computeSupplyDemandRatio then ratio = rm:computeSupplyDemandRatio(res) end
+            if rm.predictPriceTrend then
+                local _, pt = rm:predictPriceTrend(res, 5)
+                predictedTrend = pt
+            end
+            priceImpact = MarketSystem.supplyDemandImpactOnPrice(res, rm)
+        end
+        table.insert(analysis, {
+            resource = res,
+            name = MarketSystem.RESOURCE_NAMES[res] or res,
+            currentPrice = playerState.marketPrices[res] or MarketSystem.MARKET_CONFIG.basePrice[res],
+            changePercent = math.floor(change * 100 + 0.5),
+            trend = trend,
+            isRare = isRareResource(res),
+            supply = supply,
+            demand = demand,
+            ratio = ratio,
+            predictedTrend = predictedTrend,
+            supplyDemandImpact = priceImpact,
+        })
+    end
+    return {
+        resources = analysis,
+        events = playerState.marketEvents or {},
+        dailyStats = playerState.dailyTradeStats,
+        dailyLimit = MarketSystem.MARKET_CONFIG.dailyTradeLimit,
+    }
 end
 
 return MarketSystem

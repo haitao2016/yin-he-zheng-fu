@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 --[[
 ChallengeSystem.lua - 每日挑战系统
 V2.7 P0-3
@@ -7,6 +7,7 @@ V2.7 P0-3
 local ChallengeSystem = {}
 
 -- 获取今日挑战
+---@return table
 function ChallengeSystem.getDailyChallenge()
     local dateStr = os.date("%Y%m%d")
     local salt = 20260617
@@ -33,6 +34,8 @@ function ChallengeSystem.getDailyChallenge()
 end
 
 -- 应用挑战效果到游戏状态
+---@param challenge table
+---@param gameState table
 function ChallengeSystem.applyChallengeEffect(challenge, gameState)
     local ctype = challenge.type
     
@@ -49,6 +52,9 @@ function ChallengeSystem.applyChallengeEffect(challenge, gameState)
 end
 
 -- 领取挑战奖励
+---@param challenge table
+---@param playerState table
+---@return table
 function ChallengeSystem.claimChallengeReward(challenge, playerState)
     local points = challenge.reward or 50
     playerState.challengePoints = (playerState.challengePoints or 0) + points
@@ -64,11 +70,18 @@ function ChallengeSystem.claimChallengeReward(challenge, playerState)
 end
 
 -- 获取挑战积分
+---@param playerState table
+---@return number
 function ChallengeSystem.getChallengePoints(playerState)
     return playerState.challengePoints or 0
 end
 
 -- P2-2: 挑战积分商店扩展
+---@param itemId string
+---@param playerState table
+---@param rm table
+---@param notifyFn function
+---@return boolean, string
 ChallengeSystem.purchaseShopItem = function(itemId, playerState, rm, notifyFn)
     local item = nil
     for _, i in ipairs(CHALLENGE_SHOP) do

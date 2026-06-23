@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 -- ============================================================================
 -- game/ui/FormationPanel.lua -- 阵型选择面板
 -- V2.8 P1-5 UI

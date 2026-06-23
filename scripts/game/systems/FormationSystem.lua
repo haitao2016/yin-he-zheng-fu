@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 -- ============================================================================
 -- game/systems/FormationSystem.lua -- 阵型系统
 -- V2.8 P1-5
@@ -127,6 +127,65 @@ function FormationSystem.checkUnlocks()
     if wave >= 50 and not FormationState.unlockedFormations["SKIRMISH"] then
         FormationSystem.unlockFormation("SKIRMISH")
     end
+
+    -- V3.2 新增高级阵型解锁条件
+    if wave >= 60 and not FormationState.unlockedFormations["WEDGE"] then
+        FormationSystem.unlockFormation("WEDGE")
+    end
+    if wave >= 75 and not FormationState.unlockedFormations["CIRCLE"] then
+        FormationSystem.unlockFormation("CIRCLE")
+    end
+    if wave >= 90 and not FormationState.unlockedFormations["STAGGER"] then
+        FormationSystem.unlockFormation("STAGGER")
+    end
+end
+
+-- ============================================================================
+-- V3.2 新增：阵型效果应用与叠加工具
+-- ============================================================================
+
+-- 获取所有已解锁阵型的汇总信息（用于 UI 展示）
+function FormationSystem.getFormationSummary()
+    local all = FormationSystem.getAllFormations()
+    local unlockedCount = 0
+    for _, f in ipairs(all) do
+        if f.unlocked then unlockedCount = unlockedCount + 1 end
+    end
+    return {
+        totalFormations = #all,
+        unlockedCount = unlockedCount,
+        currentFormation = FormationState.selectedFormation,
+        currentEffects = FormationState.formationEffects,
+    }
+end
+
+-- 临时阵型加成（战斗内调用）
+function FormationSystem.applyTemporaryBonus(bonusType, value, duration)
+    if not bonusType or not value then return end
+    FormationState.tempBonuses = FormationState.tempBonuses or {}
+    FormationState.tempBonuses[bonusType] = {
+        value = value,
+        expireAt = os.clock() + (duration or 10),
+    }
+end
+
+-- 获取当前所有加成（含临时）
+function FormationSystem.getAllModifiers(ship)
+    local base = FormationSystem.getBattleModifiers(ship)
+    local tempBonuses = FormationState.tempBonuses or {}
+    local now = os.clock()
+    for key, bonus in pairs(tempBonuses) do
+        if bonus.expireAt and now < bonus.expireAt then
+            if base[key] then
+                base[key] = base[key] + bonus.value
+            else
+                base[key] = bonus.value
+            end
+        else
+            tempBonuses[key] = nil
+        end
+    end
+    return base
 end
 
 -- ============================================================================
@@ -285,6 +344,40 @@ function FormationSystem.getFormationLayout()
             table.insert(layout, {
                 x = (i - (count + 1) / 2) * 50,
                 y = dist * 30,
+                shipType = shipType,
+            })
+        end
+
+    elseif formation.id == "WEDGE" then
+        -- 楔形攻势
+        for i, shipType in ipairs(formation.shipOrder) do
+            local dist = math.abs(i - (count + 1) / 2)
+            table.insert(layout, {
+                x = (i - (count + 1) / 2) * 45,
+                y = -dist * 35,
+                shipType = shipType,
+            })
+        end
+
+    elseif formation.id == "CIRCLE" then
+        -- 环形防御
+        for i, shipType in ipairs(formation.shipOrder) do
+            local angle = (i - 1) * (math.pi * 2 / count)
+            table.insert(layout, {
+                x = math.cos(angle) * 70,
+                y = math.sin(angle) * 70,
+                shipType = shipType,
+            })
+        end
+
+    elseif formation.id == "STAGGER" then
+        -- 交错阶梯 - 交错排列
+        for i, shipType in ipairs(formation.shipOrder) do
+            local row = math.floor((i - 1) / 3)
+            local col = (i - 1) % 3
+            table.insert(layout, {
+                x = (col - 1) * 60 + (row % 2 == 0 and 0 or 30),
+                y = row * 45,
                 shipType = shipType,
             })
         end

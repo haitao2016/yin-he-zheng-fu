@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 -- ============================================================================
 -- game/battle/BattleEnvironment.lua -- 战斗环境效果系统
 -- V1.6 P1-2: 战斗环境效果
@@ -154,6 +154,66 @@ BATTLE_ENVIRONMENTS = {
         duration = 0,
         probability = 0.05,
         icon = "env_crystal",
+        tier = 2,
+    },
+    -- V3.2 P1-5 新增：高级、更复杂的环境
+    {
+        id = "BLACK_HOLE_EDGE",
+        name = "黑洞边缘",
+        desc = "引力异常强，舰船不断被拉向中心，时间流速缓慢",
+        effects = {
+            gravityPull = 0.6,
+            timeDilation = 0.8,
+            projectileCurve = 0.5,
+            energyCostMult = 1.3,
+        },
+        visual = {
+            coreColor = { 0, 0, 20 },
+            accretionColor = { 255, 200, 100 },
+            bgColor = { 10, 5, 15 },
+        },
+        duration = 45,
+        probability = 0.03,
+        icon = "env_blackhole",
+        tier = 3,
+    },
+    {
+        id = "PLASMA_CLOUD",
+        name = "等离子云",
+        desc = "高温等离子云，持续能量伤害但能量武器获得加成",
+        effects = {
+            heatDamagePerSec = 2,
+            energyWeaponBonus = 0.4,
+            shieldMult = 0.6,
+            visibilityRange = 150,
+        },
+        visual = {
+            plasmaColor = { 255, 100, 100 },
+            plasmaAlpha = 0.35,
+            bgColor = { 35, 15, 10 },
+        },
+        duration = 60,
+        probability = 0.06,
+        icon = "env_plasma",
+        tier = 3,
+    },
+    {
+        id = "ELECTRONIC_WARFARE",
+        name = "电子战区域",
+        desc = "强烈干扰信号，技能冷却增加，但击杀获得额外能量",
+        effects = {
+            cooldownMult = 1.5,
+            killEnergyBonus = 30,
+            weaponAccuracyPenalty = 0.15,
+        },
+        visual = {
+            staticColor = { 120, 200, 255 },
+            bgColor = { 20, 30, 40 },
+        },
+        duration = 50,
+        probability = 0.05,
+        icon = "env_ewarfare",
+        tier = 3,
     },
 }
 
@@ -540,6 +600,133 @@ function BattleEnvironment.clearEnvironment()
     EnvState.envTimer = 0
     EnvState.envObjects = {}
     EnvState.envParticles = {}
+end
+
+-- ============================================================================
+-- V3.2 P1-5 新增：环境情报预览 & 历史记录 & 强化工具
+-- ============================================================================
+
+-- 环境历史记录
+local envHistory = {}
+local function pushToHistory(env)
+    if not env then return end
+    table.insert(envHistory, 1, {
+        id = env.id,
+        name = env.name,
+        time = os.time(),
+    })
+    while #envHistory > 10 do table.remove(envHistory) end
+end
+
+-- 覆盖：在 setEnvironment 里记录历史
+local originalSetEnvironment = BattleEnvironment.setEnvironment
+function BattleEnvironment.setEnvironment(envId)
+    local ok = originalSetEnvironment(envId)
+    if ok and EnvState.currentEnv then
+        pushToHistory(EnvState.currentEnv)
+    end
+    return ok
+end
+
+-- 获取所有环境列表（供 UI 面板使用）
+function BattleEnvironment.getAllEnvironments()
+    local result = {}
+    for _, env in ipairs(BATTLE_ENVIRONMENTS) do
+        table.insert(result, {
+            id = env.id,
+            name = env.name,
+            desc = env.desc,
+            icon = env.icon,
+            probability = env.probability,
+            duration = env.duration,
+            tier = env.tier or 1,
+            effects = env.effects,
+        })
+    end
+    return result
+end
+
+-- 获取环境历史记录
+function BattleEnvironment.getHistory()
+    return envHistory
+end
+
+-- 评估某舰船/舰队在当前环境的表现评分（0 ~ 1）
+function BattleEnvironment.evaluateFleetCompatibility(fleetList)
+    local effects = BattleEnvironment.getCurrentEffects()
+    if not next(effects) then
+        return 1.0, { summary = "无环境影响" }
+    end
+
+    local score = 1.0
+    local detail = {}
+
+    if effects.speedMult then
+        score = score * effects.speedMult
+        table.insert(detail, { k = "速度", v = math.floor(effects.speedMult * 100) .. "%" })
+    end
+    if effects.shieldPenalty then
+        score = score * (1 - effects.shieldPenalty)
+        table.insert(detail, { k = "护盾", v = "-" .. math.floor(effects.shieldPenalty * 100) .. "%" })
+    end
+    if effects.energyRegenMult or effects.energyRegenBonus then
+        local mult = (effects.energyRegenMult or 1) * (1 + (effects.energyRegenBonus or 0))
+        score = score * mult
+        table.insert(detail, { k = "能量", v = math.floor(mult * 100) .. "%" })
+    end
+    if effects.stealthBonus then
+        score = score * (1 + effects.stealthBonus * 0.5)
+        table.insert(detail, { k = "隐形", v = "+" .. math.floor(effects.stealthBonus * 100) .. "%" })
+    end
+    if effects.gravityPull and effects.gravityPull > 0.4 then
+        score = score * 0.85
+        table.insert(detail, { k = "强引力", v = "危险" })
+    end
+    if effects.energyWeaponBonus then
+        score = score * (1 + effects.energyWeaponBonus * 0.5)
+        table.insert(detail, { k = "能量武器", v = "+" .. math.floor(effects.energyWeaponBonus * 100) .. "%" })
+    end
+
+    return math.max(0.1, math.min(1.5, score)), detail
+end
+
+-- 环境状态详情（用于 HUD 显示）
+function BattleEnvironment.getEnvironmentHudInfo()
+    local env = EnvState.currentEnv
+    if not env then return nil end
+    return {
+        id = env.id,
+        name = env.name,
+        desc = env.desc,
+        icon = env.icon,
+        timer = EnvState.envTimer > 0 and EnvState.envTimer or nil,
+        objectsCount = #EnvState.envObjects,
+        particlesCount = #EnvState.envParticles,
+        effects = env.effects,
+        tier = env.tier or 1,
+    }
+end
+
+-- 每帧的持续环境伤害（等离子云灼热等）
+function BattleEnvironment.getEnvironmentalDamage(dt)
+    local effects = BattleEnvironment.getCurrentEffects()
+    local dmg = 0
+    if effects.heatDamagePerSec then
+        dmg = dmg + effects.heatDamagePerSec * dt
+    end
+    return dmg
+end
+
+-- 击杀能量奖励（电子战区域等）
+function BattleEnvironment.getKillEnergyBonus()
+    local effects = BattleEnvironment.getCurrentEffects()
+    return effects.killEnergyBonus or 0
+end
+
+-- 技能冷却倍率
+function BattleEnvironment.getCooldownMultiplier()
+    local effects = BattleEnvironment.getCurrentEffects()
+    return effects.cooldownMult or 1.0
 end
 
 -- ============================================================================

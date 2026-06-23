@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 -- ============================================================================
 -- game/systems/CampaignSystem.lua -- 战役模式系统
 -- V2.8 P0-1
@@ -35,11 +35,14 @@ local RuntimeStageData = {
 -- ============================================================================
 
 -- 获取所有章节
+---@return table
 function CampaignSystem.getChapters()
     return CAMPAIGN_CHAPTERS
 end
 
 -- 获取章节信息
+---@param chapterId string
+---@return table|nil
 function CampaignSystem.getChapter(chapterId)
     for _, chapter in ipairs(CAMPAIGN_CHAPTERS) do
         if chapter.id == chapterId then
@@ -50,6 +53,8 @@ function CampaignSystem.getChapter(chapterId)
 end
 
 -- 获取关卡信息
+---@param stageId string
+---@return table|nil, table|nil
 function CampaignSystem.getStage(stageId)
     for _, chapter in ipairs(CAMPAIGN_CHAPTERS) do
         for _, stage in ipairs(chapter.stages) do
@@ -62,6 +67,9 @@ function CampaignSystem.getStage(stageId)
 end
 
 -- 获取章节的可玩关卡
+---@param chapterId string
+---@param playerWave number
+---@return table
 function CampaignSystem.getPlayableStages(chapterId, playerWave)
     local chapter = CampaignSystem.getChapter(chapterId)
     if not chapter then return {} end
@@ -76,6 +84,9 @@ function CampaignSystem.getPlayableStages(chapterId, playerWave)
 end
 
 -- 检查章节是否已解锁
+---@param chapterId string
+---@param playerWave number
+---@return boolean
 function CampaignSystem.isChapterUnlocked(chapterId, playerWave)
     local chapter = CampaignSystem.getChapter(chapterId)
     if not chapter then return false end
@@ -87,6 +98,9 @@ end
 -- ============================================================================
 
 -- 开始关卡
+---@param stageId string
+---@param playerState table
+---@return boolean, string
 function CampaignSystem.startStage(stageId, playerState)
     local stage, chapter = CampaignSystem.getStage(stageId)
     if not stage then
@@ -133,6 +147,8 @@ function CampaignSystem.startStage(stageId, playerState)
 end
 
 -- 更新关卡进度
+---@param event string
+---@param value number
 function CampaignSystem.updateStageProgress(event, value)
     if not CampaignState.inCampaignMode then return end
 
@@ -209,6 +225,7 @@ function CampaignSystem.failStage()
 end
 
 -- 完成任务
+---@param success boolean
 function CampaignSystem.completeStage(success)
     if not CampaignState.inCampaignMode then return end
 
@@ -260,6 +277,8 @@ function CampaignSystem.completeStage(success)
 end
 
 -- 计算关卡奖励
+---@param stage table
+---@return table
 function CampaignSystem.calculateRewards(stage)
     local diff = STAGE_DIFFICULTY[stage.difficulty] or STAGE_DIFFICULTY.MEDIUM
     local rewards = {}
@@ -277,6 +296,7 @@ function CampaignSystem.calculateRewards(stage)
 end
 
 -- 发放奖励
+---@param rewards table
 function CampaignSystem.grantRewards(rewards)
     local RM = require("game.systems.ResourceManager")
 
@@ -300,6 +320,8 @@ function CampaignSystem.grantRewards(rewards)
 end
 
 -- 格式化奖励显示
+---@param rewards table
+---@return string
 function CampaignSystem.formatRewards(rewards)
     local parts = {}
     if rewards.blueCrystal then table.insert(parts, "蓝晶×" .. rewards.blueCrystal) end
@@ -312,6 +334,7 @@ function CampaignSystem.formatRewards(rewards)
 end
 
 -- 检查章节是否完成
+---@param chapter table
 function CampaignSystem.checkChapterCompletion(chapter)
     if not chapter then return end
 
@@ -348,6 +371,7 @@ end
 -- ============================================================================
 
 -- 显示对话
+---@param dialogueKey string
 function CampaignSystem.showDialogue(dialogueKey)
     local dialogue = CAMPAIGN_DIALOGUE[dialogueKey]
     if not dialogue then return end
@@ -362,6 +386,8 @@ function CampaignSystem.showDialogue(dialogueKey)
 end
 
 -- 检查对话是否已看过
+---@param dialogueKey string
+---@return boolean
 function CampaignSystem.hasSeenDialogue(dialogueKey)
     return CampaignState.dialogueHistory[dialogueKey] == true
 end
@@ -381,6 +407,7 @@ function CampaignSystem.checkBranch()
 end
 
 -- 触发分支选择
+---@param branch table
 function CampaignSystem.triggerBranch(branch)
     -- 显示分支选择 UI
     if BranchChoicePanel then
@@ -389,6 +416,9 @@ function CampaignSystem.triggerBranch(branch)
 end
 
 -- 玩家做出选择
+---@param branchId string
+---@param choiceId string
+---@return boolean
 function CampaignSystem.makeChoice(branchId, choiceId)
     local branch = nil
     for _, b in ipairs(CAMPAIGN_BRANCHES) do
@@ -424,6 +454,7 @@ end
 -- ============================================================================
 
 -- 序列化战役状态
+---@return table
 function CampaignSystem.serialize()
     return {
         completedChapters = CampaignState.completedChapters,
@@ -434,6 +465,7 @@ function CampaignSystem.serialize()
 end
 
 -- 反序列化战役状态
+---@param data table
 function CampaignSystem.deserialize(data)
     if not data then return end
     CampaignState.completedChapters = data.completedChapters or {}
@@ -443,6 +475,7 @@ function CampaignSystem.deserialize(data)
 end
 
 -- 获取战役进度
+---@return table
 function CampaignSystem.getProgress()
     return {
         completedChapters = CampaignState.completedChapters,
@@ -453,6 +486,7 @@ function CampaignSystem.getProgress()
 end
 
 -- 统计总关卡数
+---@return number
 function CampaignSystem.countTotalStages()
     local count = 0
     for _, chapter in ipairs(CAMPAIGN_CHAPTERS) do
@@ -465,6 +499,7 @@ end
 -- 获取当前关卡状态（用于 UI）
 -- ============================================================================
 
+---@return table|nil
 function CampaignSystem.getCurrentStageState()
     if not CampaignState.inCampaignMode then return nil end
 

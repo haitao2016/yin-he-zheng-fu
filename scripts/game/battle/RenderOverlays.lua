@@ -1,4 +1,4 @@
----@diagnostic disable: assign-type-mismatch, return-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 -- ============================================================================
 -- RenderOverlays: 覆盖层渲染 — Boss/横幅/特效/结算 (从 BattleRender.lua 拆分)
 -- ============================================================================

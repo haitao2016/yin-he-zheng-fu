@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 -- ============================================================================
 -- game/ui/UICommon.lua  -- UI 子模块共享上下文与工具函数
 -- 所有面板子模块通过 require("game.ui.UICommon") 获取共享状态
@@ -407,6 +408,307 @@ end
 --- 停止所有动画
 function UICommon.cancelAllAnims()
     UICommon.animTimers = {}
+end
+
+-- ============================================================================
+-- V3.1-P1-5: UI/UX 增强工具
+-- ============================================================================
+
+--- Toast 提示系统（临时通知）
+UICommon.toasts = {}
+UICommon.toastMax = 5
+
+function UICommon.showToast(message, duration, type, color)
+    duration = duration or 3.0
+    type = type or "info"  -- "info" | "success" | "warning" | "error"
+    color = color or UICommon.C.textPrimary
+
+    local toast = {
+        message = message,
+        duration = duration,
+        type = type,
+        color = color,
+        timer = 0,
+        alpha = 0,
+        y = 0,
+    }
+    table.insert(UICommon.toasts, toast)
+
+    -- 限制最大显示数量
+    while #UICommon.toasts > UICommon.toastMax do
+        table.remove(UICommon.toasts, 1)
+    end
+
+    return #UICommon.toasts
+end
+
+function UICommon.updateToasts(dt)
+    for i = #UICommon.toasts, 1, -1 do
+        local toast = UICommon.toasts[i]
+        toast.timer = toast.timer + dt
+
+        -- 淡入淡出
+        if toast.timer < 0.3 then
+            toast.alpha = toast.timer / 0.3
+        elseif toast.timer > toast.duration - 0.5 then
+            toast.alpha = (toast.duration - toast.timer) / 0.5
+        else
+            toast.alpha = 1.0
+        end
+
+        -- 移除过期提示
+        if toast.timer >= toast.duration then
+            table.remove(UICommon.toasts, i)
+        end
+    end
+end
+
+function UICommon.renderToasts(vg, x, y, w)
+    local toastH = 30
+    local gap = 5
+    local currentY = y
+
+    for i, toast in ipairs(UICommon.toasts) do
+        if toast.alpha > 0.01 then
+            local toastY = currentY + (i - 1) * (toastH + gap)
+            local bgColor = {20, 30, 60, math.floor(220 * toast.alpha)}
+            local borderColor = {toast.color[1], toast.color[2], toast.color[3], math.floor(180 * toast.alpha)}
+
+            UICommon.panel(x, toastY, w, toastH, 6, bgColor, borderColor)
+            UICommon.text(x + 10, toastY + toastH / 2, toast.message, 12, toast.color[1], toast.color[2], toast.color[3], math.floor(toast.color[4] * toast.alpha), 5)
+            currentY = math.max(currentY, toastY + toastH + gap)
+        end
+    end
+end
+
+--- 加载指示器
+UICommon.loadingSpinner = {
+    angle = 0,
+}
+
+function UICommon.renderLoadingSpinner(vg, x, y, radius, color, thickness)
+    radius = radius or 15
+    color = color or UICommon.C.blueBright
+    thickness = thickness or 3
+
+    UICommon.loadingSpinner.angle = (UICommon.loadingSpinner.angle + 120 * 0.016) % 360
+
+    local segments = 8
+    local gap = 0.15
+    for i = 1, segments do
+        local startAngle = math.rad(UICommon.loadingSpinner.angle + (i - 1) * (360 / segments))
+        local endAngle = startAngle + math.rad((360 / segments) * (1 - gap))
+        local alpha = i / segments
+
+        vg:ClearPath()
+        vg:Arc(x, y, radius, startAngle, endAngle, 1)
+        vg:StrokeWidth(thickness)
+        vg:StrokeColor(color[1], color[2], color[3], math.floor(color[4] * alpha))
+        vg:Stroke()
+    end
+end
+
+--- 数字变化动画
+UICommon.numberAnims = {}
+
+function UICommon.animateNumber(key, fromValue, toValue, duration, onUpdate)
+    UICommon.numberAnims[key] = {
+        from = fromValue,
+        to = toValue,
+        duration = duration or 0.5,
+        timer = 0,
+        onUpdate = onUpdate,
+    }
+end
+
+function UICommon.updateNumberAnims(dt)
+    for key, anim in pairs(UICommon.numberAnims) do
+        anim.timer = anim.timer + dt
+        local progress = math.min(1.0, anim.timer / anim.duration)
+        local eased = UICommon.easeOut(progress)
+        local currentValue = anim.from + (anim.to - anim.from) * eased
+
+        if anim.onUpdate then
+            anim.onUpdate(currentValue, progress)
+        end
+
+        if progress >= 1.0 then
+            UICommon.numberAnims[key] = nil
+        end
+    end
+end
+
+--- 图标按钮状态
+UICommon.iconButtonStates = {}
+
+function UICommon.drawIconButton(vg, x, y, size, iconColor, bgColor, hoverBgColor, pressedBgColor, isHovered, isPressed)
+    bgColor = bgColor or UICommon.C.panelBg
+    hoverBgColor = hoverBgColor or {30, 50, 80, 200}
+    pressedBgColor = pressedBgColor or {40, 80, 140, 220}
+
+    local currentBg = bgColor
+    if isPressed then
+        currentBg = pressedBgColor
+    elseif isHovered then
+        currentBg = hoverBgColor
+    end
+
+    vg:ClearPath()
+    vg:RoundedRect(x, y, size, size, 4)
+    vg:FillColor(currentBg[1], currentBg[2], currentBg[3], currentBg[4])
+    vg:Fill()
+
+    vg:ClearPath()
+    vg:RoundedRect(x, y, size, size, 4)
+    vg:StrokeWidth(1)
+    vg:StrokeColor(UICommon.C.panelBorder[1], UICommon.C.panelBorder[2], UICommon.C.panelBorder[3], UICommon.C.panelBorder[4])
+    vg:Stroke()
+
+    return x + size / 2, y + size / 2
+end
+
+--- 状态徽章
+function UICommon.drawBadge(vg, x, y, text, bgColor, textColor)
+    bgColor = bgColor or UICommon.C.blueBtnBg
+    textColor = textColor or UICommon.C.textPrimary
+
+    local padding = 4
+    local textW = #text * 8
+    local badgeW = textW + padding * 2
+    local badgeH = 16
+
+    vg:ClearPath()
+    vg:RoundedRect(x, y, badgeW, badgeH, 3)
+    vg:FillColor(bgColor[1], bgColor[2], bgColor[3], bgColor[4])
+    vg:Fill()
+
+    UICommon.text(x + badgeW / 2, y + badgeH / 2, text, 10, textColor[1], textColor[2], textColor[3], textColor[4], 5)
+end
+
+--- 分割线
+function UICommon.drawDivider(vg, x, y, w, thickness, color)
+    thickness = thickness or 1
+    color = color or {60, 80, 120, 100}
+
+    vg:ClearPath()
+    vg:MoveTo(x, y)
+    vg:LineTo(x + w, y)
+    vg:StrokeWidth(thickness)
+    vg:StrokeColor(color[1], color[2], color[3], color[4])
+    vg:Stroke()
+end
+
+--- 折叠面板
+UICommon.collapseStates = {}
+
+function UICommon.initCollapse(key, defaultCollapsed)
+    if UICommon.collapseStates[key] == nil then
+        UICommon.collapseStates[key] = not not defaultCollapsed
+    end
+end
+
+function UICommon.toggleCollapse(key)
+    UICommon.collapseStates[key] = not UICommon.collapseStates[key]
+    return UICommon.collapseStates[key]
+end
+
+function UICommon.isCollapsed(key)
+    return UICommon.collapseStates[key] or false
+end
+
+function UICommon.drawCollapseToggle(vg, x, y, size, key, label, textColor)
+    local collapsed = UICommon.isCollapsed(key)
+    local arrowChar = collapsed and ">" or "v"
+
+    UICommon.text(x, y + size / 2, arrowChar, 12, textColor[1], textColor[2], textColor[3], textColor[4], 5)
+    UICommon.text(x + size + 4, y + size / 2, label, 12, textColor[1], textColor[2], textColor[3], textColor[4], 5)
+end
+
+--- 工具提示（Tooltip）
+UICommon.tooltip = {
+    visible = false,
+    text = "",
+    x = 0,
+    y = 0,
+    timer = 0,
+}
+
+function UICommon.showTooltip(text, x, y, delay)
+    delay = delay or 0.3
+    UICommon.tooltip.visible = true
+    UICommon.tooltip.text = text
+    UICommon.tooltip.x = x
+    UICommon.tooltip.y = y
+    UICommon.tooltip.timer = 0
+    UICommon.tooltip.delay = delay
+end
+
+function UICommon.hideTooltip()
+    UICommon.tooltip.visible = false
+end
+
+function UICommon.updateTooltip(dt)
+    if UICommon.tooltip.visible then
+        UICommon.tooltip.timer = UICommon.tooltip.timer + dt
+    end
+end
+
+function UICommon.renderTooltip(vg)
+    if not UICommon.tooltip.visible or UICommon.tooltip.timer < (UICommon.tooltip.delay or 0.3) then
+        return
+    end
+
+    local padding = 6
+    local textW = #UICommon.tooltip.text * 7
+    local ttW = textW + padding * 2
+    local ttH = 20
+
+    local ttX = UICommon.tooltip.x + 10
+    local ttY = UICommon.tooltip.y + 10
+
+    -- 背景
+    local bgColor = {10, 15, 30, 240}
+    vg:ClearPath()
+    vg:RoundedRect(ttX, ttY, ttW, ttH, 4)
+    vg:FillColor(bgColor[1], bgColor[2], bgColor[3], bgColor[4])
+    vg:Fill()
+
+    -- 边框
+    vg:ClearPath()
+    vg:RoundedRect(ttX, ttY, ttW, ttH, 4)
+    vg:StrokeWidth(1)
+    vg:StrokeColor(UICommon.C.panelBorder[1], UICommon.C.panelBorder[2], UICommon.C.panelBorder[3], 150)
+    vg:Stroke()
+
+    -- 文字
+    UICommon.text(ttX + padding, ttY + ttH / 2, UICommon.tooltip.text, 11,
+        UICommon.C.textPrimary[1], UICommon.C.textPrimary[2], UICommon.C.textPrimary[3], UICommon.C.textPrimary[4], 5)
+end
+
+--- 键盘快捷键提示
+function UICommon.drawHotkeyHint(vg, x, y, key, hintText)
+    local keyW = #key * 8 + 8
+    local keyH = 16
+    local gap = 4
+
+    -- 按键背景
+    vg:ClearPath()
+    vg:RoundedRect(x, y, keyW, keyH, 3)
+    vg:FillColor(30, 40, 60, 200)
+    vg:Fill()
+    vg:ClearPath()
+    vg:RoundedRect(x, y, keyW, keyH, 3)
+    vg:StrokeWidth(1)
+    vg:StrokeColor(UICommon.C.panelBorder[1], UICommon.C.panelBorder[2], UICommon.C.panelBorder[3], 100)
+    vg:Stroke()
+
+    -- 按键文字
+    UICommon.text(x + keyW / 2, y + keyH / 2, key, 10, 180, 200, 255, 255, 5)
+
+    -- 提示文字
+    if hintText then
+        UICommon.text(x + keyW + gap, y + keyH / 2, hintText, 10, UICommon.C.textSecondary[1], UICommon.C.textSecondary[2], UICommon.C.textSecondary[3], UICommon.C.textSecondary[4], 5)
+    end
 end
 
 return UICommon

@@ -1,4 +1,4 @@
----@diagnostic disable: assign-type-mismatch, return-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 -----------------------------------------------------------
 -- BattleCommandSystem 战斗中途指令系统
 -----------------------------------------------------------
@@ -58,6 +58,7 @@ for _, c in ipairs(BATTLE_COMMANDS) do BATTLE_COMMANDS_BY_ID[c.id] = c end
 local BattleCommandSystem = {}
 BattleCommandSystem.__index = BattleCommandSystem
 
+---@return BattleCommandSystem
 function BattleCommandSystem.new()
     local self = setmetatable({}, BattleCommandSystem)
     self.cooldowns = {}
@@ -70,6 +71,9 @@ function BattleCommandSystem.new()
 end
 
 --- 检查指令是否可用
+---@param commandId string
+---@param battleState table
+---@return boolean, string
 function BattleCommandSystem:canUse(commandId, battleState)
     local cmd = BATTLE_COMMANDS_BY_ID[commandId]
     if not cmd then return false, "未知指令" end
@@ -83,6 +87,9 @@ function BattleCommandSystem:canUse(commandId, battleState)
 end
 
 --- 执行指令并应用效果（P0-4: 支持效果过期后自动回滚）
+---@param commandId string
+---@param battleState table
+---@return boolean, string
 function BattleCommandSystem:execute(commandId, battleState)
     local ok, reason = self:canUse(commandId, battleState)
     if not ok then return false, reason end
@@ -136,6 +143,8 @@ function BattleCommandSystem:execute(commandId, battleState)
 end
 
 --- 每帧更新冷却与持续时间（P0-4: 新增效果过期回滚）
+---@param dt number
+---@param battleState table
 function BattleCommandSystem:update(dt, battleState)
     for id, _ in pairs(self.cooldowns) do
         if self.cooldowns[id] > 0 then
@@ -169,6 +178,7 @@ function BattleCommandSystem:update(dt, battleState)
 end
 
 --- 返回所有指令冷却状态
+---@return table
 function BattleCommandSystem:getCooldowns()
     local result = {}
     for _, cmd in ipairs(BATTLE_COMMANDS) do
@@ -182,10 +192,12 @@ function BattleCommandSystem:getCooldowns()
     return result
 end
 
+---@return table
 function BattleCommandSystem:serialize()
     return { cooldowns = self.cooldowns, active = self.active }
 end
 
+---@param data table
 function BattleCommandSystem:deserialize(data)
     self.cooldowns = {}
     self.active    = {}
@@ -201,6 +213,65 @@ function BattleCommandSystem:deserialize(data)
             for id, v in pairs(data.active) do self.active[id] = v end
         end
     end
+end
+
+---@param difficultyName string
+---@return table
+function BattleCommandSystem:applyCooldownCurve(difficultyName)
+    local DIFFICULTY_MULT = { EASY = 1.4, NORMAL = 1.0, HARD = 0.7, LEGENDARY = 0.5 }
+    local baseMult = DIFFICULTY_MULT[difficultyName] or 1.0
+
+    local fleetCount = 0
+    if self.fleet then
+        if type(self.fleet) == "table" then
+            fleetCount = #self.fleet
+        end
+    end
+    if self.difficulty and type(self.difficulty) == "table" and self.difficulty.fleetCount then
+        fleetCount = self.difficulty.fleetCount
+    end
+    local fleetMult = 1.0
+    if fleetCount > 15 then fleetMult = 0.85 end
+
+    local totalMult = baseMult * fleetMult
+
+    self.cmdCooldowns = self.cmdCooldowns or {}
+    self.cmdUses = self.cmdUses or {}
+
+    local applied = {}
+    for _, cmd in ipairs(BATTLE_COMMANDS) do
+        local baseCooldown = cmd.cooldown or 0
+        local tuned = baseCooldown * totalMult
+        if self.cooldowns and self.cooldowns[cmd.id] then
+            self.cooldowns[cmd.id] = tuned
+        end
+        self.cmdCooldowns[cmd.id] = tuned
+        if self.cmdUses[cmd.id] == nil then self.cmdUses[cmd.id] = 0 end
+        applied[cmd.id] = tuned
+    end
+
+    self.difficulty = self.difficulty or {}
+    if type(self.difficulty) == "table" then
+        self.difficulty.name = difficultyName
+        self.difficulty.mult = totalMult
+        self.difficulty.fleetCount = fleetCount
+    end
+
+    return applied
+end
+
+---@return table
+function BattleCommandSystem:getCooldownReport()
+    local report = {}
+    for _, cmd in ipairs(BATTLE_COMMANDS) do
+        report[cmd.id] = {
+            name = cmd.name,
+            cooldown = (self.cmdCooldowns and self.cmdCooldowns[cmd.id]) or cmd.cooldown or 0,
+            remaining = (self.cooldowns and self.cooldowns[cmd.id]) or 0,
+            uses = (self.cmdUses and self.cmdUses[cmd.id]) or 0,
+        }
+    end
+    return report
 end
 
 return BattleCommandSystem

@@ -1,18 +1,19 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 -- ============================================================================
--- game/systems/TutorialV3System.lua -- V3.0 新手引导重构
--- 8 阶段教学系统，分阶段引导玩家熟悉各系统
+-- game/systems/TutorialV3System.lua -- V3.1 新手引导重构
+-- 12 阶段教学系统，覆盖 V3.0+ 全量内容
+-- V3.1 新增：科技树 Tier4-5、基地 Lv8-10、Roguelike 选卡、战斗指令系统
 -- ============================================================================
 
 local TutorialV3System = {}
 
 -- ============================================================================
--- 教学阶段定义
+-- 教学阶段定义（V3.1 扩展至 12 阶段）
 -- ============================================================================
 
 local TUTORIAL_STAGES = {
     -- ------------------------------------------------------------------------
-    -- STAGE_1_BASICS: 开局 5 分钟
+    -- STAGE_1_BASICS: 开局基础
     -- ------------------------------------------------------------------------
     {
         id   = "STAGE_1_BASICS",
@@ -29,7 +30,7 @@ local TUTORIAL_STAGES = {
     },
 
     -- ------------------------------------------------------------------------
-    -- STAGE_2_TECH: 首次接触科技树
+    -- STAGE_2_TECH: 科技树入门
     -- ------------------------------------------------------------------------
     {
         id   = "STAGE_2_TECH",
@@ -43,6 +44,26 @@ local TUTORIAL_STAGES = {
         },
         reward = { credits = 1000, blueCrystal = 5 },
         isCompleted = false,
+    },
+
+    -- ------------------------------------------------------------------------
+    -- STAGE_2B_TECH_ADVANCED: V3.1 科技树进阶
+    -- ------------------------------------------------------------------------
+    {
+        id   = "STAGE_2B_TECH_ADVANCED",
+        name = "科技树进阶",
+        desc = "解锁 Tier4 高级科技，探索双路线（攻击/防御）选择。",
+        steps = {
+            { action = "RESEARCH_TIER3",   hint = "完成至少一项 Tier3 科技。",                    target = 1 },
+            { action = "UNLOCK_TIER4",    hint = "达到基地 Lv8，解锁 Tier4 科技。",               target = 1 },
+            { action = "CHOOSE_TECH_ROUTE", hint = "选择攻击路线（NOVA_CANNON）或防御路线（FORTRESS_PROTOCOL）。", target = 1 },
+            { action = "RESEARCH_TIER4",   hint = "完成一项 Tier4 科技研究。",                     target = 1 },
+        },
+        reward = { credits = 2000, blueCrystal = 10, purpleCrystal = 3 },
+        isCompleted = false,
+        unlockCondition = function(playerState)
+            return playerState and playerState.buildings and playerState.buildings.coreLevel >= 7
+        end,
     },
 
     -- ------------------------------------------------------------------------
@@ -61,6 +82,28 @@ local TUTORIAL_STAGES = {
         },
         reward = { credits = 1500, blueCrystal = 8 },
         isCompleted = false,
+    },
+
+    -- ------------------------------------------------------------------------
+    -- STAGE_3B_BASE_ADVANCED: V3.1 基地 Lv8-10
+    -- ------------------------------------------------------------------------
+    {
+        id   = "STAGE_3B_BASE_ADVANCED",
+        name = "基地进阶",
+        desc = "升级至 Lv8-10，解锁专属建筑模块（粒子加速器/曲速门/恒星要塞）。",
+        steps = {
+            { action = "UPGRADE_BASE_LV8",  hint = "升级基地核心至 Lv8，解锁粒子加速器。",       target = 1 },
+            { action = "BUILD_ACCELERATOR", hint = "建造粒子加速器模块。",                         target = 1 },
+            { action = "UPGRADE_BASE_LV9",  hint = "升级基地核心至 Lv9，解锁曲速门。",           target = 1 },
+            { action = "BUILD_WARP_GATE",   hint = "建造曲速门模块。",                              target = 1 },
+            { action = "UPGRADE_BASE_LV10", hint = "升级基地核心至 Lv10，解锁恒星要塞。",        target = 1 },
+            { action = "BUILD_TITAN_FORGE", hint = "建造泰坦锻造炉模块。",                          target = 1 },
+        },
+        reward = { credits = 5000, purpleCrystal = 10, nuclear = 200 },
+        isCompleted = false,
+        unlockCondition = function(playerState)
+            return playerState and playerState.buildings and playerState.buildings.coreLevel >= 6
+        end,
     },
 
     -- ------------------------------------------------------------------------
@@ -98,10 +141,46 @@ local TUTORIAL_STAGES = {
     },
 
     -- ------------------------------------------------------------------------
-    -- STAGE_6_SEASON: 赛季系统
+    -- STAGE_6_BATTLE_COMMAND: V3.1 战斗指令系统
     -- ------------------------------------------------------------------------
     {
-        id   = "STAGE_6_SEASON",
+        id   = "STAGE_6_BATTLE_COMMAND",
+        name = "战斗指令",
+        desc = "学习 5 种战术指令（集火/撤退/增援/护盾/EMP），掌握战中操作深度。",
+        steps = {
+            { action = "OPEN_BATTLE_CMD", hint = "在战斗中打开战术指令面板。",                  target = 1 },
+            { action = "USE_FOCUS_FIRE",  hint = "使用集火指令（FOCUS_FIRE）。",               target = 1 },
+            { action = "USE_SHIELD_BOOST", hint = "使用护盾强化指令（SHIELD_BOOST）。",        target = 1 },
+            { action = "USE_EMP_BURST",   hint = "使用 EMP 爆发指令使敌舰瘫痪。",              target = 1 },
+            { action = "VIEW_COOLDOWNS",  hint = "观察指令冷却管理。",                           target = 1 },
+        },
+        reward = { credits = 3000, blueCrystal = 15 },
+        isCompleted = false,
+    },
+
+    -- ------------------------------------------------------------------------
+    -- STAGE_7_ROGUELIKE: V3.1 Roguelike 选卡
+    -- ------------------------------------------------------------------------
+    {
+        id   = "STAGE_7_ROGUELIKE",
+        name = "Roguelike 选卡",
+        desc = "在无尽模式中利用波次间选卡构建独特流派。",
+        steps = {
+            { action = "START_ENDLESS",   hint = "开始无尽模式。",                               target = 1 },
+            { action = "COMPLETE_WAVE_1", hint = "完成第 1 波战斗。",                            target = 1 },
+            { action = "SELECT_ROGUE_CARD", hint = "在选卡界面选择一张增益卡。",                target = 1 },
+            { action = "USE_CARD_BUFF",   hint = "在后续战斗中生效所选卡牌。",                  target = 1 },
+            { action = "REACH_WAVE_5",    hint = "到达第 5 波，体验多次选卡。",                  target = 1 },
+        },
+        reward = { credits = 2500, purpleCrystal = 8 },
+        isCompleted = false,
+    },
+
+    -- ------------------------------------------------------------------------
+    -- STAGE_8_SEASON: 赛季系统
+    -- ------------------------------------------------------------------------
+    {
+        id   = "STAGE_8_SEASON",
         name = "赛季系统",
         desc = "学习赛季任务、积分奖励与主题变体。",
         steps = {
@@ -115,34 +194,68 @@ local TUTORIAL_STAGES = {
     },
 
     -- ------------------------------------------------------------------------
-    -- STAGE_7_GUILD: 公会系统
+    -- STAGE_9_ACHIEVEMENTS: V3.1 成就链
     -- ------------------------------------------------------------------------
     {
-        id   = "STAGE_7_GUILD",
-        name = "公会系统",
-        desc = "了解公会创建/加入、公会任务与协作。",
+        id   = "STAGE_9_ACHIEVEMENTS",
+        name = "成就系统",
+        desc = "了解隐藏成就链式解锁，探索成就徽章墙。",
         steps = {
-            { action = "OPEN_GUILD",    hint = "打开公会界面，查看公会列表。",                   target = 1 },
-            { action = "JOIN_OR_CREATE", hint = "加入一个公会，或创建自己的公会。",              target = 1 },
-            { action = "GUILD_TASK",     hint = "完成一项公会任务，获得贡献值。",                 target = 1 },
-            { action = "GUILD_DONATE",   hint = "向公会捐赠资源，提升公会等级。",                 target = 1 },
+            { action = "OPEN_ACHIEVEMENTS", hint = "打开成就面板。",                              target = 1 },
+            { action = "VIEW_CHAINS",       hint = "查看成就链系统，了解链式解锁条件。",          target = 1 },
+            { action = "COMPLETE_CHAIN",    hint = "完成一个成就链的第一个成就。",                 target = 1 },
+            { action = "UNLOCK_NEXT",       hint = "解锁链中下一个成就。",                         target = 1 },
         },
         reward = { credits = 3000, purpleCrystal = 10 },
         isCompleted = false,
     },
 
     -- ------------------------------------------------------------------------
-    -- STAGE_8_ADVANCED: 进阶内容
+    -- STAGE_10_GUILD: 公会系统
     -- ------------------------------------------------------------------------
     {
-        id   = "STAGE_8_ADVANCED",
+        id   = "STAGE_10_GUILD",
+        name = "公会系统",
+        desc = "了解公会创建/加入、公会任务与协作。",
+        steps = {
+            { action = "OPEN_GUILD",       hint = "打开公会界面，查看公会列表。",                 target = 1 },
+            { action = "JOIN_OR_CREATE",   hint = "加入一个公会，或创建自己的公会。",              target = 1 },
+            { action = "GUILD_TASK",       hint = "完成一项公会任务，获得贡献值。",                 target = 1 },
+            { action = "GUILD_DONATE",     hint = "向公会捐赠资源，提升公会等级。",               target = 1 },
+        },
+        reward = { credits = 3000, purpleCrystal = 10 },
+        isCompleted = false,
+    },
+
+    -- ------------------------------------------------------------------------
+    -- STAGE_11_AI_DIFFICULTY: V3.1 AI 难度分级
+    -- ------------------------------------------------------------------------
+    {
+        id   = "STAGE_11_AI_DIFFICULTY",
+        name = "AI 难度挑战",
+        desc = "尝试不同 AI 难度等级，体验 5 级难度曲线。",
+        steps = {
+            { action = "VIEW_DIFFICULTIES",  hint = "在难度选择界面查看 5 个难度等级。",        target = 1 },
+            { action = "PLAY_NORMAL",        hint = "完成一场普通难度战斗。",                      target = 1 },
+            { action = "PLAY_HARD",          hint = "尝试困难难度战斗。",                          target = 1 },
+            { action = "VIEW_AI_PARAMS",     hint = "查看 AI 难度参数（攻击频率/技能使用等）。",  target = 1 },
+        },
+        reward = { credits = 4000, purpleCrystal = 12 },
+        isCompleted = false,
+    },
+
+    -- ------------------------------------------------------------------------
+    -- STAGE_12_ADVANCED: 进阶内容
+    -- ------------------------------------------------------------------------
+    {
+        id   = "STAGE_12_ADVANCED",
         name = "进阶内容",
-        desc = "探索隐藏成就、指挥官技能与 Roguelike 选卡等高阶玩法。",
+        desc = "探索隐藏成就、指挥官技能与高级玩法。",
         steps = {
             { action = "VIEW_ACHIEVEMENTS",  hint = "查看成就列表，了解隐藏成就条件。",         target = 1 },
             { action = "COMMANDER_SKILL",    hint = "学习与分配一项指挥官技能。",               target = 1 },
-            { action = "ROGUE_CARD_PICK",    hint = "在 Roguelike 模式中选择一张增益卡。",      target = 1 },
             { action = "HARD_MODE_TRY",      hint = "尝试高难度战斗或关卡。",                    target = 1 },
+            { action = "OPTIMIZE_BUILD",     hint = "优化建筑布局与科技路线。",                  target = 1 },
         },
         reward = { credits = 5000, purpleCrystal = 15, rainbowCrystal = 2 },
         isCompleted = false,
@@ -351,7 +464,7 @@ end
 
 --- 获取教程完成进度
 ---@param playerState table
----@return number completed, number total
+---@return number, number  已完成阶段数, 总阶段数
 function TutorialV3System.getProgress(playerState)
     playerState = ensureTutorialState(playerState)
     local completed = 0

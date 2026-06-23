@@ -108,6 +108,15 @@ function ModuleRegistry.RegisterAll()
     reg("AIBattle",          "game.systems.AIBattleSystem",       { category = "battle" })
     reg("PerformanceOpt",    "game.systems.PerformanceOptimizer", { category = "infra" })
 
+    -- V3.2: 战斗模块化 + 经济扩展 + 工具
+    reg("BattleAssets",      "game.battle.BattleAssets",          { category = "battle" })
+    reg("BattleHud",         "game.battle.BattleHud",             { category = "battle" })
+    reg("BattleOrchestrator","game.battle.BattleOrchestrator",    { category = "battle" })
+    reg("TradeRoute",        "game.systems.TradeRouteSystem",     { category = "economy" })
+    reg("BattleReplayPlayer","game.systems.BattleReplayPlayer",   { category = "content" })
+    reg("DebugConsole",      "game.systems.DebugConsoleSystem",   { category = "infra" })
+    reg("SaveMigration",     "game.systems.SaveMigrationTool",    { category = "infra" })
+
     -- 新成就系统（V3 版本，与 game.AchievementSystem 共存）
     reg("AchievementV3",     "game.systems.AchievementSystem",   { category = "progress" })
 
@@ -126,6 +135,17 @@ function ModuleRegistry.RegisterAll()
     reg("LeaderboardPanel",  "game.ui.LeaderboardPanel",         { category = "ui" })
     reg("MarketPanel",       "game.ui.MarketPanel",              { category = "ui" })
     reg("ShipDetailPanel",   "game.ui.ShipDetailPanel",          { category = "ui" })
+
+    -- V3.2: 新 UI 面板
+    reg("BattleUI",          "game.ui.BattleUI",                 { category = "ui" })
+    reg("BattleStatsPanel",  "game.ui.BattleStatsPanel",         { category = "ui" })
+    reg("BattleReplayPanel", "game.ui.BattleReplayPanel",        { category = "ui" })
+    reg("CommonUI",          "game.ui.CommonUI",                 { category = "ui" })
+    reg("GalaxyUI",          "game.ui.GalaxyUI",                 { category = "ui" })
+    reg("CmdSkillTreePanel", "game.ui.CommanderSkillTreePanel",  { category = "ui" })
+    reg("InvestOverview",    "game.ui.InvestmentOverviewPanel",  { category = "ui" })
+    reg("MarketExtended",    "game.ui.MarketPanelExtended",      { category = "ui" })
+    reg("TradeRoutePanel",   "game.ui.TradeRoutePanel",          { category = "ui" })
 
     print(string.format("[ModuleRegistry] === 注册完成: %d 个模块 ===", #modules_))
 end

@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 --[[
 InvestmentSystem.lua - 投资系统
 V2.7 P2-6
@@ -7,7 +7,7 @@ V2.7 P2-6
 
 local InvestmentSystem = {}
 
--- 投资选项定义（5种）
+-- 投资选项定义（V3.2 P1-4 扩展：新增高级投资）
 InvestmentSystem.INVESTMENT_OPTIONS = {
     {
         id = "MINING_BOOST",
@@ -17,6 +17,7 @@ InvestmentSystem.INVESTMENT_OPTIONS = {
         duration = 3600,  -- 1小时
         effect = { mineralMult = 1.5 },
         icon = "⛏️",
+        tier = 1,
     },
     {
         id = "ENERGY_BOOST",
@@ -26,6 +27,7 @@ InvestmentSystem.INVESTMENT_OPTIONS = {
         duration = 3600,
         effect = { energyMult = 1.5 },
         icon = "⚡",
+        tier = 1,
     },
     {
         id = "RESEARCH_BOOST",
@@ -35,6 +37,7 @@ InvestmentSystem.INVESTMENT_OPTIONS = {
         duration = 7200,  -- 2小时
         effect = { researchMult = 2.0 },
         icon = "🔬",
+        tier = 2,
     },
     {
         id = "TRADE_BOOST",
@@ -44,6 +47,7 @@ InvestmentSystem.INVESTMENT_OPTIONS = {
         duration = 3600,
         effect = { tradeMult = 1.3 },
         icon = "📦",
+        tier = 2,
     },
     {
         id = "DEFENSE_BOOST",
@@ -53,6 +57,38 @@ InvestmentSystem.INVESTMENT_OPTIONS = {
         duration = 7200,
         effect = { defenseMult = 1.5, turretCount = 2 },
         icon = "🛡️",
+        tier = 2,
+    },
+    -- V3.2 新增高级投资（需稀有资源）
+    {
+        id = "CRYSTAL_MINING",
+        name = "晶体矿脉开采",
+        desc = "持续产出稀有蓝水晶",
+        cost = { metal = 1500, nuclear = 300, blueCrystal = 2 },
+        duration = 5400,  -- 1.5h
+        effect = { crystalYield = 1.8, blueCrystalPerHour = 3 },
+        icon = "💎",
+        tier = 3,
+    },
+    {
+        id = "RARE_RESEARCH_CONSORTIUM",
+        name = "稀有研究财团",
+        desc = "高风险高回报：提升研究速度并产出紫水晶",
+        cost = { metal = 2500, esource = 1500, blueCrystal = 5, purpleCrystal = 1 },
+        duration = 10800,  -- 3h
+        effect = { researchMult = 2.5, purpleCrystalPerHour = 1 },
+        icon = "🔭",
+        tier = 3,
+    },
+    {
+        id = "GALACTIC_TRADE_HUB",
+        name = "银河贸易枢纽",
+        desc = "顶级投资：全局贸易收益 +30%，并持续产出彩虹晶",
+        cost = { metal = 5000, esource = 3000, nuclear = 800, purpleCrystal = 5 },
+        duration = 14400,  -- 4h
+        effect = { tradeMult = 1.3, globalResourceMult = 1.1, rainbowCrystalPerHour = 0.5 },
+        icon = "🌌",
+        tier = 4,
     },
 }
 
@@ -244,6 +280,117 @@ function InvestmentSystem.deserialize(data, playerState)
             }
         end
     end
+end
+
+-- ============================================================================
+-- V3.2 P1-4: 投资总览与统计
+-- ============================================================================
+
+-- 获取全局投资状态总览（用于 UI 面板显示）
+function InvestmentSystem.getOverview(playerState)
+    local overview = {
+        totalInvestments = 0,
+        activePlanets = 0,
+        globalEffects = {},
+        nextExpiringAt = nil,
+        nextExpiringName = nil,
+        highestTierActive = 0,
+    }
+
+    if not playerState.investments then
+        return overview
+    end
+
+    local now = os.time()
+    for planetId, investments in pairs(playerState.investments) do
+        local planetActive = false
+        for _, inv in ipairs(investments) do
+            if now <= inv.endTime then
+                overview.totalInvestments = overview.totalInvestments + 1
+                planetActive = true
+
+                -- 聚合全局效果
+                for effectKey, value in pairs(inv.effect or {}) do
+                    if type(value) == "number" then
+                        -- 倍数类效果累乘
+                        if string.find(effectKey, "Mult") or string.find(effectKey, "Bonus") then
+                            overview.globalEffects[effectKey] = (overview.globalEffects[effectKey] or 1.0) * value
+                        else
+                            -- 其他效果累加
+                            overview.globalEffects[effectKey] = (overview.globalEffects[effectKey] or 0) + value
+                        end
+                    end
+                end
+
+                -- 跟踪最高 tier
+                local option = InvestmentSystem.getInvestmentOption(inv.id)
+                if option and option.tier and option.tier > overview.highestTierActive then
+                    overview.highestTierActive = option.tier
+                end
+
+                -- 跟踪最近到期的投资
+                if overview.nextExpiringAt == nil or inv.endTime < overview.nextExpiringAt then
+                    overview.nextExpiringAt = inv.endTime
+                    overview.nextExpiringName = inv.name
+                end
+            end
+        end
+        if planetActive then
+            overview.activePlanets = overview.activePlanets + 1
+        end
+    end
+
+    return overview
+end
+
+-- 获取指定 tier 的投资选项（用于 UI 分层展示）
+function InvestmentSystem.getOptionsByTier(tier)
+    local list = {}
+    for _, inv in ipairs(InvestmentSystem.INVESTMENT_OPTIONS) do
+        if inv.tier == tier then
+            table.insert(list, {
+                id = inv.id,
+                name = inv.name,
+                desc = inv.desc,
+                cost = inv.cost,
+                duration = inv.duration,
+                durationMinutes = math.floor(inv.duration / 60),
+                effect = inv.effect,
+                icon = inv.icon,
+                tier = inv.tier,
+            })
+        end
+    end
+    return list
+end
+
+-- 取消某个投资（返还一部分资源）
+function InvestmentSystem.cancelInvestment(planetId, index, playerState, rm)
+    if not playerState.investments or not playerState.investments[planetId] then
+        return false, "无此投资"
+    end
+    local list = playerState.investments[planetId]
+    if index < 1 or index > #list then
+        return false, "序号越界"
+    end
+    local inv = list[index]
+    local option = InvestmentSystem.getInvestmentOption(inv.id)
+    if not option then return false, "投资类型不存在" end
+
+    -- 按剩余时间比例返还资源（至少 30%）
+    local ratio = math.max(0.3, (inv.endTime - os.time()) / inv.duration)
+    for res, amount in pairs(option.cost) do
+        local refund = math.floor(amount * ratio)
+        if rm.addResource then rm:addResource(res, refund)
+        elseif rm.addRare and (res == "blueCrystal" or res == "purpleCrystal" or res == "rainbowCrystal") then
+            rm:addRare(res, refund)
+        end
+    end
+
+    table.remove(list, index)
+    if #list == 0 then playerState.investments[planetId] = nil end
+
+    return true, "已取消，返还约 " .. math.floor(ratio * 100) .. "% 资源"
 end
 
 return InvestmentSystem

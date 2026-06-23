@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found, undefined-doc-param, missing-parameter, access-invisible
 --[[
 ShipDetailPanel.lua - 舰船详情面板
 V2.7 P1-3/5

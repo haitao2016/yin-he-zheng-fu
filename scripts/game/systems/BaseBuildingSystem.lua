@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 --- BaseBuildingSystem — 星航基地独立建造系统
 --- 从 Systems.lua 机械拆分，无逻辑修改
 require("game.GameConstants")

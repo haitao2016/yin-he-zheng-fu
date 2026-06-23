@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 --[[
 Constants/ShipConstants.lua
 舰船、舰船类型、模块、伤害相关常量
@@ -79,5 +79,67 @@ M.BATTLE_PHASES = {
     PHASE2 = { name = "阶段二", hpThreshold = 0.33, damageMult = 1.3 },
     PHASE3 = { name = "阶段三", hpThreshold = 0.0,  damageMult = 1.6 },
 }
+
+---@param SHIP_DEFS table
+---@param SHIP_TYPES table
+---@param SHIP_NAMES table
+---@param C table
+---@return table, table, table, table
+local function applyBalanceTuning(SHIP_DEFS, SHIP_TYPES, SHIP_NAMES, C)
+    local BALANCE_TUNING = {
+        BASIC = {
+            BATTLESHIP = { maxHealth = 1.03, damage = 0.97, speed = 1.03 },
+            CRUISER    = { maxHealth = 0.97, damage = 1.03, speed = 1.00 },
+            DESTROYER  = { maxHealth = 1.00, damage = 0.97, speed = 1.03 },
+            FRIGATE    = { maxHealth = 1.03, damage = 1.00, speed = 0.97 },
+            SCOUT      = { maxHealth = 0.97, damage = 1.03, speed = 1.03 },
+        },
+        FLAGSHIP = { maxHealth = 1.5, damage = 1.3, speed = 0.8 },
+        SPECIAL = {
+            MINER  = { maxHealth = 1.2, damage = 0.6, speed = 0.9 },
+            REPAIR = { maxHealth = 1.1, damage = 0.5, speed = 1.0 },
+            SUPPORT = { maxHealth = 1.15, damage = 0.7, speed = 0.95 },
+            EWAR   = { maxHealth = 0.9, damage = 0.8, speed = 1.15 },
+        },
+        RARE = {
+            TITAN       = { maxHealth = 1.8, damage = 1.5, speed = 0.75 },
+            DREADNOUGHT = { maxHealth = 2.0, damage = 1.6, speed = 0.70 },
+            RAIDER      = { maxHealth = 0.95, damage = 1.4, speed = 1.20 },
+            CARRIER     = { maxHealth = 1.6, damage = 1.2, speed = 0.80 },
+        },
+    }
+
+    local function apply(def, t)
+        if not def or not t then return end
+        if t.maxHealth and def.maxHealth then def.maxHealth = def.maxHealth * t.maxHealth end
+        if t.damage    and def.damage    then def.damage    = def.damage    * t.damage    end
+        if t.speed     and def.speed     then def.speed     = def.speed     * t.speed     end
+    end
+
+    for key, tune in pairs(BALANCE_TUNING.BASIC) do
+        if SHIP_DEFS and SHIP_DEFS[key] then apply(SHIP_DEFS[key], tune) end
+        if SHIP_TYPES and SHIP_TYPES[key] then apply(SHIP_TYPES[key], tune) end
+        if C and C[key] then apply(C[key], tune) end
+    end
+    if SHIP_DEFS and SHIP_DEFS.FLAGSHIP then apply(SHIP_DEFS.FLAGSHIP, BALANCE_TUNING.FLAGSHIP) end
+    if SHIP_TYPES and SHIP_TYPES.FLAGSHIP then apply(SHIP_TYPES.FLAGSHIP, BALANCE_TUNING.FLAGSHIP) end
+    if C and C.FLAGSHIP then apply(C.FLAGSHIP, BALANCE_TUNING.FLAGSHIP) end
+    for key, tune in pairs(BALANCE_TUNING.SPECIAL) do
+        if SHIP_DEFS and SHIP_DEFS[key] then apply(SHIP_DEFS[key], tune) end
+        if SHIP_TYPES and SHIP_TYPES[key] then apply(SHIP_TYPES[key], tune) end
+        if C and C[key] then apply(C[key], tune) end
+    end
+    for key, tune in pairs(BALANCE_TUNING.RARE) do
+        if SHIP_DEFS and SHIP_DEFS[key] then apply(SHIP_DEFS[key], tune) end
+        if SHIP_TYPES and SHIP_TYPES[key] then apply(SHIP_TYPES[key], tune) end
+        if C and C[key] then apply(C[key], tune) end
+    end
+
+    if print then print("[Balance] balance tuning applied") end
+
+    return SHIP_DEFS, SHIP_TYPES, SHIP_NAMES, C
+end
+
+applyBalanceTuning(M.SHIP_DEFS or {}, M.SHIP_TYPES or {}, M.SHIP_NAMES or {}, M)
 
 return M

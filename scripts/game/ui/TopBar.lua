@@ -1,4 +1,4 @@
----@diagnostic disable: missing-parameter, assign-type-mismatch, return-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 -- ============================================================================
 -- game/ui/TopBar.lua  -- 顶部资源栏 + 工具按钮行 + 征服进度条
 -- 从 GameUI.RenderTopBar (L614-L1211) 完整迁移

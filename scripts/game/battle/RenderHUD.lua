@@ -1,4 +1,4 @@
----@diagnostic disable: assign-type-mismatch, return-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 -- ============================================================================
 -- RenderHUD: HUD层渲染 — 波次/连击/信息面板/阵型/技能 (从 BattleRender.lua 拆分)
 -- ============================================================================
