@@ -6,31 +6,33 @@
 local Sys         = require("game.Systems")
 local GalaxyScene = require("game.GalaxyScene")
 local PirateAI    = require("game.PirateAI")
-
 local GameUI      = require("game.GameUI")
-local PlanetPanel = require("game.ui.PlanetPanel")  -- P3-2: 微动画触发
 local Audio       = require("game.AudioManager")
 local Achievement = require("game.AchievementSystem")
-local UICommon    = require("game.ui.UICommon")
-local ClientMenus = require("network.ClientMenus")
-local Campaign    = require("game.CampaignSystem")  -- P2-2: 战役模式
-local NemesisSystem = require("game.NemesisSystem")  -- P1-2: 宿敌系统
-local BlackMarket   = require("game.BlackMarketSystem") -- P2-2: 黑市走私网络
-local Commander     = require("game.CommanderSystem")    -- P1-3 V2.4: 指挥官系统
-local QuestBoard    = require("game.QuestBoard")         -- P2-1 V2.4: 程序化任务板
-local GalaxyEvents  = require("game.GalaxyEvents")       -- P1-2 V2.4: 终局危机
-local MegastructureSystem = require("game.MegastructureSystem") -- P2-2 V2.4: 巨构工程
-local LiverySystem = require("game.LiverySystem")               -- P2-3 V2.4: 舰队涂装
-local GalactopediaSystem = require("game.GalactopediaSystem")   -- P3-1 V2.4: 银河百科
-local LegacySystem = require("game.LegacySystem")               -- P1-3 V2.5: 文明遗产
-local ModuleRegistry = require("game.ModuleRegistry")            -- V3.0: 扩展模块注册器
-local ClientSave  = require("network.ClientSave")   -- 存档/读档逻辑
-local ClientStats = require("network.ClientStats")  -- 统计面板渲染
-local ClientBattle = require("network.ClientBattle") -- P3-1b: 战斗/波次/结算/远征/探索/DDA
-local ClientGalaxy = require("network.ClientGalaxy") -- P3-1c: 建造/殖民/市场/外交
-local BattleScene  = require("game.BattleScene")     -- 战术场景渲染/更新/点击
-local ClientSetup  = require("network.ClientSetup")  -- P3-1d: setupSceneAndUI 逻辑
-local ClientInput  = require("network.ClientInput")  -- P3-1d: 输入处理逻辑
+local BlackMarket = require("game.BlackMarketSystem")
+local Commander   = require("game.CommanderSystem")
+local QuestBoard  = require("game.QuestBoard")
+local GalaxyEvents = require("game.GalaxyEvents")
+local MegastructureSystem = require("game.MegastructureSystem")
+local LegacySystem = require("game.LegacySystem")
+local ClientSave  = require("network.ClientSave")
+local ClientBattle = require("network.ClientBattle")
+local ClientGalaxy = require("network.ClientGalaxy")
+local BattleScene  = require("game.BattleScene")
+local ClientSetup  = require("network.ClientSetup")
+local ClientInput  = require("network.ClientInput")
+
+-- 低频引用模块合并到表中（节省 10 个寄存器，规避 Lua 5.4 局部变量 200 上限）
+-- 低频引用模块合并到表中（节省 10 个寄存器，规避 Lua 5.4 局部变量 200 上限）
+local PlanetPanel      = require("game.ui.PlanetPanel")
+local UICommon         = require("game.ui.UICommon")
+local ClientMenus      = require("network.ClientMenus")
+local Campaign         = require("game.CampaignSystem")
+local NemesisSystem    = require("game.NemesisSystem")
+local LiverySystem     = require("game.LiverySystem")
+local GalactopediaSystem = require("game.GalactopediaSystem")
+local ModuleRegistry   = require("game.ModuleRegistry")
+local ClientStats      = require("network.ClientStats")
 -- P2-1: AnomalySystem 使用 inline require 以避免 upvalue 上限
 
 local Client = {}
@@ -75,15 +77,13 @@ local refreshTimer_   = 0
 local selectedPlanet_ = nil
 local lastShownRemaining_ = -1   -- 上次传给 UI 的整秒值，相同时跳过调用
 
--- 游戏系统实例（防御：确保模块 .new 存在，避免局部变量溢出导致的 nil）
-assert(Sys.ResourceManager and Sys.ResourceManager.new, "[Client] ResourceManager.new missing")
-assert(Sys.ResearchSystem and Sys.ResearchSystem.new, "[Client] ResearchSystem.new missing")
+-- 游戏系统实例
 local rm_      = Sys.ResourceManager.new()
-local bs_      = Sys.BuildingSystem.new(rm_)       -- 行星建造系统
-local bbs_     = Sys.BaseBuildingSystem.new(rm_)   -- 基地建造系统（独立）
+local bs_      = Sys.BuildingSystem.new(rm_)
+local bbs_     = Sys.BaseBuildingSystem.new(rm_)
 local rs_      = Sys.ResearchSystem.new(rm_, bs_)
 local ms_      = Sys.MarketSystem.new(rm_)
-local bm_      = BlackMarket.new(rm_)          -- P2-2: 黑市走私网络
+local bm_      = BlackMarket.new(rm_)
 local player_  = Sys.PlayerProfile.new()
 local spq_     = Sys.ShipProductionQueue.new(rm_)
 local fm_      = Sys.FleetManager.new()
