@@ -135,6 +135,18 @@ function DiplomacySystem:getAllRelations()
     return list
 end
 
+--- 获取所有势力中最高好感度
+---@return number maxFavor
+function DiplomacySystem:getMaxFavor()
+    local maxF = 0
+    for _, st in pairs(self.diplomacy or {}) do
+        if st and st.favor then
+            maxF = math.max(maxF, st.favor)
+        end
+    end
+    return maxF
+end
+
 --- P1-1: 获取指定势力的竞争对手（compete关系）
 ---@param factionKey string
 ---@return string|nil  竞争对手factionKey
