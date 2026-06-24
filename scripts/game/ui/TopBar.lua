@@ -77,11 +77,16 @@ function TopBar.Render(ctx)
     local eBlockRate    = 3.0 * mult
     local esourceRate   = eBlockRate / 2.0
 
-    -- 布局：[原矿3列] [精炼区] [星币+玩家+铃铛]
-    -- 响应式：窄屏（<500）时缩小右侧区域，保证资源列不重叠
-    local REFINED_W = screenW < 500 and 0 or 130    -- 窄屏隐藏精炼区
-    local RIGHT_W   = screenW < 500 and 140 or 270  -- 窄屏压缩右侧
+    -- 布局：[原矿3列] [精炼区(可选)] [右侧按钮区]
+    -- 右侧按钮区实际宽度 = 按钮数量 * 步长 + 星币区(60px)
+    local BTN_SZ_PRE   = screenW < 400 and 22 or 28
+    local BTN_GAP_PRE  = screenW < 400 and 2  or 6
+    local BTN_STEP_PRE = BTN_SZ_PRE + BTN_GAP_PRE
+    local RIGHT_W   = math.min(math.floor(screenW * 0.55), 8 * BTN_STEP_PRE + 70)
+    -- 精炼区仅在有足够剩余空间时显示（原矿3列各至少60px + 精炼130px + 右侧）
     local cols      = #RES_ORDER
+    local spaceForRefined = screenW - RIGHT_W - cols * 60
+    local REFINED_W = spaceForRefined >= 140 and 130 or 0
     local colW      = math.max(50, (screenW - RIGHT_W - REFINED_W) / cols)
     local rowMid    = 2 + (TOPBAR_H - 2) / 2   -- 垂直居中 y ≈ 23
 
@@ -128,10 +133,10 @@ function TopBar.Render(ctx)
         text(tx, rowMid + 6, string.format("%d %s", rawVal, rateStr), 9, valR, valG, valB, 240)
     end
 
-    -- ── 精炼资源区（水晶列与星币之间，3行竖排）──
+    -- ── 精炼资源区（水晶列与星币之间，3行竖排，仅空间充足时显示）──
     local rzX  = 8 + cols * colW + 8
     local rzYs = { rowMid - 10, rowMid + 1, rowMid + 12 }
-    for j, res in ipairs(RES_ORDER) do
+    if REFINED_W > 0 then for j, res in ipairs(RES_ORDER) do
         local c      = RES_COLORS[res]
         local refVal = math.floor(displayRes[res] or rm.resources[res] or 0)
         local refinedLbl = (RES_REFINED_LABELS and RES_REFINED_LABELS[res]) or RES_LABELS[res]
@@ -202,7 +207,7 @@ function TopBar.Render(ctx)
                 nvgText(vg, arrowX, arrowY, "▼")
             end
         end
-    end
+    end end  -- end for, end if REFINED_W > 0
 
     -- ══════════════════════════════════════════════════════════════════════════
     -- 右区工具按钮行（从右往左排列，响应式：窄屏缩小按钮+间距）

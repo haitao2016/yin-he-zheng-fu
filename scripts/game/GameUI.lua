@@ -958,8 +958,11 @@ function GameUI.RenderHUD(dt)
 
         -- 计算可放按钮数上限（与 TopBar.lua 同公式）
         local cols = #RES_ORDER
-        local REFINED_W = screenW_ < 500 and 0 or 130
-        local resAreaEnd = 8 + cols * (math.max(50, (screenW_ - (screenW_ < 500 and 140 or 270) - REFINED_W) / cols)) + (REFINED_W > 0 and REFINED_W + 16 or 8)
+        local RIGHT_W = math.min(math.floor(screenW_ * 0.55), 8 * BTN_STEP + 70)
+        local spaceForRef = screenW_ - RIGHT_W - cols * 60
+        local REFINED_W = spaceForRef >= 140 and 130 or 0
+        local colW = math.max(50, (screenW_ - RIGHT_W - REFINED_W) / cols)
+        local resAreaEnd = 8 + cols * colW + (REFINED_W > 0 and REFINED_W + 16 or 8)
         local maxBtns = math.floor((screenW_ - resAreaEnd - 8) / BTN_STEP)
 
         local function nextHitX()
