@@ -136,8 +136,8 @@ function PlanetPanel.Render(planet, ctx)
     local onSetSpec            = ctx.onSetSpec            -- P2-3: 设置建筑专精 function(planetId, bldIdx, specKey)
     local onUpgradePlanetCb = ctx.onUpgradePlanetCb -- P1-2: 升级星球等级 function(planet)
 
-    local pw = 275
-    local px = screenW - pw - 12
+    local pw = math.min(275, screenW - 20)
+    local px = math.max(4, screenW - pw - 12)
     local py = UICommon.PANEL_TOP or 48
 
     -- 计算产量速率行高度（有已殖民星球+有建筑+有产量时额外占17px）

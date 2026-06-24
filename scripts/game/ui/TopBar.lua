@@ -205,12 +205,29 @@ function TopBar.Render(ctx)
     end
 
     -- ══════════════════════════════════════════════════════════════════════════
-    -- 右区工具按钮行（从右往左排列，每个 28×28，间距 4-6px）
+    -- 右区工具按钮行（从右往左排列，响应式：窄屏缩小按钮+间距）
     -- ══════════════════════════════════════════════════════════════════════════
+    local BTN_SZ   = screenW < 400 and 22 or 28   -- 窄屏缩小按钮
+    local BTN_GAP  = screenW < 400 and 2  or 6    -- 窄屏缩小间距
+    local BTN_STEP = BTN_SZ + BTN_GAP
+    local BTN_Y    = screenW < 400 and 8 or 6
+    local BTN_FONT = screenW < 400 and 11 or 13
+    -- 最大可放按钮数（保证不侵入资源列区域）
+    local resAreaEnd = 8 + cols * colW + (REFINED_W > 0 and REFINED_W + 16 or 8)
+    local maxBtns    = math.floor((screenW - resAreaEnd - 8) / BTN_STEP)
 
-    -- 通知铃铛（最右）
+    local btnIdx = 0  -- 从右往左计数
+    local function nextBtnX()
+        btnIdx = btnIdx + 1
+        return screenW - btnIdx * BTN_STEP - 4
+    end
+    local function canFitMore()
+        return btnIdx < maxBtns
+    end
+
+    -- 通知铃铛（最右，必显示）
     do
-        local bx, by, bw, bh = screenW - 36, 6, 28, 28
+        local bx, by, bw, bh = nextBtnX(), BTN_Y, BTN_SZ, BTN_SZ
         local isOpen    = NotifyPanel.IsOpen()
         local hasUnread = NotifyPanel.GetUnread() > 0
         nvgBeginPath(vg)
@@ -221,7 +238,7 @@ function TopBar.Render(ctx)
         nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgStrokeColor(vg, isOpen and nvgRGBA(80,160,255,220) or nvgRGBA(60,100,180,120))
         nvgStrokeWidth(vg, 1); nvgStroke(vg)
-        nvgFontSize(vg, 13); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFontSize(vg, BTN_FONT); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
         nvgFillColor(vg, hasUnread and nvgRGBA(255,220,60,255) or nvgRGBA(140,180,255,220))
         nvgText(vg, bx + bw/2, by + bh/2, "🔔")
         if hasUnread then
@@ -236,9 +253,9 @@ function TopBar.Render(ctx)
         end
     end
 
-    -- 设置按钮（铃铛左边）
+    -- 设置按钮（铃铛左边，必显示）
     do
-        local bx, by, bw, bh = screenW - 70, 6, 28, 28
+        local bx, by, bw, bh = nextBtnX(), BTN_Y, BTN_SZ, BTN_SZ
         local isOpen = SettingsPanel.IsVisible()
         nvgBeginPath(vg)
         nvgRoundedRect(vg, bx, by, bw, bh, 5)
@@ -248,14 +265,14 @@ function TopBar.Render(ctx)
         nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgStrokeColor(vg, isOpen and nvgRGBA(80,160,255,220) or nvgRGBA(60,100,180,120))
         nvgStrokeWidth(vg, 1); nvgStroke(vg)
-        nvgFontSize(vg, 14); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFontSize(vg, BTN_FONT + 1); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
         nvgFillColor(vg, nvgRGBA(180,210,255,220))
         nvgText(vg, bx + bw/2, by + bh/2, "⚙")
     end
 
     -- 成就按钮
-    do
-        local bx, by, bw, bh = screenW - 104, 6, 28, 28
+    if canFitMore() then do
+        local bx, by, bw, bh = nextBtnX(), BTN_Y, BTN_SZ, BTN_SZ
         local isOpen    = AchievementPanel.IsVisible()
         local unlockCnt = AchievementPanel.GetUnlockCount()
         nvgBeginPath(vg)
@@ -266,7 +283,7 @@ function TopBar.Render(ctx)
         nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgStrokeColor(vg, isOpen and nvgRGBA(255,200,60,220) or nvgRGBA(60,100,180,120))
         nvgStrokeWidth(vg, 1); nvgStroke(vg)
-        nvgFontSize(vg, 13); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFontSize(vg, BTN_FONT); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
         nvgFillColor(vg, nvgRGBA(255,210,80,230))
         nvgText(vg, bx + bw/2, by + bh/2, "🏆")
         if unlockCnt > 0 then
@@ -276,11 +293,11 @@ function TopBar.Render(ctx)
             nvgFillColor(vg, nvgRGBA(255,255,255,255))
             nvgText(vg, bx + bw - 2, by + 2, tostring(unlockCnt))
         end
-    end
+    end end
 
     -- 日志按钮
-    do
-        local bx, by, bw, bh = screenW - 138, 6, 28, 28
+    if canFitMore() then do
+        local bx, by, bw, bh = nextBtnX(), BTN_Y, BTN_SZ, BTN_SZ
         local isOpen = LogPanel.IsVisible()
         local pendingGoals = 0
         if STAGE_GOALS then
@@ -296,7 +313,7 @@ function TopBar.Render(ctx)
         nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgStrokeColor(vg, isOpen and nvgRGBA(80,160,255,220) or nvgRGBA(60,100,180,120))
         nvgStrokeWidth(vg, 1); nvgStroke(vg)
-        nvgFontSize(vg, 13); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFontSize(vg, BTN_FONT); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
         nvgFillColor(vg, nvgRGBA(160,210,255,230))
         nvgText(vg, bx + bw/2, by + bh/2, "📋")
         if pendingGoals > 0 then
@@ -306,11 +323,11 @@ function TopBar.Render(ctx)
             nvgFillColor(vg, nvgRGBA(255,255,255,255))
             nvgText(vg, bx + bw - 2, by + 2, tostring(math.min(pendingGoals, 9)))
         end
-    end
+    end end
 
     -- 战绩按钮
-    do
-        local bx, by, bw, bh = screenW - 172, 6, 28, 28
+    if canFitMore() then do
+        local bx, by, bw, bh = nextBtnX(), BTN_Y, BTN_SZ, BTN_SZ
         local isOpen = ctx.statsVisible
         nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgFillColor(vg, isOpen and nvgRGBA(10, 50, 100, 220) or nvgRGBA(20, 40, 80, 160))
@@ -318,14 +335,14 @@ function TopBar.Render(ctx)
         nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgStrokeColor(vg, isOpen and nvgRGBA(80, 180, 255, 220) or nvgRGBA(60, 100, 180, 120))
         nvgStrokeWidth(vg, 1); nvgStroke(vg)
-        nvgFontSize(vg, 13); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFontSize(vg, BTN_FONT); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
         nvgFillColor(vg, nvgRGBA(100, 200, 255, 230))
         nvgText(vg, bx + bw/2, by + bh/2, "📊")
-    end
+    end end
 
     -- 快捷信号按钮
-    do
-        local bx, by, bw, bh = screenW - 206, 6, 28, 28
+    if canFitMore() then do
+        local bx, by, bw, bh = nextBtnX(), BTN_Y, BTN_SZ, BTN_SZ
         local isOpen = ctx.signalOpen
         local onCD   = ctx.signalCooldown > 0
         nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
@@ -336,22 +353,22 @@ function TopBar.Render(ctx)
         nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgStrokeColor(vg, isOpen and nvgRGBA(100, 220, 80, 220) or nvgRGBA(60, 100, 180, 120))
         nvgStrokeWidth(vg, 1); nvgStroke(vg)
-        nvgFontSize(vg, 13); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFontSize(vg, BTN_FONT); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
         nvgFillColor(vg, onCD and nvgRGBA(120, 120, 120, 150) or nvgRGBA(140, 255, 120, 230))
         nvgText(vg, bx + bw/2, by + bh/2, "📡")
         if onCD then
             local pct = ctx.signalCooldown / ctx.SIGNAL_CD
             nvgBeginPath(vg)
-            nvgArc(vg, bx + bw/2, by + bh/2, 11,
+            nvgArc(vg, bx + bw/2, by + bh/2, BTN_SZ * 0.4,
                    -math.pi/2, -math.pi/2 + (1 - pct) * math.pi * 2, 1)
             nvgStrokeColor(vg, nvgRGBA(100, 220, 80, 180))
             nvgStrokeWidth(vg, 2); nvgStroke(vg)
         end
-    end
+    end end
 
     -- 帝国总览按钮
-    do
-        local bx, by, bw, bh = screenW - 240, 6, 28, 28
+    if canFitMore() then do
+        local bx, by, bw, bh = nextBtnX(), BTN_Y, BTN_SZ, BTN_SZ
         local isOpen = EmpirePanel.IsVisible()
         nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgFillColor(vg, isOpen and nvgRGBA(50, 30, 80, 220) or nvgRGBA(20, 40, 80, 160))
@@ -359,14 +376,14 @@ function TopBar.Render(ctx)
         nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgStrokeColor(vg, isOpen and nvgRGBA(180, 120, 255, 220) or nvgRGBA(60, 100, 180, 120))
         nvgStrokeWidth(vg, 1); nvgStroke(vg)
-        nvgFontSize(vg, 13); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFontSize(vg, BTN_FONT); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
         nvgFillColor(vg, nvgRGBA(200, 160, 255, 230))
         nvgText(vg, bx + bw/2, by + bh/2, "🏛️")
-    end
+    end end
 
     -- 宿敌档案按钮
-    do
-        local bx, by, bw, bh = screenW - 272, 6, 28, 28
+    if canFitMore() then do
+        local bx, by, bw, bh = nextBtnX(), BTN_Y, BTN_SZ, BTN_SZ
         local isOpen = NemesisRenderPanel.IsVisible()
         local hasActive = NemesisSystem.GetActiveCaptain() ~= nil
         nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
@@ -375,7 +392,7 @@ function TopBar.Render(ctx)
         nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgStrokeColor(vg, isOpen and nvgRGBA(255, 80, 80, 220) or (hasActive and nvgRGBA(200, 60, 60, 180) or nvgRGBA(80, 40, 60, 120)))
         nvgStrokeWidth(vg, 1); nvgStroke(vg)
-        nvgFontSize(vg, 13); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFontSize(vg, BTN_FONT); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
         nvgFillColor(vg, hasActive and nvgRGBA(255, 100, 100, 240) or nvgRGBA(180, 100, 120, 200))
         nvgText(vg, bx + bw/2, by + bh/2, "⚔")
         if hasActive and not isOpen then
@@ -384,11 +401,11 @@ function TopBar.Render(ctx)
             nvgFillColor(vg, nvgRGBA(255, 60, 60, math.floor(180 + 75 * pulse)))
             nvgFill(vg)
         end
-    end
+    end end
 
     -- 任务板按钮
-    do
-        local bx, by, bw, bh = screenW - 304, 6, 28, 28
+    if canFitMore() then do
+        local bx, by, bw, bh = nextBtnX(), BTN_Y, BTN_SZ, BTN_SZ
         local isOpen = ctx.questVisible
         local activeN = #QuestBoard.GetQuests()
         nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
@@ -397,7 +414,7 @@ function TopBar.Render(ctx)
         nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgStrokeColor(vg, isOpen and nvgRGBA(80, 220, 140, 220) or nvgRGBA(60, 100, 180, 120))
         nvgStrokeWidth(vg, 1); nvgStroke(vg)
-        nvgFontSize(vg, 13); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFontSize(vg, BTN_FONT); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
         nvgFillColor(vg, nvgRGBA(100, 230, 160, 230))
         nvgText(vg, bx + bw/2, by + bh/2, "📌")
         if activeN > 0 then
@@ -407,11 +424,11 @@ function TopBar.Render(ctx)
             nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
             nvgText(vg, bx + bw - 2, by + 2, tostring(activeN))
         end
-    end
+    end end
 
     -- 外交关系网按钮
-    do
-        local bx, by, bw, bh = screenW - 338, 6, 28, 28
+    if canFitMore() then do
+        local bx, by, bw, bh = nextBtnX(), BTN_Y, BTN_SZ, BTN_SZ
         local isOpen = ctx.diploRelVisible
         nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgFillColor(vg, isOpen and nvgRGBA(60, 30, 80, 220) or nvgRGBA(20, 40, 80, 160))
@@ -419,14 +436,14 @@ function TopBar.Render(ctx)
         nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgStrokeColor(vg, isOpen and nvgRGBA(180, 100, 255, 220) or nvgRGBA(60, 100, 180, 120))
         nvgStrokeWidth(vg, 1); nvgStroke(vg)
-        nvgFontSize(vg, 13); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFontSize(vg, BTN_FONT); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
         nvgFillColor(vg, nvgRGBA(180, 140, 255, 230))
         nvgText(vg, bx + bw/2, by + bh/2, "🤝")
-    end
+    end end
 
     -- 巨构工程按钮（Lv7+ 解锁）
-    do
-        local bx, by, bw, bh = screenW - 372, 6, 28, 28
+    if canFitMore() then do
+        local bx, by, bw, bh = nextBtnX(), BTN_Y, BTN_SZ, BTN_SZ
         local isOpen = MegaPanel.IsOpen()
         local megaBase = GalaxyScene.GetBase and GalaxyScene.GetBase()
         local coreLevel = megaBase and megaBase.coreLevel or 1
@@ -438,15 +455,15 @@ function TopBar.Render(ctx)
             nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
             nvgStrokeColor(vg, isOpen and nvgRGBA(255, 180, 60, 220) or nvgRGBA(100, 80, 140, 120))
             nvgStrokeWidth(vg, 1); nvgStroke(vg)
-            nvgFontSize(vg, 13); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            nvgFontSize(vg, BTN_FONT); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
             nvgFillColor(vg, nvgRGBA(255, 200, 80, 230))
             nvgText(vg, bx + bw/2, by + bh/2, "🏗️")
         end
-    end
+    end end
 
     -- 舰队涂装按钮
-    do
-        local bx, by, bw, bh = screenW - 406, 6, 28, 28
+    if canFitMore() then do
+        local bx, by, bw, bh = nextBtnX(), BTN_Y, BTN_SZ, BTN_SZ
         local isOpen = LiveryPanel.IsVisible()
         nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgFillColor(vg, isOpen and nvgRGBA(40, 20, 80, 220) or nvgRGBA(20, 40, 80, 160))
@@ -454,14 +471,14 @@ function TopBar.Render(ctx)
         nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgStrokeColor(vg, isOpen and nvgRGBA(180, 100, 255, 220) or nvgRGBA(60, 100, 180, 120))
         nvgStrokeWidth(vg, 1); nvgStroke(vg)
-        nvgFontSize(vg, 13); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFontSize(vg, BTN_FONT); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
         nvgFillColor(vg, nvgRGBA(200, 160, 255, 230))
         nvgText(vg, bx + bw/2, by + bh/2, "🎨")
-    end
+    end end
 
     -- 银河百科按钮
-    do
-        local bx, by, bw, bh = screenW - 440, 6, 28, 28
+    if canFitMore() then do
+        local bx, by, bw, bh = nextBtnX(), BTN_Y, BTN_SZ, BTN_SZ
         local isOpen = GalactopediaPanel.IsVisible()
         nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgFillColor(vg, isOpen and nvgRGBA(20, 60, 50, 220) or nvgRGBA(15, 40, 60, 160))
@@ -469,14 +486,14 @@ function TopBar.Render(ctx)
         nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgStrokeColor(vg, isOpen and nvgRGBA(80, 220, 180, 220) or nvgRGBA(60, 100, 180, 120))
         nvgStrokeWidth(vg, 1); nvgStroke(vg)
-        nvgFontSize(vg, 13); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFontSize(vg, BTN_FONT); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
         nvgFillColor(vg, nvgRGBA(120, 230, 200, 230))
         nvgText(vg, bx + bw/2, by + bh/2, "📖")
-    end
+    end end
 
     -- 文明遗产按钮
-    do
-        local bx, by, bw, bh = screenW - 474, 6, 28, 28
+    if canFitMore() then do
+        local bx, by, bw, bh = nextBtnX(), BTN_Y, BTN_SZ, BTN_SZ
         local isOpen = LegacyPanel.IsOpen()
         nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgFillColor(vg, isOpen and nvgRGBA(50, 40, 15, 220) or nvgRGBA(30, 30, 50, 160))
@@ -484,14 +501,14 @@ function TopBar.Render(ctx)
         nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, bw, bh, 5)
         nvgStrokeColor(vg, isOpen and nvgRGBA(255, 200, 60, 220) or nvgRGBA(140, 120, 60, 120))
         nvgStrokeWidth(vg, 1); nvgStroke(vg)
-        nvgFontSize(vg, 13); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFontSize(vg, BTN_FONT); nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
         nvgFillColor(vg, nvgRGBA(255, 220, 80, 230))
         nvgText(vg, bx + bw/2, by + bh/2, "⭐")
-    end
+    end end
 
-    -- ── 星币（遗产按钮左边）──
+    -- ── 星币（按钮行左边动态定位）──
     local credits = math.floor(rm.resources.credits or 0)
-    local credX = screenW - 528
+    local credX = math.max(resAreaEnd + 4, screenW - (btnIdx + 1) * BTN_STEP - 60)
     local credIconH = resIcons["credits"]
     if credIconH and credIconH >= 0 then
         local paint = nvgImagePattern(vg, credX, rowMid - 7, 14, 14, 0, credIconH, 1.0)
@@ -501,8 +518,9 @@ function TopBar.Render(ctx)
     text(credX + 17, rowMid - 6, "星币", 9, 255,210,60,200)
     text(credX + 17, rowMid + 6, tostring(credits), 10, 255,230,80,255)
 
-    -- ── 玩家信息 + 在线时限/无尽轮次 ──
+    -- ── 玩家信息 + 在线时限/无尽轮次（窄屏隐藏）──
     local infoRightX = credX - 8
+    if infoRightX < resAreaEnd + 10 then goto skipPlayerInfo end
     local rtStr, tr, tg, tb
     if ctx.endlessRound > 0 then
         rtStr = string.format("∞ 第 %d 轮", ctx.endlessRound)
@@ -531,6 +549,7 @@ function TopBar.Render(ctx)
     text(infoRightX, rowMid - 6, player.name .. " Lv." .. player.level, 9,
         160,210,255,210, NVG_ALIGN_RIGHT+NVG_ALIGN_MIDDLE)
     text(infoRightX, rowMid + 6, rtStr, 9, tr, tg, tb, 220, NVG_ALIGN_RIGHT+NVG_ALIGN_MIDDLE)
+    ::skipPlayerInfo::
 
     -- ══════════════════════════════════════════════════════════════════════════
     -- 全部征收按钮（顶栏居中，仅银河视图且已展开时显示）

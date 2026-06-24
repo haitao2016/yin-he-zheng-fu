@@ -249,11 +249,11 @@ function BattleSkills.Draw(ctx)
     local screenW = ctx.screenW
     local screenH = ctx.screenH
 
-    local btnW, btnH = 74, 36
+    local btnW, btnH = math.min(74, math.floor((screenW - 28) / 3)), 36
     local gapX, gapY = 6, 5
     local cols        = 3
     local totalW      = btnW * cols + gapX * (cols - 1)
-    local startX      = screenW / 2 - totalW / 2
+    local startX      = math.max(4, screenW / 2 - totalW / 2)
     local row2Y       = screenH - btnH - 6
     local row1Y       = row2Y - btnH - gapY
 

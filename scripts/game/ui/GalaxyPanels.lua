@@ -232,10 +232,10 @@ function M.RenderCareerStats()
     local addHit  = UICommon.addHit
 
     local cs   = careerStats_UI_
-    local PW   = 260
+    local PW   = math.min(260, screenW - 16)
     local PAD  = 10
     local PH   = 258
-    local px   = screenW - PW - 6
+    local px   = math.max(4, screenW - PW - 6)
     local py   = 40
 
     -- 背景板
@@ -347,7 +347,7 @@ function M.RenderQuest()
 
     local quests = QuestBoard.GetQuests()
     local spawnT = QuestBoard.GetSpawnTimer()
-    local PW     = 280
+    local PW     = math.min(280, screenW - 16)
     local PAD    = 10
     local ENTRY_H = 58
     local n      = #quests
@@ -355,7 +355,7 @@ function M.RenderQuest()
     local footerH = 22
     local PH     = headerH + n * ENTRY_H + footerH + 6
     if n == 0 then PH = headerH + 40 + footerH end
-    local px     = screenW - PW - 6
+    local px     = math.max(4, screenW - PW - 6)
     local py     = 40
 
     -- 背景板
@@ -487,13 +487,15 @@ function M.RenderSignal()
     local cursorY = UICommon.cursorY
     local addHit  = UICommon.addHit
 
-    local COLS, ROWS = 4, 2
-    local BTN_W, BTN_H = 120, 44
+    local COLS = screenW < 500 and 3 or 4
+    local ROWS = screenW < 500 and 3 or 2
+    local BTN_W = math.min(120, math.floor((screenW - 40) / COLS - 6))
+    local BTN_H = 44
     local GAP  = 6
     local PAD  = 10
-    local pw   = COLS * BTN_W + (COLS - 1) * GAP + PAD * 2
+    local pw   = math.min(COLS * BTN_W + (COLS - 1) * GAP + PAD * 2, screenW - 16)
     local ph   = ROWS * BTN_H + (ROWS - 1) * GAP + PAD * 2
-    local px   = screenW / 2 - pw / 2
+    local px   = math.max(8, screenW / 2 - pw / 2)
     local py   = 48
 
     -- 面板背景
@@ -707,8 +709,8 @@ function M.RenderDiploRel()
     if not relations then return end
     agreements = agreements or {}
 
-    local pw, ph = 320, 360
-    local px = screenW - pw - 10
+    local pw, ph = math.min(320, screenW - 16), 360
+    local px = math.max(4, screenW - pw - 10)
     local py = 42
 
     -- 背景

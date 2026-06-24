@@ -222,7 +222,7 @@ function FleetPanel.Render(ctx)
     local onLaunchExpedition   = ctx.onLaunchExpedition
     local lastExpedition       = ctx.lastExpedition or {}  -- P3-3.1
 
-    local pw_full = UICommon.FLEET_PANEL_W or 248
+    local pw_full = math.min(UICommon.FLEET_PANEL_W or 248, math.floor(screenW * 0.45))
     local py      = UICommon.PANEL_TOP or 48
     -- P3-x: FleetPanel 移至左上角，固定左边距 8px
     local FLEET_LEFT_MARGIN = 8

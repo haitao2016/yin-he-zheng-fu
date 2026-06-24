@@ -12,7 +12,7 @@ local RenderHUD = {}
 local function drawWaveHUD()
     if BS.state ~= "fighting" then return end
     local cx = BS.screenW / 2
-    local hw, hh = 140, 48
+    local hw, hh = math.min(140, math.floor(BS.screenW * 0.42)), 48
     -- 背景胶囊
     nvgBeginPath(BS.vg)
     nvgRoundedRect(BS.vg, cx - hw, 4, hw * 2, hh, 8)
@@ -150,9 +150,9 @@ local function drawComboHUD()
     local color = lv and { 255, 220, 40 } or { 180, 220, 255 }
     local label = lv and lv.label or "COMBO"
 
-    local bx = BS.screenW - 120
+    local bw = math.min(112, math.floor(BS.screenW * 0.28))
+    local bx = BS.screenW - bw - 8
     local by = 6
-    local bw = 112
     local bh = 40
 
     nvgBeginPath(BS.vg)
@@ -353,7 +353,7 @@ local function drawFocusHUD()
     local typeName  = cfg.name or BS.focusTarget.stype
     local hpPct     = math.max(0, BS.focusTarget.health / (BS.focusTarget.maxHealth or BS.focusTarget.health))
 
-    local barW, barH = 220, 26
+    local barW, barH = math.min(220, BS.screenW - 40), 26
     local bx = BS.screenW / 2 - barW / 2
     local by = 58
 
@@ -424,11 +424,11 @@ local function drawFormationBar()
     local skillTotalW = skillBtnW * skillCols + skillGapX * (skillCols - 1)
     local skillStartX = BS.screenW / 2 - skillTotalW / 2
 
-    local btnW, btnH = 60, 20
+    local btnW, btnH = math.min(60, math.floor(BS.screenW * 0.14)), 20
     local gap        = 2
     local numBtns    = #FORMATION_ORDER
     local totalH     = btnH * numBtns + gap * (numBtns - 1)
-    local bx         = skillStartX - btnW - 10
+    local bx         = math.max(4, skillStartX - btnW - 10)
     local row2Y      = BS.screenH - 74 - 6 - 5
     local topY       = row2Y + (74 - totalH) / 2
 
@@ -595,9 +595,10 @@ local function drawSkillUpgrade()
     nvgFillColor(vg, nvgRGBA(255, 220, 80, 240))
     nvgText(vg, BS.screenW / 2, BS.screenH / 2 - 80, "⬆ 技能强化 — 选择一项升级")
 
-    local cardW, cardH = 130, 90
-    local cardGap = 20
     local n = #BS.skillUpgradeCards
+    local maxCardW = math.floor((BS.screenW - 24 - (n - 1) * 10) / n)
+    local cardW, cardH = math.min(130, maxCardW), 90
+    local cardGap = math.min(20, math.floor((BS.screenW - n * cardW - 16) / math.max(1, n - 1)))
     local totalW = n * cardW + (n - 1) * cardGap
     local startX = BS.screenW / 2 - totalW / 2
     local cardY  = BS.screenH / 2 - cardH / 2 - 10
