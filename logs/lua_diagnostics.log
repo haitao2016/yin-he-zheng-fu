@@ -1,5 +1,5 @@
 Lua Diagnostics | Errors: 0 | Warnings: 7035 | EmmyLua Types: /workspace/.emmylua
-Info: 0 | Hints: 352 | Total: 7387 | Time: 2026-06-24 13:40:32 | Dir: /workspace/scripts
+Info: 0 | Hints: 352 | Total: 7387 | Time: 2026-06-24 13:54:42 | Dir: /workspace/scripts
 ---
 WARN  | AchievementSystem.lua:661:8 | Impossible `if` statement: this condition is always falsy [unnecessary-if]
 WARN  | AchievementSystem.lua:743:12 | Unnecessary `if` statement: this condition is always truthy [unnecessary-if]
@@ -6279,9 +6279,9 @@ WARN  | TimeoutPanel.lua:102:17 | expected `NVGContextWrapper` but found `userda
 WARN  | TimeoutPanel.lua:103:18 | expected `NVGContextWrapper` but found `userdata`. [param-type-mismatch]
 WARN  | TimeoutPanel.lua:117:5 | Cannot assign `number` to `integer`. [assign-type-mismatch]
 WARN  | TopBar.lua:107:12 | Impossible `if` statement: this condition is always falsy [unnecessary-if]
-WARN  | TopBar.lua:227:12 | Impossible `if` statement: this condition is always falsy [unnecessary-if]
-WARN  | TopBar.lua:241:12 | Unnecessary `if` statement: this condition is always truthy [unnecessary-if]
-WARN  | TopBar.lua:451:8 | Impossible `if` statement: this condition is always falsy [unnecessary-if]
+WARN  | TopBar.lua:228:12 | Impossible `if` statement: this condition is always falsy [unnecessary-if]
+WARN  | TopBar.lua:242:12 | Unnecessary `if` statement: this condition is always truthy [unnecessary-if]
+WARN  | TopBar.lua:452:8 | Impossible `if` statement: this condition is always falsy [unnecessary-if]
 WARN  | TradeRoutePanel.lua:96:8 | Impossible `if` statement: this condition is always falsy [unnecessary-if]
 WARN  | TradeRoutePanel.lua:159:8 | Impossible `if` statement: this condition is always falsy [unnecessary-if]
 WARN  | TradeRoutePanel.lua:512:8 | Unnecessary `if` statement: this condition is always truthy [unnecessary-if]
@@ -7279,9 +7279,9 @@ HINT  | SettingsPanel.lua:6:7 | Audio is never used, if this is intentional, pre
 HINT  | ShipDetailPanel.lua:127:19 | bonus is never used, if this is intentional, prefix it with an underscore: _bonus [unused]
 HINT  | TechPanel.lua:403:9 | groupName is never used, if this is intentional, prefix it with an underscore: _groupName [unused]
 HINT  | TechPanel.lua:268:28 | Prefer use local alias variable 'vg' [preferred-local-alias]
+HINT  | TopBar.lua:94:11 | resCrisisState is never used, if this is intentional, prefix it with an underscore: _resCrisisState [unused]
 HINT  | TopBar.lua:95:11 | resCrisisBlink is never used, if this is intentional, prefix it with an underscore: _resCrisisBlink [unused]
 HINT  | TopBar.lua:57:11 | addHit is never used, if this is intentional, prefix it with an underscore: _addHit [unused]
-HINT  | TopBar.lua:94:11 | resCrisisState is never used, if this is intentional, prefix it with an underscore: _resCrisisState [unused]
 HINT  | TopBar.lua:78:11 | esourceRate is never used, if this is intentional, prefix it with an underscore: _esourceRate [unused]
 HINT  | TradeRoutePanel.lua:215:33 | dt is never used, if this is intentional, prefix it with an underscore: _dt [unused]
 HINT  | TutorialSystem.lua:330:33 | vg is never used, if this is intentional, prefix it with an underscore: _vg [unused]

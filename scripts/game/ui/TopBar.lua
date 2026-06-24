@@ -131,12 +131,13 @@ function TopBar.Render(ctx)
         local rateStr = mult > 0 and string.format(" +%d/s", rawRate) or ""
         text(tx, rowMid - 6, RES_TAGS[res] .. " " .. rawVal .. rateStr, 9, valR, valG, valB, 240)
 
-        -- 第二行：精炼值（仅炼厂已建时显示）
+        -- 第二行：精炼资源名+数值+趋势（仅炼厂已建时显示）
         if mult > 0 then
             local refVal = math.floor(displayRes[res] or rm.resources[res] or 0)
+            local refName = RES_REFINED_LABELS and RES_REFINED_LABELS[res] or ""
             local tdir = resTrendDir[res]
-            local arrow = (tdir and tdir > 0) and " ▲" or ((tdir and tdir < 0) and " ▼" or "")
-            text(tx, rowMid + 6, tostring(refVal) .. arrow, 8, c[1],c[2],c[3],200)
+            local arrow = (tdir and tdir > 0) and "▲" or ((tdir and tdir < 0) and "▼" or "")
+            text(tx, rowMid + 6, refName .. " " .. refVal .. " " .. arrow, 8, c[1],c[2],c[3],200)
         end
     end
 
