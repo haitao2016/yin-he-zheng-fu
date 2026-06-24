@@ -1275,9 +1275,10 @@ function M.RenderShipyard(planet)
     if not hasShipyard then return end
 
     local pw = 210
-    local px = 12
     local techH = UICommon.techPanelH or 0
-    local py = PANEL_TOP + (techH > 0 and (techH + 8) or 0)
+    local defPx = 12
+    local defPy = PANEL_TOP + (techH > 0 and (techH + 8) or 0)
+    local px, py = DragManager.GetPos("shipyard", defPx, defPy)
     local titleH = 26
 
     -- 折叠态
@@ -1307,6 +1308,8 @@ function M.RenderShipyard(planet)
              + 8 + numShips * 22
 
     panel(px, py, pw, ph, 7, {6,12,24,240}, {60,120,200,200})
+    DragManager.RegisterHandle("shipyard", px, py, pw, titleH)
+    DragManager.DrawHandle(vg, px, py, pw, 6)
 
     local sy = py + titleH/2
     text(px + 10, sy, "◀", 9, 100,160,255,180, NVG_ALIGN_LEFT+NVG_ALIGN_MIDDLE)
