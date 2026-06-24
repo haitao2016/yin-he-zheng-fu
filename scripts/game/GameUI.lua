@@ -93,6 +93,7 @@ local cursorY_       = 0
 
 -- 资源图标纹理句柄
 local resIcons_      = {}   -- { minerals=h, energy=h, crystal=h, population=h, credits=h }
+local resIconsLoaded_ = false
 
 -- 数据依赖（由 Init 注入）
 local rm_            = nil

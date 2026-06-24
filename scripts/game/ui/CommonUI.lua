@@ -20,6 +20,7 @@ local screenW_       = 800
 local screenH_       = 600
 
 local resIcons_      = {}
+local resIconsLoaded_ = false
 
 local rm_            = nil
 local bs_            = nil
