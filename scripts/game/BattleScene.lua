@@ -657,7 +657,7 @@ function BattleScene.Init(opts)
         FORMATION_CONFIG = FORMATION_CONFIG,
         COMBO_LEVELS    = COMBO_LEVELS,
         rm              = rm_,
-        SHIP_TYPES      = Systems.SHIP_TYPES,
+        SHIP_TYPES      = SHIP_TYPES,
     })
 
     BattleScene.Reset()
@@ -1386,7 +1386,7 @@ function BattleScene.Render()
     BS.notifyFn      = notifyFn_
     BS.getComboLevel      = getComboLevel
     BS.getNextWavePreview = BattleAI.GetNextWavePreview
-    BS.SHIP_TYPES    = Systems.SHIP_TYPES
+    BS.SHIP_TYPES    = SHIP_TYPES
     BS.NemesisSystem = NemesisSystem
     BS.AnomalySystem = AnomalySystem
 

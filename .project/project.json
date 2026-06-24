@@ -5,7 +5,7 @@
     "id": "1259204981"
   },
   "entry": "main.lua",
-  "version": "1.0.32",
+  "version": "1.0.34",
   "taptap_publish": {
     "title": "银河征服",
     "description": "一款星际题材的多人在线策略游戏，率领舰队征服河系，与玩家联盟对战，争夺宇宙霸权。",
@@ -40,11 +40,11 @@
     "cover_vertical_url": "https://tapcode-sce.spark.xd.com/assets/game_material/银河征服/COVER_VERTICAL_2026-05-13T03-43-24_01.png"
   },
   "test_qrcode": {
-    "url": "https://tapcode-sce.spark.xd.com/qrcode/p_98r1_1781767672952.png",
-    "generated_at": "2026-06-18T07:27:53.091Z"
+    "url": "https://tapcode-sce.spark.xd.com/qrcode/p_98r1_1782282699744.png",
+    "generated_at": "2026-06-24T06:31:39.888Z"
   },
   "metadata": {
-    "updated_at": "2026-06-18T07:27:53.091Z",
+    "updated_at": "2026-06-24T06:31:39.888Z",
     "promo_dependent_hash": "0e9089b51e4f256f8e6f323339e02af9"
   }
 }

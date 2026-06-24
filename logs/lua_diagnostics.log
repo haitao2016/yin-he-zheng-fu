@@ -1,5 +1,5 @@
-Lua Diagnostics | Errors: 0 | Warnings: 7035 | EmmyLua Types: /workspace/.emmylua
-Info: 0 | Hints: 352 | Total: 7387 | Time: 2026-06-24 14:26:35 | Dir: /workspace/scripts
+Lua Diagnostics | Errors: 0 | Warnings: 7033 | EmmyLua Types: /workspace/.emmylua
+Info: 0 | Hints: 352 | Total: 7385 | Time: 2026-06-24 14:42:28 | Dir: /workspace/scripts
 ---
 WARN  | AchievementSystem.lua:661:8 | Impossible `if` statement: this condition is always falsy [unnecessary-if]
 WARN  | AchievementSystem.lua:743:12 | Unnecessary `if` statement: this condition is always truthy [unnecessary-if]
@@ -85,8 +85,6 @@ WARN  | BattleScene.lua:1519:72 | b may be nil [need-check-nil]
 WARN  | BattleScene.lua:1569:17 | rm_ may be nil [need-check-nil]
 WARN  | BattleScene.lua:1587:17 | rm_ may be nil [need-check-nil]
 WARN  | BattleScene.lua:1588:17 | rm_ may be nil [need-check-nil]
-WARN  | BattleScene.lua:660:35 | Undefined field `SHIP_TYPES`. [undefined-field]
-WARN  | BattleScene.lua:1389:32 | Undefined field `SHIP_TYPES`. [undefined-field]
 WARN  | BattleScene.lua:1610:29 | Undefined field `SetFormation`. [undefined-field]
 WARN  | BattleScene.lua:618:5 | Global variable should only be defined in module scope [global-in-non-module]
 WARN  | BattleScene.lua:1400:5 | Global variable should only be defined in module scope [global-in-non-module]
@@ -7037,11 +7035,11 @@ WARN  | ClientStats.lua:228:22 | expected `integer` but found `number`. [param-t
 WARN  | Server.lua:43:12 | Impossible `if` statement: this condition is always falsy [unnecessary-if]
 WARN  | Server.lua:17:7 | Cannot assign `nil` to `Scene`. [assign-type-mismatch]
 HINT  | AnomalySystem.lua:111:7 | ANOMALY_MAX_ACTIVE is never used, if this is intentional, prefix it with an underscore: _ANOMALY_MAX_ACTIVE [unused]
-HINT  | BattleScene.lua:15:7 | Commander is never used, if this is intentional, prefix it with an underscore: _Commander [unused]
-HINT  | BattleScene.lua:190:7 | CARRIER_FIGHTER_LIFE is never used, if this is intentional, prefix it with an underscore: _CARRIER_FIGHTER_LIFE [unused]
 HINT  | BattleScene.lua:265:7 | envTimer_ is never used, if this is intentional, prefix it with an underscore: _envTimer_ [unused]
+HINT  | BattleScene.lua:15:7 | Commander is never used, if this is intentional, prefix it with an underscore: _Commander [unused]
 HINT  | BattleScene.lua:1617:20 | inBtn is never used, if this is intentional, prefix it with an underscore: _inBtn [unused]
 HINT  | BattleScene.lua:283:7 | WAVE_SUMMARY_DUR is never used, if this is intentional, prefix it with an underscore: _WAVE_SUMMARY_DUR [unused]
+HINT  | BattleScene.lua:190:7 | CARRIER_FIGHTER_LIFE is never used, if this is intentional, prefix it with an underscore: _CARRIER_FIGHTER_LIFE [unused]
 HINT  | BattleSkills.lua:228:17 | k is never used, if this is intentional, prefix it with an underscore: _k [unused]
 HINT  | BlackMarketSystem.lua:310:27 | Implicit self is never used, if this is intentional, please use '.' instead of ':' to define the method [unused]
 HINT  | BlackMarketSystem.lua:311:27 | Implicit self is never used, if this is intentional, please use '.' instead of ':' to define the method [unused]
