@@ -63,6 +63,7 @@ local screenH_         = 600
 local asteroidImgs_    = {}  -- { minerals=h, energy=h, crystal=h }
 local imgSeedShip_     = -1  -- 种子飞船纹理句柄
 local imgBaseStation_  = -1  -- 基地站纹理句柄
+local imagesLoaded_    = false  -- 图片懒加载标志
 
 local starSystems_      = {}
 local deepSpaceSystems_ = {}  -- 深空星系（曲速闸门解锁后可访问）
@@ -949,15 +950,8 @@ function GalaxyScene.Init(opts)
             return allPlanets_
         end)
     end
-    -- 加载所有游戏纹理（仅当 vg 上下文有效时）
-    if vg_ and vg_ ~= 0 then
-        local f = NVG_IMAGE_PREMULTIPLIED
-        asteroidImgs_["minerals"] = nvgCreateImage(vg_, "image/asteroid_minerals_20260511190702.png", f)
-        asteroidImgs_["energy"]   = nvgCreateImage(vg_, "image/asteroid_energy_20260511190703.png",   f)
-        asteroidImgs_["crystal"]  = nvgCreateImage(vg_, "image/asteroid_crystal_20260511190707.png",  f)
-        imgSeedShip_    = nvgCreateImage(vg_, "image/ship_seed_20260511190720.png",       f)
-        imgBaseStation_ = nvgCreateImage(vg_, "image/base_station_20260511190708.png",    f)
-    end
+    -- 图片延迟到首次渲染时加载（Init 时 NanoVG 上下文可能尚未完全就绪）
+    imagesLoaded_ = false
     generateBgStars()
     -- P2-2: 战役模式使用固定星图（跳过种子生成器）
     if opts.campaign and opts.campaign.fixedStars then
@@ -1542,6 +1536,17 @@ end
 
 function GalaxyScene.Render()
     if #bgStars_ == 0 then return end  -- Init 尚未完成，跳过渲染
+
+    -- 懒加载图片（NanoVGRender 回调内 vg 上下文确保有效）
+    if not imagesLoaded_ and vg_ then
+        local f = NVG_IMAGE_PREMULTIPLIED
+        asteroidImgs_["minerals"] = nvgCreateImage(vg_, "image/asteroid_minerals_20260511190702.png", f)
+        asteroidImgs_["energy"]   = nvgCreateImage(vg_, "image/asteroid_energy_20260511190703.png",   f)
+        asteroidImgs_["crystal"]  = nvgCreateImage(vg_, "image/asteroid_crystal_20260511190707.png",  f)
+        imgSeedShip_    = nvgCreateImage(vg_, "image/ship_seed_20260511190720.png",       f)
+        imgBaseStation_ = nvgCreateImage(vg_, "image/base_station_20260511190708.png",    f)
+        imagesLoaded_ = true
+    end
 
     -- 同步局部状态到共享状态表 GS（子模块读取）
     GS.vg              = vg_
