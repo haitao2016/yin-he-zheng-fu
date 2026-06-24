@@ -949,13 +949,15 @@ function GalaxyScene.Init(opts)
             return allPlanets_
         end)
     end
-    -- 加载所有游戏纹理
-    local f = NVG_IMAGE_PREMULTIPLIED
-    asteroidImgs_["minerals"] = nvgCreateImage(vg_, "image/asteroid_minerals_20260511190702.png", f)
-    asteroidImgs_["energy"]   = nvgCreateImage(vg_, "image/asteroid_energy_20260511190703.png",   f)
-    asteroidImgs_["crystal"]  = nvgCreateImage(vg_, "image/asteroid_crystal_20260511190707.png",  f)
-    imgSeedShip_    = nvgCreateImage(vg_, "image/ship_seed_20260511190720.png",       f)
-    imgBaseStation_ = nvgCreateImage(vg_, "image/base_station_20260511190708.png",    f)
+    -- 加载所有游戏纹理（仅当 vg 上下文有效时）
+    if vg_ and vg_ ~= 0 then
+        local f = NVG_IMAGE_PREMULTIPLIED
+        asteroidImgs_["minerals"] = nvgCreateImage(vg_, "image/asteroid_minerals_20260511190702.png", f)
+        asteroidImgs_["energy"]   = nvgCreateImage(vg_, "image/asteroid_energy_20260511190703.png",   f)
+        asteroidImgs_["crystal"]  = nvgCreateImage(vg_, "image/asteroid_crystal_20260511190707.png",  f)
+        imgSeedShip_    = nvgCreateImage(vg_, "image/ship_seed_20260511190720.png",       f)
+        imgBaseStation_ = nvgCreateImage(vg_, "image/base_station_20260511190708.png",    f)
+    end
     generateBgStars()
     -- P2-2: 战役模式使用固定星图（跳过种子生成器）
     if opts.campaign and opts.campaign.fixedStars then
