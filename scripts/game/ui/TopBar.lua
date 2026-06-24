@@ -77,11 +77,12 @@ function TopBar.Render(ctx)
     local eBlockRate    = 3.0 * mult
     local esourceRate   = eBlockRate / 2.0
 
-    -- 布局：[原矿3列] [精炼区130px] [星币+玩家+铃铛260px]
-    local REFINED_W = 130
-    local RIGHT_W   = 270
+    -- 布局：[原矿3列] [精炼区] [星币+玩家+铃铛]
+    -- 响应式：窄屏（<500）时缩小右侧区域，保证资源列不重叠
+    local REFINED_W = screenW < 500 and 0 or 130    -- 窄屏隐藏精炼区
+    local RIGHT_W   = screenW < 500 and 140 or 270  -- 窄屏压缩右侧
     local cols      = #RES_ORDER
-    local colW      = (screenW - RIGHT_W - REFINED_W) / cols
+    local colW      = math.max(50, (screenW - RIGHT_W - REFINED_W) / cols)
     local rowMid    = 2 + (TOPBAR_H - 2) / 2   -- 垂直居中 y ≈ 23
 
     local displayRes      = ctx.displayRes
