@@ -1,13 +1,28 @@
 ---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 --- BaseBuildingSystem — 星航基地独立建造系统
---- 从 Systems.lua 机械拆分，无逻辑修改
+--- 支持最多3任务并行安装队列
 require("game.GameConstants")
 
 local BaseBuildingSystem = {}
 BaseBuildingSystem.__index = BaseBuildingSystem
 
+local BASE_QUEUE_MAX = 3  -- 安装队列上限
+
 function BaseBuildingSystem.new(rm)
     return setmetatable({ rm = rm }, BaseBuildingSystem)
+end
+
+--- 兼容层：将旧 base.constructing 迁移到 base.buildQueue
+local function ensureQueue(base)
+    if not base.buildQueue then
+        base.buildQueue = {}
+        if base.constructing then
+            base.buildQueue[1] = base.constructing
+            base.constructing = nil
+        end
+    end
+    -- 保持 base.constructing 指向队首（兼容 UI 读取）
+    base.constructing = base.buildQueue[1] or nil
 end
 
 function BaseBuildingSystem:getUpgradeCost(key, level)
@@ -22,7 +37,8 @@ function BaseBuildingSystem:getUpgradeCost(key, level)
 end
 
 function BaseBuildingSystem:canBuild(key, base)
-    if base.constructing            then return false, "队列忙碌" end
+    ensureQueue(base)
+    if #base.buildQueue >= BASE_QUEUE_MAX then return false, "队列已满("..BASE_QUEUE_MAX..")" end
     local maxSlots = BaseModuleSlots(base.coreLevel)
     if #base.buildings >= maxSlots  then return false, "槽位已满" end
     -- 同类模块只能建一个
@@ -41,9 +57,10 @@ end
 
 --- 检查是否可升级核心等级
 function BaseBuildingSystem:canUpgradeCore(base)
+    ensureQueue(base)
     local lv = base.coreLevel or 1
     if lv >= BASE_CORE_MAX_LEVEL then return false, "已达最高等级" end
-    if base.constructing          then return false, "队列忙碌" end
+    if #base.buildQueue >= BASE_QUEUE_MAX then return false, "队列已满("..BASE_QUEUE_MAX..")" end
     local cost = BASE_CORE_UPGRADE_COSTS[lv]
     if not cost                   then return false, "无升级配置" end
     -- S1 QUANTUM_CORE: 核心升级费用折扣
@@ -64,7 +81,7 @@ function BaseBuildingSystem:upgradeCore(base)
     local lv   = base.coreLevel or 1
     local cost = BASE_CORE_UPGRADE_COSTS[lv]
     self.rm:spend(resCost)
-    base.constructing = {
+    base.buildQueue[#base.buildQueue + 1] = {
         key       = "__CORE_UPGRADE__",
         progress  = 0,
         totalTime = cost.buildTime,
@@ -73,13 +90,15 @@ function BaseBuildingSystem:upgradeCore(base)
         isUpgrade = false,
         isCoreUpgrade = true,
     }
+    base.constructing = base.buildQueue[1]
     return true, ""
 end
 
 function BaseBuildingSystem:canUpgrade(bldIdx, base)
+    ensureQueue(base)
     local b = base.buildings[bldIdx]
     if not b then return false, "无效模块" end
-    if base.constructing then return false, "队列忙碌" end
+    if #base.buildQueue >= BASE_QUEUE_MAX then return false, "队列已满("..BASE_QUEUE_MAX..")" end
     local cost = self:getUpgradeCost(b.key, b.level)
     if not self.rm:canAfford(cost) then return false, "资源不足" end
     return true, ""
@@ -92,11 +111,12 @@ function BaseBuildingSystem:build(key, base)
     local mod = BASE_MODULES[key]
     local bm  = (self.rm.baseBonus and self.rm.baseBonus.buildMult) or 1.0
     local bt  = math.max(1, math.floor(mod.buildTime * bm))
-    base.constructing = {
+    base.buildQueue[#base.buildQueue + 1] = {
         key = key, progress = 0,
         totalTime = bt, remaining = bt,
         level = 1, isUpgrade = false
     }
+    base.constructing = base.buildQueue[1]
     return true, ""
 end
 
@@ -109,24 +129,29 @@ function BaseBuildingSystem:upgrade(bldIdx, base)
     local mod  = BASE_MODULES[b.key]
     local bm   = (self.rm.baseBonus and self.rm.baseBonus.buildMult) or 1.0
     local bt   = math.max(1, math.floor(mod.buildTime * (mod.upgradeK ^ b.level) * bm))
-    base.constructing = {
+    base.buildQueue[#base.buildQueue + 1] = {
         key = b.key, progress = 0,
         totalTime = bt, remaining = bt,
         level = b.level + 1, isUpgrade = true, targetIdx = bldIdx
     }
+    base.constructing = base.buildQueue[1]
     return true, ""
 end
 
 --- 返回完成的模块 key（完成时），否则返回 nil
 function BaseBuildingSystem:update(dt, base)
-    if not base.constructing then return nil end
-    local job = base.constructing
+    ensureQueue(base)
+    if #base.buildQueue == 0 then
+        base.constructing = nil
+        return nil
+    end
+    -- 只推进队首任务
+    local job = base.buildQueue[1]
     job.remaining = job.remaining - dt
     job.progress  = 1 - math.max(0, job.remaining / job.totalTime)
     if job.remaining <= 0 then
         local doneKey = job.key
         if job.isCoreUpgrade then
-            -- 核心等级升级完成
             base.coreLevel = job.level
         elseif job.isUpgrade then
             base.buildings[job.targetIdx].level = job.level
@@ -135,9 +160,11 @@ function BaseBuildingSystem:update(dt, base)
                 key = job.key, name = BASE_MODULES[job.key].name, level = 1
             }
         end
-        base.constructing = nil
+        table.remove(base.buildQueue, 1)
+        base.constructing = base.buildQueue[1] or nil
         return doneKey
     end
+    base.constructing = job
     return nil
 end
 

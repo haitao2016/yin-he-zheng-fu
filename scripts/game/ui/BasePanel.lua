@@ -55,8 +55,10 @@ function BasePanel.Render(base, ctx)
     local isMaxCore  = coreLevel >= BASE_CORE_MAX_LEVEL
 
     -- +16 = 下一级解锁预览行（未满级时显示）
+    local queueLen = base.buildQueue and #base.buildQueue or (base.constructing and 1 or 0)
+    local queueH   = queueLen > 0 and (14 + queueLen * 16) or 16
     local headerH = 36 + 18 + 16 + 16 + (not isMaxCore and 16 or 0)
-                  + (base.constructing and 26 or 16) + 16
+                  + queueH + 16
                   + (shipyardMult > 1.01 and 14 or 0)
                   + (hasWarpGate and 26 or 0)  -- P1-2 WARP_GATE_PRIME 瞬移按钮行
 
@@ -193,51 +195,57 @@ function BasePanel.Render(base, ctx)
         end
     end
 
-    -- 队列进度
-    if base.constructing then
-        local job = base.constructing
-        local pct = job.progress or 0
-        -- 进度条（留右侧空间给加速按钮）
-        local barW = onSpeedUpBuild and (pw - 60) or (pw - 20)
-        if job.isCoreUpgrade then
-            progressBar(px+10, sy, barW, 14, pct,
-                "核心升级 Lv." .. job.level .. "  " .. math.floor(pct*100) .. "%",
-                180, 120, 255)
-        else
-            local tag     = job.isUpgrade and "升级" or "安装"
-            local modName = BASE_MODULES[job.key] and BASE_MODULES[job.key].name or job.key
-            progressBar(px+10, sy, barW, 14, pct,
-                tag .. ": " .. modName .. " " .. math.floor(pct*100) .. "%", 80, 200, 255)
-        end
-        -- 加速按钮（星币足够→金色购买；不足且有广告→绿色免费）
-        if onSpeedUpBuild or onSpeedUpBuildAd then
-            local remaining = job.remaining or 0
-            local speedCost = math.max(5, math.min(50, math.ceil(remaining / 10)))
-            local rmRef     = UICommon.rm
-            local canAfford = rmRef and (rmRef.resources.credits or 0) >= speedCost
-            local sbx = px + pw - 46
-            if onSpeedUpBuild and canAfford then
-                panel(sbx, sy, 40, 14, 4, {160, 130, 20, 80}, {220, 190, 40, 210})
-                text(sbx+20, sy+7, "★" .. speedCost, 9, 255, 230, 80, 255,
-                    NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-                local capturedBase = base
-                addHit(sbx, sy, 40, 14, function()
-                    if onSpeedUpBuild then onSpeedUpBuild(capturedBase) end
-                end)
-            elseif onSpeedUpBuildAd and not canAfford then
-                -- 星币不足时显示"看广告免费完成"
-                panel(sbx, sy, 40, 14, 3, {0, 80, 45, 100}, {0, 190, 100, 220})
-                text(sbx+20, sy+7, "🎬", 10, 80, 255, 160, 255,
-                    NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-                local capturedBase = base
-                addHit(sbx, sy, 40, 14, function()
-                    if onSpeedUpBuildAd then onSpeedUpBuildAd(capturedBase) end
-                end)
+    -- 队列进度（支持多任务队列）
+    local queue = base.buildQueue or (base.constructing and {base.constructing} or {})
+    local qLen  = #queue
+    if qLen > 0 then
+        text(px+14, sy, string.format("安装队列: %d/%d", qLen, 3), 9, 100,180,255,180)
+        sy = sy + 14
+        for qi = 1, qLen do
+            local job = queue[qi]
+            local pct = job.progress or 0
+            local isActive = (qi == 1)
+            local barW = (isActive and onSpeedUpBuild) and (pw - 60) or (pw - 20)
+            if job.isCoreUpgrade then
+                progressBar(px+10, sy, barW, 12, isActive and pct or 0,
+                    "核心升级 Lv." .. job.level .. (isActive and ("  " .. math.floor(pct*100) .. "%") or " 排队中"),
+                    180, 120, 255)
+            else
+                local tag     = job.isUpgrade and "升级" or "安装"
+                local modName = BASE_MODULES[job.key] and BASE_MODULES[job.key].name or job.key
+                progressBar(px+10, sy, barW, 12, isActive and pct or 0,
+                    tag .. ": " .. modName .. (isActive and (" " .. math.floor(pct*100) .. "%") or " 排队中"),
+                    isActive and 80 or 50, isActive and 200 or 120, 255)
             end
+            -- 加速按钮仅对当前执行中的任务（队首）显示
+            if isActive and (onSpeedUpBuild or onSpeedUpBuildAd) then
+                local remaining = job.remaining or 0
+                local speedCost = math.max(5, math.min(50, math.ceil(remaining / 10)))
+                local rmRef     = UICommon.rm
+                local canAfford = rmRef and (rmRef.resources.credits or 0) >= speedCost
+                local sbx = px + pw - 46
+                if onSpeedUpBuild and canAfford then
+                    panel(sbx, sy, 40, 12, 4, {160, 130, 20, 80}, {220, 190, 40, 210})
+                    text(sbx+20, sy+6, "★" .. speedCost, 8, 255, 230, 80, 255,
+                        NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+                    local capturedBase = base
+                    addHit(sbx, sy, 40, 12, function()
+                        if onSpeedUpBuild then onSpeedUpBuild(capturedBase) end
+                    end)
+                elseif onSpeedUpBuildAd and not canAfford then
+                    panel(sbx, sy, 40, 12, 3, {0, 80, 45, 100}, {0, 190, 100, 220})
+                    text(sbx+20, sy+6, "🎬", 9, 80, 255, 160, 255,
+                        NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+                    local capturedBase = base
+                    addHit(sbx, sy, 40, 12, function()
+                        if onSpeedUpBuildAd then onSpeedUpBuildAd(capturedBase) end
+                    end)
+                end
+            end
+            sy = sy + 16
         end
-        sy = sy + 26
     else
-        text(px+14, sy, "安装队列: 空闲", 10, 150, 170, 200, 180)
+        text(px+14, sy, "安装队列: 空闲 (0/3)", 10, 150, 170, 200, 180)
         sy = sy + 16
     end
 

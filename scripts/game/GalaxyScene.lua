@@ -1946,15 +1946,18 @@ function GalaxyScene.GetSaveData()
             y            = seedShip_.y,
             coreLevel    = seedShip_.coreLevel or 1,
             buildings    = baseBuildings,
-            constructing = seedShip_.constructing and {
-                key           = seedShip_.constructing.key,
-                remaining     = seedShip_.constructing.remaining,
-                totalTime     = seedShip_.constructing.totalTime,
-                level         = seedShip_.constructing.level,
-                isUpgrade     = seedShip_.constructing.isUpgrade,
-                targetIdx     = seedShip_.constructing.targetIdx,
-                isCoreUpgrade = seedShip_.constructing.isCoreUpgrade,
-            } or nil,
+            buildQueue = (function()
+                local bq = seedShip_.buildQueue or (seedShip_.constructing and {seedShip_.constructing} or {})
+                local out = {}
+                for _, c in ipairs(bq) do
+                    out[#out+1] = {
+                        key = c.key, remaining = c.remaining, totalTime = c.totalTime,
+                        level = c.level, isUpgrade = c.isUpgrade,
+                        targetIdx = c.targetIdx, isCoreUpgrade = c.isCoreUpgrade,
+                    }
+                end
+                return #out > 0 and out or nil
+            end)(),
         }
     end
     -- 深空行星存档（仅保存已殖民的）
@@ -2082,9 +2085,11 @@ function GalaxyScene.LoadSaveData(data, rm)
                 key = bd.key, name = bd.name, level = bd.level
             }
         end
-        if data.base.constructing then
-            local c = data.base.constructing
-            seedShip_.constructing = {
+        -- 加载建造队列（兼容旧存档的单任务 constructing 字段）
+        seedShip_.buildQueue = {}
+        local savedQueue = data.base.buildQueue or (data.base.constructing and {data.base.constructing} or {})
+        for _, c in ipairs(savedQueue) do
+            seedShip_.buildQueue[#seedShip_.buildQueue + 1] = {
                 key           = c.key,
                 remaining     = c.remaining,
                 totalTime     = c.totalTime,
@@ -2095,6 +2100,7 @@ function GalaxyScene.LoadSaveData(data, rm)
                 isCoreUpgrade = c.isCoreUpgrade,
             }
         end
+        seedShip_.constructing = seedShip_.buildQueue[1] or nil
     end
 
     -- 恢复深空行星（建立 id → planet 映射）
