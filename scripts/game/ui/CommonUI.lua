@@ -160,17 +160,7 @@ function CommonUI.init(vg, sw, sh)
     screenW_ = sw or 800
     screenH_ = sh or 600
     resIcons_ = {}
-    if vg_ then
-        local f = NVG_IMAGE_PREMULTIPLIED
-        resIcons_["minerals"]   = nvgCreateImage(vg_, "image/icon_minerals_20260511191023.png",  f)
-        resIcons_["energy"]     = nvgCreateImage(vg_, "image/icon_energy_20260511190704.png",    f)
-        resIcons_["crystal"]    = nvgCreateImage(vg_, "image/icon_crystal_20260511190706.png",   f)
-        resIcons_["population"] = nvgCreateImage(vg_, "image/icon_population_20260511190825.png",f)
-        resIcons_["credits"]    = nvgCreateImage(vg_, "image/icon_credits_20260511190705.png",   f)
-        resIcons_["metal"]   = resIcons_["minerals"]
-        resIcons_["esource"] = resIcons_["energy"]
-        resIcons_["nuclear"] = resIcons_["crystal"]
-    end
+    resIconsLoaded_ = false  -- 延迟到首帧渲染时加载
     UICommon.vg = vg_
     UICommon.bindFns({
         clr         = clr,
@@ -222,6 +212,20 @@ function CommonUI.resetPerRun()
 end
 
 function CommonUI.update(dt)
+    -- 懒加载资源图标（首帧 GL 上下文已就绪）
+    if not resIconsLoaded_ and vg_ then
+        local f = NVG_IMAGE_PREMULTIPLIED
+        resIcons_["minerals"]   = nvgCreateImage(vg_, "image/icon_minerals_20260511191023.png",  f)
+        resIcons_["energy"]     = nvgCreateImage(vg_, "image/icon_energy_20260511190704.png",    f)
+        resIcons_["crystal"]    = nvgCreateImage(vg_, "image/icon_crystal_20260511190706.png",   f)
+        resIcons_["population"] = nvgCreateImage(vg_, "image/icon_population_20260511190825.png",f)
+        resIcons_["credits"]    = nvgCreateImage(vg_, "image/icon_credits_20260511190705.png",   f)
+        resIcons_["metal"]   = resIcons_["minerals"]
+        resIcons_["esource"] = resIcons_["energy"]
+        resIcons_["nuclear"] = resIcons_["crystal"]
+        UICommon.resIcons = resIcons_
+        resIconsLoaded_ = true
+    end
     gameTime_ = gameTime_ + dt
     UICommon.animUpdate(dt)
     EndGamePanel.Update(dt)

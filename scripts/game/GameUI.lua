@@ -1021,12 +1021,18 @@ function GameUI.RenderHUD(dt)
         hx = nextHitX()
         if hx then addHit(hx, BTN_Y, BTN_SZ, BTN_SZ, function()
             if not LiveryPanel.IsVisible() then
+                -- achievements 需要传入 {[id]=true} 表
+                local achSet = {}
+                local Achievement = require("game.AchievementSystem")
+                if Achievement and Achievement.GetUnlocked then
+                    for _, id in ipairs(Achievement.GetUnlocked()) do achSet[id] = true end
+                end
                 LiveryPanel.SetContext({
-                    achievements  = AchievementPanel.GetUnlockCount() or 0,
-                    leagueRank    = 0,
-                    crisisBeaten  = 0,
-                    nemesisBeaten = NemesisSystem and NemesisSystem.GetDefeatedCount and NemesisSystem.GetDefeatedCount() or 0,
-                    megaCompleted = 0,
+                    achievements  = achSet,
+                    leagueRank    = "none",
+                    crisisSurvived = 0,
+                    nemesisDefeated = NemesisSystem and NemesisSystem.GetDefeatedCount and NemesisSystem.GetDefeatedCount() or 0,
+                    megaCompleted = {},
                 })
             end
             LiveryPanel.Toggle()
