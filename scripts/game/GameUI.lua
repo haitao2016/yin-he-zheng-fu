@@ -636,18 +636,21 @@ function GameUI.RenderTopBar()
     if not rm_ or not player_ then return end
     screenW_, screenH_ = UICommon.getVirtualSize()
 
-    -- 懒加载资源图标（首帧 GL 上下文已就绪）
+    -- 懒加载资源图标（等待 GL 上下文完全就绪）
     if not resIconsLoaded_ and vg_ then
         local f = NVG_IMAGE_PREMULTIPLIED
-        resIcons_["minerals"]   = nvgCreateImage(vg_, "image/icon_minerals_20260511191023.png",  f)
-        resIcons_["energy"]     = nvgCreateImage(vg_, "image/icon_energy_20260511190704.png",    f)
-        resIcons_["crystal"]    = nvgCreateImage(vg_, "image/icon_crystal_20260511190706.png",   f)
-        resIcons_["population"] = nvgCreateImage(vg_, "image/icon_population_20260511190825.png",f)
-        resIcons_["credits"]    = nvgCreateImage(vg_, "image/icon_credits_20260511190705.png",   f)
-        resIcons_["metal"]   = resIcons_["minerals"]
-        resIcons_["esource"] = resIcons_["energy"]
-        resIcons_["nuclear"] = resIcons_["crystal"]
-        resIconsLoaded_ = true
+        local test = nvgCreateImage(vg_, "image/icon_minerals_20260511191023.png", f)
+        if test and test > 0 then
+            resIcons_["minerals"]   = test
+            resIcons_["energy"]     = nvgCreateImage(vg_, "image/icon_energy_20260511190704.png",    f)
+            resIcons_["crystal"]    = nvgCreateImage(vg_, "image/icon_crystal_20260511190706.png",   f)
+            resIcons_["population"] = nvgCreateImage(vg_, "image/icon_population_20260511190825.png",f)
+            resIcons_["credits"]    = nvgCreateImage(vg_, "image/icon_credits_20260511190705.png",   f)
+            resIcons_["metal"]   = resIcons_["minerals"]
+            resIcons_["esource"] = resIcons_["energy"]
+            resIcons_["nuclear"] = resIcons_["crystal"]
+            resIconsLoaded_ = true
+        end
     end
 
     -- 每帧开始清空可点击/滚动区域（TopBar 是每帧第一个渲染的 UI）

@@ -1540,12 +1540,15 @@ function GalaxyScene.Render()
     -- 懒加载图片（NanoVGRender 回调内 vg 上下文确保有效）
     if not imagesLoaded_ and vg_ then
         local f = NVG_IMAGE_PREMULTIPLIED
-        asteroidImgs_["minerals"] = nvgCreateImage(vg_, "image/asteroid_minerals_20260511190702.png", f)
-        asteroidImgs_["energy"]   = nvgCreateImage(vg_, "image/asteroid_energy_20260511190703.png",   f)
-        asteroidImgs_["crystal"]  = nvgCreateImage(vg_, "image/asteroid_crystal_20260511190707.png",  f)
-        imgSeedShip_    = nvgCreateImage(vg_, "image/ship_seed_20260511190720.png",       f)
-        imgBaseStation_ = nvgCreateImage(vg_, "image/base_station_20260511190708.png",    f)
-        imagesLoaded_ = true
+        local test = nvgCreateImage(vg_, "image/asteroid_minerals_20260511190702.png", f)
+        if test and test > 0 then
+            asteroidImgs_["minerals"] = test
+            asteroidImgs_["energy"]   = nvgCreateImage(vg_, "image/asteroid_energy_20260511190703.png",   f)
+            asteroidImgs_["crystal"]  = nvgCreateImage(vg_, "image/asteroid_crystal_20260511190707.png",  f)
+            imgSeedShip_    = nvgCreateImage(vg_, "image/ship_seed_20260511190720.png",       f)
+            imgBaseStation_ = nvgCreateImage(vg_, "image/base_station_20260511190708.png",    f)
+            imagesLoaded_ = true
+        end
     end
 
     -- 同步局部状态到共享状态表 GS（子模块读取）

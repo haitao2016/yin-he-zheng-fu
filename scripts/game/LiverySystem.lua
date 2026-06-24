@@ -175,6 +175,10 @@ function LiverySystem.GetAllAccents()
     return LiverySystem.ACCENT_COLORS
 end
 
+function LiverySystem.GetAllEmblems()
+    return LiverySystem.EMBLEMS
+end
+
 function LiverySystem.GetPrimary()
     for _, c in ipairs(LiverySystem.PRIMARY_COLORS) do
         if c.id == state_.selectedPrimary then return c end
