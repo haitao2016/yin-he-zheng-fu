@@ -823,6 +823,13 @@ function GameUI.RenderHUD(dt)
                         hasWarpGate      = rm_ and rm_.baseBonus and rm_.baseBonus.hasWarpGatePrime or false,
                         warpCooldown     = rm_ and rm_.baseBonus and rm_.baseBonus.warpGatePrimeCooldown or 0,
                         onWarpFleet      = onWarpFleetCb_,
+                        -- 全部征收
+                        harvestAllCD     = harvestAllCD_,
+                        HARVEST_ALL_CD   = HARVEST_ALL_CD,
+                        onHarvestAll     = deployed_ and onHarvestAllCb_ and function()
+                            harvestAllCD_ = HARVEST_ALL_CD
+                            onHarvestAllCb_()
+                        end or nil,
                     })
                     GalaxyPanels.RenderExchange(selectedPlanet_, bph)
                     GalaxyPanels.RenderShipyard(selectedPlanet_)

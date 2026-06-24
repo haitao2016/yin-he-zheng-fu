@@ -37,6 +37,9 @@ function BasePanel.Render(base, ctx)
     local onCoreUpgrade  = ctx.onCoreUpgrade
     local onSpeedUpBuild    = ctx.onSpeedUpBuild
     local onSpeedUpBuildAd  = ctx.onSpeedUpBuildAd  -- 广告免费完成（星币不足时）
+    local onHarvestAll      = ctx.onHarvestAll       -- 全部征收回调
+    local harvestAllCD      = ctx.harvestAllCD or 0
+    local HARVEST_ALL_CD    = ctx.HARVEST_ALL_CD or 60
     local slotFlashTimer = ctx.slotFlashTimer or 0
     local progressBar    = ctx.progressBar
     local shipyardMult   = ctx.shipyardMult or 1.0
@@ -57,8 +60,9 @@ function BasePanel.Render(base, ctx)
     -- +16 = 下一级解锁预览行（未满级时显示）
     local queueLen = base.buildQueue and #base.buildQueue or (base.constructing and 1 or 0)
     local queueH   = queueLen > 0 and (14 + queueLen * 16) or 16
+    local harvestBtnH = onHarvestAll and 28 or 0  -- 全部征收按钮行
     local headerH = 36 + 18 + 16 + 16 + (not isMaxCore and 16 or 0)
-                  + queueH + 16
+                  + queueH + harvestBtnH + 16
                   + (shipyardMult > 1.01 and 14 or 0)
                   + (hasWarpGate and 26 or 0)  -- P1-2 WARP_GATE_PRIME 瞬移按钮行
 
@@ -247,6 +251,33 @@ function BasePanel.Render(base, ctx)
     else
         text(px+14, sy, "安装队列: 空闲 (0/3)", 10, 150, 170, 200, 180)
         sy = sy + 16
+    end
+
+    -- ── 全部征收按钮 ──
+    if onHarvestAll then
+        local hbW, hbH = pw - 20, 22
+        local hbX, hbY = px + 10, sy
+        local onCD = harvestAllCD > 0
+        nvgBeginPath(vg); nvgRoundedRect(vg, hbX, hbY, hbW, hbH, 5)
+        nvgFillColor(vg, onCD and nvgRGBA(20,40,20,160) or nvgRGBA(20,80,40,200))
+        nvgFill(vg)
+        nvgBeginPath(vg); nvgRoundedRect(vg, hbX+0.5, hbY+0.5, hbW-1, hbH-1, 5)
+        nvgStrokeColor(vg, onCD and nvgRGBA(60,90,60,120) or nvgRGBA(60,200,100,200))
+        nvgStrokeWidth(vg, 1); nvgStroke(vg)
+        if onCD then
+            local maskW = math.floor(hbW * harvestAllCD / HARVEST_ALL_CD)
+            nvgBeginPath(vg); nvgRoundedRect(vg, hbX + hbW - maskW, hbY, maskW, hbH, 5)
+            nvgFillColor(vg, nvgRGBA(0,0,0,80)); nvgFill(vg)
+        end
+        local hLabel = onCD and string.format("全部征收 (%ds)", math.ceil(harvestAllCD)) or "⚡ 全部征收"
+        nvgFontFace(vg, "sans"); nvgFontSize(vg, 11)
+        nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, onCD and nvgRGBA(100,140,100,180) or nvgRGBA(140,255,160,255))
+        nvgText(vg, hbX + hbW/2, hbY + hbH/2, hLabel)
+        if not onCD then
+            addHit(hbX, hbY, hbW, hbH, onHarvestAll)
+        end
+        sy = sy + hbH + 6
     end
 
     -- 造船加速倍率提示行

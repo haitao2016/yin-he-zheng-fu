@@ -489,40 +489,7 @@ function TopBar.Render(ctx)
         text(infoRightX, rowMid + 6, rtStr, 9, tr, tg, tb, 220, NVG_ALIGN_RIGHT+NVG_ALIGN_MIDDLE)
     end
 
-    -- ══════════════════════════════════════════════════════════════════════════
-    -- 全部征收按钮（顶栏居中，仅银河视图且已展开时显示）
-    -- ══════════════════════════════════════════════════════════════════════════
-    if ctx.deployed and ctx.onHarvestAll and ctx.currentScene == "galaxy" then
-        local btnW, btnH = 72, 20
-        local resEnd = 8 + cols * colW + 8
-        -- 定位：资源列与右侧按钮之间居中，避免和任何一方重叠
-        local rightStart = screenW - (btnIdx * BTN_STEP + 4 + 60)  -- 按钮区左边缘（含星币）
-        local midZone = math.max(resEnd, math.min(rightStart - btnW, screenW / 2 - btnW / 2))
-        local bx = math.floor(math.max(resEnd + 4, math.min(midZone, rightStart - btnW - 4)))
-        local by = math.floor(rowMid - btnH / 2)
-        local onCD  = ctx.harvestAllCD > 0
-        local bgClr  = onCD and nvgRGBA(20,40,20,160) or nvgRGBA(20,80,40,200)
-        local brdClr = onCD and nvgRGBA(60,90,60,120) or nvgRGBA(60,200,100,200)
-        local lblClr = onCD and nvgRGBA(100,140,100,180) or nvgRGBA(140,255,160,255)
-        nvgBeginPath(vg); nvgRoundedRect(vg, bx, by, btnW, btnH, 4)
-        nvgFillColor(vg, bgClr); nvgFill(vg)
-        nvgBeginPath(vg); nvgRoundedRect(vg, bx+0.5, by+0.5, btnW-1, btnH-1, 4)
-        nvgStrokeColor(vg, brdClr); nvgStrokeWidth(vg, 1); nvgStroke(vg)
-        -- 冷却遮罩
-        if onCD then
-            local maskW = math.floor(btnW * ctx.harvestAllCD / ctx.HARVEST_ALL_CD)
-            nvgBeginPath(vg); nvgRoundedRect(vg, bx + btnW - maskW, by, maskW, btnH, 4)
-            nvgFillColor(vg, nvgRGBA(0,0,0,100)); nvgFill(vg)
-        end
-        local label = onCD and string.format("征收 %ds", math.ceil(ctx.harvestAllCD)) or "全部征收"
-        nvgFontFace(vg, "sans"); nvgFontSize(vg, 9)
-        nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-        nvgFillColor(vg, lblClr)
-        nvgText(vg, bx + btnW/2, by + btnH/2, label)
-        if not onCD then
-            addHit(bx, by, btnW, btnH, ctx.onHarvestAll)
-        end
-    end
+    -- （全部征收按钮已移至星航基地面板内）
 
     -- ── 分隔线 ──
     nvgBeginPath(vg)
