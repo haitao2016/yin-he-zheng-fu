@@ -213,7 +213,7 @@ function CommonUI.resetPerRun()
 end
 
 function CommonUI.update(dt)
-    -- 懒加载资源图标（等待 GL 上下文完全就绪）
+    -- 懒加载资源图标（最多尝试1次，失败则放弃）
     if not resIconsLoaded_ and vg_ then
         local f = NVG_IMAGE_PREMULTIPLIED
         local test = nvgCreateImage(vg_, "image/icon_minerals_20260511191023.png", f)
@@ -227,8 +227,8 @@ function CommonUI.update(dt)
             resIcons_["esource"] = resIcons_["energy"]
             resIcons_["nuclear"] = resIcons_["crystal"]
             UICommon.resIcons = resIcons_
-            resIconsLoaded_ = true
         end
+        resIconsLoaded_ = true  -- 无论成功与否都停止重试
     end
     gameTime_ = gameTime_ + dt
     UICommon.animUpdate(dt)

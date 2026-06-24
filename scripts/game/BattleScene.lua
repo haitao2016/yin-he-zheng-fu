@@ -1268,7 +1268,7 @@ end
 -- 渲染（委托给 BattleRender 模块）
 -- ============================================================================
 function BattleScene.Render()
-    -- 懒加载舰船纹理（等待GL上下文就绪）
+    -- 懒加载舰船纹理（尝试1次，失败则放弃避免每帧重试）
     if not shipImagesLoaded_ and vg_ then
         local f = NVG_IMAGE_PREMULTIPLIED
         local test = nvgCreateImage(vg_, "image/ship_scout_20260511185829.png", f)
@@ -1282,8 +1282,8 @@ function BattleScene.Render()
             shipImages_["EXPLORER"]      = nvgCreateImage(vg_, "image/ship_explorer_20260512071647.png",      f)
             shipImages_["CARRIER"]       = nvgCreateImage(vg_, "image/ship_carrier_20260513074052.png",       f)
             shipImages_["INTERCEPTOR"]   = nvgCreateImage(vg_, "image/ship_interceptor_20260513074045.png",   f)
-            shipImagesLoaded_ = true
         end
+        shipImagesLoaded_ = true  -- 无论成功与否都停止重试
     end
 
     -- 同步状态到 BattleState 共享表

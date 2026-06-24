@@ -1547,8 +1547,8 @@ function GalaxyScene.Render()
             asteroidImgs_["crystal"]  = nvgCreateImage(vg_, "image/asteroid_crystal_20260511190707.png",  f)
             imgSeedShip_    = nvgCreateImage(vg_, "image/ship_seed_20260511190720.png",       f)
             imgBaseStation_ = nvgCreateImage(vg_, "image/base_station_20260511190708.png",    f)
-            imagesLoaded_ = true
         end
+        imagesLoaded_ = true  -- 无论成功与否都停止重试
     end
 
     -- 同步局部状态到共享状态表 GS（子模块读取）

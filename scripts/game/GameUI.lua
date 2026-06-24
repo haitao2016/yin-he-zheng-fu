@@ -94,6 +94,7 @@ local cursorY_       = 0
 -- 资源图标纹理句柄
 local resIcons_      = {}   -- { minerals=h, energy=h, crystal=h, population=h, credits=h }
 local resIconsLoaded_ = false
+local resIconsRetry_  = 0
 
 -- 数据依赖（由 Init 注入）
 local rm_            = nil
@@ -637,8 +638,9 @@ function GameUI.RenderTopBar()
     if not rm_ or not player_ then return end
     screenW_, screenH_ = UICommon.getVirtualSize()
 
-    -- 懒加载资源图标（等待 GL 上下文完全就绪）
-    if not resIconsLoaded_ and vg_ then
+    -- 懒加载资源图标（等待 GL 上下文完全就绪，最多重试5次）
+    if not resIconsLoaded_ and vg_ and resIconsRetry_ < 5 then
+        resIconsRetry_ = resIconsRetry_ + 1
         local f = NVG_IMAGE_PREMULTIPLIED
         local test = nvgCreateImage(vg_, "image/icon_minerals_20260511191023.png", f)
         if test and test > 0 then
@@ -650,8 +652,8 @@ function GameUI.RenderTopBar()
             resIcons_["metal"]   = resIcons_["minerals"]
             resIcons_["esource"] = resIcons_["energy"]
             resIcons_["nuclear"] = resIcons_["crystal"]
-            resIconsLoaded_ = true
         end
+        resIconsLoaded_ = true  -- 无论成功与否都标记完成，停止重试
     end
 
     -- 每帧开始清空可点击/滚动区域（TopBar 是每帧第一个渲染的 UI）
