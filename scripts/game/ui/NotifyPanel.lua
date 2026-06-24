@@ -2,7 +2,8 @@
 --- 负责：浮动 toast 通知、通知中心日志面板
 --- 依赖：UICommon（vg, screenW, screenH, addHit, addScroll）
 
-local UICommon = require("game.ui.UICommon")
+local UICommon    = require("game.ui.UICommon")
+local DragManager = require("game.ui.DragManager")
 
 local NotifyPanel = {}
 
@@ -125,14 +126,15 @@ function NotifyPanel.RenderCenter()
 
     local pw  = 340
     local ph  = math.min(screenH - 80, 420)
-    local px  = screenW - pw - 12
-    local py  = 46
+    local px, py = DragManager.GetPos("notify", screenW - pw - 12, 46)
 
     -- 面板背景
     nvgBeginPath(vg)
     nvgRoundedRect(vg, px, py, pw, ph, 8)
     nvgFillColor(vg, nvgRGBA(C.panelBgDark[1], C.panelBgDark[2], C.panelBgDark[3], C.panelBgDark[4] or 255))
     nvgFill(vg)
+    DragManager.RegisterHandle("notify", px, py, pw, 24)
+    DragManager.DrawHandle(vg, px, py, pw, 6)
     nvgBeginPath(vg)
     nvgRoundedRect(vg, px, py, pw, ph, 8)
     nvgStrokeColor(vg, nvgRGBA(68, 136, 255, 160))

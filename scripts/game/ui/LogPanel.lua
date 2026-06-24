@@ -1,7 +1,8 @@
 --- 任务日志面板模块
 --- 右侧浮动面板，双 Tab：目标 / 探索记录
 
-local UICommon = require("game.ui.UICommon")
+local UICommon    = require("game.ui.UICommon")
+local DragManager = require("game.ui.DragManager")
 
 local LogPanel = {}
 
@@ -63,8 +64,7 @@ function LogPanel.Render(completedGoals, exploreLog)
 
     -- 面板高度：固定高（避免随内容抖动）
     local ph = HEADER + TAB_H + 4 + MAX_VIS * ITEM_H + PAD
-    local px = W - PW - 8
-    local py = 50    -- 低于 TopBar（44px）
+    local px, py = DragManager.GetPos("log", W - PW - 8, 50)
 
     -- 关闭按钮区域（后注册 hit）
     local closeBx = px + PW - 22
@@ -75,6 +75,8 @@ function LogPanel.Render(completedGoals, exploreLog)
     nvgRoundedRect(vg, px, py, PW, ph, 8)
     nvgFillColor(vg, nvgRGBA(6, 12, 28, 230))
     nvgFill(vg)
+    DragManager.RegisterHandle("log", px, py, PW, 24)
+    DragManager.DrawHandle(vg, px, py, PW, 6)
     nvgBeginPath(vg)
     nvgRoundedRect(vg, px, py, PW, ph, 8)
     nvgStrokeColor(vg, nvgRGBA(60, 140, 255, 180))

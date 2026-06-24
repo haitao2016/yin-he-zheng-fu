@@ -1,7 +1,8 @@
 --- 星航基地面板模块
 --- 负责渲染基地核心等级、模块建造、安装队列、已安装模块
 
-local UICommon = require("game.ui.UICommon")
+local UICommon    = require("game.ui.UICommon")
+local DragManager = require("game.ui.DragManager")
 
 local BasePanel = {}
 
@@ -46,8 +47,9 @@ function BasePanel.Render(base, ctx)
     local onWarpFleet    = ctx.onWarpFleet
 
     local pw = 275
-    local px = screenW - pw - 12
-    local py = UICommon.PANEL_TOP or 48
+    local defPx = screenW - pw - 12
+    local defPy = UICommon.PANEL_TOP or 48
+    local px, py = DragManager.GetPos("base", defPx, defPy)
 
     local coreLevel  = base.coreLevel or 1
     local isMaxCore  = coreLevel >= BASE_CORE_MAX_LEVEL
@@ -80,6 +82,8 @@ function BasePanel.Render(base, ctx)
     scrollY_ = math.max(0, math.min(maxScroll, scrollY_))
 
     panel(px, py, pw, ph, 7, {8, 18, 35, 245}, {80, 200, 255, 220})
+    DragManager.RegisterHandle("base", px, py, pw, 28)
+    DragManager.DrawHandle(UICommon.vg, px, py, pw, 8)
 
     -- === 固定头部 ===
     local sy = py + 16

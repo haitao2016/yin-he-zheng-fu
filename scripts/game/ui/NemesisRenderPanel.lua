@@ -1,7 +1,8 @@
 --- 宿敌档案面板渲染模块
 --- 左侧浮动，展示所有海盗船长的进化等级、状态与战术风格
 
-local UICommon     = require("game.ui.UICommon")
+local UICommon      = require("game.ui.UICommon")
+local DragManager   = require("game.ui.DragManager")
 local NemesisSystem = require("game.NemesisSystem")
 
 local NemesisRenderPanel = {}
@@ -45,14 +46,15 @@ function NemesisRenderPanel.Render()
     local CARD_H = 62
     local HEADER = 28
     local ph     = HEADER + #captains * (CARD_H + 6) + PAD
-    local px     = 8
-    local py     = 50
+    local px, py = DragManager.GetPos("nemesis", 8, 50)
 
     -- 面板背景
     nvgBeginPath(vg)
     nvgRoundedRect(vg, px, py, PW, ph, 8)
     nvgFillColor(vg, nvgRGBA(12, 8, 24, 235))
     nvgFill(vg)
+    DragManager.RegisterHandle("nemesis", px, py, PW, 24)
+    DragManager.DrawHandle(vg, px, py, PW, 6)
     nvgBeginPath(vg)
     nvgRoundedRect(vg, px, py, PW, ph, 8)
     nvgStrokeColor(vg, nvgRGBA(180, 60, 60, 200))
