@@ -1,7 +1,8 @@
 --- 行星面板模块
 --- 负责渲染行星建造、已安装模块、殖民状态、建造队列
 
-local UICommon = require("game.ui.UICommon")
+local UICommon     = require("game.ui.UICommon")
+local DragManager  = require("game.ui.DragManager")
 
 local PlanetPanel = {}
 
@@ -137,8 +138,9 @@ function PlanetPanel.Render(planet, ctx)
     local onUpgradePlanetCb = ctx.onUpgradePlanetCb -- P1-2: 升级星球等级 function(planet)
 
     local pw = math.min(275, screenW - 20)
-    local px = math.max(4, screenW - pw - 12)
-    local py = UICommon.PANEL_TOP or 48
+    local defPx = math.max(4, screenW - pw - 12)
+    local defPy = UICommon.PANEL_TOP or 48
+    local px, py = DragManager.GetPos("planet", defPx, defPy)
 
     -- 计算产量速率行高度（有已殖民星球+有建筑+有产量时额外占17px）
     local prodRowH = 0
@@ -310,6 +312,10 @@ function PlanetPanel.Render(planet, ctx)
     scrollY_ = math.max(0, math.min(maxScroll, scrollY_))
 
     panel(px, py, pw, ph, 7, {8,14,30,240}, {68,136,255,220})
+
+    -- 拖拽把手（标题栏区域）
+    DragManager.RegisterHandle("planet", px, py, pw, 28)
+    DragManager.DrawHandle(UICommon.vg, px, py, pw, 8)
 
     -- === 固定头部 ===
     local sy = py + 16

@@ -35,6 +35,7 @@ local GalaxyHud          = require("game.ui.GalaxyHud")          -- P3-1b: 银�
 local GalaxyPanels       = require("game.ui.GalaxyPanels")       -- P3-1b: 银河面板集合（情报/信号/任务/市场/外交等）
 local Overlays           = require("game.ui.Overlays")           -- P3-1b: 覆层（战役对话/事件弹窗/选卡）
 local TopBar             = require("game.ui.TopBar")             -- P3-1b: 顶部资源栏渲染（拆分自 RenderTopBar）
+local DragManager        = require("game.ui.DragManager")        -- 面板拖拽管理器
 
 -- ============================================================================
 -- 通用常量
@@ -510,6 +511,10 @@ function GameUI.OnTouchBegin(id, rawX, rawY)
     local dpr = graphics:GetDPR()
     local mx = rawX / dpr
     local my = rawY / dpr
+    -- 面板拖拽优先（拖把手区域）
+    if DragManager.OnTouchBegin(mx, my) then
+        return true
+    end
     -- 设置面板滑块触摸拖拽（委托给 SettingsPanel）
     if SettingsPanel.IsVisible() then
         if SettingsPanel.OnTouchBegin(id, mx, my) then
@@ -531,12 +536,16 @@ function GameUI.OnTouchBegin(id, rawX, rawY)
 end
 
 function GameUI.OnTouchMove(id, rawX, rawY)
+    -- 面板拖拽移动
+    local dpr = graphics:GetDPR()
+    if DragManager.OnTouchMove(rawX / dpr, rawY / dpr) then
+        return true
+    end
     -- 设置面板滑块触摸拖拽跟随（委托给 SettingsPanel）
-    if SettingsPanel.OnTouchMove(id, rawX / graphics:GetDPR()) then
+    if SettingsPanel.OnTouchMove(id, rawX / dpr) then
         return true
     end
     if not touchDragActive_ or touchDragId_ ~= id then return false end
-    local dpr = graphics:GetDPR()
     local my = rawY / dpr
     local dy = my - touchDragLastY_
     touchDragLastY_ = my
@@ -548,6 +557,11 @@ function GameUI.OnTouchMove(id, rawX, rawY)
 end
 
 function GameUI.OnTouchEnd(id, rawX, rawY)
+    -- 面板拖拽结束
+    if DragManager.OnTouchEnd() then
+        return true
+    end
+
     local consumed = false
 
     -- 清理滚动拖拽状态
@@ -639,6 +653,7 @@ function GameUI.RenderTopBar()
     -- 每帧开始清空可点击/滚动区域（TopBar 是每帧第一个渲染的 UI）
     hitAreas_    = {}
     scrollAreas_ = {}
+    DragManager.BeginFrame(screenW_, screenH_)
 
     TopBar.Render({
         displayRes       = displayRes_,
@@ -1146,6 +1161,8 @@ end
 -- 点击处理（供 main.lua 转发鼠标事件）
 -- ============================================================================
 function GameUI.OnClick(mx, my)
+    -- 拖拽中不处理点击
+    if DragManager.IsDragging() then return true end
     -- P3 V2.5: 阵型编辑器打开时拦截所有底层点击
     if FormationEditor.IsOpen() then
         -- 仅处理编辑器自己注册的 hit areas（最顶层）
