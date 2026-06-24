@@ -932,59 +932,71 @@ function GameUI.RenderHUD(dt)
         end
     end
 
-    -- 顶栏按钮命中区：在所有面板之后注册，确保最高优先级（不被任何面板遮挡）
+    -- 顶栏按钮命中区：与 TopBar.lua 渲染位置同步（动态计算）
     -- 设置面板/成就面板打开时全屏遮罩已覆盖，无需额外处理
     if not SettingsPanel.IsVisible() and not AchievementPanel.IsVisible() then
-        -- 铃铛按钮
-        addHit(screenW_ - 36, 6, 28, 28, function() NotifyPanel.Toggle() end)
-        -- 设置按钮（扩大热区到 36×36，中心不变）
-        addHit(screenW_ - 76, 2, 36, 36, function()
-            SettingsPanel.Toggle()
-        end)
-        -- 成就按钮
-        addHit(screenW_ - 104, 6, 28, 28, function()
-            AchievementPanel.Toggle()
-        end)
-        -- 📋 日志按钮
-        addHit(screenW_ - 138, 6, 28, 28, function()
-            LogPanel.Toggle()
-        end)
-        -- 📊 战绩按钮
-        addHit(screenW_ - 172, 6, 28, 28, function()
-            statsVisible_ = not statsVisible_
-        end)
-        -- 📡 P3-1: 信号按钮
-        addHit(screenW_ - 206, 6, 28, 28, function()
-            if signalCooldown_ <= 0 then
-                signalOpen_ = not signalOpen_
-            end
-        end)
-        -- 🏛️ P1-3: 帝国总览按钮
-        addHit(screenW_ - 240, 6, 28, 28, function()
-            EmpirePanel.Toggle()
-        end)
-        -- ⚔ P1-2: 宿敌档案按钮
-        addHit(screenW_ - 272, 6, 28, 28, function()
-            NemesisRenderPanel.Toggle()
-        end)
-        -- 📌 P2-1: 任务板按钮
-        addHit(screenW_ - 304, 6, 28, 28, function()
-            questVisible_ = not questVisible_
-        end)
-        -- 🤝 P1-1: 外交关系网按钮
-        addHit(screenW_ - 338, 6, 28, 28, function()
-            diploRelVisible_ = not diploRelVisible_
-        end)
-        -- 🏗️ P2-2 V2.4: 巨构工程按钮（Lv7+可见）
-        local megaBase2 = GalaxyScene.GetBase and GalaxyScene.GetBase()
-        if megaBase2 and megaBase2.coreLevel >= 7 then
-            addHit(screenW_ - 372, 6, 28, 28, function()
-                MegaPanel.Toggle()
-            end)
+        local BTN_SZ   = screenW_ < 400 and 22 or 28
+        local BTN_GAP  = screenW_ < 400 and 2  or 6
+        local BTN_STEP = BTN_SZ + BTN_GAP
+        local BTN_Y    = screenW_ < 400 and 8 or 6
+        local hitIdx   = 0
+
+        -- 计算可放按钮数上限（与 TopBar.lua 同公式）
+        local cols = #RES_ORDER
+        local REFINED_W = screenW_ < 500 and 0 or 130
+        local resAreaEnd = 8 + cols * (math.max(50, (screenW_ - (screenW_ < 500 and 140 or 270) - REFINED_W) / cols)) + (REFINED_W > 0 and REFINED_W + 16 or 8)
+        local maxBtns = math.floor((screenW_ - resAreaEnd - 8) / BTN_STEP)
+
+        local function nextHitX()
+            hitIdx = hitIdx + 1
+            if hitIdx > maxBtns then return nil end
+            return screenW_ - hitIdx * BTN_STEP - 4
         end
-        -- 🎨 P2-3 V2.4: 舰队涂装按钮
-        addHit(screenW_ - 406, 6, 28, 28, function()
-            -- 打开时刷新解锁上下文
+
+        local hx
+        -- 铃铛按钮（必显示）
+        hx = nextHitX()
+        if hx then addHit(hx, BTN_Y, BTN_SZ, BTN_SZ, function() NotifyPanel.Toggle() end) end
+        -- 设置按钮（必显示）
+        hx = nextHitX()
+        if hx then addHit(hx - 4, BTN_Y - 4, BTN_SZ + 8, BTN_SZ + 8, function() SettingsPanel.Toggle() end) end
+        -- 成就按钮
+        hx = nextHitX()
+        if hx then addHit(hx, BTN_Y, BTN_SZ, BTN_SZ, function() AchievementPanel.Toggle() end) end
+        -- 📋 日志按钮
+        hx = nextHitX()
+        if hx then addHit(hx, BTN_Y, BTN_SZ, BTN_SZ, function() LogPanel.Toggle() end) end
+        -- 📊 战绩按钮
+        hx = nextHitX()
+        if hx then addHit(hx, BTN_Y, BTN_SZ, BTN_SZ, function() statsVisible_ = not statsVisible_ end) end
+        -- 📡 信号按钮
+        hx = nextHitX()
+        if hx then addHit(hx, BTN_Y, BTN_SZ, BTN_SZ, function()
+            if signalCooldown_ <= 0 then signalOpen_ = not signalOpen_ end
+        end) end
+        -- 🏛️ 帝国总览按钮
+        hx = nextHitX()
+        if hx then addHit(hx, BTN_Y, BTN_SZ, BTN_SZ, function() EmpirePanel.Toggle() end) end
+        -- ⚔ 宿敌档案按钮
+        hx = nextHitX()
+        if hx then addHit(hx, BTN_Y, BTN_SZ, BTN_SZ, function() NemesisRenderPanel.Toggle() end) end
+        -- 📌 任务板按钮
+        hx = nextHitX()
+        if hx then addHit(hx, BTN_Y, BTN_SZ, BTN_SZ, function() questVisible_ = not questVisible_ end) end
+        -- 🤝 外交关系网按钮
+        hx = nextHitX()
+        if hx then addHit(hx, BTN_Y, BTN_SZ, BTN_SZ, function() diploRelVisible_ = not diploRelVisible_ end) end
+        -- 🏗️ 巨构工程按钮（Lv7+可见，但始终消耗槽位）
+        hx = nextHitX()
+        if hx then
+            local megaBase2 = GalaxyScene.GetBase and GalaxyScene.GetBase()
+            if megaBase2 and megaBase2.coreLevel >= 7 then
+                addHit(hx, BTN_Y, BTN_SZ, BTN_SZ, function() MegaPanel.Toggle() end)
+            end
+        end
+        -- 🎨 舰队涂装按钮
+        hx = nextHitX()
+        if hx then addHit(hx, BTN_Y, BTN_SZ, BTN_SZ, function()
             if not LiveryPanel.IsVisible() then
                 LiveryPanel.SetContext({
                     achievements  = AchievementPanel.GetUnlockCount() or 0,
@@ -995,15 +1007,13 @@ function GameUI.RenderHUD(dt)
                 })
             end
             LiveryPanel.Toggle()
-        end)
-        -- 📖 P3-1 V2.4: 银河百科按钮
-        addHit(screenW_ - 440, 6, 28, 28, function()
-            GalactopediaPanel.Toggle()
-        end)
-        -- ⭐ P1-3 V2.5: 文明遗产按钮
-        addHit(screenW_ - 474, 6, 28, 28, function()
-            LegacyPanel.Toggle()
-        end)
+        end) end
+        -- 📖 银河百科按钮
+        hx = nextHitX()
+        if hx then addHit(hx, BTN_Y, BTN_SZ, BTN_SZ, function() GalactopediaPanel.Toggle() end) end
+        -- ⭐ 文明遗产按钮
+        hx = nextHitX()
+        if hx then addHit(hx, BTN_Y, BTN_SZ, BTN_SZ, function() LegacyPanel.Toggle() end) end
     end
 
     -- P3-3: FPS 计数器更新 & 渲染（最顶层叠加）
