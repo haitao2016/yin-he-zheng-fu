@@ -614,18 +614,9 @@ function BattleScene.Init(opts)
     cmdSkillTimer_    = 0
     cmdSkillDef_      = nil
 
-    -- 加载舰船纹理
-    local imageFlags = NVG_IMAGE_PREMULTIPLIED
-    shipImages_["SCOUT"]         = nvgCreateImage(vg_, "image/ship_scout_20260511185829.png",         imageFlags)
-    shipImages_["FRIGATE"]       = nvgCreateImage(vg_, "image/ship_frigate_20260511185830.png",       imageFlags)
-    shipImages_["DESTROYER"]     = nvgCreateImage(vg_, "image/ship_destroyer_20260511185818.png",     imageFlags)
-    shipImages_["BATTLECRUISER"] = nvgCreateImage(vg_, "image/ship_battlecruiser_20260512164935.png", imageFlags)
-    shipImages_["MINER"]         = nvgCreateImage(vg_, "image/ship_miner_20260511185819.png",         imageFlags)
-    shipImages_["ENGINEER"]      = nvgCreateImage(vg_, "image/ship_engineer_20260512071656.png",      imageFlags)
-    shipImages_["EXPLORER"]      = nvgCreateImage(vg_, "image/ship_explorer_20260512071647.png",      imageFlags)
-    shipImages_["CARRIER"]       = nvgCreateImage(vg_, "image/ship_carrier_20260513074052.png",       imageFlags)
-    shipImages_["INTERCEPTOR"]   = nvgCreateImage(vg_, "image/ship_interceptor_20260513074045.png",   imageFlags)
-    print("[BattleScene] 舰船纹理加载完成")
+    -- 舰船纹理延迟到首帧渲染加载（标记）
+    shipImagesLoaded_ = false
+    print("[BattleScene] 舰船纹理将在首帧加载")
 
     -- P3-1: 重置星场，让 Reset() 重新生成
     bgStars_   = {}
@@ -1277,6 +1268,24 @@ end
 -- 渲染（委托给 BattleRender 模块）
 -- ============================================================================
 function BattleScene.Render()
+    -- 懒加载舰船纹理（等待GL上下文就绪）
+    if not shipImagesLoaded_ and vg_ then
+        local f = NVG_IMAGE_PREMULTIPLIED
+        local test = nvgCreateImage(vg_, "image/ship_scout_20260511185829.png", f)
+        if test and test > 0 then
+            shipImages_["SCOUT"]         = test
+            shipImages_["FRIGATE"]       = nvgCreateImage(vg_, "image/ship_frigate_20260511185830.png",       f)
+            shipImages_["DESTROYER"]     = nvgCreateImage(vg_, "image/ship_destroyer_20260511185818.png",     f)
+            shipImages_["BATTLECRUISER"] = nvgCreateImage(vg_, "image/ship_battlecruiser_20260512164935.png", f)
+            shipImages_["MINER"]         = nvgCreateImage(vg_, "image/ship_miner_20260511185819.png",         f)
+            shipImages_["ENGINEER"]      = nvgCreateImage(vg_, "image/ship_engineer_20260512071656.png",      f)
+            shipImages_["EXPLORER"]      = nvgCreateImage(vg_, "image/ship_explorer_20260512071647.png",      f)
+            shipImages_["CARRIER"]       = nvgCreateImage(vg_, "image/ship_carrier_20260513074052.png",       f)
+            shipImages_["INTERCEPTOR"]   = nvgCreateImage(vg_, "image/ship_interceptor_20260513074045.png",   f)
+            shipImagesLoaded_ = true
+        end
+    end
+
     -- 同步状态到 BattleState 共享表
     local BS = BattleState
     BS.vg       = vg_
