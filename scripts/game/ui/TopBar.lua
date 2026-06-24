@@ -520,36 +520,36 @@ function TopBar.Render(ctx)
 
     -- ── 玩家信息 + 在线时限/无尽轮次（窄屏隐藏）──
     local infoRightX = credX - 8
-    if infoRightX < resAreaEnd + 10 then goto skipPlayerInfo end
-    local rtStr, tr, tg, tb
-    if ctx.endlessRound > 0 then
-        rtStr = string.format("∞ 第 %d 轮", ctx.endlessRound)
-        local pulse = math.abs(math.sin(os.clock() * 2.0))
-        tr = 255
-        tg = math.floor(140 + 60 * pulse)
-        tb = math.floor(40  + 20 * pulse)
-    else
-        local rtSec     = math.max(0, math.floor(ctx.remainingTime))
-        local rtMin     = math.floor(rtSec / 60)
-        local rtSecPart = rtSec % 60
-        if rtMin >= 60 then
-            rtStr = string.format("⏱%d:%02d:00", math.floor(rtMin/60), rtMin%60)
+    if infoRightX >= resAreaEnd + 10 then
+        local rtStr, tr, tg, tb
+        if ctx.endlessRound > 0 then
+            rtStr = string.format("∞ 第 %d 轮", ctx.endlessRound)
+            local pulse = math.abs(math.sin(os.clock() * 2.0))
+            tr = 255
+            tg = math.floor(140 + 60 * pulse)
+            tb = math.floor(40  + 20 * pulse)
         else
-            rtStr = string.format("⏱%02d:%02d", rtMin, rtSecPart)
+            local rtSec     = math.max(0, math.floor(ctx.remainingTime))
+            local rtMin     = math.floor(rtSec / 60)
+            local rtSecPart = rtSec % 60
+            if rtMin >= 60 then
+                rtStr = string.format("⏱%d:%02d:00", math.floor(rtMin/60), rtMin%60)
+            else
+                rtStr = string.format("⏱%02d:%02d", rtMin, rtSecPart)
+            end
+            local isLowTime = rtMin < 30
+            tr = isLowTime and 255 or 100
+            tg = isLowTime and 80  or 200
+            tb = isLowTime and 60  or 120
+            if rtMin < 5 then
+                local blink = math.floor(os.clock() * 2) % 2 == 0
+                tr, tg, tb = blink and 255 or 200, blink and 60 or 80, blink and 60 or 60
+            end
         end
-        local isLowTime = rtMin < 30
-        tr = isLowTime and 255 or 100
-        tg = isLowTime and 80  or 200
-        tb = isLowTime and 60  or 120
-        if rtMin < 5 then
-            local blink = math.floor(os.clock() * 2) % 2 == 0
-            tr, tg, tb = blink and 255 or 200, blink and 60 or 80, blink and 60 or 60
-        end
+        text(infoRightX, rowMid - 6, player.name .. " Lv." .. player.level, 9,
+            160,210,255,210, NVG_ALIGN_RIGHT+NVG_ALIGN_MIDDLE)
+        text(infoRightX, rowMid + 6, rtStr, 9, tr, tg, tb, 220, NVG_ALIGN_RIGHT+NVG_ALIGN_MIDDLE)
     end
-    text(infoRightX, rowMid - 6, player.name .. " Lv." .. player.level, 9,
-        160,210,255,210, NVG_ALIGN_RIGHT+NVG_ALIGN_MIDDLE)
-    text(infoRightX, rowMid + 6, rtStr, 9, tr, tg, tb, 220, NVG_ALIGN_RIGHT+NVG_ALIGN_MIDDLE)
-    ::skipPlayerInfo::
 
     -- ══════════════════════════════════════════════════════════════════════════
     -- 全部征收按钮（顶栏居中，仅银河视图且已展开时显示）
