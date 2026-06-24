@@ -85,7 +85,7 @@ function TopBar.Render(ctx)
     local RIGHT_W   = math.min(math.floor(screenW * 0.55), 8 * BTN_STEP_PRE + 70)
     local cols      = #RES_ORDER
     local REFINED_W = 0  -- 精炼区已合并到原矿列，不再独立占位
-    local colW      = math.max(50, (screenW - RIGHT_W) / cols)
+    local colW      = math.max(50, math.min(160, (screenW - RIGHT_W) / cols))
     local rowMid    = 2 + (TOPBAR_H - 2) / 2   -- 垂直居中 y ≈ 23
 
     local displayRes      = ctx.displayRes
@@ -504,7 +504,11 @@ function TopBar.Render(ctx)
     -- ══════════════════════════════════════════════════════════════════════════
     if ctx.deployed and ctx.onHarvestAll and ctx.currentScene == "galaxy" then
         local btnW, btnH = 72, 20
-        local bx = math.floor(screenW / 2 - btnW / 2)
+        local resEnd = 8 + cols * colW + 8
+        -- 定位：资源列与右侧按钮之间居中，避免和任何一方重叠
+        local rightStart = screenW - (btnIdx * BTN_STEP + 4 + 60)  -- 按钮区左边缘（含星币）
+        local midZone = math.max(resEnd, math.min(rightStart - btnW, screenW / 2 - btnW / 2))
+        local bx = math.floor(math.max(resEnd + 4, math.min(midZone, rightStart - btnW - 4)))
         local by = math.floor(rowMid - btnH / 2)
         local onCD  = ctx.harvestAllCD > 0
         local bgClr  = onCD and nvgRGBA(20,40,20,160) or nvgRGBA(20,80,40,200)
