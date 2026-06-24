@@ -622,6 +622,20 @@ function GameUI.RenderTopBar()
     if not rm_ or not player_ then return end
     screenW_, screenH_ = UICommon.getVirtualSize()
 
+    -- 懒加载资源图标（首帧 GL 上下文已就绪）
+    if not resIconsLoaded_ and vg_ then
+        local f = NVG_IMAGE_PREMULTIPLIED
+        resIcons_["minerals"]   = nvgCreateImage(vg_, "image/icon_minerals_20260511191023.png",  f)
+        resIcons_["energy"]     = nvgCreateImage(vg_, "image/icon_energy_20260511190704.png",    f)
+        resIcons_["crystal"]    = nvgCreateImage(vg_, "image/icon_crystal_20260511190706.png",   f)
+        resIcons_["population"] = nvgCreateImage(vg_, "image/icon_population_20260511190825.png",f)
+        resIcons_["credits"]    = nvgCreateImage(vg_, "image/icon_credits_20260511190705.png",   f)
+        resIcons_["metal"]   = resIcons_["minerals"]
+        resIcons_["esource"] = resIcons_["energy"]
+        resIcons_["nuclear"] = resIcons_["crystal"]
+        resIconsLoaded_ = true
+    end
+
     -- 每帧开始清空可点击/滚动区域（TopBar 是每帧第一个渲染的 UI）
     hitAreas_    = {}
     scrollAreas_ = {}
@@ -1220,17 +1234,9 @@ function GameUI.Init(opts)
     -- 创建字体（GameUI 使用 main 传入的 vg_，只需注册字体）
     nvgCreateFont(vg_, "sans", "Fonts/MiSans-Regular.ttf")
 
-    -- 加载资源图标（同时为精炼资源键建立别名）
-    local f = NVG_IMAGE_PREMULTIPLIED
-    resIcons_["minerals"]   = nvgCreateImage(vg_, "image/icon_minerals_20260511191023.png",  f)
-    resIcons_["energy"]     = nvgCreateImage(vg_, "image/icon_energy_20260511190704.png",    f)
-    resIcons_["crystal"]    = nvgCreateImage(vg_, "image/icon_crystal_20260511190706.png",   f)
-    resIcons_["population"] = nvgCreateImage(vg_, "image/icon_population_20260511190825.png",f)
-    resIcons_["credits"]    = nvgCreateImage(vg_, "image/icon_credits_20260511190705.png",   f)
-    -- 精炼资源复用原矿图标
-    resIcons_["metal"]   = resIcons_["minerals"]
-    resIcons_["esource"] = resIcons_["energy"]
-    resIcons_["nuclear"] = resIcons_["crystal"]
+    -- 资源图标延迟到首帧渲染时加载（避免 GL 上下文未就绪）
+    resIcons_ = {}
+    resIconsLoaded_ = false
 
     -- P2-1: 每局开始重置危机通知标记，确保新游戏能再次提示
     resCrisisNotified_ = {}
