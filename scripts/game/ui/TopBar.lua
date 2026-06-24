@@ -85,7 +85,7 @@ function TopBar.Render(ctx)
     local RIGHT_W   = math.min(math.floor(screenW * 0.55), 8 * BTN_STEP_PRE + 70)
     local cols      = #RES_ORDER
     local REFINED_W = 0  -- 精炼区已合并到原矿列，不再独立占位
-    local colW      = math.max(50, math.min(160, (screenW - RIGHT_W) / cols))
+    local colW      = math.max(50, math.min(130, (screenW - RIGHT_W) / cols))
     local rowMid    = 2 + (TOPBAR_H - 2) / 2   -- 垂直居中 y ≈ 23
 
     local displayRes      = ctx.displayRes
@@ -95,7 +95,7 @@ function TopBar.Render(ctx)
     local resCrisisBlink  = ctx.resCrisisBlink
     local resTrendDir     = ctx.resTrendDir
 
-    -- ── 原矿3列（两行：名称 + 数量/速率）──
+    -- ── 资源3列（两行紧凑显示）──
     for i, res in ipairs(RES_ORDER) do
         local c      = RES_COLORS[res]
         local rawKey = RAW_KEYS[res]
@@ -111,8 +111,7 @@ function TopBar.Render(ctx)
         end
 
         local tx = bx + 17
-        local rateStr = mult > 0 and string.format("+%.0f/s", rawRate) or "待炼"
-        -- 闪光颜色：增加→绿，减少→橙
+        -- 闪光颜色
         local fl = flashRes[rawKey]
         local valR, valG, valB = 220, 220, 220
         if fl and fl.timer > 0 then
@@ -127,26 +126,17 @@ function TopBar.Render(ctx)
                 valB = math.floor(valB * (1-t) + 60  * t)
             end
         end
-        -- 第一行：原矿名称 + 原矿数值/速率
-        text(tx, rowMid - 6, string.format("%s %d %s", RES_TAGS[res], rawVal, rateStr), 9, valR, valG, valB, 240)
-        -- 第二行：精炼值（如有）
-        local refVal = math.floor(displayRes[res] or rm.resources[res] or 0)
-        local refinedLbl = (RES_REFINED_LABELS and RES_REFINED_LABELS[res]) or ""
-        if mult > 0 and refinedLbl ~= "" then
-            local refStr
-            if res == "esource" then
-                refStr = string.format("%s%d +%.1f/s", refinedLbl, refVal, esourceRate)
-            else
-                refStr = string.format("%s%d", refinedLbl, refVal)
-            end
-            -- 趋势箭头
+
+        -- 第一行：资源名 + 数值（紧凑）
+        local rateStr = mult > 0 and string.format(" +%d/s", rawRate) or ""
+        text(tx, rowMid - 6, RES_TAGS[res] .. " " .. rawVal .. rateStr, 9, valR, valG, valB, 240)
+
+        -- 第二行：精炼值（仅炼厂已建时显示）
+        if mult > 0 then
+            local refVal = math.floor(displayRes[res] or rm.resources[res] or 0)
             local tdir = resTrendDir[res]
-            local arrow = ""
-            if tdir and tdir > 0 then arrow = "▲"
-            elseif tdir and tdir < 0 then arrow = "▼" end
-            text(tx, rowMid + 6, refStr .. " " .. arrow, 8, c[1],c[2],c[3],200)
-        else
-            text(tx, rowMid + 6, string.format("%d", rawVal), 9, c[1],c[2],c[3],180)
+            local arrow = (tdir and tdir > 0) and " ▲" or ((tdir and tdir < 0) and " ▼" or "")
+            text(tx, rowMid + 6, tostring(refVal) .. arrow, 8, c[1],c[2],c[3],200)
         end
     end
 
