@@ -191,6 +191,11 @@ function ClientInput.OnMouseButtonUp(eventType, eventData)
         end
         return
     end
+    -- 战斗战败/胜利时优先让 BattleScene 处理（避免面板 hitArea 遮挡战败按钮）
+    if H.currentScene == "battle" and BattleScene.GetState and BattleScene.GetState() == "lose" then
+        BattleScene.OnClick(mx, my)
+        return
+    end
     if GameUI.OnClick(mx, my) then return end
     if H.currentScene == "battle" then
         BattleScene.OnClick(mx, my)
