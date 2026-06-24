@@ -77,17 +77,15 @@ function TopBar.Render(ctx)
     local eBlockRate    = 3.0 * mult
     local esourceRate   = eBlockRate / 2.0
 
-    -- 布局：[原矿3列] [精炼区(可选)] [右侧按钮区]
-    -- 右侧按钮区实际宽度 = 按钮数量 * 步长 + 星币区(60px)
+    -- 布局：[资源3列(原矿+精炼合并)] [右侧按钮区]
+    -- 精炼值直接显示在原矿列内，不再使用独立精炼区，避免与"全部征收"按钮冲突
     local BTN_SZ_PRE   = screenW < 400 and 22 or 28
     local BTN_GAP_PRE  = screenW < 400 and 2  or 6
     local BTN_STEP_PRE = BTN_SZ_PRE + BTN_GAP_PRE
     local RIGHT_W   = math.min(math.floor(screenW * 0.55), 8 * BTN_STEP_PRE + 70)
-    -- 精炼区仅在有足够剩余空间时显示（原矿3列各至少60px + 精炼130px + 右侧）
     local cols      = #RES_ORDER
-    local spaceForRefined = screenW - RIGHT_W - cols * 60
-    local REFINED_W = spaceForRefined >= 140 and 130 or 0
-    local colW      = math.max(50, (screenW - RIGHT_W - REFINED_W) / cols)
+    local REFINED_W = 0  -- 精炼区已合并到原矿列，不再独立占位
+    local colW      = math.max(50, (screenW - RIGHT_W) / cols)
     local rowMid    = 2 + (TOPBAR_H - 2) / 2   -- 垂直居中 y ≈ 23
 
     local displayRes      = ctx.displayRes
@@ -129,85 +127,30 @@ function TopBar.Render(ctx)
                 valB = math.floor(valB * (1-t) + 60  * t)
             end
         end
-        text(tx, rowMid - 6, RES_TAGS[res], 9, c[1],c[2],c[3],200)
-        text(tx, rowMid + 6, string.format("%d %s", rawVal, rateStr), 9, valR, valG, valB, 240)
+        -- 第一行：原矿名称 + 原矿数值/速率
+        text(tx, rowMid - 6, string.format("%s %d %s", RES_TAGS[res], rawVal, rateStr), 9, valR, valG, valB, 240)
+        -- 第二行：精炼值（如有）
+        local refVal = math.floor(displayRes[res] or rm.resources[res] or 0)
+        local refinedLbl = (RES_REFINED_LABELS and RES_REFINED_LABELS[res]) or ""
+        if mult > 0 and refinedLbl ~= "" then
+            local refStr
+            if res == "esource" then
+                refStr = string.format("%s%d +%.1f/s", refinedLbl, refVal, esourceRate)
+            else
+                refStr = string.format("%s%d", refinedLbl, refVal)
+            end
+            -- 趋势箭头
+            local tdir = resTrendDir[res]
+            local arrow = ""
+            if tdir and tdir > 0 then arrow = "▲"
+            elseif tdir and tdir < 0 then arrow = "▼" end
+            text(tx, rowMid + 6, refStr .. " " .. arrow, 8, c[1],c[2],c[3],200)
+        else
+            text(tx, rowMid + 6, string.format("%d", rawVal), 9, c[1],c[2],c[3],180)
+        end
     end
 
-    -- ── 精炼资源区（水晶列与星币之间，3行竖排，仅空间充足时显示）──
-    local rzX  = 8 + cols * colW + 8
-    local rzYs = { rowMid - 10, rowMid + 1, rowMid + 12 }
-    if REFINED_W > 0 then for j, res in ipairs(RES_ORDER) do
-        local c      = RES_COLORS[res]
-        local refVal = math.floor(displayRes[res] or rm.resources[res] or 0)
-        local refinedLbl = (RES_REFINED_LABELS and RES_REFINED_LABELS[res]) or RES_LABELS[res]
-        local label
-        if res == "esource" and mult > 0 then
-            label = string.format("%s %d +%.1f/s", refinedLbl, refVal, esourceRate)
-        else
-            label = string.format("%s %d", refinedLbl, refVal)
-        end
-        -- 闪光：增加→背景偏绿，减少→背景偏红
-        local fl  = flashRes[res]
-        local bgA = 28
-        local bdA = 65
-        local txA = 230
-        local txR, txG, txB = c[1], c[2], c[3]
-        if fl and fl.timer > 0 then
-            local t = fl.timer / FLASH_DURATION
-            bgA = math.floor(28 + 60 * t)
-            bdA = math.floor(65 + 100 * t)
-            txA = 255
-            if fl.dir > 0 then
-                txR = math.floor(txR * (1-t) + 100 * t)
-                txG = math.floor(txG * (1-t) + 255 * t)
-                txB = math.floor(txB * (1-t) + 120 * t)
-            else
-                txR = math.floor(txR * (1-t) + 255 * t)
-                txG = math.floor(txG * (1-t) + 80  * t)
-                txB = math.floor(txB * (1-t) + 60  * t)
-            end
-        end
-        nvgFontSize(vg, 8); nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
-        local tw = nvgTextBounds(vg, 0, 0, label, nil)
-        nvgBeginPath(vg); nvgRoundedRect(vg, rzX - 2, rzYs[j] - 5, tw + 6, 11, 2)
-        -- 危机状态：叠加红色半透明背景
-        if resCrisisState[res] then
-            local blinkA = math.floor(30 + 25 * math.abs(math.sin(resCrisisBlink * 3.5)))
-            nvgFillColor(vg, nvgRGBA(255, 60, 60, bgA + blinkA)); nvgFill(vg)
-        else
-            nvgFillColor(vg, nvgRGBA(c[1], c[2], c[3], bgA)); nvgFill(vg)
-        end
-        -- 危机状态：红色闪烁边框
-        if resCrisisState[res] then
-            local blinkB = math.floor(140 + 115 * math.abs(math.sin(resCrisisBlink * 3.5)))
-            nvgStrokeColor(vg, nvgRGBA(255, 80, 80, blinkB)); nvgStrokeWidth(vg, 1.2); nvgStroke(vg)
-        else
-            nvgStrokeColor(vg, nvgRGBA(c[1], c[2], c[3], bdA)); nvgStrokeWidth(vg, 0.5); nvgStroke(vg)
-        end
-        -- 危机状态文字改为红色
-        if resCrisisState[res] then
-            nvgFillColor(vg, nvgRGBA(255, 100, 100, 255))
-        else
-            nvgFillColor(vg, nvgRGBA(txR, txG, txB, txA))
-        end
-        nvgText(vg, rzX + 1, rzYs[j], label)
-
-        -- 趋势箭头（紧跟在胶囊右侧）
-        local tdir = resTrendDir[res]
-        if tdir and tdir ~= 0 then
-            local arrowX = rzX + tw + 9
-            local arrowY = rzYs[j]
-            nvgFontSize(vg, 8)
-            nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
-            if tdir > 0 then
-                nvgFillColor(vg, nvgRGBA(80, 230, 120, 200))
-                nvgText(vg, arrowX, arrowY, "▲")
-            else
-                nvgFillColor(vg, nvgRGBA(255, 100, 80, 200))
-                nvgText(vg, arrowX, arrowY, "▼")
-            end
-        end
-    end end  -- end for, end if REFINED_W > 0
+    -- （精炼资源已合并到原矿列内显示，独立精炼区已移除）
 
     -- ══════════════════════════════════════════════════════════════════════════
     -- 右区工具按钮行（从右往左排列，响应式：窄屏缩小按钮+间距）
