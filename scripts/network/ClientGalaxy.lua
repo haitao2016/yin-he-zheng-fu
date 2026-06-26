@@ -148,7 +148,6 @@ function M.OnMarket(action, res, amount)
             GameUI.Notify("购买 " .. RES_LABELS[res] .. "×" .. amount .. "  -★" .. val, "success")
         else GameUI.Notify("购买失败: " .. (val or ""), "error") end
     end
-    GameUI.RefreshMarketPanel()
     GameUI.RefreshResourceBar()
 end
 

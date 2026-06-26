@@ -84,7 +84,7 @@ function BattleCombatPlayer.Update(dt, ctx)
             end
         end
         -- P1-1 模块: burn DOT — 对灼烧目标施加每秒伤害
-        if ship.burnTargets then
+        if ship.burnTargets and ship.moduleEffect and ship.moduleEffect.type == "burn" then
             for i = #ship.burnTargets, 1, -1 do
                 local bt = ship.burnTargets[i]
                 if bt.target.health <= 0 then

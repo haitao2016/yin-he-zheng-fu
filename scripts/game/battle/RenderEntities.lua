@@ -1,4 +1,4 @@
----@diagnostic disable: assign-type-mismatch, return-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 -- ============================================================================
 -- RenderEntities: 实体层渲染 — 舰船/弹药/粒子 (从 BattleRender.lua 拆分)
 -- ============================================================================

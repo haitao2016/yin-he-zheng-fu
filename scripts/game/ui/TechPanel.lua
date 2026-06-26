@@ -3,7 +3,8 @@
 -- P1-1 重构：节点间距扩大、贝塞尔连线、Tier 颜色分组、状态色规范
 -- P3-2 可视化2.0：互斥组虚线框+二选一、有向箭头连线、Hover浮窗、推荐路线
 -- ============================================================================
-local UICommon  = require("game.ui.UICommon")
+local UICommon    = require("game.ui.UICommon")
+local DragManager = require("game.ui.DragManager")
 local TechPanel = {}
 
 -- 面板私有状态
@@ -238,7 +239,8 @@ function TechPanel.Render(ctx)
     end
     if not hasLab then return end
 
-    local px, py = 12, (UICommon.PANEL_TOP or 48)
+    local defPx, defPy = 12, (UICommon.PANEL_TOP or 48)
+    local px, py = DragManager.GetPos("tech", defPx, defPy)
     local pw     = PW
 
     -- 折叠时只显示标题
@@ -272,6 +274,8 @@ function TechPanel.Render(ctx)
     scrollY_ = math.max(0, math.min(maxScroll, scrollY_))
 
     panel(px, py, pw, ph, 6, {8, 14, 32, 238}, {60, 120, 255, 200})
+    DragManager.RegisterHandle("tech", px, py, pw, 24)
+    DragManager.DrawHandle(UICommon.vg, px, py, pw, 6)
 
     -- ── 标题栏 ──────────────────────────────────────────────────
     local titleY = py + 12

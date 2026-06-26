@@ -229,24 +229,29 @@ function M.Init(H)
         player = player_,
         pirateAI = pirateAI,
         onPlanetSelect = function(p)
-            H.selectedPlanet_ = p
-            GameUI.ShowPlanetPanel(p)
+            ClientGalaxy.OnPlanetSelect(p)
         end,
         onFleetSelect = function(fid)
             H.activeFleetId_ = fid
-            GameUI.ShowFleetPanel(fid)
+            GameUI.RefreshFleetPanel(fm_, fid)
+            GameUI.SetMapSelectedFleet(fid)
         end,
         onFleetContactPlanet = function(fleet, planet)
             if H.explorerColonizeMode_ then
-                ClientGalaxy.ColonizePlanet(planet)
+                ClientGalaxy.DoColonize(planet)
                 H.explorerColonizeMode_ = false
             end
         end,
-        onSeedDeploy = function(planet)
-            ClientGalaxy.ColonizePlanet(planet)
+        onSeedDeploy = function(wx, wy, base)
+            Audio.Play(Audio.SFX.FLEET_DEPLOY)
+            -- 种子飞船展开完成：解锁全部 UI 面板
+            GameUI.SetDeployed(true)
+            -- 选中基地，显示模块建造面板（base.colonized 已由 GalaxyScene 设为 true）
+            H.selectedPlanet_ = base
+            GameUI.ShowScene("galaxy", true)
         end,
         onFleetContactPirateBase = function(fleet, base)
-            ClientBattle.StartBattle(fleet, base)
+            ClientBattle.OnFleetSiegeBase(fleet.id, base.id)
         end,
         onFleetMove = function(fid, dest)
             Audio.Play(Audio.SFX.FLEET_MOVE)
@@ -280,7 +285,7 @@ function M.Init(H)
             end
             -- 选择事件
             if ev.choices then
-                GameUI.ShowEventChoices(ev, function(choiceIdx)
+                GameUI.ShowEventPopup(ev, function(choiceIdx)
                     local choice = ev.choices[choiceIdx]
                     if not choice then return end
                     -- 花费
@@ -310,9 +315,11 @@ function M.Init(H)
                             end)
                         end
                     end
-                    -- 链式事件
+                    -- 链式事件（延迟调度，坐标取事件位置或随机）
                     if choice.chainEvent then
-                        GalaxyEvents.TriggerChain(choice.chainEvent)
+                        local wx = ev.wx or math.random() * 800
+                        local wy = ev.wy or math.random() * 600
+                        GalaxyEvents.ScheduleChain(choice.chainEvent, wx, wy)
                     end
                     -- 特殊行动
                     if choice.action then
@@ -369,6 +376,8 @@ function M.Init(H)
             if crisis.reward then
                 for res, amt in pairs(crisis.reward) do rm_:add(res, amt) end
             end
+            -- V2.5: 标记危机存活（供文明遗产 LP 计分）
+            battleStatsCache_.survivedCrisis = true
         else
             GameUI.Notify("❌ 危机失败: " .. (crisis.title or "?"), "error")
         end
@@ -426,12 +435,13 @@ function M.Init(H)
         onShipCancelCb      = function(...) ClientGalaxy.OnShipCancel(...) end,
         onShipPromoteCb     = function(...) ClientGalaxy.OnShipPromote(...) end,
         onExplorerColonizeCb= function(...) ClientGalaxy.OnExplorerColonize(...) end,
-        onExplorerTaskCb    = function(...) ClientGalaxy.OnExplorerTask(...) end,
+        onExplorerTaskCb    = function(...) ClientBattle.StartExplorerTask(...) end,
 
         -- Fleet select
         onFleetSelectCb = function(selectedFid)
             H.activeFleetId_ = selectedFid
-            GameUI.ShowFleetPanel(selectedFid)
+            GameUI.RefreshFleetPanel(fm_, selectedFid)
+            GameUI.SetMapSelectedFleet(selectedFid)
         end,
 
         -- Fleet move ship
@@ -527,12 +537,12 @@ function M.Init(H)
             return GalaxyScene.GetColonizedPlanets and GalaxyScene.GetColonizedPlanets() or {}
         end,
 
-        -- Batch build
-        onBatchBuild = function(...) ClientGalaxy.OnBatchBuild(...) end,
+        -- Batch build（实际为批量升级）
+        onBatchBuild = function(...) ClientGalaxy.OnBatchUpgrade(...) end,
 
-        -- Planet jump
+        -- Planet jump（选中星球，即时模式渲染自动聚焦）
         onPlanetJump = function(planet)
-            GalaxyScene.JumpToPlanet(planet)
+            GalaxyScene.SelectPlanet(planet)
         end,
 
         -- Leaderboard
@@ -916,16 +926,29 @@ function M.Init(H)
             ClientBattle.LaunchExpedition(fleetId, baseId)
         end,
 
-        -- Megastructure
+        -- Megastructure（先检查资源+扣除，再启动建造）
         onMegaStartPhase = function(megaId)
-            local ok, msg = MegastructureSystem.StartPhase(megaId, rm_)
+            local coreLevel = bs_ and bs_:getCoreLevel() or 0
+            local canStart, errMsg = MegastructureSystem.CanStartPhase(megaId, rm_.resources, coreLevel)
+            if not canStart then
+                GameUI.Notify(errMsg or "无法启动建造", "warning")
+                return
+            end
+            -- 扣除本阶段资源
+            local phaseCost = MegastructureSystem.GetNextPhaseCost(megaId)
+            if phaseCost then
+                for res, need in pairs(phaseCost) do
+                    rm_.resources[res] = (rm_.resources[res] or 0) - need
+                end
+            end
+            local ok = MegastructureSystem.StartPhase(megaId)
             if ok then
                 Audio.Play(Audio.SFX.BUILD)
                 GameUI.Notify("🏗️ 巨构工程启动: " .. megaId, "success")
                 applyBaseModuleEffects()
                 saveGame()
             else
-                GameUI.Notify(msg or "无法启动建造", "warning")
+                GameUI.Notify("启动建造失败", "warning")
             end
         end,
     })

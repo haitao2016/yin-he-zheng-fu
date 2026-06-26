@@ -1,4 +1,4 @@
----@diagnostic disable: assign-type-mismatch, return-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 -----------------------------------------------------------
 -- ResearchSystem (从 Systems.lua 机械拆分)
 -----------------------------------------------------------

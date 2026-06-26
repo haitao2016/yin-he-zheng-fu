@@ -100,21 +100,23 @@ end
 
 --- 返回主菜单按钮布局 { key, x, y, w, h, label, enabled }
 function ClientMenus.GetMainMenuBtnLayout(sw, sh, hasSave)
-    local btnW, btnH = 240, 56
+    local btnW, btnH = math.min(240, sw - 40), 56
     local cx = sw / 2 - btnW / 2
     local baseY = sh * 0.52
-    -- P1-1: 传承按钮 / P2-1: 每日挑战按钮 / P2-2: 战役按钮（均较小，位于两个主按钮之下）
-    local smW, smH = 198, 40
+    -- 底部4按钮：响应式宽度，确保不溢出屏幕
     local gap      = 6
-    local totalSmW = smW * 4 + gap * 3  -- P1-3: 4 buttons row (campaign/daily/heritage/league)
+    local smW      = math.min(198, math.floor((sw - 16 - gap * 3) / 4))
+    local smH      = 40
+    local totalSmW = smW * 4 + gap * 3
     local smStartX = sw / 2 - totalSmW / 2
+    local smY      = sh - smH - 8  -- 固定在屏幕底部
     return {
         { key="new",      x=cx,             y=baseY,       w=btnW, h=btnH, label="新  游  戏", enabled=true },
         { key="continue", x=cx,             y=baseY + 72,  w=btnW, h=btnH, label="继 续 游 戏", enabled=hasSave },
-        { key="campaign", x=smStartX,                      y=baseY + 152, w=smW, h=smH, label="⚔  银河战役", enabled=true },
-        { key="daily",    x=smStartX+smW+gap,              y=baseY + 152, w=smW, h=smH, label="📅 每日挑战", enabled=true },
-        { key="heritage", x=smStartX+(smW+gap)*2,          y=baseY + 152, w=smW, h=smH, label="★  星际传承", enabled=true },
-        { key="league",   x=smStartX+(smW+gap)*3,          y=baseY + 152, w=smW, h=smH, label="🏆 星际联赛", enabled=true },
+        { key="campaign", x=smStartX,                      y=smY, w=smW, h=smH, label="⚔ 银河战役", enabled=true },
+        { key="daily",    x=smStartX+smW+gap,              y=smY, w=smW, h=smH, label="📅 每日挑战", enabled=true },
+        { key="heritage", x=smStartX+(smW+gap)*2,          y=smY, w=smW, h=smH, label="★ 星际传承", enabled=true },
+        { key="league",   x=smStartX+(smW+gap)*3,          y=smY, w=smW, h=smH, label="🏆 星际联赛", enabled=true },
     }
 end
 
@@ -263,8 +265,13 @@ function ClientMenus.RenderMainMenu(vg, sw, sh, ctx)
                 nvgText(vg, cx_, cy_ + 9, cdStr)
             end
         else
-            -- 普通按钮文字
-            local fontSize = (btn.key == "new" or btn.key == "continue") and 20 or 13
+            -- 普通按钮文字（底部小按钮根据宽度缩放字号）
+            local fontSize
+            if btn.key == "new" or btn.key == "continue" then
+                fontSize = 20
+            else
+                fontSize = btn.w < 110 and 10 or 13
+            end
             nvgFontSize(vg, fontSize)
             nvgFillColor(vg, nvgRGBA(200, 220, 255, baseAlpha))
             nvgText(vg, btn.x + btn.w / 2, btn.y + btn.h / 2, btn.label)
@@ -278,25 +285,24 @@ function ClientMenus.RenderMainMenu(vg, sw, sh, ctx)
         nvgText(vg, sw / 2, sh * 0.52 + 72 + 72, "（暂无存档）")
     end
 
-    -- P1-1: 传承按钮的积分徽章（右侧小字）
+    -- P1-1: 传承按钮的积分徽章（传承按钮下方居中）
     do
-        local smW    = 198
-        local gap    = 6
-        local totalSmW = smW * 2 + gap
-        local smStartX = sw / 2 - totalSmW / 2
-        local baseY  = sh * 0.52
-        local btnRightEdge = smStartX + totalSmW  -- 传承按钮右边缘
-        local badgeY = baseY + 152 + 20           -- 传承按钮垂直中心
-        local badgeX = btnRightEdge + 6
-        local badge  = string.format("✦%d", evPoints)
-        nvgFontSize(vg, 11)
-        nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
-        nvgFillColor(vg, nvgRGBA(255, 215, 80, 220))
-        nvgText(vg, badgeX, badgeY, badge)
-        if evUnlocked > 0 then
-            nvgFontSize(vg, 9)
-            nvgFillColor(vg, nvgRGBA(150, 190, 255, 180))
-            nvgText(vg, badgeX, badgeY + 13, string.format("%d/12", evUnlocked))
+        local hBtns = ClientMenus.GetMainMenuBtnLayout(sw, sh, hasSave)
+        local heriBtn = nil
+        for _, b in ipairs(hBtns) do if b.key == "heritage" then heriBtn = b; break end end
+        if heriBtn then
+            local badgeX = heriBtn.x + heriBtn.w / 2
+            local badgeY = heriBtn.y + heriBtn.h + 10
+            local badge  = string.format("✦%d", evPoints)
+            nvgFontSize(vg, 11)
+            nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg, nvgRGBA(255, 215, 80, 220))
+            nvgText(vg, badgeX, badgeY, badge)
+            if evUnlocked > 0 then
+                nvgFontSize(vg, 9)
+                nvgFillColor(vg, nvgRGBA(150, 190, 255, 180))
+                nvgText(vg, badgeX, badgeY + 13, string.format("%d/12", evUnlocked))
+            end
         end
     end
 

@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 -- ============================================================================
 -- game/ui/UICommon.lua  -- UI 子模块共享上下文与工具函数
 -- 所有面板子模块通过 require("game.ui.UICommon") 获取共享状态

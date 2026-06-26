@@ -14,6 +14,8 @@ local MegastructureSystem = require("game.MegastructureSystem")
 local Campaign            = require("game.CampaignSystem")
 local Commander           = require("game.CommanderSystem")
 local QuestBoard          = require("game.QuestBoard")
+local FormationEditor     = require("game.ui.FormationEditor")
+local ModuleRegistry      = require("game.ModuleRegistry")
 
 -- 防止重复提交的模块级锁（softReset 时调用 ResetProgress() 清除）
 local saveInProgress_ = false
@@ -60,6 +62,10 @@ function ClientSave.BuildSaveData(state)
         blackMarket  = state.bm:serialize(),
         -- P2-2 V2.4: 巨构工程状态
         megastructures = MegastructureSystem.Serialize(),
+        -- P2-1 V2.5: 自定义阵型槽
+        formationSlots = FormationEditor.GetSlots(),
+        -- V3.0: 扩展模块统一序列化
+        v3modules = ModuleRegistry.SerializeAll(),
     }
     return cjson.encode(saveData)
 end
@@ -247,6 +253,16 @@ function ClientSave.RestoreGame(jsonStr, state)
     if data.megastructures then
         MegastructureSystem.Deserialize(data.megastructures)
         print("[Client] 巨构工程已恢复")
+    end
+    -- P2-1 V2.5: 恢复自定义阵型槽
+    if data.formationSlots then
+        FormationEditor.LoadSlots(data.formationSlots)
+        print("[Client] 自定义阵型已恢复")
+    end
+    -- V3.0: 扩展模块统一反序列化
+    if data.v3modules then
+        ModuleRegistry.DeserializeAll(data.v3modules)
+        print("[Client] V3.0 扩展模块已恢复")
     end
 
     -- H2 修复：读档后重新应用所有殖民行星的类型加成（之前只恢复了基地模块效果）

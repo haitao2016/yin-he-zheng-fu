@@ -56,8 +56,8 @@ local BRANCHES = {
     },
 }
 
-local UPGRADE_COST = { 10, 25, 50, 100, 200 }
-local RESET_COST   = 50
+local UPGRADE_COST = LegacySystem.UPGRADE_COST
+local RESET_COST   = LegacySystem.RESET_COST
 local MAX_LEVEL    = 5
 
 -- ============================================================================

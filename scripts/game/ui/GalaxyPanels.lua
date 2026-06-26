@@ -4,6 +4,7 @@
 -- 从 GameUI.lua 提取的独立模块 (P3-1b-2)
 -- ============================================================================
 local UICommon     = require("game.ui.UICommon")
+local DragManager  = require("game.ui.DragManager")
 local QuestBoard   = require("game.QuestBoard")
 local CareerPanel  = require("game.ui.CareerPanel")
 local Commander    = require("game.CommanderSystem")
@@ -247,15 +248,18 @@ function M.RenderCareerStats()
     local addHit  = UICommon.addHit
 
     local cs   = careerStats_UI_
-    local PW   = 260
+    local PW   = math.min(260, screenW - 16)
     local PAD  = 10
     local PH   = 258
-    local px   = screenW - PW - 6
-    local py   = 40
+    local defPx = math.max(4, screenW - PW - 6)
+    local defPy = 40
+    local px, py = DragManager.GetPos("career", defPx, defPy)
 
     -- 背景板
     nvgBeginPath(vg); nvgRoundedRect(vg, px, py, PW, PH, 8)
     nvgFillColor(vg, nvgRGBA(6, 10, 26, 235)); nvgFill(vg)
+    DragManager.RegisterHandle("career", px, py, PW, 24)
+    DragManager.DrawHandle(vg, px, py, PW, 6)
     nvgBeginPath(vg); nvgRoundedRect(vg, px, py, PW, PH, 8)
     nvgStrokeColor(vg, nvgRGBA(80, 140, 255, 180)); nvgStrokeWidth(vg, 1.2); nvgStroke(vg)
 
@@ -362,7 +366,7 @@ function M.RenderQuest()
 
     local quests = QuestBoard.GetQuests()
     local spawnT = QuestBoard.GetSpawnTimer()
-    local PW     = 280
+    local PW     = math.min(280, screenW - 16)
     local PAD    = 10
     local ENTRY_H = 58
     local n      = #quests
@@ -370,14 +374,17 @@ function M.RenderQuest()
     local footerH = 22
     local PH     = headerH + n * ENTRY_H + footerH + 6
     if n == 0 then PH = headerH + 40 + footerH end
-    local px     = screenW - PW - 6
-    local py     = 40
+    local defPx  = math.max(4, screenW - PW - 6)
+    local defPy  = 40
+    local px, py = DragManager.GetPos("quest", defPx, defPy)
 
     -- 背景板
     nvgBeginPath(vg); nvgRoundedRect(vg, px, py, PW, PH, 8)
     nvgFillColor(vg, nvgRGBA(6, 14, 28, 238)); nvgFill(vg)
     nvgBeginPath(vg); nvgRoundedRect(vg, px, py, PW, PH, 8)
     nvgStrokeColor(vg, nvgRGBA(60, 200, 140, 160)); nvgStrokeWidth(vg, 1.2); nvgStroke(vg)
+    DragManager.RegisterHandle("quest", px, py, PW, 24)
+    DragManager.DrawHandle(vg, px, py, PW, 6)
 
     -- 标题栏
     nvgFontSize(vg, 13); nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
@@ -502,18 +509,23 @@ function M.RenderSignal()
     local cursorY = UICommon.cursorY
     local addHit  = UICommon.addHit
 
-    local COLS, ROWS = 4, 2
-    local BTN_W, BTN_H = 120, 44
+    local COLS = screenW < 500 and 3 or 4
+    local ROWS = screenW < 500 and 3 or 2
+    local BTN_W = math.min(120, math.floor((screenW - 40) / COLS - 6))
+    local BTN_H = 44
     local GAP  = 6
     local PAD  = 10
-    local pw   = COLS * BTN_W + (COLS - 1) * GAP + PAD * 2
+    local pw   = math.min(COLS * BTN_W + (COLS - 1) * GAP + PAD * 2, screenW - 16)
     local ph   = ROWS * BTN_H + (ROWS - 1) * GAP + PAD * 2
-    local px   = screenW / 2 - pw / 2
-    local py   = 48
+    local defPx = math.max(8, screenW / 2 - pw / 2)
+    local defPy = 48
+    local px, py = DragManager.GetPos("signal", defPx, defPy)
 
     -- 面板背景
     nvgBeginPath(vg); nvgRoundedRect(vg, px, py, pw, ph, 8)
     nvgFillColor(vg, nvgRGBA(8, 16, 36, 230)); nvgFill(vg)
+    DragManager.RegisterHandle("signal", px, py, pw, 20)
+    DragManager.DrawHandle(vg, px, py, pw, 6)
     nvgBeginPath(vg); nvgRoundedRect(vg, px, py, pw, ph, 8)
     nvgStrokeColor(vg, nvgRGBA(80, 160, 80, 180)); nvgStrokeWidth(vg, 1.5); nvgStroke(vg)
 
@@ -722,9 +734,10 @@ function M.RenderDiploRel()
     if not relations then return end
     agreements = agreements or {}
 
-    local pw, ph = 320, 360
-    local px = screenW - pw - 10
-    local py = 42
+    local pw, ph = math.min(320, screenW - 16), 360
+    local defPx = math.max(4, screenW - pw - 10)
+    local defPy = 42
+    local px, py = DragManager.GetPos("diplo", defPx, defPy)
 
     -- 背景
     nvgBeginPath(vg)
@@ -736,6 +749,8 @@ function M.RenderDiploRel()
     nvgStrokeColor(vg, nvgRGBA(100, 80, 200, 180))
     nvgStrokeWidth(vg, 1.5)
     nvgStroke(vg)
+    DragManager.RegisterHandle("diplo", px, py, pw, 24)
+    DragManager.DrawHandle(vg, px, py, pw, 6)
 
     -- 标题
     nvgFontSize(vg, 14)
@@ -1275,9 +1290,10 @@ function M.RenderShipyard(planet)
     if not hasShipyard then return end
 
     local pw = 210
-    local px = 12
     local techH = UICommon.techPanelH or 0
-    local py = PANEL_TOP + (techH > 0 and (techH + 8) or 0)
+    local defPx = 12
+    local defPy = PANEL_TOP + (techH > 0 and (techH + 8) or 0)
+    local px, py = DragManager.GetPos("shipyard", defPx, defPy)
     local titleH = 26
 
     -- 折叠态
@@ -1309,6 +1325,8 @@ function M.RenderShipyard(planet)
              + 8 + numShips * 22
 
     panel(px, py, pw, ph, 7, {6,12,24,240}, {60,120,200,200})
+    DragManager.RegisterHandle("shipyard", px, py, pw, titleH)
+    DragManager.DrawHandle(vg, px, py, pw, 6)
 
     local sy = py + titleH/2
     text(px + 10, sy, "◀", 9, 100,160,255,180, NVG_ALIGN_LEFT+NVG_ALIGN_MIDDLE)

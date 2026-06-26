@@ -1,4 +1,4 @@
----@diagnostic disable: assign-type-mismatch, return-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 -- ============================================================================
 -- BattleRender.lua — 薄包装器
 -- 加载 4 层渲染子模块，组装 Render() 入口

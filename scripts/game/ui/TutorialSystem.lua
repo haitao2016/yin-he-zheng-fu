@@ -557,6 +557,10 @@ function TutorialSystem.Render()
     nvgFillColor(vg, nvgRGBA(160, 180, 230, math.floor(220 * ease)))
     nvgText(vg, skipX + skipW / 2, skipY + skipH / 2, "跳过全部")
 
+    -- 全屏遮罩拦截（必须最先注册：OnClick 为"后注册优先"，最先注册者最后命中，
+    -- 这样既能阻止点击穿透到下方星图，又不会抢占下方按钮的点击）
+    addHit(0, 0, screenW, screenH, function() end)
+
     -- 面板拦截
     addHit(px, py, PW, PH, function() end)
 
@@ -591,9 +595,6 @@ function TutorialSystem.Render()
     addHit(btnX, btnY, btnW, btnH, function()
         TutorialSystem._OnConfirm()
     end)
-
-    -- 全屏遮罩拦截（最底层，防穿透星图）
-    addHit(0, 0, screenW, screenH, function() end)
 end
 
 -- ============================================================================

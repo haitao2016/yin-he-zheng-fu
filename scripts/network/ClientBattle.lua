@@ -286,13 +286,13 @@ end
 function M.DdaEvaluateBattle(isWin, lossRatio)
     local dda = S.dda
     -- 滚动窗口记录（最近 5 场）
-    dda.history[#dda.history + 1] = { win = isWin, lr = lossRatio }
-    if #dda.history > 5 then table.remove(dda.history, 1) end
+    dda.recentResults[#dda.recentResults + 1] = { win = isWin, lr = lossRatio }
+    if #dda.recentResults > 5 then table.remove(dda.recentResults, 1) end
 
     -- 统计连续失败次数
     local consecLoss = 0
-    for i = #dda.history, 1, -1 do
-        if not dda.history[i].win then consecLoss = consecLoss + 1
+    for i = #dda.recentResults, 1, -1 do
+        if not dda.recentResults[i].win then consecLoss = consecLoss + 1
         else break end
     end
 
@@ -538,8 +538,8 @@ function M.CheckVictory()
     if not allDestroyed then return end
 
     -- 胜利！
-    if S.isCampaignMode then
-        Campaign.OnMissionComplete(S.difficulty)
+    if S.campaignMode then
+        Campaign.CompleteLevel()
     end
     if S.isEndlessMode then
         -- 无尽模式不直接结束，进入下一轮
@@ -566,27 +566,29 @@ end
 function M.SwitchScene(name)
     S.currentScene = name
     if name == "galaxy" then
-        Audio.SwitchBGM("galaxy")
+        Audio.PlayBGM(Audio.BGM.GALAXY_MAIN)
         Audio.ResetBGMPitch()
     elseif name == "battle" then
-        Audio.SwitchBGM("battle")
+        Audio.PlayBGM(Audio.BGM.BATTLE_THEME)
     end
 end
 
 --- 获取玩家可攻击目标列表
 function M.GetPlayerTargets()
     local targets = {}
-    -- 殖民地
+    -- 殖民地：使用行星在星系中的世界坐标（轨道坐标）
     local planets = GalaxyScene.GetColonizedPlanets and GalaxyScene.GetColonizedPlanets() or {}
     for _, p in ipairs(planets) do
         if p.colonized then
-            targets[#targets+1] = { name = p.name, pos = p.pos }
+            local wx = p.system and (p.system.x + math.cos(p.angle) * p.orbitRadius) or 0
+            local wy = p.system and (p.system.y + math.sin(p.angle) * p.orbitRadius) or 0
+            targets[#targets+1] = { x = wx, y = wy, name = p.name }
         end
     end
-    -- 基地位置
+    -- 星航基地（已展开时才是目标）
     local base = GalaxyScene.GetBase()
-    if base then
-        targets[#targets+1] = { name = "主基地", pos = base.pos or Vector3(0,0,0) }
+    if base and base.colonized then
+        targets[#targets+1] = { x = base.x or 0, y = base.y or 0, name = "主基地" }
     end
     return targets
 end
@@ -601,7 +603,7 @@ function M.OnPirateAttack(pirateLevel, baseId, targetName)
 
     -- P2-3: 教学提示（首次被攻击）
     local TutorialSystem = require("game.ui.TutorialSystem")
-    TutorialSystem.Trigger("first_pirate_attack")
+    TutorialSystem.TriggerPhase("first_pirate_attack")
 
     -- P1-2: STELLAR_FORTRESS 额外防御效果
     local fortressBonus = 0
@@ -1092,10 +1094,8 @@ function M.TriggerEndGame(gameType)
         S.clientCloud:submitScore("galaxy_conquest", scoreVal, { onlyIfBetter = true })
     end
 
-    -- P2-2: 战役模式结算
-    if S.isCampaignMode and gameType == "win" then
-        Campaign.OnMissionScore(scoreVal, stars)
-    end
+    -- P2-2: 战役模式结算（CompleteLevel 已在 CheckVictory 中调用）
+    -- 此处不再重复调用不存在的 OnMissionScore
 
     -- 战绩统计
     local career = S.career or {}
@@ -1156,13 +1156,24 @@ function M.TriggerEndGame(gameType)
     end
 
     -- 联赛模式
+    local leagueRankIdx = 0
     if S.leagueMode then
         local LeagueSystem = require("game.LeagueSystem")
         LeagueSystem.SubmitGame(scoreVal, gameType == "win", stars)
+        -- V2.5: 获取联赛段位索引（1-5），供文明遗产 LP 计分
+        local rank = LeagueSystem.GetRank()
+        leagueRankIdx = rank and rank.idx or 0
     end
 
-    -- P1-3 V2.5: 文明遗产
-    LegacySystem.AwardEndOfGame(gameType, scoreVal, stars, S.totalPlayTime or 0)
+    -- P1-3 V2.5: 文明遗产（构造 stats 表匹配 LegacySystem 期望）
+    local legacyStats = {
+        survived10Waves   = (stats.wavesCleared or 0) >= 10,
+        kills             = stats.enemiesKilled or 0,
+        builtMegastructure = S.battleStatsCache.builtMegastructure or false,
+        survivedCrisis     = S.battleStatsCache.survivedCrisis or false,
+        leagueRank         = leagueRankIdx,
+    }
+    LegacySystem.AwardEndOfGame(legacyStats)
 
     -- 保存战绩
     if S.saveCareer then S.saveCareer() end
@@ -1188,8 +1199,9 @@ function M.TriggerEndGame(gameType)
         stats.replayId  = BattleReplaySystem.GetLatestId()
     end
 
-    -- 显示结算面板
-    GameUI.ShowEndGame(gameType, stats, scoreVal, function()
+    -- 显示结算面板（scoreVal 并入 stats）
+    stats.score = scoreVal
+    GameUI.ShowEndGame(gameType, stats, function()
         -- 结算面板关闭后：softReset
         if S.softReset then S.softReset() end
     end)

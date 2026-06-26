@@ -1,4 +1,4 @@
----@diagnostic disable: assign-type-mismatch, return-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 --- FleetManager — 编队系统
 --- 从 Systems.lua 机械拆分，无逻辑修改
 require("game.GameConstants")

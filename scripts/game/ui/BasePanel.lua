@@ -1,7 +1,8 @@
 --- 星航基地面板模块
 --- 负责渲染基地核心等级、模块建造、安装队列、已安装模块
 
-local UICommon = require("game.ui.UICommon")
+local UICommon    = require("game.ui.UICommon")
+local DragManager = require("game.ui.DragManager")
 
 local BasePanel = {}
 
@@ -36,6 +37,9 @@ function BasePanel.Render(base, ctx)
     local onCoreUpgrade  = ctx.onCoreUpgrade
     local onSpeedUpBuild    = ctx.onSpeedUpBuild
     local onSpeedUpBuildAd  = ctx.onSpeedUpBuildAd  -- 广告免费完成（星币不足时）
+    local onHarvestAll      = ctx.onHarvestAll       -- 全部征收回调
+    local harvestAllCD      = ctx.harvestAllCD or 0
+    local HARVEST_ALL_CD    = ctx.HARVEST_ALL_CD or 60
     local slotFlashTimer = ctx.slotFlashTimer or 0
     local progressBar    = ctx.progressBar
     local shipyardMult   = ctx.shipyardMult or 1.0
@@ -46,15 +50,19 @@ function BasePanel.Render(base, ctx)
     local onWarpFleet    = ctx.onWarpFleet
 
     local pw = 275
-    local px = screenW - pw - 12
-    local py = UICommon.PANEL_TOP or 48
+    local defPx = screenW - pw - 12
+    local defPy = UICommon.PANEL_TOP or 48
+    local px, py = DragManager.GetPos("base", defPx, defPy)
 
     local coreLevel  = base.coreLevel or 1
     local isMaxCore  = coreLevel >= BASE_CORE_MAX_LEVEL
 
     -- +16 = 下一级解锁预览行（未满级时显示）
+    local queueLen = base.buildQueue and #base.buildQueue or (base.constructing and 1 or 0)
+    local queueH   = queueLen > 0 and (14 + queueLen * 16) or 16
+    local harvestBtnH = onHarvestAll and 28 or 0  -- 全部征收按钮行
     local headerH = 36 + 18 + 16 + 16 + (not isMaxCore and 16 or 0)
-                  + (base.constructing and 26 or 16) + 16
+                  + queueH + harvestBtnH + 16
                   + (shipyardMult > 1.01 and 14 or 0)
                   + (hasWarpGate and 26 or 0)  -- P1-2 WARP_GATE_PRIME 瞬移按钮行
 
@@ -80,6 +88,8 @@ function BasePanel.Render(base, ctx)
     scrollY_ = math.max(0, math.min(maxScroll, scrollY_))
 
     panel(px, py, pw, ph, 7, {8, 18, 35, 245}, {80, 200, 255, 220})
+    DragManager.RegisterHandle("base", px, py, pw, 28)
+    DragManager.DrawHandle(UICommon.vg, px, py, pw, 8)
 
     -- === 固定头部 ===
     local sy = py + 16
@@ -189,52 +199,85 @@ function BasePanel.Render(base, ctx)
         end
     end
 
-    -- 队列进度
-    if base.constructing then
-        local job = base.constructing
-        local pct = job.progress or 0
-        -- 进度条（留右侧空间给加速按钮）
-        local barW = onSpeedUpBuild and (pw - 60) or (pw - 20)
-        if job.isCoreUpgrade then
-            progressBar(px+10, sy, barW, 14, pct,
-                "核心升级 Lv." .. job.level .. "  " .. math.floor(pct*100) .. "%",
-                180, 120, 255)
-        else
-            local tag     = job.isUpgrade and "升级" or "安装"
-            local modName = BASE_MODULES[job.key] and BASE_MODULES[job.key].name or job.key
-            progressBar(px+10, sy, barW, 14, pct,
-                tag .. ": " .. modName .. " " .. math.floor(pct*100) .. "%", 80, 200, 255)
-        end
-        -- 加速按钮（星币足够→金色购买；不足且有广告→绿色免费）
-        if onSpeedUpBuild or onSpeedUpBuildAd then
-            local remaining = job.remaining or 0
-            local speedCost = math.max(5, math.min(50, math.ceil(remaining / 10)))
-            local rmRef     = UICommon.rm
-            local canAfford = rmRef and (rmRef.resources.credits or 0) >= speedCost
-            local sbx = px + pw - 46
-            if onSpeedUpBuild and canAfford then
-                panel(sbx, sy, 40, 14, 4, {160, 130, 20, 80}, {220, 190, 40, 210})
-                text(sbx+20, sy+7, "★" .. speedCost, 9, 255, 230, 80, 255,
-                    NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-                local capturedBase = base
-                addHit(sbx, sy, 40, 14, function()
-                    if onSpeedUpBuild then onSpeedUpBuild(capturedBase) end
-                end)
-            elseif onSpeedUpBuildAd and not canAfford then
-                -- 星币不足时显示"看广告免费完成"
-                panel(sbx, sy, 40, 14, 3, {0, 80, 45, 100}, {0, 190, 100, 220})
-                text(sbx+20, sy+7, "🎬", 10, 80, 255, 160, 255,
-                    NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
-                local capturedBase = base
-                addHit(sbx, sy, 40, 14, function()
-                    if onSpeedUpBuildAd then onSpeedUpBuildAd(capturedBase) end
-                end)
+    -- 队列进度（支持多任务队列）
+    local queue = base.buildQueue or (base.constructing and {base.constructing} or {})
+    local qLen  = #queue
+    if qLen > 0 then
+        text(px+14, sy, string.format("安装队列: %d/%d", qLen, 3), 9, 100,180,255,180)
+        sy = sy + 14
+        for qi = 1, qLen do
+            local job = queue[qi]
+            local pct = job.progress or 0
+            local isActive = (qi == 1)
+            local barW = (isActive and onSpeedUpBuild) and (pw - 60) or (pw - 20)
+            if job.isCoreUpgrade then
+                progressBar(px+10, sy, barW, 12, isActive and pct or 0,
+                    "核心升级 Lv." .. job.level .. (isActive and ("  " .. math.floor(pct*100) .. "%") or " 排队中"),
+                    180, 120, 255)
+            else
+                local tag     = job.isUpgrade and "升级" or "安装"
+                local modName = BASE_MODULES[job.key] and BASE_MODULES[job.key].name or job.key
+                progressBar(px+10, sy, barW, 12, isActive and pct or 0,
+                    tag .. ": " .. modName .. (isActive and (" " .. math.floor(pct*100) .. "%") or " 排队中"),
+                    isActive and 80 or 50, isActive and 200 or 120, 255)
             end
+            -- 加速按钮仅对当前执行中的任务（队首）显示
+            if isActive and (onSpeedUpBuild or onSpeedUpBuildAd) then
+                local remaining = job.remaining or 0
+                local speedCost = math.max(5, math.min(50, math.ceil(remaining / 10)))
+                local rmRef     = UICommon.rm
+                local canAfford = rmRef and (rmRef.resources.credits or 0) >= speedCost
+                local sbx = px + pw - 46
+                if onSpeedUpBuild and canAfford then
+                    panel(sbx, sy, 40, 12, 4, {160, 130, 20, 80}, {220, 190, 40, 210})
+                    text(sbx+20, sy+6, "★" .. speedCost, 8, 255, 230, 80, 255,
+                        NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+                    local capturedBase = base
+                    addHit(sbx, sy, 40, 12, function()
+                        if onSpeedUpBuild then onSpeedUpBuild(capturedBase) end
+                    end)
+                elseif onSpeedUpBuildAd and not canAfford then
+                    panel(sbx, sy, 40, 12, 3, {0, 80, 45, 100}, {0, 190, 100, 220})
+                    text(sbx+20, sy+6, "🎬", 9, 80, 255, 160, 255,
+                        NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+                    local capturedBase = base
+                    addHit(sbx, sy, 40, 12, function()
+                        if onSpeedUpBuildAd then onSpeedUpBuildAd(capturedBase) end
+                    end)
+                end
+            end
+            sy = sy + 16
         end
-        sy = sy + 26
     else
-        text(px+14, sy, "安装队列: 空闲", 10, 150, 170, 200, 180)
+        text(px+14, sy, "安装队列: 空闲 (0/3)", 10, 150, 170, 200, 180)
         sy = sy + 16
+    end
+
+    -- ── 全部征收按钮 ──
+    if onHarvestAll then
+        local hbW, hbH = pw - 20, 22
+        local hbX, hbY = px + 10, sy
+        local onCD = harvestAllCD > 0
+        nvgBeginPath(vg); nvgRoundedRect(vg, hbX, hbY, hbW, hbH, 5)
+        nvgFillColor(vg, onCD and nvgRGBA(20,40,20,160) or nvgRGBA(20,80,40,200))
+        nvgFill(vg)
+        nvgBeginPath(vg); nvgRoundedRect(vg, hbX+0.5, hbY+0.5, hbW-1, hbH-1, 5)
+        nvgStrokeColor(vg, onCD and nvgRGBA(60,90,60,120) or nvgRGBA(60,200,100,200))
+        nvgStrokeWidth(vg, 1); nvgStroke(vg)
+        if onCD then
+            local maskW = math.floor(hbW * harvestAllCD / HARVEST_ALL_CD)
+            nvgBeginPath(vg); nvgRoundedRect(vg, hbX + hbW - maskW, hbY, maskW, hbH, 5)
+            nvgFillColor(vg, nvgRGBA(0,0,0,80)); nvgFill(vg)
+        end
+        local hLabel = onCD and string.format("全部征收 (%ds)", math.ceil(harvestAllCD)) or "⚡ 全部征收"
+        nvgFontFace(vg, "sans"); nvgFontSize(vg, 11)
+        nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, onCD and nvgRGBA(100,140,100,180) or nvgRGBA(140,255,160,255))
+        nvgText(vg, hbX + hbW/2, hbY + hbH/2, hLabel)
+        if not onCD then
+            addHit(hbX, hbY, hbW, hbH, onHarvestAll)
+        end
+        sy = sy + hbH + 6
     end
 
     -- 造船加速倍率提示行

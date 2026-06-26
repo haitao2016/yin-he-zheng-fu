@@ -1,4 +1,4 @@
----@diagnostic disable: assign-type-mismatch, return-type-mismatch
+---@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 -- ============================================================================
 -- DiplomacySystem: 中立势力外交系统
 -- 拆分自 Systems.lua（纯机械迁移，无逻辑修改）
@@ -134,6 +134,18 @@ function DiplomacySystem:getAllRelations()
         end
     end
     return list
+end
+
+--- 获取所有势力中最高好感度
+---@return number maxFavor
+function DiplomacySystem:getMaxFavor()
+    local maxF = 0
+    for _, st in pairs(self.diplomacy or {}) do
+        if st and st.favor then
+            maxF = math.max(maxF, st.favor)
+        end
+    end
+    return maxF
 end
 
 --- P1-1: 获取指定势力的竞争对手（compete关系）
@@ -451,9 +463,11 @@ function DiplomacySystem:tick(dt, rm, allPlanets)
         end
     end
 
-    -- P1-1 V2.4: 外交事件定时器
+    -- P1-1 V2.4: 外交事件定时器（V2.5 外交L2: CD减少）
+    local cdReduction = self._legacyAgreementCdReduction or 0
+    local effectiveInterval = DIPLO_EVENT_INTERVAL * (1 - cdReduction)
     self.diploEventTimer = (self.diploEventTimer or 0) + dt
-    if self.diploEventTimer >= DIPLO_EVENT_INTERVAL then
+    if self.diploEventTimer >= effectiveInterval then
         self.diploEventTimer = 0
         local evt = self:_generateDiploEvent(rm, allPlanets)
         if evt then
@@ -490,6 +504,8 @@ function DiplomacySystem:_generateDiploEvent(rm, allPlanets)
         end
     end
 
+    -- V2.5 外交L3: 正面事件概率加成（将正面阈值下限降低）
+    local positiveBonus = self._legacyDiploPositiveBonus or 0
     local roll = math.random(100)
     if roll <= 40 then
         -- 派系请求（二选一）：同意+15，拒绝-10
@@ -523,8 +539,8 @@ function DiplomacySystem:_generateDiploEvent(rm, allPlanets)
             }
         end
         return nil
-    elseif roll <= 85 and maxFavor < 20 then
-        -- 背叛警告：好感过低时
+    elseif roll <= math.floor(85 - positiveBonus * 100) and maxFavor < 20 then
+        -- 背叛警告：好感过低时（L3 减少此概率）
         return {
             type = "diplo_warning",
             factionKey = pick,

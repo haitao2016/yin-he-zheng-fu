@@ -152,8 +152,9 @@ end
 ---@param quest table
 ---@param rm table  ResourceManager
 ---@param diplo table  DiplomacySystem (optional)
+---@param fm table|nil  FleetManager（残骸零件查询）
 ---@return boolean
-local function checkCondition(quest, rm, diplo)
+local function checkCondition(quest, rm, diplo, fm)
     local c = quest.cond
     local t = quest.target
 
@@ -168,13 +169,13 @@ local function checkCondition(quest, rm, diplo)
     elseif c == "single_battle_kills" then
         return quest.progress >= t
     elseif c == "have_metal" then
-        return rm and rm:getMetal() >= t
+        return rm and (rm.resources.metal or 0) >= t
     elseif c == "have_energy" then
-        return rm and rm:getEnergy() >= t
+        return rm and (rm.resources.esource or 0) >= t
     elseif c == "market_trade" then
         return quest.progress >= t
     elseif c == "have_salvage" then
-        return rm and rm:getSalvage() >= t
+        return fm ~= nil and (fm.salvageParts or 0) >= t
     elseif c == "earn_credits" then
         return quest.progress >= t
     elseif c == "faction_favor" then
@@ -208,12 +209,14 @@ end
 ---@param dt number
 ---@param rm table ResourceManager
 ---@param diplo table|nil DiplomacySystem
+---@param fm table|nil FleetManager（残骸零件查询）
 ---@return table|nil completedQuest  本帧完成的任务（仅第一个）
-function QuestBoard.Update(dt, rm, diplo)
-    -- 生成计时
+function QuestBoard.Update(dt, rm, diplo, fm)
+    -- 生成计时（外交遗产 L4 减少刷新间隔）
     spawnTimer_ = spawnTimer_ - dt
     if spawnTimer_ <= 0 then
-        spawnTimer_ = REFRESH_CD
+        local reduction = rm and rm._legacyQuestRefreshReduction or 0
+        spawnTimer_ = REFRESH_CD - reduction
         generateQuest()
     end
 
@@ -226,7 +229,7 @@ function QuestBoard.Update(dt, rm, diplo)
         if q.timer <= 0 then
             -- 超时移除
             table.remove(quests_, i)
-        elseif checkCondition(q, rm, diplo) then
+        elseif checkCondition(q, rm, diplo, fm) then
             -- 完成
             completed = q
             table.remove(quests_, i)

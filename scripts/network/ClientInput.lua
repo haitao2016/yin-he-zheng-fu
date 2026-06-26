@@ -8,6 +8,7 @@ local GalaxyScene  = require("game.GalaxyScene")
 local GameUI       = require("game.GameUI")
 local BattleScene  = require("game.BattleScene")
 local ClientMenus  = require("network.ClientMenus")
+local DragManager  = require("game.ui.DragManager")
 local ClientGalaxy = require("network.ClientGalaxy")
 local Achievement  = require("game.AchievementSystem")
 
@@ -90,6 +91,8 @@ function ClientInput.OnMouseButtonDown(eventType, eventData)
     end
 
     if not H.difficultyChosen then return end
+    -- 面板拖拽（鼠标按下开始拖拽）
+    if DragManager.OnTouchBegin(mx, my) then return end
     if H.currentScene == "galaxy" then GalaxyScene.OnMouseDown(mx, my) end
 end
 
@@ -102,6 +105,8 @@ function ClientInput.OnMouseButtonUp(eventType, eventData)
     local dpr = H.getDpr()
     local mx  = eventData["X"]:GetInt() / dpr / H.uiScale
     local my  = eventData["Y"]:GetInt() / dpr / H.uiScale
+    -- 面板拖拽结束
+    if DragManager.OnTouchEnd() then return end
     -- 主菜单点击
     if H.mainMenuActive then
         -- P1-1: 传承树面板打开时
@@ -186,6 +191,11 @@ function ClientInput.OnMouseButtonUp(eventType, eventData)
         end
         return
     end
+    -- 战斗战败/胜利时优先让 BattleScene 处理（避免面板 hitArea 遮挡战败按钮）
+    if H.currentScene == "battle" and BattleScene.GetState and BattleScene.GetState() == "lose" then
+        BattleScene.OnClick(mx, my)
+        return
+    end
     if GameUI.OnClick(mx, my) then return end
     if H.currentScene == "battle" then
         BattleScene.OnClick(mx, my)
@@ -240,6 +250,8 @@ function ClientInput.OnMouseMove(eventType, eventData)
         H.diffHoverBtn = H.getDifficultyHit(mx, my, H.screenW, H.screenH)
         return
     end
+    -- 面板拖拽移动
+    if DragManager.OnTouchMove(mx, my) then return end
     if H.currentScene == "galaxy" then GalaxyScene.OnMouseMove(mx, my) end
 end
 

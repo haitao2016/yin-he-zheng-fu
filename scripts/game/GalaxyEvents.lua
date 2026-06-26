@@ -1296,6 +1296,8 @@ function GalaxyEvents.TriggerEndgameCrisis(forceType)
     local tpl = ENDGAME_CRISIS_TYPES[typeKey]
     if not tpl then return end
 
+    -- V2.5 外交遗产 L5: 危机倒计时加成
+    local crisisBonus = GalaxyEvents._crisisCountdownBonus or 0
     endgameCrisis_ = {
         typeKey    = typeKey,
         name       = tpl.name,
@@ -1303,7 +1305,7 @@ function GalaxyEvents.TriggerEndgameCrisis(forceType)
         color      = tpl.color,
         phase      = 1,
         score      = 0,         -- 累计得分（每阶段 choice.score 累加）
-        phaseTimer = tpl.phases[1].timer,
+        phaseTimer = tpl.phases[1].timer + crisisBonus,
         resolved   = false,
         choices    = {},         -- 记录每阶段的选择 { phaseIdx, choiceIdx, score }
         timedOut   = 0,         -- 超时未选择的阶段数

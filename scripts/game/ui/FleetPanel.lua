@@ -1,7 +1,8 @@
 --- 编队管理面板模块
 --- 负责渲染编队 tab、舰船列表、储备池、移动模式
 
-local UICommon   = require("game.ui.UICommon")
+local UICommon    = require("game.ui.UICommon")
+local DragManager = require("game.ui.DragManager")
 local Systems    = require("game.Systems")
 local Commander  = require("game.CommanderSystem")  -- P1-3 V2.4
 local SHIP_MODULES       = Systems.SHIP_MODULES
@@ -226,7 +227,7 @@ function FleetPanel.Render(ctx)
     local onLaunchExpedition   = ctx.onLaunchExpedition
     local lastExpedition       = ctx.lastExpedition or {}  -- P3-3.1
 
-    local pw_full = UICommon.FLEET_PANEL_W or 248
+    local pw_full = math.min(UICommon.FLEET_PANEL_W or 248, math.floor(screenW * 0.45))
     local py      = UICommon.PANEL_TOP or 48
     -- P3-x: FleetPanel 移至左上角，固定左边距 8px
     local FLEET_LEFT_MARGIN = 8
@@ -305,8 +306,11 @@ function FleetPanel.Render(ctx)
 
     -- ---- 展开态：正常面板 ----
     local pw = pw_full
-    -- P3-x: 展开面板锚定左上角
-    local px = FLEET_LEFT_MARGIN
+    -- P3-x: 展开面板锚定左上角（支持拖拽）
+    local defPx = FLEET_LEFT_MARGIN
+    local defPy = py
+    local px
+    px, py = DragManager.GetPos("fleet", defPx, defPy)
 
     -- 构建科技加成行（仅展示倍率 > 1 或有数值的项）
     local bonusRows = {}
@@ -383,6 +387,10 @@ function FleetPanel.Render(ctx)
              + cmdOfficerH
 
     panel(px, py, pw, ph, 7, {8,16,30,240}, {50,100,200,200})
+
+    -- 拖拽把手（标题栏区域）
+    DragManager.RegisterHandle("fleet", px, py, pw, 26)
+    DragManager.DrawHandle(UICommon.vg, px, py, pw, 8)
 
     local sy = py + 14
 
