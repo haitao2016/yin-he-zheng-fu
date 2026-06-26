@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
+---@diagnostic disable: assign-type-mismatch, need-check-nil
 -- ============================================================================
 -- BattleOrchestrator.lua — 战斗循环编排器
 -- 负责：主战斗 Update 流程（暂停/战斗速度/胜负判定/波次调度/

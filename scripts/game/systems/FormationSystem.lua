@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
+---@diagnostic disable: assign-type-mismatch, return-type-mismatch
 -- ============================================================================
 -- game/systems/FormationSystem.lua -- 阵型系统
 -- V2.8 P1-5

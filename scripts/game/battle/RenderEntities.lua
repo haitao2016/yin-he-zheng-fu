@@ -117,6 +117,44 @@ local function drawShip(ship)
         nvgFillColor(BS.vg, nvgRGBA(hpR, hpG, 0, hpAlpha))
     end
     nvgFill(BS.vg)
+
+    -- P0-3: Boss 血条阶段分割线 + 小圆圈标记
+    if ship.isBoss and ship.bossPhases then
+        local barX = ship.x - 12
+        local barY = ship.y - 16
+        local barW = 24
+        local barH = 4
+        local phases = ship.bossPhases
+        local prevX = barX + barW
+        for i = #phases, 2, -1 do
+            local threshold = phases[i].hpThreshold or 0
+            local segX = barX + barW * (1 - threshold)
+            if segX > barX and segX < prevX then
+                nvgBeginPath(BS.vg)
+                nvgMoveTo(BS.vg, segX, barY - 1)
+                nvgLineTo(BS.vg, segX, barY + barH + 1)
+                nvgStrokeColor(BS.vg, nvgRGBA(255, 200, 50, 220))
+                nvgStrokeWidth(BS.vg, 1.2)
+                nvgStroke(BS.vg)
+                nvgBeginPath(BS.vg)
+                nvgCircle(BS.vg, segX, barY + barH / 2, 1.6)
+                nvgFillColor(BS.vg, nvgRGBA(255, 220, 80, 200))
+                nvgFill(BS.vg)
+                prevX = segX
+            end
+        end
+        -- 当前阶段标签（血条左侧小字）
+        if ship.bossPhaseIndex then
+            local phaseName = phases[ship.bossPhaseIndex] and phases[ship.bossPhaseIndex].name or ""
+            if phaseName ~= "" then
+                nvgFontSize(BS.vg, 7)
+                nvgTextAlign(BS.vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+                nvgFillColor(BS.vg, nvgRGBA(255, 180, 60, 230))
+                nvgText(BS.vg, barX - 2, barY + barH / 2, "[" .. phaseName .. "]")
+            end
+        end
+    end
+
     -- 护盾叠层：技能4"护盾强化"激活时，血条右侧追加 2px 蓝色细条
     if BS.BattleSkills.IsActive(4) then
         local shieldW = math.max(2, math.floor(24 * hp))

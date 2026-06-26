@@ -10,6 +10,7 @@ local MAX_SHIPS_PER_FLEET = 10  -- 每编队最多舰船数
 local FleetManager = {}
 FleetManager.__index = FleetManager
 
+---@return FleetManager
 function FleetManager.new()
     local self = setmetatable({}, FleetManager)
     self.maxFleets = INIT_FLEET_COUNT   -- 已解锁编队数（可扩展）
@@ -32,11 +33,15 @@ function FleetManager.new()
 end
 
 --- 造船完成 → 进入储备池
+---@param shipType string
 function FleetManager:addToReserve(shipType)
     self.reserve[shipType] = (self.reserve[shipType] or 0) + 1
 end
 
 --- 从储备池取一艘 → 加入指定编队
+---@param shipType string
+---@param fleetId number
+---@return boolean, string?
 function FleetManager:assignFromReserve(shipType, fleetId)
     local n = self.reserve[shipType] or 0
     if n <= 0 then return false, "储备中没有该舰船" end
@@ -48,6 +53,7 @@ function FleetManager:assignFromReserve(shipType, fleetId)
 end
 
 --- 储备池总数
+---@return number
 function FleetManager:reserveTotal()
     local n = 0
     for _, c in pairs(self.reserve) do n = n + c end
@@ -57,7 +63,10 @@ end
 -- ── P1-1: 改装模块 API ────────────────────────────────────────────────────
 
 --- 装备模块（花费残骸零件）
---- @return boolean, string?
+---@param fleetId number
+---@param shipType string
+---@param moduleKey string
+---@return boolean, string?
 function FleetManager:equipModule(fleetId, shipType, moduleKey)
     local fl = self.fleets[fleetId]
     if not fl then return false, "编队不存在" end
@@ -89,6 +98,9 @@ function FleetManager:equipModule(fleetId, shipType, moduleKey)
 end
 
 --- 卸下模块（免费）
+---@param fleetId number
+---@param shipType string
+---@return boolean
 function FleetManager:unequipModule(fleetId, shipType)
     local fl = self.fleets[fleetId]
     if not fl then return false end
@@ -100,18 +112,24 @@ function FleetManager:unequipModule(fleetId, shipType)
 end
 
 --- 获取编队中某舰种装备的模块 key（nil = 未装备）
+---@param fleetId number
+---@param shipType string
+---@return string|nil
 function FleetManager:getModule(fleetId, shipType)
     local fl = self.fleets[fleetId]
     return fl and fl.modules[shipType] or nil
 end
 
 --- 添加残骸零件
+---@param amount number
 function FleetManager:addSalvage(amount)
     self.salvageParts = self.salvageParts + (amount or 0)
 end
 
 --- 向编队添加一艘舰船（建造完成时调用）
---- 返回 true/false
+---@param fleetId number
+---@param shipType string
+---@return boolean, string?
 function FleetManager:addShip(fleetId, shipType)
     local fl = self.fleets[fleetId]
     if not fl then return false, "编队不存在" end
@@ -131,6 +149,8 @@ function FleetManager:addShip(fleetId, shipType)
 end
 
 --- 从编队移除一艘舰船（通常在舰船阵亡时调用）
+---@param fleetId number
+---@param shipType string
 function FleetManager:removeShip(fleetId, shipType)
     local fl = self.fleets[fleetId]
     if not fl then return end
@@ -144,6 +164,10 @@ function FleetManager:removeShip(fleetId, shipType)
 end
 
 --- 移动舰船：将 shipType 从 srcFleet 移到 dstFleet（1 艘）
+---@param srcId number
+---@param dstId number
+---@param shipType string
+---@return boolean, string?
 function FleetManager:moveShip(srcId, dstId, shipType)
     if srcId == dstId then return false, "同一编队" end
     local src = self.fleets[srcId]
@@ -161,6 +185,8 @@ function FleetManager:moveShip(srcId, dstId, shipType)
 end
 
 --- 获取编队的舰船总数
+---@param fleetId number
+---@return number
 function FleetManager:totalShips(fleetId)
     local fl = self.fleets[fleetId]
     if not fl then return 0 end
@@ -170,6 +196,7 @@ function FleetManager:totalShips(fleetId)
 end
 
 --- 解锁更多编队槽位（逐步 +1，内部兼容接口）
+---@return boolean, string?
 function FleetManager:unlock()
     if self.maxFleets >= MAX_FLEET_SLOTS then return false, "已达上限" end
     self.maxFleets = self.maxFleets + 1
@@ -182,6 +209,7 @@ end
 
 --- 根据基地模块效果重新设定编队上限（applyBaseModuleEffects 调用）
 --- target：期望的 maxFleets 值，自动 clamp 到 [INIT_FLEET_COUNT, MAX_FLEET_SLOTS]
+---@param target number
 function FleetManager:setMaxFleets(target)
     local clamped = math.max(INIT_FLEET_COUNT, math.min(MAX_FLEET_SLOTS, target))
     if clamped == self.maxFleets then return end
@@ -195,6 +223,7 @@ function FleetManager:setMaxFleets(target)
 end
 
 --- 序列化
+---@return table
 function FleetManager:serialize()
     local fleets = {}
     for i, fl in ipairs(self.fleets) do
@@ -217,6 +246,7 @@ function FleetManager:serialize()
 end
 
 --- 从存档恢复
+---@param data table
 function FleetManager:deserialize(data)
     if not data then return end
     self.maxFleets = data.maxFleets or INIT_FLEET_COUNT

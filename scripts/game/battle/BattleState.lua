@@ -33,13 +33,20 @@ local BS = {
     SK = { timer = 0, dur = 0, strength = 0, offX = 0, offY = 0 },
 
     -- Boss
-    bossWarningTimer  = 0,
-    bossFlashAlpha    = 0,
-    bossFlashTimer    = 0,
-    bossDefeated      = false,
-    BOSS_WAVE_INTERVAL = 5,
-    BOSS_WARNING_DUR   = 2.5,
-    BOSS_BANNER_DUR    = 2.5,
+    bossWarningActive     = false, -- P1-6: Boss 预警阶段激活
+    bossWarningTimer      = 0,     -- P1-6: Boss 预警倒计时（秒）
+    bossWarningType       = nil,   -- P1-6: 预警的 Boss 类型（BATTLECRUISER/CARRIER/VOID_LORD）
+    bossWarningWave       = 0,     -- P1-6: 预警的 Boss 波次编号
+    bossWarningDuration   = 10,    -- P1-6: 预警阶段总时长
+    bossFlashAlpha        = 0,
+    bossFlashTimer        = 0,
+    bossDefeated          = false,
+    bossPhaseBannerTimer  = 0,    -- P0-3: Boss 阶段转换横幅倒计时
+    bossPhaseBannerTotal  = 2.5,  -- P0-3: Boss 阶段转换横幅总时长
+    bossPhaseBannerText   = nil,  -- P0-3: Boss 阶段转换横幅文字
+    BOSS_WAVE_INTERVAL    = 5,
+    BOSS_WARNING_DUR      = 2.5,
+    BOSS_BANNER_DUR       = 2.5,
 
     -- 连击
     comboCount        = 0,
@@ -136,6 +143,9 @@ local BS = {
     -- 战斗统计
     battleStats = nil,
     initialPlayerCount = 0,  -- 本波开始时我方舰队数量
+    
+    -- P1-10: 暂停状态
+    paused = false,
 
     -- 战败按钮
     loseBtn1 = nil,

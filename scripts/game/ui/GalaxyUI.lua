@@ -1,4 +1,3 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found, undefined-doc-param, missing-parameter, access-invisible
 local GalaxyUI = {}
 
 local Audio         = require("game.AudioManager")

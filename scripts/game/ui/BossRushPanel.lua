@@ -1,4 +1,3 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 --[[
 BossRushPanel.lua - Boss Rush 模式选择面板
 P1-1

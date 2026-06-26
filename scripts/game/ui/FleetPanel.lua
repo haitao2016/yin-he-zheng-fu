@@ -21,6 +21,10 @@ local FLEET_SHIP_COLORS = {
     INTERCEPTOR   = {255,220,80},
     ENGINEER      = {255,200,80},
     EXPLORER      = {120,255,160},
+    -- V2.6 A1: 新增舰种
+    STEALTH      = {80,200,160},
+    SUPPORT      = {180,100,220},
+    DREADNOUGHT = {180,60,60},
 }
 
 -- 面板私有状态

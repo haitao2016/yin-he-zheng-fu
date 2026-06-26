@@ -95,14 +95,16 @@ function M.drawAsteroidTooltip(a)
     local sx, sy = GS.w2s(a.x, a.y)
     local cfg    = GS.ASTEROID_TYPES[a.atype]
     local szCfg  = a.sizeKey and GS.ASTEROID_SIZES[a.sizeKey]
-    local hpPct  = math.floor((a.hp / a.maxHP) * 100)
+    local curHp = a.health or a.hp or 0
+    local maxHp = a.maxHealth or a.maxHP or 1
+    local hpPct  = math.floor((curHp / maxHp) * 100)
     local c      = cfg.color
 
     local lines = {}
     lines[1] = (szCfg and szCfg.label or "") .. cfg.label .. "小行星"
     lines[2] = "资源: " .. cfg.label
     lines[3] = "产出: " .. math.floor(a.yield) .. " /次"
-    lines[4] = string.format("耐久: %d / %d  (%d%%)", a.hp, a.maxHP, hpPct)
+    lines[4] = string.format("耐久: %d / %d  (%d%%)", curHp, maxHp, hpPct)
     local densityMax = 90
     local density = math.min(100, math.floor(a.yield / densityMax * hpPct))
     lines[5] = "矿石密度: " .. density .. "%"

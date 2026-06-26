@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
+---@diagnostic disable: assign-type-mismatch, return-type-mismatch
 -- ============================================================================
 -- game/ui/TradeRoutePanel.lua -- 贸易航线派遣与结算面板
 -- V3.3

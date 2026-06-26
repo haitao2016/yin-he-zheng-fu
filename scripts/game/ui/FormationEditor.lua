@@ -17,10 +17,11 @@ local GRID_PAD   = 8    -- 网格外边距
 local SLOT_COUNT = 3    -- 保存槽数量
 
 -- 战斗用舰船类型（可放入阵型的类型）
-local COMBAT_TYPES = { "SCOUT", "FRIGATE", "DESTROYER", "BATTLECRUISER", "INTERCEPTOR", "CARRIER", "ENGINEER" }
+-- V2.6 A1: 新增舰种 COMBAT_TYPES 和 MELEE_TYPES
+local COMBAT_TYPES = { "SCOUT", "FRIGATE", "DESTROYER", "BATTLECRUISER", "INTERCEPTOR", "CARRIER", "ENGINEER", "STEALTH", "SUPPORT", "DREADNOUGHT" }
 
 -- 近战判定（不能放在后排 col 7-8）
-local MELEE_TYPES = { SCOUT = true, INTERCEPTOR = true }
+local MELEE_TYPES = { SCOUT = true, INTERCEPTOR = true, DREADNOUGHT = true }
 
 -- ─── 状态 ─────────────────────────────────────────────────────────────────────
 local open_        = false     -- 编辑器面板是否打开

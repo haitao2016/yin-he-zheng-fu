@@ -1,4 +1,3 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 --[[
 SaveSlotSystem.lua - 多槽存档系统
 V3.0 P3-P2-1

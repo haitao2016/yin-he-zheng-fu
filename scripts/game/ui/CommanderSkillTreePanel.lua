@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
+---@diagnostic disable: assign-type-mismatch, return-type-mismatch
 -- ============================================================================
 -- game/ui/CommanderSkillTreePanel.lua -- 指挥官技能树面板
 -- V3.3 M2

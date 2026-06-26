@@ -1,4 +1,3 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 --[[
 Constants/ShipConstants.lua
 舰船、舰船类型、模块、伤害相关常量

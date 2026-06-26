@@ -23,6 +23,11 @@ local blackMarketCollapsed_= true
 local exchangeCollapsed_   = true
 local shipyardCollapsed_   = false
 
+-- P2-5: 批量建造状态
+local batchBuildMode_      = false
+local batchBuildCount_     = 1
+local batchBuildCounts_    = { 1, 3, 5, 10 }
+
 local signalCooldown_ = 0
 local SIGNAL_CD       = 5
 
@@ -61,6 +66,11 @@ local onActivateBlockadeCb_   = nil
 local onActivateMediationCb_  = nil
 local onSendSignalCb_         = nil
 local notifyFn_               = nil
+-- P0-2: 无尽/每日挑战按钮回调
+local onEndlessChallengeCb_   = nil
+local onDailyChallengeCb_     = nil
+-- P1-1: Boss Rush 按钮回调
+local onBossRushCb_           = nil
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- 公共 API
@@ -81,6 +91,11 @@ function M.Init(cfg)
     onActivateMediationCb_ = cfg.onActivateMediationCb
     onSendSignalCb_        = cfg.onSendSignalCb
     notifyFn_              = cfg.notifyFn
+    -- P0-2: 无尽/每日挑战回调
+    onEndlessChallengeCb_  = cfg.onEndlessChallengeCb
+    onDailyChallengeCb_    = cfg.onDailyChallengeCb
+    -- P1-1: Boss Rush 回调
+    onBossRushCb_          = cfg.onBossRushCb
 end
 
 function M.Update(dt)
@@ -1303,7 +1318,9 @@ function M.RenderShipyard(planet)
     -- 展开态
     local numShips  = #SHIP_QUEUE_ORDER
     local queueSize = spq and #spq.items or 0
-    local ph = titleH + 4 + (queueSize > 0 and 16 or 18)
+    -- P2-5: 批量建造增加面板高度
+    local batchH = batchBuildMode_ and 28 or 0
+    local ph = titleH + 4 + batchH + (queueSize > 0 and 16 or 18)
              + (queueSize > 1 and (10 + (queueSize - 1) * 16) or 0)
              + 8 + numShips * 22
 
@@ -1315,7 +1332,61 @@ function M.RenderShipyard(planet)
     text(px + 10, sy, "◀", 9, 100,160,255,180, NVG_ALIGN_LEFT+NVG_ALIGN_MIDDLE)
     addHit(px, py, 28, titleH, function() shipyardCollapsed_ = true end)
     text(px+pw/2, sy, "[ 造船厂 ]", 13, 100,170,255,255, NVG_ALIGN_CENTER+NVG_ALIGN_MIDDLE)
+    
+    -- P2-5: 批量建造按钮
+    local batchBtnX, batchBtnY, batchBtnW, batchBtnH = px + pw - 65, py + 4, 55, 18
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, batchBtnX, batchBtnY, batchBtnW, batchBtnH, 4)
+    nvgFillColor(vg, batchBuildMode_ and nvgRGBA(80, 140, 80, 200) or nvgRGBA(50, 70, 100, 180))
+    nvgFill(vg)
+    nvgStrokeColor(vg, batchBuildMode_ and nvgRGBA(120, 200, 120, 180) or nvgRGBA(80, 100, 140, 120))
+    nvgStrokeWidth(vg, 1)
+    nvgStroke(vg)
+    nvgFontFace(vg, "sans")
+    nvgFontSize(vg, 9)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+    local batchLabel = batchBuildMode_ and ("批量×" .. batchBuildCount_) or "批量"
+    nvgText(vg, batchBtnX + batchBtnW/2, batchBtnY + batchBtnH/2, batchLabel)
+    addHit(batchBtnX, batchBtnY, batchBtnW, batchBtnH, function()
+        batchBuildMode_ = not batchBuildMode_
+        if batchBuildMode_ then
+            batchBuildCount_ = 1
+        end
+    end)
+    
     sy = py + titleH + 4
+    
+    -- P2-5: 批量数量选择器
+    if batchBuildMode_ then
+        local countY = sy
+        nvgFontFace(vg, "sans")
+        nvgFontSize(vg, 9)
+        nvgTextAlign(vg, NVG_ALIGN.LEFT + NVG_ALIGN.MIDDLE)
+        nvgFillColor(vg, nvgRGBA(180, 200, 220, 200))
+        nvgText(vg, px + 10, countY + 10, "数量:")
+        
+        for i, count in ipairs(batchBuildCounts_) do
+            local cx = px + 50 + (i - 1) * 28
+            local isSelected = batchBuildCount_ == count
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, cx, countY + 2, 24, 16, 3)
+            nvgFillColor(vg, isSelected and nvgRGBA(80, 140, 80, 200) or nvgRGBA(40, 50, 70, 160))
+            nvgFill(vg)
+            nvgStrokeColor(vg, isSelected and nvgRGBA(120, 200, 120, 180) or nvgRGBA(60, 80, 100, 100))
+            nvgStrokeWidth(vg, 1)
+            nvgStroke(vg)
+            nvgFontSize(vg, 10)
+            nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+            nvgFillColor(vg, nvgRGBA(255, 255, 255, 230))
+            nvgText(vg, cx + 12, countY + 10, tostring(count))
+            
+            addHit(cx, countY + 2, 24, 16, function()
+                batchBuildCount_ = count
+            end)
+        end
+        sy = sy + 24
+    end
 
     -- 队列状态
     if spq and #spq.items > 0 then
@@ -1393,6 +1464,11 @@ function M.RenderShipyard(planet)
     nvgStrokeColor(vg, clr(60,120,200,60)); nvgStrokeWidth(vg, 1); nvgStroke(vg)
     sy = sy + 8
 
+    -- P0-1: 运行时解锁状态（核心等级 / 已解锁科技 / 本波DREADNOUGHT）
+    local coreLv = planet.coreLevel or (planet.isBase and (planet.coreLevel or 1)) or 1
+    local techUnlocked = (UICommon.rs and UICommon.rs.unlocked) or {}
+    local dreadBuiltThisWave = spq and spq.dreadBuiltThisWave or false
+
     for si_, stype in ipairs(SHIP_QUEUE_ORDER) do
         local capturedType = stype
         local cost = SHIP_COSTS[stype]
@@ -1400,13 +1476,371 @@ function M.RenderShipyard(planet)
         local st = SHIP_TYPES[stype]
         local timeStr = st.buildTime and (" ⏱"..st.buildTime.."s") or ""
         local hkPrefix = si_ <= 5 and (si_..".") or "  "
-        sy = drawButton(px+8, sy, pw-16, 18,
-            hkPrefix..st.name.." ["..costStr.."]"..timeStr,
-            60, 100, 220,
-            function()
-                if onShipQueueCb_ then onShipQueueCb_(capturedType) end
-            end)
+
+        -- P0-1: V2.6 新舰种解锁状态检查
+        local unlockReq = SHIP_UNLOCK_REQUIREMENTS and SHIP_UNLOCK_REQUIREMENTS[stype]
+        local isUnlocked = true
+        local lockReason = ""
+        if unlockReq then
+            if unlockReq.coreLevel and coreLv < unlockReq.coreLevel then
+                isUnlocked = false
+                lockReason = "🔒核心Lv." .. unlockReq.coreLevel
+            end
+            if isUnlocked and unlockReq.tech and not techUnlocked[unlockReq.tech] then
+                isUnlocked = false
+                lockReason = "🔒科技:" .. (unlockReq.desc or unlockReq.tech)
+            end
+            if isUnlocked and stype == "DREADNOUGHT" and dreadBuiltThisWave then
+                isUnlocked = false
+                lockReason = "🔒本波次已建造"
+            end
+        end
+
+        if isUnlocked then
+            -- P2-5: 批量建造模式下显示批量数量
+            local displayCostStr = costStr
+            if batchBuildMode_ and batchBuildCount_ > 1 then
+                -- 计算批量总成本
+                local totalCost = {}
+                for res, amt in pairs(cost) do
+                    totalCost[res] = amt * batchBuildCount_
+                end
+                displayCostStr = rm:fmtCost(totalCost) .. "(×" .. batchBuildCount_ .. ")"
+            end
+            
+            sy = drawButton(px+8, sy, pw-16, 18,
+                hkPrefix..st.name.." ["..displayCostStr.."]"..timeStr,
+                60, 100, 220,
+                function()
+                    -- P2-5: 执行批量建造
+                    if not batchBuildMode_ then
+                        -- 单次建造
+                        if onShipQueueCb_ then onShipQueueCb_(capturedType) end
+                    else
+                        -- 批量建造
+                        local successCount = 0
+                        for i = 1, batchBuildCount_ do
+                            if onShipQueueCb_ then
+                                -- 检查资源是否足够（每次建造前检查）
+                                local canBuild = true
+                                for res, amt in pairs(cost) do
+                                    if (rm.resources[res] or 0) < amt * (successCount + 1) then
+                                        canBuild = false
+                                        break
+                                    end
+                                end
+                                if canBuild then
+                                    onShipQueueCb_(capturedType)
+                                    successCount = successCount + 1
+                                else
+                                    break
+                                end
+                            end
+                        end
+                        if successCount > 0 and notifyFn_ then
+                            notifyFn_("批量建造 " .. successCount .. " 艘 " .. st.name, "success")
+                        end
+                    end
+                end)
+        else
+            -- 锁定舰船：灰色显示，不可点击
+            nvgBeginPath(vg); nvgRoundedRect(vg, px+8, sy, pw-16, 18, 3)
+            nvgFillColor(vg, nvgRGBA(40,40,60,100))
+            nvgFill(vg)
+            nvgFontFace(vg, "sans")
+            nvgFontSize(vg, 9)
+            nvgTextAlign(vg, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+            nvgFillColor(vg, nvgRGBA(120,120,140,180))
+            nvgText(vg, px+14, sy+9, hkPrefix..st.name.." "..lockReason)
+            sy = sy + 20
+        end
     end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- P0-5: 星际贸易面板
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- P0-5: 贸易路线面板状态
+local tradePanelVisible_ = false
+local tradePanelTarget_  = nil
+
+-- P0-5: 贸易路线按钮
+function M.RenderTradeButton(planet)
+    if not planet then return end
+
+    local vg      = UICommon.vg
+    local screenW = UICommon.screenW
+    local addHit  = UICommon.addHit
+
+    -- 检查是否有星际交易所
+    local hasTradeHub = false
+    if planet.buildings then
+        for _, b in ipairs(planet.buildings) do
+            if b.key == "TRADE_HUB" then hasTradeHub = true; break end
+        end
+    end
+    if not hasTradeHub then return end
+
+    -- 按钮位置（在行星信息面板旁边）
+    local px, py = 12, 200
+    local btnW, btnH = 60, 22
+
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, px, py, btnW, btnH, 4)
+    nvgFillColor(vg, nvgRGBA(80, 60, 40, 200))
+    nvgFill(vg)
+    nvgStrokeColor(vg, nvgRGBA(200, 150, 100, 150))
+    nvgStrokeWidth(vg, 1)
+    nvgStroke(vg)
+
+    nvgFontFace(vg, "sans")
+    nvgFontSize(vg, 10)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 220, 180, 255))
+    nvgText(vg, px + btnW/2, py + btnH/2, "📦 贸易")
+
+    addHit(px, py, btnW, btnH, function()
+        tradePanelTarget_ = planet
+        tradePanelVisible_ = true
+    end)
+end
+
+-- P0-5: 贸易面板
+function M.RenderTradePanel()
+    if not tradePanelVisible_ then return end
+
+    local vg      = UICommon.vg
+    local screenW = UICommon.screenW
+    local screenH = UICommon.screenH
+    local addHit  = UICommon.addHit
+
+    local TS = require("game.systems.TradeSystem")
+
+    -- 尝试获取玩家贸易状态（从 GalaxyScene 共享状态）
+    local playerState = nil
+    if UICommon.galaxyScene and UICommon.galaxyScene.GetTradeState then
+        playerState = UICommon.galaxyScene.GetTradeState()
+    end
+
+    local routes = playerState and TS.getAllRoutes(playerState) or {}
+
+    local cx = (screenW or 800) / 2
+    local cy = (screenH or 600) / 2
+    local pw, ph = 400, 320
+    local panelX, panelY = cx - pw/2, cy - ph/2
+
+    -- 面板背景
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, panelX, panelY, pw, ph, 10)
+    nvgFillColor(vg, nvgRGBA(30, 20, 40, 250))
+    nvgFill(vg)
+    nvgStrokeColor(vg, nvgRGBA(200, 150, 100, 180))
+    nvgStrokeWidth(vg, 2)
+    nvgStroke(vg)
+
+    -- 标题
+    nvgFontFace(vg, "sans")
+    nvgFontSize(vg, 18)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER)
+    nvgFillColor(vg, nvgRGBA(255, 200, 150, 255))
+    nvgText(vg, cx, panelY + 30, "📦 星际贸易")
+
+    -- 当前路线状态
+    local yStart = panelY + 60
+    if #routes == 0 then
+        nvgFontSize(vg, 12)
+        nvgTextAlign(vg, NVG_ALIGN.CENTER)
+        nvgFillColor(vg, nvgRGBA(180, 180, 180, 200))
+        nvgText(vg, cx, yStart + 20, "暂无贸易路线")
+    else
+        for i, route in ipairs(routes) do
+            local status = TS.getRouteStatus(route.id, playerState)
+            local by = yStart + (i - 1) * 50
+
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, panelX + 20, by, pw - 40, 40, 6)
+            nvgFillColor(vg, nvgRGBA(50, 40, 60, 200))
+            nvgFill(vg)
+
+            nvgFontSize(vg, 11)
+            nvgTextAlign(vg, NVG_ALIGN.LEFT + NVG_ALIGN.MIDDLE)
+            nvgFillColor(vg, nvgRGBA(255, 220, 180, 255))
+            nvgText(vg, panelX + 30, by + 15, (route.from or "?") .. " → " .. (route.to or "?"))
+
+            -- 进度条
+            local barW = pw - 80
+            local barX = panelX + 30
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, barX, by + 25, barW, 8, 3)
+            nvgFillColor(vg, nvgRGBA(60, 60, 80, 200))
+            nvgFill(vg)
+
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, barX, by + 25, barW * (status and status.progress or 0), 8, 3)
+            nvgFillColor(vg, nvgRGBA(100, 200, 100, 200))
+            nvgFill(vg)
+
+            nvgFontSize(vg, 9)
+            nvgTextAlign(vg, NVG_ALIGN.LEFT)
+            nvgFillColor(vg, nvgRGBA(200, 200, 200, 200))
+            nvgText(vg, barX + barW + 5, by + 28, "+" .. (status and status.nextReward or 0) .. " " .. (route.resource or "?"))
+
+            -- 取消按钮
+            local cancelX = panelX + pw - 55
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, cancelX, by + 10, 30, 20, 3)
+            nvgFillColor(vg, nvgRGBA(180, 60, 60, 180))
+            nvgFill(vg)
+            nvgFontSize(vg, 9)
+            nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+            nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+            nvgText(vg, cancelX + 15, by + 20, "取消")
+            addHit(cancelX, by + 10, 30, 20, function()
+                if playerState then
+                    TS.cancelRoute(route.id, playerState)
+                end
+            end)
+        end
+    end
+
+    -- 建立新路线
+    local yBtn = panelY + ph - 80
+    if #routes < (TRADE_ROUTE_REQUIREMENTS and TRADE_ROUTE_REQUIREMENTS.maxRoutes or 3) then
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, cx - 80, yBtn, 160, 32, 6)
+        nvgFillColor(vg, nvgRGBA(80, 120, 80, 200))
+        nvgFill(vg)
+        nvgFontSize(vg, 12)
+        nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+        nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+        nvgText(vg, cx, yBtn + 16, "建立新路线")
+
+        addHit(cx - 80, yBtn, 160, 32, function()
+            -- TODO: 打开星球选择器建立路线
+            if notifyFn_ then
+                notifyFn_("选择目标星球建立贸易路线", "info")
+            end
+        end)
+    end
+
+    -- 关闭按钮
+    local closeX, closeY = panelX + pw - 30, panelY + 10
+    nvgBeginPath(vg)
+    nvgCircle(vg, closeX, closeY, 10)
+    nvgFillColor(vg, nvgRGBA(80, 80, 100, 200))
+    nvgFill(vg)
+    nvgFontSize(vg, 10)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+    nvgText(vg, closeX, closeY, "×")
+    addHit(closeX - 10, closeY - 10, 20, 20, function()
+        tradePanelVisible_ = false
+        tradePanelTarget_ = nil
+    end)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- P0-2: 无尽挑战和每日挑战按钮
+-- ═══════════════════════════════════════════════════════════════════════════════
+function M.RenderChallengeButtons()
+    local vg      = UICommon.vg
+    local screenW = UICommon.screenW
+    local screenH = UICommon.screenH
+    local cursorX = UICommon.cursorX
+    local cursorY = UICommon.cursorY
+    local addHit  = UICommon.addHit
+
+    -- P0-2: 无尽挑战按钮（屏幕中央下方）
+    local btnW, btnH = 140, 36
+    local btnX = screenW/2 - btnW/2
+    local btnY = screenH/2 + 80
+
+    local endlessHover = cursorX >= btnX and cursorX <= btnX + btnW
+                     and cursorY >= btnY and cursorY <= btnY + btnH
+
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, btnX, btnY, btnW, btnH, 6)
+    nvgFillColor(vg, endlessHover and nvgRGBA(140, 30, 100, 220) or nvgRGBA(120, 20, 80, 200))
+    nvgFill(vg)
+    nvgStrokeColor(vg, nvgRGBA(255, 100, 200, endlessHover and 200 or 150))
+    nvgStrokeWidth(vg, 2)
+    nvgStroke(vg)
+    nvgFontFace(vg, "sans")
+    nvgFontSize(vg, 13)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 200, 255, 255))
+    nvgText(vg, btnX + btnW/2, btnY + btnH/2, "∞ 无尽挑战")
+
+    addHit(btnX, btnY, btnW, btnH, function()
+        if onEndlessChallengeCb_ then onEndlessChallengeCb_() end
+    end)
+
+    -- P1-1: Boss Rush 按钮（无尽挑战下方）
+    local bossRushBtnX = screenW/2 - 70
+    local bossRushBtnY = screenH/2 + 130
+    local bossRushBtnW, bossRushBtnH = 140, 36
+
+    local bossRushHover = cursorX >= bossRushBtnX and cursorX <= bossRushBtnX + bossRushBtnW
+                     and cursorY >= bossRushBtnY and cursorY <= bossRushBtnY + bossRushBtnH
+
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, bossRushBtnX, bossRushBtnY, bossRushBtnW, bossRushBtnH, 6)
+    nvgFillColor(vg, bossRushHover and nvgRGBA(160, 50, 50, 220) or nvgRGBA(120, 40, 40, 200))
+    nvgFill(vg)
+    nvgStrokeColor(vg, nvgRGBA(220, 100, 100, bossRushHover and 200 or 150))
+    nvgStrokeWidth(vg, 2)
+    nvgStroke(vg)
+    nvgFontFace(vg, "sans")
+    nvgFontSize(vg, 13)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 200, 200, 255))
+    nvgText(vg, bossRushBtnX + bossRushBtnW/2, bossRushBtnY + bossRushBtnH/2, "💀 Boss Rush")
+
+    addHit(bossRushBtnX, bossRushBtnY, bossRushBtnW, bossRushBtnH, function()
+        if onBossRushCb_ then onBossRushCb_() end
+    end)
+
+    -- P0-3: 每日挑战按钮（右上角）
+    local dailyBtnX, dailyBtnY, dailyBtnW, dailyBtnH = screenW - 130, 15, 115, 28
+    local dailyHover = cursorX >= dailyBtnX and cursorX <= dailyBtnX + dailyBtnW
+                    and cursorY >= dailyBtnY and cursorY <= dailyBtnY + dailyBtnH
+
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, dailyBtnX, dailyBtnY, dailyBtnW, dailyBtnH, 6)
+    nvgFillColor(vg, dailyHover and nvgRGBA(100, 60, 140, 220) or nvgRGBA(80, 40, 120, 200))
+    nvgFill(vg)
+    nvgStrokeColor(vg, nvgRGBA(200, 150, 255, dailyHover and 200 or 150))
+    nvgStrokeWidth(vg, 1)
+    nvgStroke(vg)
+    nvgFontSize(vg, 11)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 220, 255, 255))
+    nvgText(vg, dailyBtnX + dailyBtnW/2, dailyBtnY + dailyBtnH/2, "📅 今日挑战")
+
+    addHit(dailyBtnX, dailyBtnY, dailyBtnW, dailyBtnH, function()
+        if onDailyChallengeCb_ then onDailyChallengeCb_() end
+    end)
+
+    -- P1-2: 成就按钮
+    local achBtnX, achBtnY, achBtnW, achBtnH = screenW - 80, 15, 65, 28
+    local achHover = cursorX >= achBtnX and cursorX <= achBtnX + achBtnW
+                 and cursorY >= achBtnY and cursorY <= achBtnY + achBtnH
+
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, achBtnX, achBtnY, achBtnW, achBtnH, 6)
+    nvgFillColor(vg, achHover and nvgRGBA(100, 80, 130, 220) or nvgRGBA(80, 60, 100, 200)); nvgFill(vg)
+    nvgStrokeColor(vg, nvgRGBA(180, 150, 220, 150)); nvgStrokeWidth(vg, 1); nvgStroke(vg)
+    nvgFontSize(vg, 11)
+    nvgTextAlign(vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 220, 255, 255))
+    nvgText(vg, achBtnX + achBtnW/2, achBtnY + achBtnH/2, "🏆 成就")
+
+    addHit(achBtnX, achBtnY, achBtnW, achBtnH, function()
+        local AP = require("game.ui.AchievementPanel")
+        local panel = AP.open()
+        registerOverlay("achievement", function(vg) panel.draw(vg) end)
+    end)
 end
 
 return M

@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
+---@diagnostic disable: assign-type-mismatch, return-type-mismatch
 -----------------------------------------------------------
 -- RoguelikeCardSystem 无尽模式 3 选 1 卡牌系统
 -----------------------------------------------------------

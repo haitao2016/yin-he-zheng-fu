@@ -8,6 +8,8 @@ local UICommon     = require("game.ui.UICommon")
 local BattleSkills = require("game.BattleSkills")
 local Achievement  = require("game.AchievementSystem")   -- P2-3: 成就奖励应用
 local Systems      = require("game.Systems")
+local SUPER_BOSSES = Systems.SUPER_BOSSES
+local SUPER_BOSS_WAVES = Systems.SUPER_BOSS_WAVES
 local SHIP_MODULES = Systems.SHIP_MODULES                -- P1-1: 模块定义查找
 local NemesisSystem = require("game.NemesisSystem")      -- P1-2: 宿敌系统
 local AnomalySystem = require("game.AnomalySystem")      -- P2-1: 星域异象系统
@@ -27,6 +29,13 @@ local BattleCombatEnemy  = require("game.battle.BattleCombatEnemy")
 local BattleDeath        = require("game.battle.BattleDeath")
 local BattleVFX          = require("game.battle.BattleVFX")
 local BattleWinLose      = require("game.battle.BattleWinLose")
+local BattleCommandSystem = require("game.systems.BattleCommandSystem")  -- P1-P2-1: 战斗指令系统
+-- Phase 2: 新增子模块（HUD/编排/资源），由 BattleScene 转发调用
+local BattleHud          = require("game.battle.BattleHud")
+local BattleOrchestrator = require("game.battle.BattleOrchestrator")
+local BattleAssets       = require("game.battle.BattleAssets")
+-- P3-2: 战斗逻辑子模块（Update 委托）
+local cmdSys_          = nil  -- P1-P2-1: 战斗指令系统实例
 local ctx = BattleContext  -- 共享状态上下文（Update 内通过 sync 桥与本地状态同步）
 
 local BattleScene = {}
@@ -55,12 +64,27 @@ local battleEndFired_ = false  -- 防止 onBattleEnd_ 被每帧重复触发
 local shootSfxTimer_ = 0       -- 射击音效节流（避免同帧多舰齐射时音效叠加爆音）
 local loseBtn1_     = nil      -- M2: 战败"重新战斗"按钮区域
 local loseBtn2_     = nil      -- M2: 战败"返回星图"按钮区域
+-- P0-2: 无尽模式状态
+local endlessMode_       = nil         -- nil = 普通模式, "CLASSIC"/"SURVIVAL"/"SPEEDRUN"
+local endlessWave_       = 1           -- 当前无尽波次
+local endlessStartTime_  = nil         -- 速通模式开始时间
+local endlessRecord_     = 0           -- 历史最高波次
+local endlessDifficulty_ = 1.0         -- 当前难度倍率
 -- P3-3: 波次星级评分
 local initialPlayerCount_ = 0   -- 本波开始时我方舰队数量（用于存活率计算）
 local currentWaveStar_    = 0   -- 本波评分（1-3 星，0 = 未决定）
 local starAnim_           = 0   -- 星级出现动画计时器（胜利后开始计时）
 local notifyFn_     = nil
 local onBattleEnd_  = nil  -- 回调：战斗结束
+-- P0-7: 战斗速度控制
+local battleSpeed_      = 1.0
+local battleSpeedId_    = "NORMAL"
+local autoBattleEnabled_ = false
+local autoBattleKeyDown_ = false
+local commandKeyDown_   = nil  -- P1-P2-1: 指令快捷键按下状态（防止重复触发）
+-- P1-10: 暂停功能
+local paused_           = false      -- 游戏是否暂停
+local pauseKeyDown_     = false      -- 暂停键是否按下（防止重复触发）
 local player_       = nil
 local rm_           = nil  -- ResourceManager 引用（用于波次奖励）
 local rs_           = nil  -- ResearchSystem 引用（技能解锁判断）
@@ -83,6 +107,30 @@ local BOSS_WAVE_INTERVAL = 5   -- 每隔5波出现一次Boss波（wave 5, 10, 15
 local bossWarningTimer_  = 0   -- Boss警告横幅显示计时（>0 时显示）
 local BOSS_WARNING_DUR   = 2.5 -- Boss警告显示时长（秒）
 local bossDefeated_      = false  -- 当前波次Boss是否已被击败（防止重复奖励）
+-- P1-6: Boss 预警阶段（Boss 波前 10 秒提示）
+local bossWarningActive_ = false
+local bossWarningType_   = nil   -- "BATTLECRUISER" | "CARRIER" | "VOID_LORD"
+local bossWarningWave_   = 0
+local BOSS_WARN_DUR      = 10    -- 预警阶段总时长（秒）
+
+-- P0-1: 超级 Boss 预警系统
+local superBossWarning_   = false  -- 是否显示超级 Boss 预警
+local superBossType_      = nil    -- 超级 Boss 类型
+local superBossName_      = nil    -- 超级 Boss 名称
+local superBossWarningTimer_ = 0   -- 超级 Boss 预警计时
+local superBossPending_   = false  -- 是否待生成超级 Boss
+
+-- P1-1: Boss Rush 模式状态
+local bossRushMode_       = false
+local bossRushBosses_      = {}      -- 待挑战 Boss 列表
+local bossRushCurrent_      = 1       -- 当前第几个 Boss
+local bossRushRestTimer_   = 0       -- 休息倒计时
+local bossRushScore_       = 0       -- 当前分数
+local bossRushStartTime_   = 0       -- 开始时间
+local bossRushHealthBonus_ = 0       -- 生命奖励
+local bossRushState_       = nil     -- "intro" | "fighting" | "rest" | "result"
+local bossRushIntroTimer_  = 0       -- 介绍阶段计时
+local bossRushResult_      = nil     -- 结算数据
 
 -- 新生产出的舰船临时存储（等待加入战场）
 local pendingShips_ = {}
@@ -120,6 +168,10 @@ local interceptorEngineTimer_ = 0   -- 距离下次允许播放的冷却（秒�
 local bossFlashAlpha_  = 0    -- 全屏白光透明度（0-255，衰减至0）
 local bossFlashTimer_  = 0    -- 横幅显示倒计时（秒）
 local BOSS_BANNER_DUR  = 2.5  -- 横幅显示时长
+-- P0-3: Boss 阶段转换横幅
+local bossPhaseBannerTimer_ = 0
+local bossPhaseBannerTotal_ = 2.5
+local bossPhaseBannerText_  = nil
 
 -- P2-3: 无尽模式里程碑 Boss 系统
 local endlessRound_       = 0     -- 当前无尽层数（由 Client.lua 注入）
@@ -534,9 +586,6 @@ local function makeShip(stype, x, y, team)
         local affixKeys = mutantData.affixes
         if affixKeys and #affixKeys > 0 then
             ship.mutantAffixes = affixKeys
-            -- 构建 affixSet 字典供 BattleAI O(1) 查询
-            ship.affixSet = {}
-            for _, k in ipairs(affixKeys) do ship.affixSet[k] = true end
             -- 应用属性型词缀 (fragile/sluggish/overcharge 的数值修改)
             local MutantShip = require("game.MutantShipSystem")
             MutantShip.ApplyAffixStats(ship, affixKeys)
@@ -596,10 +645,12 @@ function BattleScene.Init(opts)
     player_      = opts.player
     rm_          = opts.rm
     rs_          = opts.rs
+    bs_          = opts.bs                -- P2-4: BuildingSystem（用于炮塔加成查询）
     spq_         = opts.spq
     moduleMap_   = opts.moduleMap or {}  -- P1-1: 改装模块映射
     mutantMap_   = opts.mutantMap or {}  -- P1-2 V2.5: 变异舰船映射
     leagueAttackMult_ = opts.leagueAttackMult or 1.0  -- P1-3: 联赛敌人攻击力修正
+    planetGetter_= opts.planetGetter      -- P2-4: 返回已殖民行星列表（用于炮塔生成）
     pendingShips_= {}
     -- 海盗进攻时从指定波次开始（pirateLevel 1~5 对应 wave 1~5）
     waveNum_     = math.max(1, opts.startWave or 1)
@@ -613,10 +664,15 @@ function BattleScene.Init(opts)
     cmdSkillActive_   = false
     cmdSkillTimer_    = 0
     cmdSkillDef_      = nil
+    -- P1-P2-1: 战斗指令系统初始化
+    cmdSys_ = BattleCommandSystem.new()
 
-    -- 舰船纹理延迟到首帧渲染加载（标记）
-    shipImagesLoaded_ = false
-    print("[BattleScene] 舰船纹理将在首帧加载")
+    -- 加载舰船纹理（Phase 2：委托 BattleAssets 管理纹理句柄与对象池）
+    BattleAssets.Init(vg_, shipImages_, projectiles_, floatTexts_, hitSparks_,
+                      shockRings_, fireParticles_, explParticles_, fwParticles_,
+                      bgStars_, envParticles_)
+    BattleAssets.LoadShipImages()
+    print("[BattleScene] 舰船纹理加载完成（BattleAssets 托管）")
 
     -- P3-1: 重置星场，让 Reset() 重新生成
     bgStars_   = {}
@@ -657,7 +713,7 @@ function BattleScene.Init(opts)
         FORMATION_CONFIG = FORMATION_CONFIG,
         COMBO_LEVELS    = COMBO_LEVELS,
         rm              = rm_,
-        SHIP_TYPES      = SHIP_TYPES,
+        SHIP_TYPES      = Systems.SHIP_TYPES,
     })
 
     BattleScene.Reset()
@@ -681,6 +737,27 @@ function BattleScene.Reset()
         playerFleet_[#playerFleet_+1] = makeShip(ps, x, y, "player")
     end
     pendingShips_    = {}
+    -- P2-4: 行星防御炮塔（根据已殖民行星上的 DEFENSE_TURRET 建筑数量生成）
+    do
+        local turretCount = 0
+        if bs_ and planetGetter_ and bs_.aggregatePlanetEffects then
+            local pe = bs_:aggregatePlanetEffects(planetGetter_())
+            turretCount = pe.turretCount or 0
+        end
+        if turretCount > 0 then
+            for i = 1, turretCount do
+                local tx = 60 + math.random() * 80
+                local ty = screenH_*0.25 + math.random() * (screenH_*0.5)
+                local turret = makeShip("TURRET", tx, ty, "player")
+                turret.isTurret = true
+                turret.speed  = 0
+                playerFleet_[#playerFleet_+1] = turret
+            end
+            if notifyFn_ then
+                notifyFn_("⚔ 轨道炮塔已部署 ×"..turretCount, "success")
+            end
+        end
+    end
     -- P2-2: 先确定是否为夹击波次（25%概率；Boss波不触发夹击）
     isPincerWave_   = (waveNum_ % BOSS_WAVE_INTERVAL ~= 0) and (math.random() < 0.25)
     pincerDefended_ = false
@@ -821,6 +898,15 @@ function BattleScene.Reset()
     bossDefeated_        = false
     bossFlashAlpha_      = 0
     bossFlashTimer_      = 0
+    -- P1-6: Boss 预警状态重置
+    bossWarningActive_   = false
+    bossWarningType_     = nil
+    bossWarningWave_     = 0
+    bossWarningTimer_    = 0
+    -- P0-3: Boss 阶段转换横幅重置
+    bossPhaseBannerTimer_ = 0
+    bossPhaseBannerTotal_ = 2.5
+    bossPhaseBannerText_  = nil
     milestoneFlashAlpha_ = 0
     milestoneBannerTimer_= 0
     hpBlinkTimer_    = 0  -- P3-2 V2.0: 低血闪烁计时器重置
@@ -860,9 +946,245 @@ function BattleScene.AddProductionShip(shipType)
     pendingShips_[#pendingShips_+1] = shipType
 end
 
+--- P1-6: Boss 预警结束后生成 Boss 舰队并进入战斗
+function BattleScene.StartBossWave()
+    -- 根据预警时设定的 Boss 类型生成敌舰
+    syncAIVars()
+    -- P0-1: 超级 Boss 生成
+    if superBossPending_ and superBossType_ then
+        enemyFleet_ = {}
+        -- 添加少量普通护卫舰作为铺垫
+        for i = 1, 3 do
+            local sx = screenW_ - 150 - math.random() * 80
+            local sy = screenH_ * 0.3 + math.random() * screenH_ * 0.4
+            enemyFleet_[#enemyFleet_ + 1] = makeShip("DESTROYER", sx, sy, "enemy")
+        end
+        -- 生成超级 Boss
+        spawnSuperBoss(superBossType_)
+        superBossPending_ = false
+        superBossWarning_ = false
+        bossWarningActive_ = false
+        bossWarningTimer_  = BOSS_WARNING_DUR
+        state_              = "fighting"
+        stateTimer_         = 0
+        formationLocked_    = true
+        Audio.Play(Audio.SFX.WAVE_INCOMING)
+        Audio.SetBGMPitch(1.15)
+        if notifyFn_ then
+            notifyFn_("💀 超级 Boss " .. (superBossName_ or "") .. " 出现！", "error")
+        end
+        print(string.format("[P0-1] 超级 Boss 战斗开始：第%d波 类型=%s", waveNum_, superBossType_))
+        return
+    elseif bossWarningType_ == "VOID_LORD" then
+        -- 虚空领主：生成一艘虚空型 Boss + 少量护卫
+        local bx = screenW_ - 80 - math.random() * 40
+        local by = screenH_ * 0.5
+        enemyFleet_ = {}
+        -- 先加几艘普通护卫舰
+        for i = 1, 3 do
+            local sx = screenW_ - 150 - math.random() * 80
+            local sy = screenH_ * 0.3 + math.random() * screenH_ * 0.4
+            enemyFleet_[#enemyFleet_ + 1] = makeShip("FRIGATE", sx, sy, "enemy")
+        end
+        -- 加 Boss（通过 BattleAI.MakeBossShip）
+        local voidBoss = BattleAI.MakeBossShip("VOID_LORD", bx, by)
+        enemyFleet_[#enemyFleet_ + 1] = voidBoss
+    else
+        -- 其他类型：走 BuildEnemyWave 流程，但传入预警类型
+        enemyFleet_ = BattleAI.BuildEnemyWave(waveNum_, bossWarningType_)
+    end
+    waveEnemyTotal_ = waveEnemyTotal_ + #enemyFleet_
+    -- P3-1: 注册新舰船到回放系统
+    for _, ship in ipairs(playerFleet_) do
+        if not ship._replayId then BattleReplaySystem.RegisterShip(ship) end
+    end
+    for _, ship in ipairs(enemyFleet_) do
+        BattleReplaySystem.RegisterShip(ship)
+    end
+    -- 清理预警状态，进入战斗
+    bossWarningActive_ = false
+    bossWarningTimer_  = BOSS_WARNING_DUR  -- 波次开始时显示 2.5s 短横幅（RenderOverlays）
+    state_              = "fighting"
+    stateTimer_         = 0
+    formationLocked_    = true  -- P2-3: 战斗开始锁定阵型
+    Audio.Play(Audio.SFX.WAVE_INCOMING)
+    Audio.SetBGMPitch(1.05)
+    if notifyFn_ then
+        notifyFn_("⚔ 第 " .. waveNum_ .. " 波：" .. (bossWarningType_ or "BOSS") .. " 出现！", "error")
+    end
+    print(string.format("[P1-6] Boss 战斗开始：第%d波 类型=%s", waveNum_, tostring(bossWarningType_)))
+end
+
+-- P0-1: 超级 Boss 波次检测
+local function checkSuperBoss(waveNum)
+    for i, triggerWave in ipairs(SUPER_BOSS_WAVES) do
+        if waveNum == triggerWave then
+            local bossTypes = {"DEVASTATOR", "VOID_TITAN", "HIVE_MIND"}
+            return bossTypes[i]
+        end
+    end
+    return nil
+end
+
+-- P0-1: 生成超级 Boss
+local function spawnSuperBoss(bossType)
+    local def = SUPER_BOSSES[bossType]
+    if not def then return end
+
+    local boss = makeShip("BATTLECRUISER",
+        screenW_ - 100,
+        screenH_ / 2,
+        "enemy")
+
+    boss.isSuperBoss = true
+    boss.superBossType = bossType
+    boss.name = def.name
+    boss.health = def.health
+    boss.maxHealth = def.health
+    boss.dmg = 60
+    boss.speed = 15
+    boss.isStatic = false
+    boss.currentPhaseIdx = 1
+    boss.currentPhase = def.phases[1]
+    boss.isBoss = true
+    boss.moveAngle = math.pi  -- 向左移动
+
+    table.insert(enemyFleet_, boss)
+    return boss
+end
+
+-- P0-2: 无尽波次生成
+local function startEndlessWave(waveNum)
+    local mode = endlessMode_
+    local difficulty = getEndlessDifficulty(waveNum, mode)
+    endlessDifficulty_ = difficulty
+    
+    local enemyScale = difficulty
+    local enemyCount = math.floor(3 + waveNum * 0.5)
+    enemyCount = math.min(enemyCount, 20)
+    
+    enemyFleet_ = enemyFleet_ or {}
+    for i = 1, enemyCount do
+        local stypes = {"INTERCEPTOR", "DESTROYER", "DESTROYER", "BATTLECRUISER"}
+        if waveNum > 10 then table.insert(stypes, "CARRIER") end
+        if waveNum > 20 then table.insert(stypes, "BATTLECRUISER") end
+        
+        local stype = stypes[math.random(#stypes)]
+        local x = (screenW_ or 800) - 50 - math.random(0, 100)
+        local y = math.random(50, (screenH_ or 600) - 50)
+        
+        local ship = makeShip(stype, x, y, "enemy")
+        ship.health = ship.health * enemyScale
+        ship.maxHealth = ship.maxHealth * enemyScale
+        ship.dmg = ship.dmg * enemyScale
+        table.insert(enemyFleet_, ship)
+    end
+    
+    -- 每 5 波出现一个小型 Boss
+    if waveNum % 5 == 0 then
+        local bossType = waveNum % 10 == 0 and "BATTLECRUISER" or "CARRIER"
+        local boss = makeShip(bossType, (screenW_ or 800) - 80, (screenH_ or 600)/2, "enemy")
+        boss.health = boss.health * enemyScale * 2
+        boss.maxHealth = boss.maxHealth * enemyScale * 2
+        boss.dmg = boss.dmg * enemyScale * 1.5
+        boss.isBoss = true
+        table.insert(enemyFleet_, boss)
+    end
+    
+    waveNum_ = waveNum
+    waveStartTimer_ = 3.0
+    state_ = "fighting"
+    
+    -- 注册新舰船到回放系统
+    for _, ship in ipairs(playerFleet_) do
+        if not ship._replayId then BattleReplaySystem.RegisterShip(ship) end
+    end
+    for _, ship in ipairs(enemyFleet_) do
+        BattleReplaySystem.RegisterShip(ship)
+    end
+    
+    waveEnemyTotal_ = waveEnemyTotal_ + #enemyFleet_
+    projectiles_ = {}
+    floatTexts_ = {}
+    hitSparks_ = {}
+    shockRings_ = {}
+    
+    if notifyFn_ then
+        notifyFn_("∞ 第 " .. waveNum .. " 波（难度×" .. string.format("%.2f", difficulty) .. "）", "warn")
+    end
+end
+
+-- P0-2: 无尽波次完成结算
+local function onEndlessWaveComplete(waveNum)
+    local rewards = {}
+    
+    -- 每 10 波奖励
+    if waveNum % 10 == 0 then
+        local r = ENDLESS_REWARDS.every10Wave.blueCrystal
+        rewards.blueCrystal = r[1] + math.random(0, r[2] - r[1])
+    end
+    
+    -- 每 25 波稀有材料
+    if waveNum % 25 == 0 then
+        rewards.purpleCrystal = ENDLESS_REWARDS.every25Wave.purpleCrystal
+    end
+    
+    -- 里程碑奖励
+    local milestone = ENDLESS_REWARDS.milestone[waveNum]
+    if milestone then
+        for k, v in pairs(milestone) do
+            rewards[k] = (rewards[k] or 0) + v
+        end
+    end
+    
+    -- 发放奖励
+    if rm_ and rm_.addRare and next(rewards) then
+        for res, amount in pairs(rewards) do
+            rm_:addRare(res, amount)
+        end
+        local rewardStr = ""
+        for res, amount in pairs(rewards) do
+            rewardStr = rewardStr .. amount .. res .. " "
+        end
+        if notifyFn_ then
+            notifyFn_("无尽波次 " .. waveNum .. " 完成！获得: " .. rewardStr, "success")
+        end
+    end
+    
+    -- 更新记录
+    if waveNum > endlessRecord_ then
+        endlessRecord_ = waveNum
+    end
+    
+    -- 速通模式检查
+    if endlessMode_ == "SPEEDRUN" then
+        local elapsed = os.time() - (endlessStartTime_ or os.time())
+        if waveNum >= 50 then
+            if notifyFn_ then
+                notifyFn_("速通成功！用时 " .. math.floor(elapsed) .. " 秒", "legendary")
+            end
+            endlessMode_ = nil
+            state_ = "win"
+        elseif elapsed >= 600 then
+            if notifyFn_ then
+                notifyFn_("速通失败！超时", "warning")
+            end
+            endlessMode_ = nil
+            state_ = "lose"
+        end
+    end
+    
+    endlessWave_ = endlessWave_ + 1
+end
+
 --- 手动开始新波次（保留我方存活舰船）
 function BattleScene.StartNextWave()
     waveNum_ = waveNum_ + 1
+    -- P0-2: 无尽模式检测
+    if endlessMode_ then
+        startEndlessWave(endlessWave_)
+        return
+    end
     -- P2-1: 推进异象状态（上一波结束）
     local newAnomaly = AnomalySystem.OnWaveEnd(waveNum_ - 1)
     if newAnomaly then
@@ -884,6 +1206,100 @@ function BattleScene.StartNextWave()
         playerFleet_[#playerFleet_+1] = makeShip(ps, x, y, "player")
     end
     pendingShips_     = {}
+    -- P0-1: 超级 Boss 波次检测（优先级最高）
+    local superBossType = checkSuperBoss(waveNum_)
+    if superBossType then
+        -- 超级 Boss 波：显示特殊预警
+        superBossWarning_ = true
+        superBossType_ = superBossType
+        superBossName_ = SUPER_BOSSES[superBossType].name
+        superBossWarningTimer_ = 5  -- 5秒预警
+        -- 延迟生成 Boss
+        superBossPending_ = true
+        enemyFleet_ = {}
+        waveEnemyTotal_   = waveEnemyTotal_ + 1
+        projectiles_      = {}
+        floatTexts_       = {}
+        hitSparks_        = {}
+        shockRings_       = {}
+        moveTarget_       = nil
+        moveTargetTimer_  = 0
+        state_            = "bossWarning"
+        stateTimer_       = 0
+        battleEndFired_   = false
+        waveGapTimer_     = 0
+        formationLocked_  = false
+        prepSkipped_      = false
+        initialPlayerCount_ = #playerFleet_
+        currentWaveStar_    = 0
+        starAnim_           = 0
+        bossDefeated_     = false
+        bossPhaseBannerTimer_ = 0
+        bossPhaseBannerTotal_ = 2.5
+        bossPhaseBannerText_  = nil
+        waveKills_     = 0
+        waveMaxCombo_  = 0
+        waveDmgDealt_  = 0
+        waveShipsLost_ = 0
+        for _, ps in ipairs(playerFleet_) do
+            ps.statDmg   = 0
+            ps.statKills = 0
+        end
+        Audio.Play(Audio.SFX.WAVE_INCOMING)
+        Audio.SetBGMPitch(1.10)
+        if notifyFn_ then
+            notifyFn_("⚠⚠⚠ 第 " .. waveNum_ .. " 波：超级 Boss " .. SUPER_BOSSES[superBossType].name .. " 来袭！", "error")
+        end
+        print(string.format("[P0-1] 超级 Boss 预警：第%d波 类型=%s", waveNum_, superBossType))
+        return
+    -- P1-6: 判定是否进入 Boss 预警阶段
+    elseif isBossW then
+        -- P1-6: 确定 Boss 类型（根据波次数轮换：BATTLECRUISER → CARRIER → VOID_LORD）
+        local bossTypes = {"BATTLECRUISER", "CARRIER", "VOID_LORD"}
+        local bossIdx = math.floor((waveNum_ / BOSS_WAVE_INTERVAL - 1) % #bossTypes) + 1
+        bossWarningType_   = bossTypes[bossIdx]
+        bossWarningWave_   = waveNum_
+        bossWarningActive_ = true
+        bossWarningTimer_  = BOSS_WARN_DUR
+        -- P1-6: 预警阶段不生成敌舰，延迟到预警结束后再生成
+        enemyFleet_ = {}
+        waveEnemyTotal_   = waveEnemyTotal_ + 1  -- 至少登记 1 艘（后续生成时再累加）
+        projectiles_      = {}
+        floatTexts_       = {}
+        hitSparks_        = {}
+        shockRings_       = {}
+        moveTarget_       = nil
+        moveTargetTimer_  = 0
+        state_            = "bossWarning"
+        stateTimer_       = 0
+        battleEndFired_   = false
+        waveGapTimer_     = 0
+        formationLocked_  = false  -- P1-6: 预警期间保持阵型可调整
+        prepSkipped_      = false
+        initialPlayerCount_ = #playerFleet_
+        currentWaveStar_    = 0
+        starAnim_           = 0
+        bossDefeated_     = false
+        bossPhaseBannerTimer_ = 0
+        bossPhaseBannerTotal_ = 2.5
+        bossPhaseBannerText_  = nil
+        waveKills_     = 0
+        waveMaxCombo_  = 0
+        waveDmgDealt_  = 0
+        waveShipsLost_ = 0
+        for _, ps in ipairs(playerFleet_) do
+            ps.statDmg   = 0
+            ps.statKills = 0
+        end
+        bossWarningTimer_ = BOSS_WARN_DUR
+        Audio.Play(Audio.SFX.WAVE_INCOMING)
+        Audio.SetBGMPitch(1.05)
+        if notifyFn_ then
+            notifyFn_("⚠ 第 " .. waveNum_ .. " 波 Boss 来袭！" .. bossWarningType_ .. " 即将出现", "warn")
+        end
+        print(string.format("[P1-6] Boss 预警：第%d波 类型=%s", waveNum_, bossWarningType_))
+        return  -- P1-6: 预警阶段直接返回，不生成敌舰
+    end
     -- P2-2: 先确定是否为夹击波次（25%概率；Boss波不触发夹击）
     isPincerWave_   = (waveNum_ % BOSS_WAVE_INTERVAL ~= 0) and (math.random() < 0.25)
     pincerDefended_ = false
@@ -925,6 +1341,10 @@ function BattleScene.StartNextWave()
     starAnim_           = 0
     -- Boss 波状态重置
     bossDefeated_     = false
+    -- P0-3: Boss 阶段转换横幅重置
+    bossPhaseBannerTimer_ = 0
+    bossPhaseBannerTotal_ = 2.5
+    bossPhaseBannerText_  = nil
     -- P1-1: 新波次开始，重置本波统计
     waveKills_     = 0
     waveMaxCombo_  = 0
@@ -935,8 +1355,7 @@ function BattleScene.StartNextWave()
         ps.statDmg   = 0
         ps.statKills = 0
     end
-    local isBossW = (waveNum_ % BOSS_WAVE_INTERVAL == 0)
-    bossWarningTimer_ = isBossW and BOSS_WARNING_DUR or 0
+    bossWarningTimer_ = 0
     -- P3-1: 注册新舰船到回放系统（新波次的新增舰船）
     for _, ship in ipairs(playerFleet_) do
         if not ship._replayId then BattleReplaySystem.RegisterShip(ship) end
@@ -1116,13 +1535,34 @@ local function pushToCtx()
     ctx.prepSkipped        = prepSkipped_
     ctx.waveNum            = waveNum_
     ctx.bossDefeated       = bossDefeated_
+    -- P1-6: Boss 预警阶段字段
+    ctx.bossWarningActive  = bossWarningActive_
     ctx.bossWarningTimer   = bossWarningTimer_
+    ctx.bossWarningType    = bossWarningType_
+    ctx.bossWarningWave    = bossWarningWave_
+    ctx.bossWarningDuration = BOSS_WARN_DUR
     ctx.bossFlashAlpha     = bossFlashAlpha_
     ctx.bossFlashTimer     = bossFlashTimer_
+    -- P0-3: Boss 阶段转换横幅
+    ctx.bossPhaseBannerTimer = bossPhaseBannerTimer_
+    ctx.bossPhaseBannerTotal = bossPhaseBannerTotal_
+    ctx.bossPhaseBannerText  = bossPhaseBannerText_
     ctx.milestoneFlashAlpha  = milestoneFlashAlpha_
     ctx.milestoneBannerTimer = milestoneBannerTimer_
     ctx.milestoneRound     = milestoneRound_
     ctx.endlessRound       = endlessRound_
+    -- P0-2: 无尽模式状态
+    ctx.endlessMode        = endlessMode_
+    ctx.endlessWave        = endlessWave_
+    ctx.endlessRecord      = endlessRecord_
+    ctx.endlessDifficulty  = endlessDifficulty_
+    -- P1-1: Boss Rush 模式状态
+    ctx.bossRushMode       = bossRushMode_
+    ctx.bossRushState      = bossRushState_
+    ctx.bossRushCurrent    = bossRushCurrent_
+    ctx.bossRushRestTimer  = bossRushRestTimer_
+    ctx.bossRushScore      = bossRushScore_
+    ctx.bossRushResult     = bossRushResult_
     ctx.hpBlinkTimer       = hpBlinkTimer_
     ctx.interceptorEngineTimer = interceptorEngineTimer_
     ctx.fireTimer          = fireTimer_
@@ -1183,13 +1623,33 @@ local function pullFromCtx()
     prepSkipped_        = ctx.prepSkipped
     waveNum_            = ctx.waveNum
     bossDefeated_       = ctx.bossDefeated
+    -- P1-6: Boss 预警阶段字段回写
+    bossWarningActive_  = ctx.bossWarningActive
     bossWarningTimer_   = ctx.bossWarningTimer
+    bossWarningType_    = ctx.bossWarningType
+    bossWarningWave_    = ctx.bossWarningWave
     bossFlashAlpha_     = ctx.bossFlashAlpha
     bossFlashTimer_     = ctx.bossFlashTimer
+    -- P0-3: Boss 阶段转换横幅（回写本地状态）
+    bossPhaseBannerTimer_ = ctx.bossPhaseBannerTimer or 0
+    bossPhaseBannerTotal_ = ctx.bossPhaseBannerTotal or 2.5
+    bossPhaseBannerText_  = ctx.bossPhaseBannerText
     milestoneFlashAlpha_  = ctx.milestoneFlashAlpha
     milestoneBannerTimer_ = ctx.milestoneBannerTimer
     milestoneRound_     = ctx.milestoneRound
     endlessRound_       = ctx.endlessRound
+    -- P0-2: 无尽模式状态
+    endlessMode_        = ctx.endlessMode
+    endlessWave_        = ctx.endlessWave
+    endlessRecord_      = ctx.endlessRecord
+    endlessDifficulty_  = ctx.endlessDifficulty
+    -- P1-1: Boss Rush 模式状态
+    bossRushMode_      = ctx.bossRushMode
+    bossRushState_     = ctx.bossRushState
+    bossRushCurrent_   = ctx.bossRushCurrent
+    bossRushRestTimer_ = ctx.bossRushRestTimer
+    bossRushScore_     = ctx.bossRushScore
+    bossRushResult_    = ctx.bossRushResult
     hpBlinkTimer_       = ctx.hpBlinkTimer
     interceptorEngineTimer_ = ctx.interceptorEngineTimer
     fireTimer_          = ctx.fireTimer
@@ -1236,56 +1696,337 @@ local function pullFromCtx()
     comboDisplayTimer_  = ctx.comboDisplayTimer
 end
 
---- 主逻辑更新：sync 桥 + 委托战斗子模块
+-- P0-6: 自动战斗 AI
+local function updateAutoBattle(dt)
+    if not autoBattleEnabled_ then return end
+    if not playerFleet_ then return end
+
+    -- 友军自动决策
+    for _, ship in ipairs(playerFleet_) do
+        if ship.health > 0 and not ship.isDead then
+            -- 隐身舰：空闲时自动隐身
+            if ship.stype == "STEALTH" and AUTO_BATTLE.stealthWhenIdle then
+                if not ship.target or ship.target.isDead then
+                    ship.isStealthed = true
+                else
+                    ship.isStealthed = false
+                end
+            end
+
+            -- 治疗舰：优先治疗低血量友军
+            if ship.stype == "SUPPORT" then
+                local lowestAlly = nil
+                local lowestHp = 1.0
+                for _, ally in ipairs(playerFleet_) do
+                    if ally ~= ship and ally.health > 0 and not ally.isDead then
+                        local hpRatio = ally.health / ally.maxHealth
+                        if hpRatio < lowestHp and hpRatio < 0.8 then
+                            lowestHp = hpRatio
+                            lowestAlly = ally
+                        end
+                    end
+                end
+                if lowestAlly then
+                    ship.target = lowestAlly
+                    ship.autoHealing = true
+                end
+            end
+
+            -- 低血量后撤
+            local hpRatio = ship.health / ship.maxHealth
+            if hpRatio < AUTO_BATTLE.retreatThreshold and not ship.isRetreating then
+                ship.isRetreating = true
+                ship.retreatTimer = 2.0
+            end
+            if ship.isRetreating then
+                ship.retreatTimer = ship.retreatTimer - dt
+                local angle = math.atan2(ship.y - (screenH_/2), ship.x - (screenW_/2))
+                ship.autoMoveX = math.cos(angle) * 50
+                ship.autoMoveY = math.sin(angle) * 50
+                if ship.retreatTimer <= 0 or hpRatio > 0.5 then
+                    ship.isRetreating = false
+                end
+            end
+
+            -- 攻击最近敌舰
+            if not ship.target or ship.target.isDead or ship.target.health <= 0 then
+                local nearest = nil
+                local nearestDist = math.huge
+                if enemyFleet_ then
+                    for _, enemy in ipairs(enemyFleet_) do
+                        if enemy.health > 0 and not enemy.isDead then
+                            local dx, dy = enemy.x - ship.x, enemy.y - ship.y
+                            local dist = math.sqrt(dx*dx + dy*dy)
+                            if dist < nearestDist then
+                                nearestDist = dist
+                                nearest = enemy
+                            end
+                        end
+                    end
+                end
+                ship.target = nearest
+            end
+
+            -- 自动使用技能
+            if AUTO_BATTLE.useSkillsAutomatically then
+                if ship.stype == "DESTROYER" and ctx.skill8CD_ and ctx.skill8CD_ <= 0 then
+                    local lowHpAllies = 0
+                    for _, ally in ipairs(playerFleet_) do
+                        if ally.health / ally.maxHealth < 0.5 then lowHpAllies = lowHpAllies + 1 end
+                    end
+                    if lowHpAllies >= 3 and ctx.skill6Available then
+                        -- 战术协同技能激活（需要 BattleSkills 模块支持）
+                        if BattleSkills and BattleSkills.ActivateSkill then
+                            BattleSkills.ActivateSkill(6)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+--- 主逻辑更新（Phase 2：核心循环委托 BattleOrchestrator；暂停/键盘快捷键保持在 BattleScene）
 function BattleScene.Update(dt)
     pushToCtx()
 
-    -- 已结束状态守卫（win/lose）：处理倒计时/烟花，跳过战斗逻辑
-    local handled, startNext = BattleWinLose.UpdateGuard(dt, ctx)
-    if handled then
+    -- P1-10: 暂停检测（键盘快捷键 P/ESC）
+    if love and love.keyboard then
+        if love.keyboard.isDown("p") or love.keyboard.isDown("P") or love.keyboard.isDown("escape") then
+            if not pauseKeyDown_ then
+                BattleScene.togglePause()
+                pauseKeyDown_ = true
+            end
+        else
+            pauseKeyDown_ = false
+        end
+    end
+
+    -- P1-10: 暂停时不更新游戏逻辑
+    if paused_ then
         pullFromCtx()
-        if startNext then BattleScene.StartNextWave() end
         return
     end
 
-    -- 计时器/背景/环境粒子/连击衰减/增援/自适应音乐/指挥官技能/要塞回复
-    BattleTimers.Update(dt, ctx, makeShip)
-    -- 玩家舰队战斗（移动/集火/模块/词缀/伤害）
-    BattleCombatPlayer.Update(dt, ctx)
-    -- 敌方 AI 战斗（移动/索敌/伤害/阵型/反弹）
-    BattleCombatEnemy.Update(dt, ctx)
-    -- 死亡清理 + 击杀归属 + 连击 + Boss奖励 + 连锁反应
-    BattleDeath.Update(dt, ctx, makeShip)
-    -- 视觉/音效更新（子弹/飘字/粒子/震动/被动治疗等）
-    BattleVFX.Update(dt, ctx)
-    -- 胜负检测与结算（资源奖励/星级/技能卡）
-    BattleWinLose.Detect(dt, ctx)
+    -- 同步标量状态到 Orchestrator（所有表引用保持一致，原地修改可见）
+    BattleOrchestrator.SyncIn({
+        makeShip = makeShip,
+        playerFleet = playerFleet_, enemyFleet = enemyFleet_,
+        projectiles = projectiles_, floatTexts = floatTexts_,
+        notifyFn = notifyFn_, onBattleEnd = onBattleEnd_,
+        rm = rm_, rs = rs_,
+        BattleWinLose = BattleWinLose,
+        BattleCombatPlayer = BattleCombatPlayer,
+        BattleCombatEnemy = BattleCombatEnemy,
+        BattleTimers = BattleTimers,
+        BattleDeath = BattleDeath,
+        BattleVFX = BattleVFX,
+        BattleContext = BattleContext,
+        cmdSys = cmdSys_,
+        vars = {
+            screenW = screenW_, screenH = screenH_,
+            state = state_, stateTimer = stateTimer_,
+            battleEndFired = battleEndFired_, shootSfxTimer = shootSfxTimer_,
+            reinforceCooldown = reinforceCooldown_,
+            waveNum = waveNum_, waveGapTimer = waveGapTimer_,
+            prepSkipped = prepSkipped_, bossDefeated = bossDefeated_,
+            bossWarningActive = bossWarningActive_, bossWarningTimer = bossWarningTimer_,
+            bossWarningType = bossWarningType_, bossWarningWave = bossWarningWave_,
+            bossFlashAlpha = bossFlashAlpha_, bossFlashTimer = bossFlashTimer_,
+            bossPhaseBannerTimer = bossPhaseBannerTimer_,
+            bossPhaseBannerTotal = bossPhaseBannerTotal_,
+            bossPhaseBannerText = bossPhaseBannerText_,
+            superBossWarning = superBossWarning_, superBossType = superBossType_,
+            superBossName = superBossName_, superBossWarningTimer = superBossWarningTimer_,
+            superBossPending = superBossPending_,
+            milestoneFlashAlpha = milestoneFlashAlpha_,
+            milestoneBannerTimer = milestoneBannerTimer_,
+            milestoneRound = milestoneRound_, endlessRound = endlessRound_,
+            endlessMode = endlessMode_, endlessWave = endlessWave_,
+            endlessRecord = endlessRecord_, endlessDifficulty = endlessDifficulty_,
+            endlessStartTime = endlessStartTime_,
+            bossRushMode = bossRushMode_, bossRushState = bossRushState_,
+            bossRushCurrent = bossRushCurrent_, bossRushRestTimer = bossRushRestTimer_,
+            bossRushScore = bossRushScore_, bossRushResult = bossRushResult_,
+            bossRushBosses = bossRushBosses_, bossRushHealthBonus = bossRushHealthBonus_,
+            bossRushStartTime = bossRushStartTime_,
+            hpBlinkTimer = hpBlinkTimer_, interceptorEngineTimer = interceptorEngineTimer_,
+            fireTimer = fireTimer_, fwLaunchTimer = fwLaunchTimer_,
+            bgScrollX = bgScrollX_, bgScrollY = bgScrollY_,
+            currentWaveStar = currentWaveStar_, starAnim = starAnim_,
+            initialPlayerCount = initialPlayerCount_,
+            engineerHealTimer = engineerHealTimer_, chainCount = chainCount_,
+            envAnnounceAlpha = envAnnounceAlpha_, envAnnounceTimer = envAnnounceTimer_,
+            envAsteroidTimer = envAsteroidTimer_, fortressRegenTimer = fortressRegenTimer_,
+            pincerAnnounceTimer = pincerAnnounceTimer_, pincerDefended = pincerDefended_,
+            isPincerWave = isPincerWave_, nemesisActive = nemesisActive_,
+            nemesisAnnounceTimer = nemesisAnnounceTimer_, nemesisResult = nemesisResult_,
+            nemesisResultTimer = nemesisResultTimer_,
+            anomalyNotify = anomalyNotify_, anomalyNotifyTimer = anomalyNotifyTimer_,
+            moveTarget = moveTarget_, moveTargetTimer = moveTargetTimer_,
+            cmdSkillActive = cmdSkillActive_, cmdSkillTimer = cmdSkillTimer_,
+            cmdSkillDef = cmdSkillDef_, commanderFleetId = commanderFleetId_,
+            currentFormation = currentFormation_, formationLocked = formationLocked_,
+            focusTarget = focusTarget_, explorerMarkTarget = explorerMarkTarget_,
+            skillUpgradeCards = skillUpgradeCards_, waveSummary = waveSummary_,
+            waveKills = waveKills_, waveKillTotal = waveKillTotal_,
+            waveMaxCombo = waveMaxCombo_, waveDmgDealt = waveDmgDealt_,
+            waveShipsLost = waveShipsLost_,
+            comboCount = comboCount_, comboTimer = comboTimer_,
+            comboDisplayTimer = comboDisplayTimer_, paused = paused_,
+            battleSpeed = battleSpeed_, battleSpeedId = battleSpeedId_,
+            autoBattleEnabled = autoBattleEnabled_,
+            autoBattleKeyDown = autoBattleKeyDown_, commandKeyDown = commandKeyDown_,
+            loseBtn1 = loseBtn1_, loseBtn2 = loseBtn2_,
+            formationBtn = formationBtn_, retreatBtn = retreatBtn_,
+            reinforceBtn = reinforceBtn_, focusHudBtn = focusHudBtn_,
+            skillUpgradeCardBtns = skillUpgradeCardBtns_, selectedShip = selectedShip_,
+            retreatUsed = retreatUsed_, SK = SK_, RF = RF_,
+            battleStats = battleStats_, FORMATION_CONFIG = FORMATION_CONFIG,
+            COMBO_LEVELS = COMBO_LEVELS, currentEnv = currentEnv_,
+            moduleMap = moduleMap_, mutantMap = mutantMap_,
+            leagueAttackMult = leagueAttackMult_,
+            scoutAuraApplied = scoutAuraApplied_,
+            bgStars = bgStars_, fireParticles = fireParticles_,
+            explParticles = explParticles_, hitSparks = hitSparks_,
+            shockRings = shockRings_, fwParticles = fwParticles_,
+            envParticles = envParticles_,
+        }
+    })
 
+    -- 无尽模式结束处理（与原始逻辑保持一致：若 win 且 endless 则先做 onEndlessWaveComplete + 生成新波）
+    if endlessMode_ and state_ == "win" and not battleEndFired_ then
+        onEndlessWaveComplete(endlessWave_)
+        startEndlessWave(endlessWave_)
+        pullFromCtx()
+        return
+    end
+
+    -- Boss Rush 波次击败处理
+    if bossRushMode_ and state_ == "waveComplete" then
+        onBossRushBossDefeated()
+        pullFromCtx()
+        return
+    end
+
+    -- 主战斗循环
+    local startBoss, startNext = BattleOrchestrator.Update(dt)
+
+    -- 回写 Orchestrator 中的标量变化
+    local out = BattleOrchestrator.GetOut()
+    screenW_            = out.screenW
+    screenH_            = out.screenH
+    state_              = out.state
+    stateTimer_         = out.stateTimer
+    battleEndFired_     = out.battleEndFired
+    shootSfxTimer_      = out.shootSfxTimer
+    reinforceCooldown_  = out.reinforceCooldown
+    waveNum_            = out.waveNum
+    waveGapTimer_       = out.waveGapTimer
+    prepSkipped_        = out.prepSkipped
+    bossDefeated_       = out.bossDefeated
+    bossWarningActive_  = out.bossWarningActive
+    bossWarningTimer_   = out.bossWarningTimer
+    bossWarningType_    = out.bossWarningType
+    bossWarningWave_    = out.bossWarningWave
+    bossFlashAlpha_     = out.bossFlashAlpha
+    bossFlashTimer_     = out.bossFlashTimer
+    bossPhaseBannerTimer_ = out.bossPhaseBannerTimer
+    bossPhaseBannerTotal_ = out.bossPhaseBannerTotal
+    bossPhaseBannerText_  = out.bossPhaseBannerText
+    superBossWarning_   = out.superBossWarning
+    superBossType_      = out.superBossType
+    superBossName_      = out.superBossName
+    superBossWarningTimer_ = out.superBossWarningTimer
+    superBossPending_   = out.superBossPending
+    milestoneFlashAlpha_ = out.milestoneFlashAlpha
+    milestoneBannerTimer_ = out.milestoneBannerTimer
+    milestoneRound_     = out.milestoneRound
+    endlessRound_       = out.endlessRound
+    endlessMode_        = out.endlessMode
+    endlessWave_        = out.endlessWave
+    endlessRecord_      = out.endlessRecord
+    endlessDifficulty_  = out.endlessDifficulty
+    endlessStartTime_   = out.endlessStartTime
+    bossRushMode_       = out.bossRushMode
+    bossRushState_      = out.bossRushState
+    bossRushCurrent_    = out.bossRushCurrent
+    bossRushRestTimer_  = out.bossRushRestTimer
+    bossRushScore_      = out.bossRushScore
+    bossRushResult_     = out.bossRushResult
+    bossRushBosses_     = out.bossRushBosses
+    bossRushHealthBonus_ = out.bossRushHealthBonus
+    bossRushStartTime_  = out.bossRushStartTime
+    hpBlinkTimer_       = out.hpBlinkTimer
+    interceptorEngineTimer_ = out.interceptorEngineTimer
+    fireTimer_          = out.fireTimer
+    fwLaunchTimer_      = out.fwLaunchTimer
+    bgScrollX_          = out.bgScrollX
+    bgScrollY_          = out.bgScrollY
+    currentWaveStar_    = out.currentWaveStar
+    starAnim_           = out.starAnim
+    initialPlayerCount_ = out.initialPlayerCount
+    engineerHealTimer_  = out.engineerHealTimer
+    chainCount_         = out.chainCount
+    envAnnounceAlpha_   = out.envAnnounceAlpha
+    envAnnounceTimer_   = out.envAnnounceTimer
+    envAsteroidTimer_   = out.envAsteroidTimer
+    fortressRegenTimer_ = out.fortressRegenTimer
+    pincerAnnounceTimer_ = out.pincerAnnounceTimer
+    pincerDefended_     = out.pincerDefended
+    isPincerWave_       = out.isPincerWave
+    nemesisActive_      = out.nemesisActive
+    nemesisAnnounceTimer_ = out.nemesisAnnounceTimer
+    nemesisResult_      = out.nemesisResult
+    nemesisResultTimer_ = out.nemesisResultTimer
+    anomalyNotify_      = out.anomalyNotify
+    anomalyNotifyTimer_ = out.anomalyNotifyTimer
+    moveTarget_         = out.moveTarget
+    moveTargetTimer_    = out.moveTargetTimer
+    cmdSkillActive_     = out.cmdSkillActive
+    cmdSkillTimer_      = out.cmdSkillTimer
+    cmdSkillDef_        = out.cmdSkillDef
+    commanderFleetId_   = out.commanderFleetId
+    currentFormation_   = out.currentFormation
+    formationLocked_    = out.formationLocked
+    focusTarget_        = out.focusTarget
+    explorerMarkTarget_ = out.explorerMarkTarget
+    skillUpgradeCards_  = out.skillUpgradeCards
+    waveSummary_        = out.waveSummary
+    waveKills_          = out.waveKills
+    waveKillTotal_      = out.waveKillTotal
+    waveMaxCombo_       = out.waveMaxCombo
+    waveDmgDealt_       = out.waveDmgDealt
+    waveShipsLost_      = out.waveShipsLost
+    comboCount_         = out.comboCount
+    comboTimer_         = out.comboTimer
+    comboDisplayTimer_  = out.comboDisplayTimer
+    paused_             = out.paused
+    battleSpeed_        = out.battleSpeed
+    battleSpeedId_      = out.battleSpeedId
+    autoBattleEnabled_  = out.autoBattleEnabled
+    autoBattleKeyDown_  = out.autoBattleKeyDown
+    commandKeyDown_     = out.commandKeyDown
+    loseBtn1_           = out.loseBtn1
+    loseBtn2_           = out.loseBtn2
+    formationBtn_       = out.formationBtn
+    retreatBtn_         = out.retreatBtn
+    reinforceBtn_       = out.reinforceBtn
+    focusHudBtn_        = out.focusHudBtn
+    skillUpgradeCardBtns_ = out.skillUpgradeCardBtns
+    selectedShip_       = out.selectedShip
+    retreatUsed_        = out.retreatUsed
+
+    -- 根据 Orchestrator 的返回做波次跳转
     pullFromCtx()
+    if startBoss then BattleScene.StartBossWave() end
+    if startNext then BattleScene.StartNextWave() end
 end
 
 -- ============================================================================
 -- 渲染（委托给 BattleRender 模块）
 -- ============================================================================
 function BattleScene.Render()
-    -- 懒加载舰船纹理（尝试1次，失败则放弃避免每帧重试）
-    if not shipImagesLoaded_ and vg_ then
-        local f = NVG_IMAGE_PREMULTIPLIED
-        local test = nvgCreateImage(vg_, "image/ship_scout_20260511185829.png", f)
-        if test and test > 0 then
-            shipImages_["SCOUT"]         = test
-            shipImages_["FRIGATE"]       = nvgCreateImage(vg_, "image/ship_frigate_20260511185830.png",       f)
-            shipImages_["DESTROYER"]     = nvgCreateImage(vg_, "image/ship_destroyer_20260511185818.png",     f)
-            shipImages_["BATTLECRUISER"] = nvgCreateImage(vg_, "image/ship_battlecruiser_20260512164935.png", f)
-            shipImages_["MINER"]         = nvgCreateImage(vg_, "image/ship_miner_20260511185819.png",         f)
-            shipImages_["ENGINEER"]      = nvgCreateImage(vg_, "image/ship_engineer_20260512071656.png",      f)
-            shipImages_["EXPLORER"]      = nvgCreateImage(vg_, "image/ship_explorer_20260512071647.png",      f)
-            shipImages_["CARRIER"]       = nvgCreateImage(vg_, "image/ship_carrier_20260513074052.png",       f)
-            shipImages_["INTERCEPTOR"]   = nvgCreateImage(vg_, "image/ship_interceptor_20260513074045.png",   f)
-        end
-        shipImagesLoaded_ = true  -- 无论成功与否都停止重试
-    end
-
     -- 同步状态到 BattleState 共享表
     local BS = BattleState
     BS.vg       = vg_
@@ -1309,11 +2050,27 @@ function BattleScene.Render()
 
     BS.SK = SK_
 
-    BS.bossWarningTimer  = bossWarningTimer_
+    -- P1-6: Boss 预警阶段字段同步到 BattleState
+    BS.bossWarningActive  = bossWarningActive_
+    BS.bossWarningTimer   = bossWarningTimer_
+    BS.bossWarningType    = bossWarningType_
+    BS.bossWarningWave    = bossWarningWave_
+    BS.bossWarningDuration = BOSS_WARN_DUR
     BS.bossFlashAlpha    = bossFlashAlpha_
     BS.bossFlashTimer    = bossFlashTimer_
     BS.bossDefeated      = bossDefeated_
+    -- P0-3: Boss 阶段转换横幅（回写到 BattleState）
+    BS.bossPhaseBannerTimer = bossPhaseBannerTimer_
+    BS.bossPhaseBannerTotal = bossPhaseBannerTotal_
+    BS.bossPhaseBannerText  = bossPhaseBannerText_
     BS.BOSS_WAVE_INTERVAL = BOSS_WAVE_INTERVAL
+    -- P0-1: 超级 Boss 状态同步
+    BS.superBossWarning     = superBossWarning_
+    BS.superBossType        = superBossType_
+    BS.superBossName        = superBossName_
+    BS.superBossWarningTimer = superBossWarningTimer_
+    BS.superBossPending     = superBossPending_
+    BS.SUPER_BOSSES         = SUPER_BOSSES
 
     BS.comboCount        = comboCount_
     BS.comboTimer        = comboTimer_
@@ -1363,9 +2120,22 @@ function BattleScene.Render()
     BS.RF = RF_
 
     BS.endlessRound        = endlessRound_
+    -- P0-2: 无尽模式状态
+    BS.endlessMode        = endlessMode_
+    BS.endlessWave        = endlessWave_
+    BS.endlessRecord      = endlessRecord_
+    BS.endlessDifficulty  = endlessDifficulty_
     BS.milestoneFlashAlpha = milestoneFlashAlpha_
     BS.milestoneBannerTimer = milestoneBannerTimer_
     BS.milestoneRound      = milestoneRound_
+
+    -- P1-1: Boss Rush 模式状态
+    BS.bossRushMode       = bossRushMode_
+    BS.bossRushState      = bossRushState_
+    BS.bossRushCurrent    = bossRushCurrent_
+    BS.bossRushRestTimer  = bossRushRestTimer_
+    BS.bossRushScore      = bossRushScore_
+    BS.bossRushResult     = bossRushResult_
 
     BS.waveSummary = waveSummary_
 
@@ -1378,15 +2148,24 @@ function BattleScene.Render()
 
     BS.explorerMarkTarget = explorerMarkTarget_
 
+    -- P0-7: 战斗速度与自动战斗状态同步到 BattleState
+    BS.battleSpeed = battleSpeed_
+    BS.battleSpeedId = battleSpeedId_
+    BS.autoBattleEnabled = autoBattleEnabled_
+    
+    -- P1-10: 暂停状态同步到 BattleState
+    BS.paused = paused_
+
     -- 模块/函数引用（仅首次或变化时需要，但每帧赋值开销极低）
     BS.LiverySystem  = LiverySystem
     BS.BattleSkills  = BattleSkills
+    BS.BattleCommandSystem = cmdSys_  -- P1-P2-1: 战斗指令系统
     BS.rm            = rm_
     BS.rs            = rs_
     BS.notifyFn      = notifyFn_
     BS.getComboLevel      = getComboLevel
     BS.getNextWavePreview = BattleAI.GetNextWavePreview
-    BS.SHIP_TYPES    = SHIP_TYPES
+    BS.SHIP_TYPES    = Systems.SHIP_TYPES
     BS.NemesisSystem = NemesisSystem
     BS.AnomalySystem = AnomalySystem
 
@@ -1408,6 +2187,35 @@ end
 -- ============================================================================
 -- 状态查询
 -- ============================================================================
+-- P1-P2-1: 战斗指令系统 API
+--- 执行战斗指令
+---@param commandId string 指令ID
+---@return boolean, string 成功与否, 错误信息
+function BattleScene.ExecuteCommand(commandId)
+    if not cmdSys_ then return false, "指令系统未初始化" end
+    local ok, reason = cmdSys_:execute(commandId, ctx)
+    if ok and notifyFn_ then
+        local cmd = cmdSys_ and cmdSys_.cooldowns[commandId]
+        -- 指令执行成功反馈
+    end
+    return ok, reason
+end
+
+--- 获取所有指令的冷却状态
+---@return table 指令冷却状态表
+function BattleScene.GetCommandCooldowns()
+    if not cmdSys_ then return {} end
+    return cmdSys_:getCooldowns()
+end
+
+--- 检查指令是否可用
+---@param commandId string 指令ID
+---@return boolean, string 可用与否, 错误信息
+function BattleScene.CanUseCommand(commandId)
+    if not cmdSys_ then return false, "指令系统未初始化" end
+    return cmdSys_:canUse(commandId, ctx)
+end
+
 function BattleScene.GetState()       return state_ end
 function BattleScene.GetWave()        return waveNum_ end
 function BattleScene.GetPlayerCount() return #playerFleet_ end
@@ -1474,170 +2282,321 @@ end
 -- 输入（由 main.lua 调用）
 -- ============================================================================
 function BattleScene.OnClick(mx, my)
-    -- P2-2: 技能升级弹窗期间优先处理卡片点击，屏蔽其他输入
-    if skillUpgradeCards_ and #skillUpgradeCards_ > 0 and state_ == "win" then
-        for _, btn in ipairs(skillUpgradeCardBtns_) do
-            if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
-                BattleSkills.UpgradeSkill(btn.skillIdx)
-                local lv = BattleSkills.GetLevel(btn.skillIdx)
-                if notifyFn_ then
-                    notifyFn_(BattleSkills.GetIcon(btn.skillIdx) .. " " ..
-                        BattleSkills.GetName(btn.skillIdx) .. " 升至 Lv" .. lv, "success")
-                end
-                skillUpgradeCards_    = nil
-                skillUpgradeCardBtns_ = {}
-                return
-            end
-        end
-        return  -- 点击弹窗以外区域也吃掉，不传递
-    end
+    local hudVars = {
+        state = state_, battleEndFired = battleEndFired_,
+        loseBtn1 = loseBtn1_, loseBtn2 = loseBtn2_,
+        commandBtns = BS and BS.commandBtns or {},
+        focusHudBtn = focusHudBtn_, focusTarget = focusTarget_,
+        selectedShip = selectedShip_,
+        retreatBtn = retreatBtn_, reinforceBtn = reinforceBtn_,
+        formationBtn = formationBtn_,
+        skillUpgradeCards = skillUpgradeCards_,
+        skillUpgradeCardBtns = skillUpgradeCardBtns_,
+        screenW = screenW_, screenH = screenH_,
+        moveTarget = moveTarget_,
+        battleSpeed = battleSpeed_, battleSpeedId = battleSpeedId_,
+        autoBattleEnabled = autoBattleEnabled_,
+        SK = SK_,
+    }
+    BattleHud.SyncIn({
+        notifyFn = notifyFn_, onBattleEnd = onBattleEnd_,
+        rm = rm_, playerFleet = playerFleet_, enemyFleet = enemyFleet_,
+        floatTexts = floatTexts_, battleStats = battleStats_,
+        BattleOrchestrator = BattleOrchestrator, cmdSys = cmdSys_,
+        vars = hudVars,
+    })
 
-    -- M2: 战败画面触屏按钮处理
+    BattleHud.HandleClick(mx, my)
+
+    local out = BattleHud.GetOut()
+    state_              = out.state
+    battleEndFired_     = out.battleEndFired
+    loseBtn1_           = out.loseBtn1
+    loseBtn2_           = out.loseBtn2
+    focusHudBtn_        = out.focusHudBtn
+    focusTarget_        = out.focusTarget
+    selectedShip_       = out.selectedShip
+    retreatBtn_         = out.retreatBtn
+    reinforceBtn_       = out.reinforceBtn
+    formationBtn_       = out.formationBtn
+    skillUpgradeCards_  = out.skillUpgradeCards
+    skillUpgradeCardBtns_ = out.skillUpgradeCardBtns
+    moveTarget_         = out.moveTarget
+    battleSpeed_        = out.battleSpeed
+    battleSpeedId_      = out.battleSpeedId
+    autoBattleEnabled_  = out.autoBattleEnabled
+
     if state_ == "lose" then
         local function inBtn(b)
-            return b and mx >= b.x and mx <= b.x+b.w and my >= b.y and my <= b.y+b.h
+            return b and mx >= b.x and mx <= b.x + b.w and my >= b.y and my <= b.y + b.h
         end
-        if inBtn(loseBtn1_) then
-            -- 重新战斗：重置战场
-            BattleScene.Reset()
-            return
-        elseif inBtn(loseBtn2_) then
-            -- 返回星图：触发战败回调
-            if onBattleEnd_ and not battleEndFired_ then
-                battleEndFired_ = true
-                onBattleEnd_("lose")
-            end
-            return
-        end
-        return  -- 战败时屏蔽其他区域点击
+        if inBtn(loseBtn1_, mx, my) then BattleScene.Reset() end
     end
-    if state_ ~= "fighting" then return end
+end
 
-    -- P2-2: 检测集火取消按钮（顶部状态条右侧 ✕）
-    if focusHudBtn_ then
-        local b = focusHudBtn_
-        if mx >= b.x and mx <= b.x + b.w and my >= b.y and my <= b.y + b.h then
-            focusTarget_ = nil
-            return
-        end
-    end
+-- ============================================================================
+-- P0-2: 无尽模式公共 API
+-- ============================================================================
 
-    -- P2-2: 舰船点击检测（我方 + 敌方，点击舰船显示信息面板）
-    local SHIP_HIT_RADIUS = 14  -- 点击热区半径（px）
-    local clickedShip = nil
-    -- 优先检测我方（玩家通常想了解自己的舰船）
-    for _, s in ipairs(playerFleet_) do
-        local dx, dy = mx - s.x, my - s.y
-        if dx*dx + dy*dy <= SHIP_HIT_RADIUS * SHIP_HIT_RADIUS then
-            clickedShip = s; break
-        end
+--- 开始无尽模式
+---@param mode string "CLASSIC" | "SURVIVAL" | "SPEEDRUN"
+function BattleScene.StartEndlessMode(mode)
+    endlessMode_ = mode
+    endlessWave_ = ENDLESS_MODES[mode].startWave or 1
+    endlessDifficulty_ = 1.0
+    if mode == "SPEEDRUN" then
+        endlessStartTime_ = os.time()
     end
-    if not clickedShip then
-        for _, s in ipairs(enemyFleet_) do
-            local dx, dy = mx - s.x, my - s.y
-            if dx*dx + dy*dy <= SHIP_HIT_RADIUS * SHIP_HIT_RADIUS then
-                clickedShip = s; break
-            end
-        end
+    print("[BattleScene] 开始无尽模式: " .. mode .. " 从波次 " .. endlessWave_ .. " 开始")
+end
+
+--- 获取无尽模式状态
+function BattleScene.GetEndlessState()
+    return {
+        mode = endlessMode_,
+        wave = endlessWave_,
+        record = endlessRecord_,
+        difficulty = endlessDifficulty_,
+    }
+end
+
+--- 是否处于无尽模式
+function BattleScene.IsEndlessMode()
+    return endlessMode_ ~= nil
+end
+
+-- ============================================================================
+-- P1-1: Boss Rush 模式
+-- ============================================================================
+
+--- 开始 Boss Rush
+function BattleScene.StartBossRush(bossCount)
+    bossCount = bossCount or 5
+    
+    bossRushMode_ = true
+    bossRushBosses_ = {}
+    bossRushCurrent_ = 1
+    bossRushScore_ = 0
+    bossRushStartTime_ = os.time()
+    bossRushHealthBonus_ = 0
+    
+    -- 随机选择 Boss 序列
+    local allBosses = BOSS_RUSH.bosses
+    for i = 1, bossCount do
+        local idx = math.random(#allBosses)
+        local boss = allBosses[idx]
+        -- 越后面越难
+        local difficultyMult = 1.0 + (i - 1) * 0.15
+        bossRushBosses_[#bossRushBosses_ + 1] = {
+            id = boss.id,
+            name = boss.name,
+            healthMult = boss.healthMult * difficultyMult,
+            phaseCount = boss.phaseCount,
+            isSuper = boss.isSuper,
+            defeated = false,
+        }
     end
-    if clickedShip then
-        if clickedShip.team == "enemy" then
-            -- P2-2: 点击敌方舰船 → 设置/取消集火目标
-            if focusTarget_ == clickedShip then
-                focusTarget_ = nil   -- 再次点击同一敌方 → 取消集火
-            else
-                focusTarget_ = clickedShip
-            end
-        end
-        -- 同时更新信息面板选中
-        if selectedShip_ == clickedShip then
-            selectedShip_ = nil
-        else
-            selectedShip_ = clickedShip
-        end
+    
+    -- 显示 Boss Rush 开始界面
+    bossRushState_ = "intro"
+    bossRushIntroTimer_ = 3.0
+    
+    -- 重置波次状态
+    waveNum_ = 1
+    state_ = "fighting"
+    stateTimer_ = 0
+    battleEndFired_ = false
+    
+    print("[BattleScene] 开始 Boss Rush: " .. bossCount .. " 个 Boss")
+    return true
+end
+
+--- Boss Rush 波次生成
+local function startBossRushWave()
+    local current = bossRushBosses_[bossRushCurrent_]
+    if not current then
+        -- 全部 Boss 已击败，结算
+        finishBossRush()
         return
     end
+    
+    waveNum_ = bossRushCurrent_
+    waveStartTimer_ = 3.0
+    
+    -- 计算 Boss 血量
+    local baseHealth = 5000
+    local health = baseHealth * current.healthMult
+    local dmg = 50 * current.healthMult
+    
+    -- 生成 Boss
+    if current.isSuper then
+        -- 超级 Boss
+        superBossPending_ = true
+        superBossType_ = current.id
+        superBossName_ = current.name
+        enemyFleet_ = {}
+    else
+        enemyFleet_ = {}
+        local boss = makeShip(current.id, screenW_ - 80, screenH_/2, "enemy")
+        boss.health = health
+        boss.maxHealth = health
+        boss.dmg = dmg
+        boss.isBoss = true
+        boss.phaseCount = current.phaseCount
+        boss.bossRushBoss = true
+        table.insert(enemyFleet_, boss)
+    end
+    
+    state_ = "fighting"
+    stateTimer_ = 0
+    formationLocked_ = true
+    
+    -- 注册新舰船到回放系统
+    for _, ship in ipairs(playerFleet_) do
+        if not ship._replayId then BattleReplaySystem.RegisterShip(ship) end
+    end
+    for _, ship in ipairs(enemyFleet_) do
+        BattleReplaySystem.RegisterShip(ship)
+    end
+    
+    projectiles_ = {}
+    floatTexts_ = {}
+    hitSparks_ = {}
+    shockRings_ = {}
+    
+    if notifyFn_ then
+        notifyFn_("💀 第 " .. bossRushCurrent_ .. " 个 Boss: " .. current.name .. " 出现！", "error")
+    end
+    
+    Audio.Play(Audio.SFX.WAVE_INCOMING)
+    Audio.SetBGMPitch(1.10)
+end
 
-    -- P1-2: 撤退按钮点击
-    if retreatBtn_ then
-        local b = retreatBtn_
-        if mx >= b.x and mx <= b.x+b.w and my >= b.y and my <= b.y+b.h then
-            local energy = rm_ and (rm_.resources.energy or 0) or 0
-            if energy < RETREAT_COST_ENERGY then
-                if notifyFn_ then notifyFn_(string.format("能源不足（需%d）", RETREAT_COST_ENERGY), "warn") end
-            else
-                rm_:add("energy", -RETREAT_COST_ENERGY)
-                retreatUsed_    = true
-                battleEndFired_ = true
-                if onBattleEnd_ then onBattleEnd_("retreat") end
-            end
-            return
+--- Boss Rush Boss 击败处理
+local function onBossRushBossDefeated(boss)
+    local current = bossRushBosses_[bossRushCurrent_]
+    if current then
+        current.defeated = true
+    end
+    
+    -- 计算生命奖励
+    local totalHealth = 0
+    local remainingHealth = 0
+    for _, ship in ipairs(playerFleet_) do
+        totalHealth = totalHealth + ship.maxHealth
+        remainingHealth = remainingHealth + math.max(0, ship.health)
+    end
+    local healthPercent = totalHealth > 0 and (remainingHealth / totalHealth) or 0
+    bossRushHealthBonus_ = bossRushHealthBonus_ + math.floor(healthPercent * BOSS_RUSH.healthBonus)
+    
+    -- Boss 分数
+    bossRushScore_ = bossRushScore_ + BOSS_RUSH.scorePerBoss
+    
+    -- 发放每 Boss 奖励
+    if rm_ and rm_.addRare then
+        rm_:addRare("BLUE_CRYSTAL", BOSS_RUSH.rewards.perBoss.blueCrystal)
+        if notifyFn_ then
+            notifyFn_("击败 " .. current.name .. "！获得 30 蓝晶石", "success")
         end
     end
+    
+    -- 进入休息阶段
+    bossRushCurrent_ = bossRushCurrent_ + 1
+    bossRushRestTimer_ = BOSS_RUSH.restInterval
+    bossRushState_ = "rest"
+    state_ = "waveComplete"
+end
 
-    -- P1-2: 增援按钮点击
-    if reinforceBtn_ then
-        local b = reinforceBtn_
-        if mx >= b.x and mx <= b.x+b.w and my >= b.y and my <= b.y+b.h then
-            if not b.canDo then
-                if notifyFn_ then
-                    notifyFn_(string.format("增援需金属%d 晶体%d", REINFORCE_COST_METAL, REINFORCE_COST_CRYSTAL), "warn")
-                end
-            else
-                rm_:add("metal",   -REINFORCE_COST_METAL)
-                rm_:add("crystal", -REINFORCE_COST_CRYSTAL)
-                reinforceCooldown_ = 12  -- 12秒内不能再次增援
-                -- 派入 2 艘 FRIGATE
-                for _ = 1, 2 do
-                    local x = 60 + math.random() * 50
-                    local y = screenH_ * 0.2 + math.random() * screenH_ * 0.6
-                    playerFleet_[#playerFleet_+1] = makeShip("FRIGATE", x, y, "player")
-                end
-                if notifyFn_ then notifyFn_("紧急增援！2艘护卫舰抵达战场！", "success") end
-            end
-            return
+--- Boss Rush 结算
+local function finishBossRush()
+    bossRushMode_ = false
+    bossRushState_ = "result"
+    
+    -- 时间奖励
+    local elapsed = os.time() - bossRushStartTime_
+    local targetTime = BOSS_RUSH.restInterval * (#bossRushBosses_ - 1) + 60  -- 估算
+    local timeSaved = math.max(0, targetTime - elapsed)
+    bossRushScore_ = bossRushScore_ + math.floor(timeSaved / 10) * BOSS_RUSH.timeBonus
+    
+    -- 生命奖励
+    bossRushScore_ = bossRushScore_ + bossRushHealthBonus_
+    
+    -- 计算是否完美（所有 Boss 全程无阵亡）
+    local perfect = true
+    -- 检查是否有舰船损失
+    for _, ship in ipairs(playerFleet_) do
+        if ship.health <= 0 or ship.isDead then
+            perfect = false
+            break
         end
     end
-
-    -- P1-1: 阵型按钮点击判断
-    for _, btn in ipairs(formationBtn_) do
-        if mx >= btn.x and mx <= btn.x+btn.w and my >= btn.y and my <= btn.y+btn.h then
-            if btn.locked then return end  -- P2-1: 锁定状态不响应点击
-            if btn.key == "custom" then
-                -- P2-1 V2.5: 自定义阵型 → 打开编辑器
-                FormationEditor.Open(playerFleet_)
-            else
-                BattleScene.SetFormation(btn.key)
-            end
-            return
+    
+    -- 发放完成奖励
+    if rm_ and rm_.addRare then
+        local completionReward = perfect and BOSS_RUSH.rewards.perfect or BOSS_RUSH.rewards.completion
+        for res, amount in pairs(completionReward) do
+            rm_:addRare(res, amount)
         end
     end
-
-    -- 技能按钮点击判断
-    local function inBtn(b)
-        return b and mx >= b.x and mx <= b.x+b.w and my >= b.y and my <= b.y+b.h
+    
+    -- 显示结算界面
+    bossRushResult_ = {
+        score = bossRushScore_,
+        bossCount = #bossRushBosses_,
+        elapsed = elapsed,
+        perfect = perfect,
+    }
+    
+    if notifyFn_ then
+        notifyFn_("Boss Rush 完成！分数: " .. bossRushScore_, "legendary")
     end
-    if BattleSkills.OnClick(mx, my, {
-        rs          = rs_,
-        notifyFn    = notifyFn_,
-        playerFleet = playerFleet_,
-        enemyFleet  = enemyFleet_,
-        floatTexts  = floatTexts_,
-        battleStats = battleStats_,
-        screenW     = screenW_,
-        screenH     = screenH_,
-        onShake     = function(dur, str)
-            SK_.timer = dur; SK_.dur = dur; SK_.strength = str
-        end,
-    }) then return end
+    state_ = "win"
+end
 
-    -- 普通点击：移动指令（同时取消单舰选中）
-    selectedShip_ = nil
-    for i, s in ipairs(playerFleet_) do
-        local spread = (#playerFleet_ > 1) and (i - (#playerFleet_+1)/2) * 28 or 0
-        s.target = { x=mx, y=my + spread }
+--- 获取 Boss Rush 状态
+function BattleScene.GetBossRushState()
+    return {
+        mode = bossRushMode_,
+        current = bossRushCurrent_,
+        total = #bossRushBosses_,
+        state = bossRushState_,
+        restTimer = bossRushRestTimer_,
+        score = bossRushScore_,
+        result = bossRushResult_,
+    }
+end
+
+--- 是否处于 Boss Rush 模式
+function BattleScene.IsBossRushMode()
+    return bossRushMode_
+end
+
+-- ============================================================================
+-- P1-10: 暂停功能
+-- ============================================================================
+
+--- 暂停/恢复游戏
+function BattleScene.togglePause()
+    paused_ = not paused_
+    if paused_ then
+        if notifyFn_ then notifyFn_("⏸ 游戏暂停", "info") end
+        print("[P1-10] 游戏暂停")
+    else
+        if notifyFn_ then notifyFn_("▶ 游戏继续", "info") end
+        print("[P1-10] 游戏继续")
     end
-    moveTarget_ = { x=mx, y=my }
+end
+
+--- 获取暂停状态
+---@return boolean
+function BattleScene.IsPaused()
+    return paused_
+end
+
+--- 设置暂停状态（外部调用）
+---@param value boolean
+function BattleScene.SetPaused(value)
+    paused_ = value or false
 end
 
 return BattleScene

@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
+---@diagnostic disable: assign-type-mismatch, return-type-mismatch
 -- ============================================================================
 -- game/systems/TutorialV3System.lua -- V3.1 新手引导重构
 -- 12 阶段教学系统，覆盖 V3.0+ 全量内容

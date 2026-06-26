@@ -1,4 +1,3 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 --[[
 ShipStarSystem.lua - 舰船升星系统
 V2.7 P2-4

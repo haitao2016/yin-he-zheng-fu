@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
+---@diagnostic disable: local-limit, assign-type-mismatch, param-type-mismatch
 -----------------------------------------------------------------------
 -- ClientGameLoop.lua — 主游戏循环 update / render / 输入分发
 -- 职责:

@@ -104,7 +104,7 @@ function BattleCombatPlayer.Update(dt, ctx)
                 end
             end
         end
-        if ship.target then
+        if ship.target and ship.target.health > 0 then
             local dx = ship.target.x - ship.x
             local dy = ship.target.y - ship.y
             local d  = math.sqrt(dx*dx + dy*dy)
@@ -117,6 +117,9 @@ function BattleCombatPlayer.Update(dt, ctx)
                 ship.target = nil
                 ship.vx=0; ship.vy=0
             end
+        else
+            ship.target = nil
+            ship.vx=0; ship.vy=0
         end
         ship.x = clamp(ship.x, 10, ctx.screenW-10)
         ship.y = clamp(ship.y, 88, ctx.screenH-10)
@@ -133,7 +136,7 @@ function BattleCombatPlayer.Update(dt, ctx)
             end
             if nearest and nd < ship.range then
                 ship.lastShot = ship.lastShot + dt
-                if ship.lastShot >= 1.0 / ship.shotRate then
+                if ship.lastShot >= 1.0 / (ship.shotRate or 1.0) then
                     ship.lastShot = 0
                     -- 全体集火：激活时伤害×(1+effectMult)，Lv3 最高 ×3.0
                     local focusMult = BattleSkills.IsActive(1) and (1.0 + BattleSkills.GetEffectMult(1)) or 1.0

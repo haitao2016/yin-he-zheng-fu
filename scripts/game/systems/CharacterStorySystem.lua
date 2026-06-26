@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
+---@diagnostic disable: assign-type-mismatch, return-type-mismatch
 -- ============================================================================
 -- game/systems/CharacterStorySystem.lua -- 角色故事系统
 -- V2.8 P1-1
@@ -380,3 +380,788 @@ end
 -- ============================================================================
 
 return CharacterStorySystem
+
+-- ============================================================================
+-- V3.0 P2-1: 角色故事扩展
+-- 羁绊系统/立绘/传记
+-- ============================================================================
+
+local CharacterStoryV2 = {}
+
+-- ============================================================================
+-- 羁绊系统常量
+-- ============================================================================
+BOND_SYSTEM = {
+    MAX_LEVEL = 10,
+    LEVEL_THRESHOLDS = { 0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500 },
+    BATTLE_ACTIONS = {
+        WIN_BATTLE = 10,           -- 战斗胜利
+        LOSE_BATTLE = 5,           -- 战斗失败
+        USE_COMMANDER_SKILL = 3,   -- 使用指挥官技能
+        KILL_BOSS = 20,            -- 击杀Boss
+        PROTECT_ALLY = 5,          -- 保护友军
+    },
+    TITLES = {
+        { level = 2, title = "初识", color = {0.5, 0.5, 0.5} },
+        { level = 4, title = "战友", color = {0.3, 0.7, 0.3} },
+        { level = 6, title = "挚友", color = {0.3, 0.5, 0.9} },
+        { level = 8, title = "知己", color = {0.7, 0.5, 0.9} },
+        { level = 10, title = "灵魂伴侣", color = {1.0, 0.8, 0.2} },
+    },
+}
+
+-- 角色立绘定义
+CHARACTER_PORTRAITS = {
+    -- 使用 ASCII art 风格
+    COMM = {
+        name = "指挥官",
+        ascii = {
+            [[
+    ╔═══════════╗
+    ║  ◉     ◉  ║
+    ║     ▽     ║
+    ║  ╰─────╯  ║
+    ║   ╱   ╲   ║
+    ║  ╱ ═══ ╲  ║
+    ║    ║║     ║
+    ╚═══════════╝
+            ]],
+            -- 受伤状态
+            [[
+    ╔═══════════╗
+    ║  ◉  ✕  ◉  ║
+    ║     ▽     ║
+    ║  ╰─────╯  ║
+    ║   ╱   ╲   ║
+    ║  ╱ ═══ ╲  ║
+    ║    ║║     ║
+    ╚═══════════╝
+            ]],
+            -- 喜悦状态
+            [[
+    ╔═══════════╗
+    ║  ◉     ◉  ║
+    ║    ═══    ║
+    ║  ╰─────╯  ║
+    ║   ╱   ╲   ║
+    ║  ╱ ═══ ╲  ║
+    ║    ║║     ║
+    ╚═══════════╝
+            ]],
+        },
+        defaultEmotion = 1,
+        emotionMap = { normal = 1, hurt = 2, happy = 3 },
+    },
+    OFFICER = {
+        name = "副官",
+        ascii = {
+            [[
+    ╔═══════════╗
+    ║  ◉     ◉  ║
+    ║     ▽     ║
+    ║  ╰──┬──╯  ║
+    ║   ╱   ╲   ║
+    ║  ╱ ═══ ╲  ║
+    ║    ║║     ║
+    ╚═══════════╝
+            ]],
+        },
+        defaultEmotion = 1,
+    },
+}
+
+-- 传记定义
+CHARACTER_BIOGRAPHIES = {
+    COMM = {
+        title = "指挥官的崛起",
+        unlockLevel = 10,
+        content = [[
+【早年经历】
+出生于银河边缘殖民地的普通矿工家庭。从小就对星空充满向往，常常在夜晚仰望天空。
+
+【加入抵抗军】
+帝国入侵那天，你的家园被毁。在混乱中，你展现出了惊人的领导才能，组织幸存者进行抵抗。
+
+【成为指挥官】
+在多次成功防守后，你被推举为抵抗军的临时指挥官。从那一刻起，你的命运与整个银河紧紧相连。
+
+【核心信念】
+"无论敌人多么强大，只要我们团结一心，就没有什么是不可能的。"
+        ]],
+    },
+    OFFICER = {
+        title = "情报官的秘密",
+        unlockLevel = 10,
+        content = [[
+【帝国的阴影】
+曾是帝国情报部门的精英特工，掌握着大量机密信息。
+
+【觉醒与逃离】
+在一次任务中，你发现了帝国的真正目的——毁灭银河系中所有的智慧生命。你选择背叛帝国，带着机密档案逃离。
+
+【加入抵抗军】
+你的情报为抵抗军带来了巨大帮助，但你始终背负着过去的罪孽。
+
+【核心信念】
+"过去无法改变，但未来由我们书写。"
+        ]],
+    },
+}
+
+-- ============================================================================
+-- 羁绊运行时状态
+-- ============================================================================
+local BondState = {
+    bonds = {},          -- { [characterId] = { level = 1, exp = 0, lastBattle = 0 } }
+    portraits = {},      -- { [characterId] = currentEmotion }
+    biographyUnlocked = {}, -- { [characterId] = true }
+}
+
+-- ============================================================================
+-- 羁绊系统
+-- ============================================================================
+
+--- 获取羁绊信息
+function CharacterStoryV2.getBond(characterId)
+    local bond = BondState.bonds[characterId]
+    if not bond then
+        bond = { level = 0, exp = 0, totalExp = 0 }
+        BondState.bonds[characterId] = bond
+    end
+    return bond
+end
+
+--- 增加羁绊经验
+function CharacterStoryV2.addBondExp(characterId, amount, source)
+    local bond = CharacterStoryV2.getBond(characterId)
+    bond.exp = bond.exp + amount
+    bond.totalExp = bond.totalExp + amount
+    
+    -- 检查升级
+    while bond.level < BOND_SYSTEM.MAX_LEVEL do
+        local nextThreshold = BOND_SYSTEM.LEVEL_THRESHOLDS[bond.level + 1] or 99999
+        if bond.totalExp >= nextThreshold then
+            bond.level = bond.level + 1
+            CharacterStoryV2.onLevelUp(characterId, bond.level)
+        else
+            break
+        end
+    end
+    
+    -- 触发羁绊对话
+    if source and math.random() < 0.3 then
+        CharacterStoryV2.triggerBondDialogue(characterId, source)
+    end
+    
+    return bond.level, bond.exp
+end
+
+--- 升级时触发
+function CharacterStoryV2.onLevelUp(characterId, newLevel)
+    local character = nil
+    for _, char in ipairs(CHARACTERS) do
+        if char.id == characterId then
+            character = char
+            break
+        end
+    end
+    
+    -- 查找对应的称号
+    local title = "初识"
+    for _, t in ipairs(BOND_SYSTEM.TITLES) do
+        if newLevel >= t.level then
+            title = t.title
+        end
+    end
+    
+    -- 通知
+    if NotifyPanel then
+        NotifyPanel.push({
+            type = "BOND_LEVEL_UP",
+            title = "羁绊升级",
+            message = string.format("%s 与「%s」的羁绊达到 Lv.%d「%s」！", 
+                playerState and playerState.name or "指挥官",
+                character and character.name or characterId,
+                newLevel, title),
+        })
+    end
+    
+    -- 解锁传记
+    if newLevel >= BOND_SYSTEM.MAX_LEVEL then
+        BondState.biographyUnlocked[characterId] = true
+    end
+end
+
+--- 获取羁绊称号
+function CharacterStoryV2.getBondTitle(characterId)
+    local bond = CharacterStoryV2.getBond(characterId)
+    local title = "陌生人"
+    
+    for _, t in ipairs(BOND_SYSTEM.TITLES) do
+        if bond.level >= t.level then
+            title = t.title
+        end
+    end
+    
+    return title, bond.level
+end
+
+--- 获取羁绊加成
+function CharacterStoryV2.getBondBonus(characterId)
+    local bond = CharacterStoryV2.getBond(characterId)
+    local bonus = 0
+    
+    -- 羁绊等级越高，加成越高
+    bonus = bond.level * 0.02  -- 每级2%加成
+    
+    return bonus
+end
+
+--- 获取所有羁绊加成总和
+function CharacterStoryV2.getTotalBondBonus()
+    local total = 0
+    for charId, _ in pairs(BondState.bonds) do
+        total = total + CharacterStoryV2.getBondBonus(charId)
+    end
+    return math.min(total, 0.5)  -- 最多50%加成
+end
+
+--- 触发羁绊对话
+function CharacterStoryV2.triggerBondDialogue(characterId, source)
+    local bondLevel = CharacterStoryV2.getBond(characterId).level
+    if bondLevel < 1 then return nil end
+    
+    -- 根据羁绊等级和来源选择对话
+    local dialogues = {
+        BATTLE_WIN = {
+            { minLevel = 1, text = "干得漂亮，指挥官！" },
+            { minLevel = 3, text = "又有敌人倒下了呢~" },
+            { minLevel = 6, text = "我们真是绝佳的搭档。" },
+            { minLevel = 8, text = "只要有你在，我什么都不怕。" },
+        },
+        BATTLE_LOSE = {
+            { minLevel = 1, text = "别灰心，下次一定赢！" },
+            { minLevel = 4, text = "失败是成功之母嘛~" },
+            { minLevel = 7, text = "我会一直陪着你。" },
+        },
+    }
+    
+    local dialogSet = dialogues[source]
+    if not dialogSet then return nil end
+    
+    -- 找到符合条件的对话
+    local selectedDialog = nil
+    for i = #dialogSet, 1, -1 do
+        if bondLevel >= dialogSet[i].minLevel then
+            selectedDialog = dialogSet[i]
+            break
+        end
+    end
+    
+    return selectedDialog and selectedDialog.text or nil
+end
+
+-- ============================================================================
+-- 表情系统
+-- ============================================================================
+
+--- 设置角色表情
+function CharacterStoryV2.setEmotion(characterId, emotion)
+    local portrait = CHARACTER_PORTRAITS[characterId]
+    if not portrait then return false end
+    
+    local emotionIndex = portrait.emotionMap and portrait.emotionMap[emotion]
+    if emotionIndex then
+        BondState.portraits[characterId] = emotionIndex
+        return true
+    end
+    
+    return false
+end
+
+--- 获取角色当前表情
+function CharacterStoryV2.getEmotion(characterId)
+    return BondState.portraits[characterId] or 
+        (CHARACTER_PORTRAITS[characterId] and CHARACTER_PORTRAITS[characterId].defaultEmotion) or 1
+end
+
+--- 获取角色立绘
+function CharacterStoryV2.getPortrait(characterId)
+    local portrait = CHARACTER_PORTRAITS[characterId]
+    if not portrait then return nil end
+    
+    local emotionIndex = CharacterStoryV2.getEmotion(characterId)
+    local asciiArt = portrait.ascii[emotionIndex] or portrait.ascii[1]
+    
+    return {
+        characterId = characterId,
+        name = portrait.name,
+        ascii = asciiArt,
+        emotionIndex = emotionIndex,
+    }
+end
+
+-- ============================================================================
+-- 传记系统
+-- ============================================================================
+
+--- 检查传记是否解锁
+function CharacterStoryV2.isBiographyUnlocked(characterId)
+    return BondState.biographyUnlocked[characterId] == true
+end
+
+--- 获取角色传记
+function CharacterStoryV2.getBiography(characterId)
+    if not CharacterStoryV2.isBiographyUnlocked(characterId) then
+        return nil
+    end
+    
+    return CHARACTER_BIOGRAPHIES[characterId]
+end
+
+--- 获取所有已解锁传记的角色列表
+function CharacterStoryV2.getUnlockedBiographies()
+    local unlocked = {}
+    for charId, _ in pairs(BondState.biographyUnlocked) do
+        if BondState.biographyUnlocked[charId] then
+            table.insert(unlocked, {
+                characterId = charId,
+                biography = CHARACTER_BIOGRAPHIES[charId],
+            })
+        end
+    end
+    return unlocked
+end
+
+-- ============================================================================
+-- 完整角色信息
+-- ============================================================================
+
+--- 获取完整角色信息（包含羁绊和传记）
+function CharacterStoryV2.getFullCharacterInfo(characterId)
+    local character = nil
+    for _, char in ipairs(CHARACTERS) do
+        if char.id == characterId then
+            character = char
+            break
+        end
+    end
+    
+    if not character then return nil end
+    
+    local bond = CharacterStoryV2.getBond(characterId)
+    local title, titleLevel = CharacterStoryV2.getBondTitle(characterId)
+    local portrait = CharacterStoryV2.getPortrait(characterId)
+    local biography = CharacterStoryV2.getBiography(characterId)
+    local bonus = CharacterStoryV2.getBondBonus(characterId)
+    
+    return {
+        id = character.id,
+        name = character.name,
+        title = character.title,
+        faction = character.faction,
+        bond = {
+            level = bond.level,
+            exp = bond.exp,
+            totalExp = bond.totalExp,
+            title = title,
+            bonus = bonus,
+        },
+        portrait = portrait,
+        biography = biography,
+        biographyUnlocked = CharacterStoryV2.isBiographyUnlocked(characterId),
+    }
+end
+
+-- ============================================================================
+-- 存档
+-- ============================================================================
+
+function CharacterStoryV2.saveState()
+    if playerState then
+        playerState.characterStoryV2 = {
+            bonds = BondState.bonds,
+            portraits = BondState.portraits,
+            biographyUnlocked = BondState.biographyUnlocked,
+        }
+    end
+end
+
+function CharacterStoryV2.loadState(data)
+    if data then
+        BondState.bonds = data.bonds or {}
+        BondState.portraits = data.portraits or {}
+        BondState.biographyUnlocked = data.biographyUnlocked or {}
+    end
+end
+
+return CharacterStoryV2
+
+local CommanderStorySystem = {}
+
+STORY_CHAINS = {
+    ADMIRAL_CHEN = {
+        id = "ADMIRAL_CHEN",
+        name = "陈将军",
+        title = "帝国舰队指挥官",
+        stages = {
+            {
+                id = "CHEN_1",
+                title = "新兵毕业",
+                description = "陈将军从帝国军事学院毕业，开始了他的军旅生涯。",
+                unlockCondition = { type = "WAVE_REACH", value = 5 },
+                reward = { credits = 500, exp = 200 },
+                nextStage = "CHEN_2",
+                duration = 1,
+            },
+            {
+                id = "CHEN_2",
+                title = "首战告捷",
+                description = "陈将军首次指挥舰队取得首场胜利，崭露头角。",
+                unlockCondition = { type = "WAVE_REACH", value = 15 },
+                reward = { credits = 1000, exp = 500 },
+                nextStage = "CHEN_3",
+                duration = 2,
+            },
+            {
+                id = "CHEN_3",
+                title = "舰队重组",
+                description = "陈将军重组舰队，建立新的战术体系。",
+                unlockCondition = { type = "RESOURCES", credits = 5000 },
+                reward = { credits = 2000, exp = 1000 },
+                nextStage = "CHEN_4",
+                duration = 3,
+            },
+            {
+                id = "CHEN_4",
+                title = "战役胜利",
+                description = "陈将军指挥决定性战役，击溃敌军主力。",
+                unlockCondition = { type = "TECH", techId = "TACTICS_3" },
+                reward = { credits = 5000, exp = 2000 },
+                nextStage = "CHEN_5",
+                duration = 5,
+            },
+            {
+                id = "CHEN_5",
+                title = "成为传奇指挥官",
+                description = "陈将军成为银河传奇，名垂青史。",
+                unlockCondition = { type = "WAVE_REACH", value = 100 },
+                reward = { credits = 10000, exp = 5000 },
+                nextStage = nil,
+                duration = 10,
+            },
+        },
+    },
+    REBEL_LEADER = {
+        id = "REBEL_LEADER",
+        name = "艾琳·诺克斯",
+        title = "自由联盟领袖",
+        stages = {
+            {
+                id = "REBEL_1",
+                title = "觉醒",
+                description = "艾琳开始质疑帝国，思想觉醒。",
+                unlockCondition = { type = "WAVE_REACH", value = 8 },
+                reward = { credits = 500, exp = 200 },
+                nextStage = "REBEL_2",
+                duration = 1,
+            },
+            {
+                id = "REBEL_2",
+                title = "集结",
+                description = "艾琳集结志同道合的反抗者。",
+                unlockCondition = { type = "WAVE_REACH", value = 20 },
+                reward = { credits = 1000, exp = 500 },
+                nextStage = "REBEL_3",
+                duration = 2,
+            },
+            {
+                id = "REBEL_3",
+                title = "反攻",
+                description = "发动对帝国的反攻作战。",
+                unlockCondition = { type = "RESOURCES", credits = 8000 },
+                reward = { credits = 2000, exp = 1000 },
+                nextStage = "REBEL_4",
+                duration = 3,
+            },
+            {
+                id = "REBEL_4",
+                title = "联盟",
+                description = "与其他反抗势力达成联盟。",
+                unlockCondition = { type = "TECH", techId = "ALLIANCE_2" },
+                reward = { credits = 5000, exp = 2000 },
+                nextStage = "REBEL_5",
+                duration = 5,
+            },
+            {
+                id = "REBEL_5",
+                title = "独立",
+                description = "自由联盟宣告独立，建立新秩序。",
+                unlockCondition = { type = "WAVE_REACH", value = 120 },
+                reward = { credits = 10000, exp = 5000 },
+                nextStage = nil,
+                duration = 10,
+            },
+        },
+    },
+    SCIENTIST = {
+        id = "SCIENTIST",
+        name = "科学家",
+        title = "星际科学院院长",
+        stages = {
+            {
+                id = "SCI_1",
+                title = "科研突破",
+                description = "取得首个重大科研突破。",
+                unlockCondition = { type = "WAVE_REACH", value = 10 },
+                reward = { credits = 500, exp = 200 },
+                nextStage = "SCI_2",
+                duration = 1,
+            },
+            {
+                id = "SCI_2",
+                title = "新理论",
+                description = "提出革命性的新科学理论。",
+                unlockCondition = { type = "WAVE_REACH", value = 25 },
+                reward = { credits = 1000, exp = 500 },
+                nextStage = "SCI_3",
+                duration = 2,
+            },
+            {
+                id = "SCI_3",
+                title = "超级武器",
+                description = "开发出改变战争格局的超级武器。",
+                unlockCondition = { type = "RESOURCES", credits = 10000 },
+                reward = { credits = 2000, exp = 1000 },
+                nextStage = "SCI_4",
+                duration = 3,
+            },
+            {
+                id = "SCI_4",
+                title = "和平使用",
+                description = "将技术用于和平发展，造福人类。",
+                unlockCondition = { type = "TECH", techId = "PEACE_1" },
+                reward = { credits = 5000, exp = 2000 },
+                nextStage = "SCI_5",
+                duration = 5,
+            },
+            {
+                id = "SCI_5",
+                title = "星际学院院长",
+                description = "成为星际科学院院长，培养新一代科学家。",
+                unlockCondition = { type = "WAVE_REACH", value = 150 },
+                reward = { credits = 10000, exp = 5000 },
+                nextStage = nil,
+                duration = 10,
+            },
+        },
+    },
+}
+
+local CommanderStoryState = {
+    currentStages = {},
+    completedStages = {},
+    stageUnlocked = {},
+}
+
+---@param commanderId string
+---@return table
+function CommanderStorySystem.getCommanderStoryProgress(commanderId)
+    local chain = STORY_CHAINS[commanderId]
+    if not chain then return { totalStages = 0, completedCount = 0, currentStage = nil } end
+    local completedCount = 0
+    for _, stage in ipairs(chain.stages) do
+        if CommanderStoryState.completedStages[stage.id] then
+            completedCount = completedCount + 1
+        end
+    end
+    return {
+        commanderId = commanderId,
+        totalStages = #chain.stages,
+        completedCount = completedCount,
+        currentStage = CommanderStoryState.currentStages[commanderId] or chain.stages[1].id,
+        isComplete = completedCount >= #chain.stages,
+    }
+end
+
+---@param commanderId string
+---@return table|nil
+function CommanderStorySystem.getCurrentStage(commanderId)
+    local chain = STORY_CHAINS[commanderId]
+    if not chain then return nil end
+    local currentId = CommanderStoryState.currentStages[commanderId] or chain.stages[1].id
+    for _, stage in ipairs(chain.stages) do
+        if stage.id == currentId then
+            return stage
+        end
+    end
+    return nil
+end
+
+---@param commanderId string
+---@param stageId string
+---@param playerState table
+---@return boolean
+function CommanderStorySystem.canUnlockStage(commanderId, stageId, playerState)
+    local chain = STORY_CHAINS[commanderId]
+    if not chain then return false end
+    local targetStage = nil
+    for _, stage in ipairs(chain.stages) do
+        if stage.id == stageId then
+            targetStage = stage
+            break
+        end
+    end
+    if not targetStage then return false end
+    if CommanderStoryState.completedStages[stageId] then return false end
+    local condition = targetStage.unlockCondition
+    if not condition then return true end
+    if condition.type == "WAVE_REACH" then
+        return playerState and playerState.currentWave and playerState.currentWave >= condition.value
+    elseif condition.type == "RESOURCES" then
+        return playerState and playerState.credits and playerState.credits >= (condition.credits or 0)
+    elseif condition.type == "TECH" then
+        return playerState and playerState.techs and playerState.techs[condition.techId] == true
+    end
+    return false
+end
+
+---@param commanderId string
+---@param stageId string
+---@param playerState table
+---@return boolean
+---@return string
+---@return table|nil
+function CommanderStorySystem.completeStage(commanderId, stageId, playerState)
+    local chain = STORY_CHAINS[commanderId]
+    if not chain then return false, "指挥官不存在", nil end
+    local targetStage = nil
+    for _, stage in ipairs(chain.stages) do
+        if stage.id == stageId then
+            targetStage = stage
+            break
+        end
+    end
+    if not targetStage then return false, "阶段不存在", nil end
+    if CommanderStoryState.completedStages[stageId] then return false, "阶段已完成", nil end
+    if not CommanderStorySystem.canUnlockStage(commanderId, stageId, stageId, playerState) then return false, "阶段尚未解锁", nil end
+    CommanderStoryState.completedStages[stageId] = true
+    local reward = CommanderStorySystem.grantStoryReward(commanderId, stageId, playerState)
+    if targetStage.nextStage then
+        CommanderStoryState.currentStages[commanderId] = targetStage.nextStage
+        CommanderStoryState.stageUnlocked[targetStage.nextStage] = true
+    else
+        CommanderStoryState.currentStages[commanderId] = nil
+    end
+    if playerState then
+        playerState.commanderStoryState = {
+            currentStages = CommanderStoryState.currentStages,
+            completedStages = CommanderStoryState.completedStages,
+            stageUnlocked = CommanderStoryState.stageUnlocked,
+        }
+    end
+    return true, "阶段完成：" .. targetStage.title, reward
+end
+
+---@param commanderId string
+---@param stageId string
+---@param playerState table
+---@return table
+function CommanderStorySystem.grantStoryReward(commanderId, stageId, playerState)
+    local chain = STORY_CHAINS[commanderId]
+    if not chain then return {} end
+    local targetStage = nil
+    for _, stage in ipairs(chain.stages) do
+        if stage.id == stageId then
+            targetStage = stage
+            break
+        end
+    end
+    if not targetStage or not targetStage.reward then return {} end
+    local reward = targetStage.reward
+    if playerState then
+        if reward.credits then
+            playerState.credits = (playerState.credits or 0) + reward.credits
+        end
+        if reward.exp then
+            playerState.exp = (playerState.exp or 0) + reward.exp
+        end
+        playerState.commanderStoryRewards = playerState.commanderStoryRewards or {}
+        playerState.commanderStoryRewards[stageId] = reward
+    end
+    return reward
+end
+
+---@param playerState table
+---@return table
+function CommanderStorySystem.getAllCommanderStories(playerState)
+    local result = {}
+    for commanderId, chain in pairs(STORY_CHAINS) do
+        local progress = CommanderStorySystem.getCommanderStoryProgress(commanderId)
+        local stages = {}
+        for _, stage in ipairs(chain.stages) do
+            table.insert(stages, {
+                id = stage.id,
+                title = stage.title,
+                description = stage.description,
+                completed = CommanderStoryState.completedStages[stage.id] == true,
+                unlocked = CommanderStoryState.stageUnlocked[stage.id] or CommanderStoryState.completedStages[stage.id] or (CommanderStoryState.currentStages[commanderId] == stage.id,
+            })
+        end
+        table.insert(result, {
+            commanderId = commanderId,
+            name = chain.name,
+            title = chain.title,
+            progress = progress,
+            stages = stages,
+        })
+    end
+    return result
+end
+
+---@param playerState table
+---@return table
+function CommanderStorySystem.getActiveStorySummaries(playerState)
+    local summaries = {}
+    for commanderId, chain in pairs(STORY_CHAINS) do
+        local progress = CommanderStorySystem.getCommanderStoryProgress(commanderId)
+        if not progress.isComplete then
+            local current = CommanderStorySystem.getCurrentStage(commanderId)
+            table.insert(summaries, {
+                commanderId = commanderId,
+                name = chain.name,
+                currentStage = current and current.title,
+                progress = string.format("%d/%d", progress.completedCount, progress.totalStages,
+                canAdvance = current and CommanderStorySystem.canUnlockStage(commanderId, current.id, playerState) or false,
+            })
+        end
+    end
+    return summaries
+end
+
+---@param playerState table
+---@return table
+function CommanderStorySystem.autoAdvanceStories(playerState)
+    local advanced = {}
+    for commanderId, chain in pairs(STORY_CHAINS) do
+        local progress = CommanderStorySystem.getCommanderStoryProgress(commanderId)
+        if not progress.isComplete then
+            local current = CommanderStorySystem.getCurrentStage(commanderId)
+            if current and CommanderStorySystem.canUnlockStage(commanderId, current.id, playerState) then
+                local ok, msg, reward = CommanderStorySystem.completeStage(commanderId, current.id, playerState)
+                if ok then
+                    table.insert(advanced, {
+                        commanderId = commanderId,
+                        stageId = current.id,
+                        title = current.title,
+                        message = msg,
+                        reward = reward,
+                    })
+                end
+            end
+        end
+    end
+    return advanced
+end
+
+return CommanderStorySystem

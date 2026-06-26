@@ -22,7 +22,7 @@ function M.drawAsteroids()
     local fleetObjs       = GS.fleetObjs
 
     for _, a in ipairs(GS.asteroids) do
-        if a.hp <= 0 then goto continue end
+        if not a.health or a.health <= 0 then goto continue end
         local sx, sy = GS.w2s(a.x, a.y)
         -- 视锥裁剪
         if sx < -20 or sx > screenW+20 or sy < -20 or sy > screenH+20 then
@@ -32,7 +32,7 @@ function M.drawAsteroids()
         local cfg = ASTEROID_TYPES[a.atype]
         local c  = cfg.color
         -- 耐久度影响透明度
-        local hpPct = a.hp / a.maxHP
+        local hpPct = (a.health or a.hp or 0) / (a.maxHealth or a.maxHP or 1)
         local alpha = math.floor(120 + 100 * hpPct)
         -- 旋转渲染小行星图片
         nvgSave(vg)
@@ -478,10 +478,10 @@ function M.drawAsteroidSummary()
         sizeTot[atype] = { small=0, medium=0, large=0 }
     end
     for _, a in ipairs(GS.asteroids) do
-        if a.hp > 0 and a.sizeKey then
+        if a.health and a.health > 0 and a.sizeKey then
             sizeCnt[a.atype][a.sizeKey] = sizeCnt[a.atype][a.sizeKey] + 1
             sizeTot[a.atype][a.sizeKey] = sizeTot[a.atype][a.sizeKey]
-                + a.yield * (a.hp / a.maxHP)
+                + a.yield * ((a.health or a.hp or 0) / (a.maxHealth or a.maxHP or 1))
         end
     end
 
@@ -510,9 +510,12 @@ function M.drawAsteroidSummary()
 
     -- 每种资源类型行
     local typeRows = {
-        { atype="minerals", label="矿石",  color=ASTEROID_TYPES.minerals.color },
-        { atype="energy",   label="能量块", color=ASTEROID_TYPES.energy.color   },
-        { atype="crystal",  label="水晶",  color=ASTEROID_TYPES.crystal.color  },
+        { atype="minerals",    label="矿石",    color=ASTEROID_TYPES.minerals.color },
+        { atype="energy",      label="能量块",  color=ASTEROID_TYPES.energy.color   },
+        { atype="crystal",     label="水晶",    color=ASTEROID_TYPES.crystal.color  },
+        -- V2.6 C3: 新增小行星类型
+        { atype="blueCrystal",  label="蓝晶",    color=ASTEROID_TYPES.blueCrystal.color },
+        { atype="mixed",       label="混合",    color=ASTEROID_TYPES.mixed.color     },
     }
     local sizeColors = {
         small  = { 160, 160, 160 },

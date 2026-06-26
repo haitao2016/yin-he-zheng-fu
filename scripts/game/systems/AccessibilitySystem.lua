@@ -1,4 +1,3 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 --[[
 AccessibilitySystem.lua - 辅助功能系统
 V3.0 Phase 2 P3-2

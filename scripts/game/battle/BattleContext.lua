@@ -68,7 +68,11 @@ function BattleContext.Reset()
 
     -- Boss
     ctx.BOSS_WAVE_INTERVAL = 5
+    ctx.bossWarningActive  = false  -- P1-6: Boss 预警阶段激活
     ctx.bossWarningTimer   = 0
+    ctx.bossWarningType    = nil    -- P1-6: "BATTLECRUISER" | "CARRIER" | "VOID_LORD"
+    ctx.bossWarningWave    = 0      -- P1-6: 预警的 Boss 波次号
+    ctx.bossWarningDuration = 10    -- P1-6: 预警阶段总时长
     ctx.BOSS_WARNING_DUR   = 2.5
     ctx.bossDefeated       = false
 

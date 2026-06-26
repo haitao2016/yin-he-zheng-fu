@@ -5,6 +5,7 @@
 ------------------------------------------------------------
 local BattleSkills = require("game.BattleSkills")
 local BattleUtils  = require("game.battle.BattleUtils")
+local BattleAI     = require("game.battle.BattleAI")
 
 local BattleCombatEnemy = {}
 
@@ -23,6 +24,10 @@ function BattleCombatEnemy.Update(dt, ctx)
     local envEnemyRangeMult = ctx.currentEnv.enemyRangeMult or 1.0
     for _, es in ipairs(enemyFleet) do
         es.age = (es.age or 0) + dt  -- P2-1: 时间累积（用于增援舰脉冲动画）
+        -- P0-1: 超级 Boss AI 特殊行为
+        if es.isSuperBoss then
+            BattleAI.UpdateSuperBoss(es, dt, ctx)
+        end
         -- P1-1 模块: slow/mark 计时器递减
         if es.slowTimer and es.slowTimer > 0 then
             es.slowTimer = es.slowTimer - dt
@@ -58,7 +63,7 @@ function BattleCombatEnemy.Update(dt, ctx)
                 if td < effectiveRange then
                     -- EMP同时降低敌方射速（倍率复用 empMult）
                     es.lastShot = es.lastShot + dt * empMult
-                    if es.lastShot >= 1.0 / es.shotRate then
+                    if es.lastShot >= 1.0 / (es.shotRate or 1.0) then
                         es.lastShot = 0
                         -- 主目标伤害（护盾强化时减半）
                         local actualEsDmg = math.floor(es.dmg * shieldMult)

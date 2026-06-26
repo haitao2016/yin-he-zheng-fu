@@ -50,6 +50,7 @@ local DiplomacySystem = {}
 DiplomacySystem.__index = DiplomacySystem
 
 --- 创建外交系统（每局游戏一个实例）
+---@return DiplomacySystem
 function DiplomacySystem.new()
     local self = setmetatable({}, DiplomacySystem)
     -- planetId → { factionKey, favor(0-100), tradeTimer, atWar, military }
@@ -628,6 +629,7 @@ function DiplomacySystem:getLongTradeList()
 end
 
 --- 序列化（存档）
+---@return table
 function DiplomacySystem:serialize()
     local out = {}
     for pid, st in pairs(self.planets) do

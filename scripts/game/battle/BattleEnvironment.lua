@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
+---@diagnostic disable: assign-type-mismatch, return-type-mismatch
 -- ============================================================================
 -- game/battle/BattleEnvironment.lua -- 战斗环境效果系统
 -- V1.6 P1-2: 战斗环境效果

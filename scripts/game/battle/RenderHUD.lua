@@ -1,18 +1,129 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
+---@diagnostic disable: assign-type-mismatch, return-type-mismatch
 -- ============================================================================
 -- RenderHUD: HUD层渲染 — 波次/连击/信息面板/阵型/技能 (从 BattleRender.lua 拆分)
 -- ============================================================================
 local BS = require("game.battle.BattleState")
 local FormationEditor = require("game.ui.FormationEditor")
+local Systems = require("game.Systems")
 
 local FORMATION_ORDER = {"wedge", "circle", "scatter", "charge", "custom"}
 
 local RenderHUD = {}
 
+-- P0-3: Boss 阶段转换横幅（由 BattleState 的 bossPhaseBannerTimer 触发）
+local function drawBossPhaseBanner()
+    if not BS.bossPhaseBannerTimer or BS.bossPhaseBannerTimer <= 0 then return end
+    local totalDuration = BS.bossPhaseBannerTotal or 2.5
+    local t = BS.bossPhaseBannerTimer / totalDuration
+    -- 淡入淡出
+    local alpha = 1.0
+    if t > 0.8 then
+        alpha = (1.0 - t) / 0.2
+    elseif t < 0.2 then
+        alpha = t / 0.2
+    end
+    alpha = math.max(0, math.min(1, alpha))
+
+    local bx, by = BS.screenW / 2, BS.screenH * 0.18
+    local text = BS.bossPhaseBannerText or "阶段转换"
+
+    nvgFontFace(BS.vg, "sans")
+    nvgFontSize(BS.vg, 28)
+    nvgTextAlign(BS.vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+
+    -- 文字阴影
+    nvgFillColor(BS.vg, nvgRGBA(0, 0, 0, math.floor(200 * alpha)))
+    nvgText(BS.vg, bx + 2, by + 2, text)
+
+    -- 主文字（橙金色）
+    nvgFillColor(BS.vg, nvgRGBA(255, 180, 50, math.floor(255 * alpha)))
+    nvgText(BS.vg, bx, by, text)
+
+    -- 上下装饰线
+    local textW = nvgTextBounds(BS.vg, 0, 0, text) or 200
+    local lineW = math.max(textW * 1.5, 200)
+    nvgStrokeWidth(BS.vg, 2)
+    nvgStrokeColor(BS.vg, nvgRGBA(255, 140, 30, math.floor(200 * alpha)))
+    nvgBeginPath(BS.vg)
+    nvgMoveTo(BS.vg, bx - lineW / 2, by - 20)
+    nvgLineTo(BS.vg, bx + lineW / 2, by - 20)
+    nvgMoveTo(BS.vg, bx - lineW / 2, by + 20)
+    nvgLineTo(BS.vg, bx + lineW / 2, by + 20)
+    nvgStroke(BS.vg)
+end
+
 local function drawWaveHUD()
-    if BS.state ~= "fighting" then return end
+    -- P1-6: Boss 预警阶段也绘制，否则只在战斗中绘制
+    if BS.state ~= "fighting" and BS.state ~= "bossWarning" then return end
     local cx = BS.screenW / 2
-    local hw, hh = math.min(140, math.floor(BS.screenW * 0.42)), 48
+
+    -- P1-6: Boss 预警横幅（在预警阶段绘制在顶部）
+    if BS.bossWarningActive and BS.bossWarningTimer and BS.bossWarningTimer > 0 then
+        local remain = math.max(0, math.ceil(BS.bossWarningTimer))
+        local totalDur = BS.bossWarningDuration or 10
+        local bossType = BS.bossWarningType or "BATTLECRUISER"
+        local bossName = "未知类型"
+        local bossDesc = ""
+        if bossType == "BATTLECRUISER" then
+            bossName = "战列巡洋舰"
+            bossDesc = "重甲 Boss · 高爆发伤害"
+        elseif bossType == "CARRIER" then
+            bossName = "母舰"
+            bossDesc = "无人机群 + 自爆舰载机"
+        elseif bossType == "VOID_LORD" then
+            bossName = "虚空领主"
+            bossDesc = "隐形突袭 + 幻影分身 + 虚空吞噬"
+        end
+
+        -- 闪烁边框效果（随倒计时变化，越接近0越急促）
+        local pulsePhase = os.clock() * (2.5 + (totalDur - BS.bossWarningTimer) * 0.15)
+        local pulse = 0.5 + 0.5 * math.sin(pulsePhase)
+
+        -- 外层预警大横幅（深红背景 + 橙边闪烁）
+        local bannerW = 460
+        local bannerH = 86
+        local bannerX = cx - bannerW / 2
+        local bannerY = 6
+        nvgBeginPath(BS.vg)
+        nvgRoundedRect(BS.vg, bannerX, bannerY, bannerW, bannerH, 10)
+        nvgFillColor(BS.vg, nvgRGBA(90, 10, 10, math.floor(180 + 40 * pulse)))
+        nvgFill(BS.vg)
+        nvgBeginPath(BS.vg)
+        nvgRoundedRect(BS.vg, bannerX, bannerY, bannerW, bannerH, 10)
+        nvgStrokeColor(BS.vg, nvgRGBA(255, 140, 40, math.floor(180 + 75 * pulse)))
+        nvgStrokeWidth(BS.vg, 2.5)
+        nvgStroke(BS.vg)
+
+        -- 顶部标题行
+        nvgFontFace(BS.vg, "sans")
+        nvgFontSize(BS.vg, 18)
+        nvgTextAlign(BS.vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(BS.vg, nvgRGBA(255, 220, 60, 255))
+        nvgText(BS.vg, cx, bannerY + 18,
+            "⚠ 第 " .. (BS.bossWarningWave or BS.waveNum) .. " 波：Boss 即将出现！")
+
+        -- Boss 类型名称（大号）
+        nvgFontSize(BS.vg, 16)
+        nvgFillColor(BS.vg, nvgRGBA(255, 180, 120, 250))
+        nvgText(BS.vg, cx, bannerY + 40, "◆ " .. bossName .. " ◆")
+
+        -- Boss 描述
+        nvgFontSize(BS.vg, 11)
+        nvgFillColor(BS.vg, nvgRGBA(230, 200, 160, 230))
+        nvgText(BS.vg, cx, bannerY + 58, bossDesc)
+
+        -- 倒计时 + 建议
+        nvgFontSize(BS.vg, 10)
+        nvgFillColor(BS.vg, nvgRGBA(180, 160, 140, 220))
+        nvgText(BS.vg, cx, bannerY + 74,
+            string.format("倒计时 %ds · 建议：检查舰队配置，确保有护卫舰/防御塔 [SPACE跳过]",
+                remain))
+
+        -- 预警状态下不再绘制普通波次 HUD
+        return
+    end
+
+    local hw, hh = 140, 48
     -- 背景胶囊
     nvgBeginPath(BS.vg)
     nvgRoundedRect(BS.vg, cx - hw, 4, hw * 2, hh, 8)
@@ -150,9 +261,9 @@ local function drawComboHUD()
     local color = lv and { 255, 220, 40 } or { 180, 220, 255 }
     local label = lv and lv.label or "COMBO"
 
-    local bw = math.min(112, math.floor(BS.screenW * 0.28))
-    local bx = BS.screenW - bw - 8
+    local bx = BS.screenW - 120
     local by = 6
+    local bw = 112
     local bh = 40
 
     nvgBeginPath(BS.vg)
@@ -353,7 +464,7 @@ local function drawFocusHUD()
     local typeName  = cfg.name or BS.focusTarget.stype
     local hpPct     = math.max(0, BS.focusTarget.health / (BS.focusTarget.maxHealth or BS.focusTarget.health))
 
-    local barW, barH = math.min(220, BS.screenW - 40), 26
+    local barW, barH = 220, 26
     local bx = BS.screenW / 2 - barW / 2
     local by = 58
 
@@ -424,11 +535,11 @@ local function drawFormationBar()
     local skillTotalW = skillBtnW * skillCols + skillGapX * (skillCols - 1)
     local skillStartX = BS.screenW / 2 - skillTotalW / 2
 
-    local btnW, btnH = math.min(60, math.floor(BS.screenW * 0.14)), 20
+    local btnW, btnH = 60, 20
     local gap        = 2
     local numBtns    = #FORMATION_ORDER
     local totalH     = btnH * numBtns + gap * (numBtns - 1)
-    local bx         = math.max(4, skillStartX - btnW - 10)
+    local bx         = skillStartX - btnW - 10
     local row2Y      = BS.screenH - 74 - 6 - 5
     local topY       = row2Y + (74 - totalH) / 2
 
@@ -595,10 +706,9 @@ local function drawSkillUpgrade()
     nvgFillColor(vg, nvgRGBA(255, 220, 80, 240))
     nvgText(vg, BS.screenW / 2, BS.screenH / 2 - 80, "⬆ 技能强化 — 选择一项升级")
 
+    local cardW, cardH = 130, 90
+    local cardGap = 20
     local n = #BS.skillUpgradeCards
-    local maxCardW = math.floor((BS.screenW - 24 - (n - 1) * 10) / n)
-    local cardW, cardH = math.min(130, maxCardW), 90
-    local cardGap = math.min(20, math.floor((BS.screenW - n * cardW - 16) / math.max(1, n - 1)))
     local totalW = n * cardW + (n - 1) * cardGap
     local startX = BS.screenW / 2 - totalW / 2
     local cardY  = BS.screenH / 2 - cardH / 2 - 10
@@ -655,6 +765,199 @@ end
 
 --- P3-2: Boss击破全屏闪光 + BOSS DESTROYED 横幅
 
+--- P0-1: 超级 Boss 特殊血条渲染
+local function drawSuperBossHealthBar()
+    -- 遍历敌舰查找超级 Boss
+    local superBoss = nil
+    if BS.enemyFleet then
+        for _, ship in ipairs(BS.enemyFleet) do
+            if ship.isSuperBoss then superBoss = ship; break end
+        end
+    end
+    if not superBoss then return end
+
+    local def = BS.SUPER_BOSSES and BS.SUPER_BOSSES[superBoss.superBossType]
+    local bx, by, bw = BS.screenW - 160, 50, 300
+
+    -- 血条背景
+    nvgFillColor(BS.vg, nvgRGBA(40, 10, 10, 220))
+    nvgBeginPath(BS.vg); nvgRoundedRect(BS.vg, bx, by, bw, 18, 3); nvgFill(BS.vg)
+
+    -- 当前阶段血条
+    local phaseHpRatio = superBoss.health > 0 and superBoss.health / superBoss.maxHealth or 0
+    nvgFillColor(BS.vg, nvgRGBA(220, 30, 30, 255))
+    nvgBeginPath(BS.vg); nvgRoundedRect(BS.vg, bx, by, bw * math.max(0, phaseHpRatio), 18, 3); nvgFill(BS.vg)
+
+    -- 阶段标记线
+    if def and def.phases then
+        for _, phase in ipairs(def.phases) do
+            if phase.hpThreshold < 1.0 then
+                local px = bx + bw * phase.hpThreshold
+                nvgStrokeColor(BS.vg, nvgRGBA(255, 200, 0, 200))
+                nvgStrokeWidth(BS.vg, 2)
+                nvgBeginPath(BS.vg)
+                nvgMoveTo(BS.vg, px, by)
+                nvgLineTo(BS.vg, px, by + 18)
+                nvgStroke(BS.vg)
+            end
+        end
+    end
+
+    -- 超级 Boss 名字
+    nvgFontFace(BS.vg, "sans")
+    nvgFontSize(BS.vg, 14)
+    nvgTextAlign(BS.vg, NVG_ALIGN.CENTER)
+    nvgFillColor(BS.vg, nvgRGBA(255, 100, 100, 255))
+    nvgText(BS.vg, bx + bw/2, by - 10, "⚠ " .. (def and def.name or "??") .. " ⚠")
+
+    -- 阶段名
+    if superBoss.currentPhase and superBoss.currentPhase.name then
+        nvgFontSize(BS.vg, 11)
+        nvgFillColor(BS.vg, nvgRGBA(255, 180, 80, 220))
+        nvgText(BS.vg, bx + bw/2, by + 32, superBoss.currentPhase.name)
+    end
+
+    -- 轰炸区域指示（如果正在轰炸）
+    if BS.bombardZones and #BS.bombardZones > 0 then
+        for _, zone in ipairs(BS.bombardZones) do
+            local alpha = math.floor((zone.timer / zone.maxTimer) * 200)
+            nvgBeginPath(BS.vg)
+            nvgCircle(BS.vg, zone.x, zone.y, zone.radius)
+            nvgFillColor(BS.vg, nvgRGBA(255, 60, 60, alpha))
+            nvgFill(BS.vg)
+        end
+    end
+end
+
+-- P0-7: 速度切换按钮和自动战斗开关
+local function drawSpeedControl()
+    if not BS then return end
+    local screenW, screenH = BS.screenW or 800, BS.screenH or 600
+
+    local btnSize = 32
+    local startX = screenW - 170
+    local y = screenH - 50
+
+    -- 获取当前速度显示
+    local speedLabel = "▶ 1x"
+    local BATTLE_SPEEDS = Systems.BATTLE_SPEEDS
+    for _, spd in ipairs(BATTLE_SPEEDS) do
+        if spd.id == BS.battleSpeedId then
+            speedLabel = spd.icon .. " " .. spd.name
+        end
+    end
+
+    -- 速度按钮
+    nvgBeginPath(BS.vg)
+    nvgRoundedRect(BS.vg, startX, y, 60, btnSize, 6)
+    nvgFillColor(BS.vg, nvgRGBA(60, 60, 100, 200)); nvgFill(BS.vg)
+    nvgStrokeColor(BS.vg, nvgRGBA(150, 150, 200, 150)); nvgStrokeWidth(BS.vg, 1); nvgStroke(BS.vg)
+    nvgFontFace(BS.vg, "sans"); nvgFontSize(BS.vg, 11)
+    nvgTextAlign(BS.vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(BS.vg, nvgRGBA(255, 255, 255, 255))
+    nvgText(BS.vg, startX + 30, y + btnSize/2, speedLabel)
+
+    addHit(startX, y, 60, btnSize, function()
+        -- 循环切换速度
+        local currentIdx = 1
+        for i, spd in ipairs(BATTLE_SPEEDS) do
+            if spd.id == BS.battleSpeedId then currentIdx = i; break end
+        end
+        local nextIdx = (currentIdx % #BATTLE_SPEEDS) + 1
+        local nextSpeed = BATTLE_SPEEDS[nextIdx]
+        BS.battleSpeed = nextSpeed.mult
+        BS.battleSpeedId = nextSpeed.id
+        if BS.notifyFn then BS.notifyFn("战斗速度: " .. nextSpeed.name, "info") end
+    end)
+
+    -- 自动战斗开关
+    local autoX = startX + 70
+    local autoColor = BS.autoBattleEnabled and nvgRGBA(80, 160, 80, 200) or nvgRGBA(80, 60, 60, 200)
+    local autoStrokeColor = BS.autoBattleEnabled and nvgRGBA(100, 255, 100, 200) or nvgRGBA(150, 100, 100, 150)
+
+    nvgBeginPath(BS.vg)
+    nvgRoundedRect(BS.vg, autoX, y, 60, btnSize, 6)
+    nvgFillColor(BS.vg, autoColor); nvgFill(BS.vg)
+    nvgStrokeColor(BS.vg, autoStrokeColor); nvgStrokeWidth(BS.vg, 1); nvgStroke(BS.vg)
+    nvgFontSize(BS.vg, 11)
+    nvgTextAlign(BS.vg, NVG_ALIGN.CENTER + NVG_ALIGN.MIDDLE)
+    nvgFillColor(BS.vg, nvgRGBA(255, 255, 255, 255))
+    nvgText(BS.vg, autoX + 30, y + btnSize/2, BS.autoBattleEnabled and "ON" or "OFF")
+
+    addHit(autoX, y, 60, btnSize, function()
+        BS.autoBattleEnabled = not BS.autoBattleEnabled
+        if BS.notifyFn then
+            BS.notifyFn(BS.autoBattleEnabled and "自动战斗: 开启" or "自动战斗: 关闭", "info")
+        end
+    end)
+
+    -- 自动战斗状态指示
+    if BS.autoBattleEnabled then
+        nvgFontFace(BS.vg, "sans")
+        nvgFontSize(BS.vg, 10)
+        nvgTextAlign(BS.vg, NVG_ALIGN.CENTER)
+        nvgFillColor(BS.vg, nvgRGBA(100, 255, 100, 200))
+        nvgText(BS.vg, autoX + 30, y - 12, "AUTO")
+    end
+
+    -- 快捷键提示
+    nvgFontSize(BS.vg, 8)
+    nvgTextAlign(BS.vg, NVG_ALIGN.LEFT)
+    nvgFillColor(BS.vg, nvgRGBA(150, 150, 150, 150))
+    nvgText(BS.vg, startX, y + btnSize + 10, "1-4:速度 A:自动")
+end
+
+-- ============================================================================
+-- P1-10: 暂停界面渲染
+-- ============================================================================
+local function drawPauseScreen()
+    if not BS.paused then return end
+    
+    local screenW, screenH = BS.screenW or 800, BS.screenH or 600
+    local vg = BS.vg
+    
+    -- 半透明遮罩
+    nvgBeginPath(vg)
+    nvgRect(vg, 0, 0, screenW, screenH)
+    nvgFillColor(vg, nvgRGBA(0, 0, 0, 150))
+    nvgFill(vg)
+    
+    -- 暂停文字
+    nvgFontFace(vg, "sans")
+    nvgFontSize(vg, 36)
+    nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+    nvgText(vg, screenW/2, screenH/2 - 50, "⏸ 游戏暂停")
+    
+    -- 提示
+    nvgFontSize(vg, 14)
+    nvgFillColor(vg, nvgRGBA(200, 200, 200, 200))
+    nvgText(vg, screenW/2, screenH/2, "按 P 或 ESC 继续")
+    
+    -- 继续按钮
+    local btnW, btnH = 120, 40
+    local btnX, btnY = screenW/2 - btnW/2, screenH/2 + 50
+    
+    nvgBeginPath(vg)
+    nvgRoundedRect(vg, btnX, btnY, btnW, btnH, 8)
+    nvgFillColor(vg, nvgRGBA(80, 120, 80, 220))
+    nvgFill(vg)
+    nvgStrokeColor(vg, nvgRGBA(100, 180, 100, 255))
+    nvgStrokeWidth(vg, 2)
+    nvgStroke(vg)
+    
+    nvgFontSize(vg, 16)
+    nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+    nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+    nvgText(vg, btnX + btnW/2, btnY + btnH/2, "▶ 继续")
+    
+    addHit(btnX, btnY, btnW, btnH, function()
+        BS.paused = false
+    end)
+end
+
+RenderHUD.drawBossPhaseBanner = drawBossPhaseBanner
+RenderHUD.drawSuperBossHealthBar = drawSuperBossHealthBar
 RenderHUD.drawWaveHUD          = drawWaveHUD
 RenderHUD.drawComboHUD         = drawComboHUD
 RenderHUD.drawShipInfoPanel    = drawShipInfoPanel
@@ -663,5 +966,139 @@ RenderHUD.drawFocusHUD         = drawFocusHUD
 RenderHUD.drawFormationBar     = drawFormationBar
 RenderHUD.drawRetreatReinforce = drawRetreatReinforce
 RenderHUD.drawSkillUpgrade     = drawSkillUpgrade
+RenderHUD.drawSpeedControl     = drawSpeedControl
+RenderHUD.drawPauseScreen      = drawPauseScreen  -- P1-10: 暂停界面
+
+-- P1-P2-1: 战斗指令按钮渲染
+local BATTLE_COMMANDS_HUD = {
+    { id = "FOCUS_FIRE",       name = "集火",  icon = "🔥", key = "Q" },
+    { id = "DEFENSE_STANCE",   name = "防御",  icon = "🛡", key = "W" },
+    { id = "TACTICAL_RETREAT", name = "后撤",  icon = "↩", key = "E" },
+    { id = "FULL_SALVO",       name = "齐射",  icon = "⚡", key = "R" },
+    { id = "EMERGENCY_REPAIR", name = "维修",  icon = "🔧", key = "T" },
+}
+
+local commandBtns_ = {}  -- 按钮区域列表（由 OnClick 使用）
+
+--- 绘制战斗指令按钮栏
+local function drawCommandBar()
+    if BS.state ~= "fighting" then return end
+    local cmdSys = BS.BattleCommandSystem
+    if not cmdSys then return end
+
+    local vg = BS.vg
+    if not vg then return end
+
+    local cooldowns = cmdSys:getCooldowns()
+
+    -- 按钮尺寸与布局
+    local btnW, btnH = 72, 60
+    local gap = 8
+    local totalW = #BATTLE_COMMANDS_HUD * btnW + (#BATTLE_COMMANDS_HUD - 1) * gap
+    local startX = (BS.screenW - totalW) / 2
+    local btnY = BS.screenH - btnH - 10
+
+    commandBtns_ = {}
+
+    for i, info in ipairs(BATTLE_COMMANDS_HUD) do
+        local btnX = startX + (i - 1) * (btnW + gap)
+        local cd = cooldowns[info.id] or { cooldown = 0, active = 0, ready = true, name = info.name }
+        local isReady = cd.ready and cd.active <= 0
+        local isActive = cd.active > 0
+
+        -- 按钮背景
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, btnX, btnY, btnW, btnH, 6)
+        if isActive then
+            nvgFillColor(vg, nvgRGBA(80, 200, 120, 200))  -- 激活中：绿色
+        elseif isReady then
+            nvgFillColor(vg, nvgRGBA(40, 60, 80, 220))    -- 可用：深蓝
+        else
+            nvgFillColor(vg, nvgRGBA(30, 30, 40, 180))    -- 冷却中：暗色
+        end
+        nvgFill(vg)
+
+        -- 按钮边框
+        nvgBeginPath(vg)
+        nvgRoundedRect(vg, btnX, btnY, btnW, btnH, 6)
+        if isActive then
+            nvgStrokeColor(vg, nvgRGBA(100, 255, 150, 255))
+        elseif isReady then
+            nvgStrokeColor(vg, nvgRGBA(80, 140, 200, 200))
+        else
+            nvgStrokeColor(vg, nvgRGBA(60, 60, 80, 150))
+        end
+        nvgStrokeWidth(vg, 1.5)
+        nvgStroke(vg)
+
+        -- 冷却遮罩（倒计时进度条）
+        if cd.cooldown > 0 and not isReady then
+            local maxCd = 90  -- 假设最大冷却为 90 秒（FULL_SALVO）
+            local fillPct = math.max(0, 1 - cd.cooldown / maxCd)
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, btnX, btnY + btnH - 8, btnW * fillPct, 8, 3)
+            nvgFillColor(vg, nvgRGBA(100, 100, 120, 200))
+            nvgFill(vg)
+        end
+
+        -- 激活持续时间条
+        if isActive then
+            local activePct = cd.active / 10  -- 假设最大激活时间为 10 秒
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, btnX, btnY + 4, btnW * activePct, 4, 2)
+            nvgFillColor(vg, nvgRGBA(100, 255, 150, 255))
+            nvgFill(vg)
+        end
+
+        -- 图标
+        nvgFontFace(vg, "sans")
+        nvgFontSize(vg, 20)
+        nvgTextAlign(vg, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+        nvgFillColor(vg, nvgRGBA(255, 255, 255, 255))
+        nvgText(vg, btnX + btnW/2, btnY + 18, info.icon)
+
+        -- 名称
+        nvgFontSize(vg, 11)
+        nvgFillColor(vg, nvgRGBA(200, 210, 230, 255))
+        nvgText(vg, btnX + btnW/2, btnY + 35, info.name)
+
+        -- 冷却时间或快捷键
+        nvgFontSize(vg, 10)
+        if cd.cooldown > 0 and not isReady then
+            nvgFillColor(vg, nvgRGBA(255, 150, 100, 255))
+            nvgText(vg, btnX + btnW/2, btnY + 50, string.format("%.0fs", cd.cooldown))
+        else
+            nvgFillColor(vg, nvgRGBA(150, 160, 180, 200))
+            nvgText(vg, btnX + btnW/2, btnY + 50, "[" .. info.key .. "]")
+        end
+
+        -- 记录按钮区域
+        commandBtns_[#commandBtns_ + 1] = { x = btnX, y = btnY, w = btnW, h = btnH, id = info.id }
+
+        -- 激活中的指令发光效果
+        if isActive then
+            nvgBeginPath(vg)
+            nvgRoundedRect(vg, btnX - 2, btnY - 2, btnW + 4, btnH + 4, 8)
+            nvgStrokeColor(vg, nvgRGBA(100, 255, 150, 100))
+            nvgStrokeWidth(vg, 2)
+            nvgStroke(vg)
+        end
+    end
+
+    -- 保存按钮区域到 BS（供 OnClick 使用）
+    BS.commandBtns = commandBtns_
+end
+
+-- 键盘快捷键处理（供 BattleScene 键盘事件调用）
+function RenderHUD.HandleCommandKey(key)
+    if BS.state ~= "fighting" then return end
+    local keyMap = { Q = "FOCUS_FIRE", W = "DEFENSE_STANCE", E = "TACTICAL_RETREAT", R = "FULL_SALVO", T = "EMERGENCY_REPAIR" }
+    local cmdId = keyMap[key]
+    if cmdId then
+        BattleScene.ExecuteCommand(cmdId)
+    end
+end
+
+RenderHUD.drawCommandBar = drawCommandBar
 
 return RenderHUD

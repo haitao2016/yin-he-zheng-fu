@@ -42,6 +42,13 @@ function BattleTimers.Update(dt, ctx, makeShip)
     if ctx.bossFlashTimer > 0 then
         ctx.bossFlashTimer = ctx.bossFlashTimer - dt
     end
+    -- P0-3: Boss 阶段转换横幅倒计时
+    if ctx.bossPhaseBannerTimer and ctx.bossPhaseBannerTimer > 0 then
+        ctx.bossPhaseBannerTimer = math.max(0, ctx.bossPhaseBannerTimer - dt)
+        if ctx.bossPhaseBannerTimer <= 0 then
+            ctx.bossPhaseBannerText = nil
+        end
+    end
     -- 里程碑 Boss 闪光衰减 + 横幅倒计时
     if ctx.milestoneFlashAlpha > 0 then
         ctx.milestoneFlashAlpha = math.max(0, ctx.milestoneFlashAlpha - dt * 180)

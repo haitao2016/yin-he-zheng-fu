@@ -20,7 +20,6 @@ local screenW_       = 800
 local screenH_       = 600
 
 local resIcons_      = {}
-local resIconsLoaded_ = false
 
 local rm_            = nil
 local bs_            = nil
@@ -161,7 +160,17 @@ function CommonUI.init(vg, sw, sh)
     screenW_ = sw or 800
     screenH_ = sh or 600
     resIcons_ = {}
-    resIconsLoaded_ = false  -- 延迟到首帧渲染时加载
+    if vg_ then
+        local f = NVG_IMAGE_PREMULTIPLIED
+        resIcons_["minerals"]   = nvgCreateImage(vg_, "image/icon_minerals_20260511191023.png",  f)
+        resIcons_["energy"]     = nvgCreateImage(vg_, "image/icon_energy_20260511190704.png",    f)
+        resIcons_["crystal"]    = nvgCreateImage(vg_, "image/icon_crystal_20260511190706.png",   f)
+        resIcons_["population"] = nvgCreateImage(vg_, "image/icon_population_20260511190825.png",f)
+        resIcons_["credits"]    = nvgCreateImage(vg_, "image/icon_credits_20260511190705.png",   f)
+        resIcons_["metal"]   = resIcons_["minerals"]
+        resIcons_["esource"] = resIcons_["energy"]
+        resIcons_["nuclear"] = resIcons_["crystal"]
+    end
     UICommon.vg = vg_
     UICommon.bindFns({
         clr         = clr,
@@ -213,23 +222,6 @@ function CommonUI.resetPerRun()
 end
 
 function CommonUI.update(dt)
-    -- 懒加载资源图标（最多尝试1次，失败则放弃）
-    if not resIconsLoaded_ and vg_ then
-        local f = NVG_IMAGE_PREMULTIPLIED
-        local test = nvgCreateImage(vg_, "image/icon_minerals_20260511191023.png", f)
-        if test and test > 0 then
-            resIcons_["minerals"]   = test
-            resIcons_["energy"]     = nvgCreateImage(vg_, "image/icon_energy_20260511190704.png",    f)
-            resIcons_["crystal"]    = nvgCreateImage(vg_, "image/icon_crystal_20260511190706.png",   f)
-            resIcons_["population"] = nvgCreateImage(vg_, "image/icon_population_20260511190825.png",f)
-            resIcons_["credits"]    = nvgCreateImage(vg_, "image/icon_credits_20260511190705.png",   f)
-            resIcons_["metal"]   = resIcons_["minerals"]
-            resIcons_["esource"] = resIcons_["energy"]
-            resIcons_["nuclear"] = resIcons_["crystal"]
-            UICommon.resIcons = resIcons_
-        end
-        resIconsLoaded_ = true  -- 无论成功与否都停止重试
-    end
     gameTime_ = gameTime_ + dt
     UICommon.animUpdate(dt)
     EndGamePanel.Update(dt)
@@ -433,6 +425,7 @@ function CommonUI.getState(key)
 end
 
 ---@param key string
+---@param value any
 function CommonUI.toggleFlag(key)
     if key == "statsVisible" then statsVisible_ = not statsVisible_; return end
     if key == "signalOpen" then
@@ -443,6 +436,7 @@ function CommonUI.toggleFlag(key)
     if key == "diploRelVisible" then diploRelVisible_ = not diploRelVisible_; return end
 end
 
+---@param vg userdata
 function CommonUI.renderTopBar()
     if not rm_ or not player_ then return end
     screenW_, screenH_ = UICommon.getVirtualSize()

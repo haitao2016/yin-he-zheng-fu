@@ -30,6 +30,8 @@ local drawHitSparks         = RenderEntities.drawHitSparks
 local drawShockRings        = RenderEntities.drawShockRings
 
 local drawWaveHUD           = RenderHUD.drawWaveHUD
+local drawBossPhaseBanner   = RenderHUD.drawBossPhaseBanner
+local drawSuperBossHealthBar = RenderHUD.drawSuperBossHealthBar
 local drawComboHUD          = RenderHUD.drawComboHUD
 local drawShipInfoPanel     = RenderHUD.drawShipInfoPanel
 local drawFocusRing         = RenderHUD.drawFocusRing
@@ -37,6 +39,9 @@ local drawFocusHUD          = RenderHUD.drawFocusHUD
 local drawFormationBar      = RenderHUD.drawFormationBar
 local drawRetreatReinforce  = RenderHUD.drawRetreatReinforce
 local drawSkillUpgrade      = RenderHUD.drawSkillUpgrade
+local drawSpeedControl      = RenderHUD.drawSpeedControl
+local drawPauseScreen       = RenderHUD.drawPauseScreen  -- P1-10: 暂停界面
+local drawCommandBar       = RenderHUD.drawCommandBar   -- P1-P2-1: 战斗指令按钮
 
 local drawBossDestroyedEffect  = RenderOverlays.drawBossDestroyedEffect
 local drawFireworks            = RenderOverlays.drawFireworks
@@ -88,7 +93,11 @@ function BattleRender.Render()
     drawComboHUD()
     drawFormationBar()
     drawRetreatReinforce()
+    drawSpeedControl()
+    drawCommandBar()  -- P1-P2-1: 战斗指令按钮
     BS.BattleSkills.Draw({ vg = BS.vg, state = BS.state, rs = BS.rs, screenW = BS.screenW, screenH = BS.screenH })
+    drawBossPhaseBanner()
+    drawSuperBossHealthBar()
     drawBossWarning()
     drawPincerBanner()
     drawNemesisOverlay()
@@ -99,6 +108,102 @@ function BattleRender.Render()
     drawStateOverlay()
     drawWaveSummary()
     drawSkillUpgrade()
+    drawPauseScreen()  -- P1-10: 暂停界面（最上层）
+end
+
+---@param shipList table
+---@param batchSize number
+---@return number
+function BattleRender.batchDrawShips(shipList, batchSize)
+    if not shipList then return 0 end
+    local n = #shipList
+    if n <= 0 then return 0 end
+    local bs = batchSize or 16
+    if bs <= 0 then bs = 16 end
+
+    local drawn = 0
+    local batchCount = 0
+    for i = 1, n, bs do
+        local j = math.min(i + bs - 1, n)
+        if j >= i then
+            nvgSave(BS.vg)
+            for k = i, j do
+                local s = shipList[k]
+                if s then
+                    drawShip(s)
+                    drawn = drawn + 1
+                end
+            end
+            nvgRestore(BS.vg)
+            batchCount = batchCount + 1
+        end
+    end
+
+    _renderStats = _renderStats or {}
+    _renderStats.drawnShips = (_renderStats.drawnShips or 0) + drawn
+    _renderStats.batchCount = (_renderStats.batchCount or 0) + batchCount
+    return drawn
+end
+
+---@param particles table
+---@param cullDistance number
+---@return number
+function BattleRender.optimizeParticleDraw(particles, cullDistance)
+    if not particles then return 0 end
+    local n = #particles
+    if n <= 0 then return 0 end
+    local cd = cullDistance or 600
+    local cx = (BS.screenW or 0) / 2
+    local cy = (BS.screenH or 0) / 2
+
+    local groups = {}
+    local drawn = 0
+    local culled = 0
+
+    for _, p in ipairs(particles) do
+        if p then
+            local px = p.x or 0
+            local py = p.y or 0
+            local dx = px - cx
+            local dy = py - cy
+            local distSq = dx * dx + dy * dy
+            if distSq > cd * cd then
+                culled = culled + 1
+            else
+                local tex = p.texture or "__default"
+                if not groups[tex] then groups[tex] = {} end
+                table.insert(groups[tex], p)
+            end
+        end
+    end
+
+    for tex, group in pairs(groups) do
+        nvgSave(BS.vg)
+        for _, p in ipairs(group) do
+            local func = p.draw or drawFireParticles or nil
+            if type(func) == "function" then
+                func(p)
+            end
+            drawn = drawn + 1
+        end
+        nvgRestore(BS.vg)
+    end
+
+    _renderStats = _renderStats or {}
+    _renderStats.drawnParticles = (_renderStats.drawnParticles or 0) + drawn
+    _renderStats.culledParticles = (_renderStats.culledParticles or 0) + culled
+    return drawn
+end
+
+---@return table
+function BattleRender.getRenderStats()
+    _renderStats = _renderStats or {}
+    return {
+        drawnShips = _renderStats.drawnShips or 0,
+        drawnParticles = _renderStats.drawnParticles or 0,
+        batchCount = _renderStats.batchCount or 0,
+        culledParticles = _renderStats.culledParticles or 0,
+    }
 end
 
 return BattleRender

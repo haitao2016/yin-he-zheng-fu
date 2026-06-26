@@ -9,11 +9,11 @@ local Audio = require("game.AudioManager")
 local BattleSkills = require("game.BattleSkills")
 local Systems = require("game.Systems")
 local SHIP_TYPES = Systems.SHIP_TYPES
+local SUPER_BOSSES = Systems.SUPER_BOSSES
 local NemesisSystem = require("game.NemesisSystem")
 local BattleReplaySystem = require("game.BattleReplaySystem")
 local Commander = require("game.CommanderSystem")
 local FormationEditor = require("game.ui.FormationEditor")
-local BattleUtils = require("game.battle.BattleUtils")
 
 local BattleAI = {}
 
@@ -34,6 +34,36 @@ local BATTLECRUISER_BLOCK   = 0.10
 local COMBO_RESET_TIME      = 5.0
 local BOSS_BANNER_DUR       = 2.5
 local MILESTONE_BANNER_DUR  = 4.0
+
+-- V2.6 A1: 新舰种常量
+local SUPPORT_HEAL_INTERVAL  = 8.0
+local SUPPORT_HEAL_RADIUS    = 120
+local SUPPORT_HEAL_AMOUNT    = 15
+local SUPPORT_DMG_BONUS      = 0.10
+local SUPPORT_DMG_RADIUS     = 80
+local SUPPORT_DMG_MAX_STACK  = 3  -- 最多3层
+local STEALTH_DURATION       = 5.0
+local STEALTH_SPEED_MULT     = 2.0
+local STEALTH_FIRST_STRIKE  = 1.5
+local DREAD_COUNTER_CHANCE   = 0.10
+local DREAD_COUNTER_DMG     = 50
+
+-- 舰船类型中文名缓存（避免每帧创建 table）
+local SHIP_TYPE_LABELS = {
+    SCOUT = "侦察舰",
+    FRIGATE = "护卫舰",
+    DESTROYER = "驱逐舰",
+    BATTLECRUISER = "战列巡洋舰",
+    MINER = "采矿船",
+    ENGINEER = "工程舰",
+    EXPLORER = "探索舰",
+    CARRIER = "航母",
+    INTERCEPTOR = "拦截舰",
+    -- V2.6 A1: 新增舰种
+    STEALTH = "隐形舰",
+    SUPPORT = "支援舰",
+    DREADNOUGHT = "巨型战舰",
+}
 
 local BATTLE_ENVIRONMENTS = {
     NONE     = { enemyRangeMult = 1.0, shieldAbsorb = 1.0, asteroidDamage = 0, particleType = "none" },
@@ -61,7 +91,7 @@ local battleStats_      -- table 引用
 local FORMATION_CONFIG  -- table 引用
 local COMBO_LEVELS      -- table 引用
 local rm_               -- table 引用 (研究管理器 baseBonus)
-local SHIP_TYPES_ = SHIP_TYPES  -- table 引用 (舰船类型配置表，默认取模块级 Systems.SHIP_TYPES)
+local SHIP_TYPES_       -- table 引用 (舰船类型配置表)
 
 -- 标量状态（每帧从 BattleScene 同步进来，修改后回写）
 local vars_ = {}
@@ -117,7 +147,7 @@ end
 -- ============================================================================
 -- 辅助函数
 -- ============================================================================
-local function dist2(x1, y1, x2, y2)
+local function dist(x1, y1, x2, y2)
     local dx, dy = x2 - x1, y2 - y1
     return math.sqrt(dx * dx + dy * dy)
 end
@@ -130,7 +160,7 @@ local function findNearest(ship, fleet, skipStealth)
         if skipStealth and s.stealthTimer and s.stealthTimer > 0 then
             -- skip
         else
-            local d = dist2(ship.x, ship.y, s.x, s.y)
+            local d = dist(ship.x, ship.y, s.x, s.y)
             if d < bd then best = s; bd = d end
         end
     end
@@ -142,6 +172,10 @@ local function getComboLevel()
         if vars_.comboCount >= lv.min then return lv end
     end
     return nil
+end
+
+local function shipTypeName(stype)
+    return SHIP_TYPE_LABELS[stype] or stype
 end
 
 local function logBattleEvent(text)
@@ -172,16 +206,13 @@ local function spawnExplosion(ship)
         r = 255, g = 255, b = 255,
         size = isBig and 22 or 12, ptype = "flash"
     }
-    -- 碎片（根据队伍选择颜色）
+    -- 碎片
     for _ = 1, count do
         local ang = math.random() * math.pi * 2
         local spd = speed * (0.3 + math.random() * 0.9)
-        local r, g, b
-        if ship.team == "player" then
-            r, g, b = 80 + math.random(60), 160 + math.random(60), 255  -- 蓝色系（玩家）
-        else
-            r, g, b = 255, 80 + math.random(80), math.random(40)  -- 红色系（敌人）
-        end
+        local r = 200 + math.random(55)
+        local g = 80 + math.random(120)
+        local b = math.random(60)
         explParticles_[#explParticles_ + 1] = {
             x = ship.x + (math.random() - 0.5) * 6,
             y = ship.y + (math.random() - 0.5) * 6,
@@ -268,17 +299,32 @@ function BattleAI.MakeBossShip(baseType, x, y)
     ship.shield = shieldVal
     ship.maxShield = shieldVal
 
-    -- V2.5 P3: Boss 随机附带 1 个正面变异词缀
-    local MSys = require("game.MutantShipSystem")
-    local allAffixes = MSys.GetAllAffixes()
-    local positiveKeys = {}
-    for k, a in pairs(allAffixes) do
-        if a.positive then positiveKeys[#positiveKeys + 1] = k end
+    -- V2.6 A3: 多阶段Boss系统初始化
+    local BOSS_PHASES = Systems.BOSS_PHASES
+    local phases = BOSS_PHASES[baseType] or BOSS_PHASES["BATTLECRUISER"]
+    ship.bossPhases = phases
+    ship.bossPhaseIndex = 1
+    ship.bossPhaseName = phases[1] and phases[1].name or "常规形态"
+    ship.bossPhaseTimer = 0
+    ship.bossPhaseChanged = false  -- 标记本帧是否刚切换阶段
+    ship.shipType = baseType        -- P1-4/5: shipType 别名（与 stype 一致，便于技能分支判断）
+
+    -- V2.6 A3: 应用阶段1的属性修饰符（确保阶段转换公式对称有效）
+    local phase1 = phases[1]
+    if phase1 then
+        if phase1.dmgMult then ship.dmg = ship.dmg * phase1.dmgMult end
+        if phase1.speedMult then ship.speed = ship.speed * phase1.speedMult end
+        if phase1.aoeRadiusMult and ship.aoeRadius then ship.aoeRadius = ship.aoeRadius * phase1.aoeRadiusMult end
+        if phase1.shieldMult then
+            ship.shield = ship.shield * phase1.shieldMult
+            ship.maxShield = ship.maxShield * phase1.shieldMult
+        end
     end
-    if #positiveKeys > 0 then
-        local picked = positiveKeys[math.random(#positiveKeys)]
-        ship.mutantAffixes = { picked }
-        ship.affixSet = { [picked] = true }
+
+    -- 虚空Boss特殊：初始隐形
+    if phases[1] and phases[1].stealthPhase then
+        ship.stealthTimer = 5.0
+        ship.isVoidStealth = true
     end
 
     return ship
@@ -358,7 +404,7 @@ end
 -- ============================================================================
 
 --- 构建敌方波次（与 BattleScene 完全一致的概率表 + 夹击逻辑）
-function BattleAI.BuildEnemyWave(wave)
+function BattleAI.BuildEnemyWave(wave, forceBossType)
     local screenW = vars_.screenW
     local screenH = vars_.screenH
     local fleet = {}
@@ -426,7 +472,8 @@ function BattleAI.BuildEnemyWave(wave)
     end
     -- Boss波次：生成强化旗舰 Boss
     if wave % BOSS_WAVE_INTERVAL == 0 then
-        local bossType = wave >= 10 and "CARRIER" or "BATTLECRUISER"
+        -- P1-6: 如果传入了强制 Boss 类型则优先使用；否则按波次默认
+        local bossType = forceBossType or (wave >= 10 and "CARRIER" or "BATTLECRUISER")
         local bx = screenW - 60 - math.random() * 30
         local by = 88 + battleH * 0.4 + math.random() * battleH * 0.2
         fleet[#fleet + 1] = BattleAI.MakeBossShip(bossType, bx, by)
@@ -689,6 +736,16 @@ function BattleAI.UpdatePlayerFleet(dt)
         if ship.stealthTimer and ship.stealthTimer > 0 then
             ship.stealthTimer = ship.stealthTimer - dt
         end
+        -- V2.6 A1: STEALTH 隐身舰 - 战斗开始时隐身
+        if ship.stype == "STEALTH" and not ship.stealthInitDone then
+            ship.stealthInitDone = true
+            ship.stealthTimer = STEALTH_DURATION
+            ship.stealthFirstStrike = true  -- 首次攻击增伤标记
+        end
+        -- V2.6 A1: DREADNOUGHT 巨型战舰 - 反击机制
+        if ship.stype == "DREADNOUGHT" then
+            ship.dreadCounterTimer = (ship.dreadCounterTimer or 0) + dt
+        end
         -- 模块效果：紧急维修（血量 <20% 时触发一次）
         if ship.modules and ship.modules.emergencyHeal and not ship.emergencyUsed then
             if ship.health < ship.maxHealth * 0.2 then
@@ -702,21 +759,21 @@ function BattleAI.UpdatePlayerFleet(dt)
             end
         end
 
-        -- 变异词缀运行时效果（使用 affixSet 字典，由 makeShip 构建）
-        if ship.affixSet then
+        -- 变异词缀运行时效果
+        if ship.affixes then
             -- regen: 每秒回复 1% maxHP
-            if ship.affixSet.regen then
+            if ship.affixes.regen then
                 ship.health = math.min(ship.maxHealth, ship.health + ship.maxHealth * 0.01 * dt)
             end
             -- overcharge: 每秒消耗 0.5% HP，换取额外伤害（在射击时已 ×1.5）
-            if ship.affixSet.overcharge then
+            if ship.affixes.overcharge then
                 ship.health = ship.health - ship.maxHealth * 0.005 * dt
                 if ship.health < 1 then ship.health = 1 end
             end
             -- berserk: 血量 <30% 时伤害×2
             -- (应用在射击段)
             -- stealth: 3s 隐匿 / 20s 循环
-            if ship.affixSet.stealth then
+            if ship.affixes.stealth then
                 ship.stealthCycle = (ship.stealthCycle or 0) + dt
                 if ship.stealthCycle >= 20.0 then
                     ship.stealthCycle = 0
@@ -724,7 +781,7 @@ function BattleAI.UpdatePlayerFleet(dt)
                 end
             end
             -- unstable: 2s 锁定 / 30s 循环（锁定期间不能射击）
-            if ship.affixSet.unstable then
+            if ship.affixes.unstable then
                 ship.unstableCycle = (ship.unstableCycle or 0) + dt
                 if ship.unstableCycle >= 30.0 then
                     ship.unstableCycle = 0
@@ -752,25 +809,37 @@ function BattleAI.UpdatePlayerFleet(dt)
         end
 
         -- 移动
-        if ship.target then
+        if ship.target and ship.target.health and ship.target.health > 0 then
             local tx, ty = ship.target.x, ship.target.y
             local range = ship.range or 180
-            local d = dist2(ship.x, ship.y, tx, ty)
-            if d > range then
+            local d = dist(ship.x, ship.y, tx, ty)
+            -- P2-4: 轨道炮塔 / 固定单位不移动，仅攻击
+            if d > range and not (ship.stype == "TURRET" or ship.isTurret or ship.speed <= 0) then
                 local dx, dy = tx - ship.x, ty - ship.y
                 local len = math.max(0.001, d)
                 local moveSpd = ship.speed * phaseMult
+                -- V2.6 A1: STEALTH 隐身期间移动速度×2
+                if ship.stype == "STEALTH" and ship.stealthTimer and ship.stealthTimer > 0 then
+                    moveSpd = moveSpd * STEALTH_SPEED_MULT
+                end
                 ship.x = ship.x + (dx / len) * moveSpd * dt
                 ship.y = ship.y + (dy / len) * moveSpd * dt
             end
-        elseif vars_.moveTarget then
+        else
+            ship.target = nil
+        end
+        if ship.target == nil and vars_.moveTarget then
             -- 移向指定目标点
             local tx, ty = vars_.moveTarget.x, vars_.moveTarget.y
-            local d = dist2(ship.x, ship.y, tx, ty)
+            local d = dist(ship.x, ship.y, tx, ty)
             if d > 15 then
                 local dx, dy = tx - ship.x, ty - ship.y
                 local len = math.max(0.001, d)
                 local moveSpd = ship.speed * phaseMult
+                -- V2.6 A1: STEALTH 隐身期间移动速度×2
+                if ship.stype == "STEALTH" and ship.stealthTimer and ship.stealthTimer > 0 then
+                    moveSpd = moveSpd * STEALTH_SPEED_MULT
+                end
                 ship.x = ship.x + (dx / len) * moveSpd * dt
                 ship.y = ship.y + (dy / len) * moveSpd * dt
             end
@@ -788,13 +857,13 @@ function BattleAI.UpdatePlayerFleet(dt)
 
         -- 射击
         if ship.target and ship.target.health > 0 then
-            local d = dist2(ship.x, ship.y, ship.target.x, ship.target.y)
+            local d = dist(ship.x, ship.y, ship.target.x, ship.target.y)
             local range = ship.range or 180
             if d <= range then
                 ship.lastShot = (ship.lastShot or 0) + dt
                 -- unstable 锁定检查
                 local locked = ship.unstableLock and ship.unstableLock > 0
-                if not locked and ship.lastShot >= (1.0 / ship.shotRate) then
+                if not locked and ship.lastShot >= (1.0 / (ship.shotRate or 1.0)) then
                     ship.lastShot = 0
                     local target = ship.target
                     local dmg = ship.dmg
@@ -809,11 +878,15 @@ function BattleAI.UpdatePlayerFleet(dt)
                         cmdMult = vars_.cmdSkillDef.dmgMult or 1.0
                     end
 
-                    -- 先发制人（首次攻击 +50%）
+                    -- 先发制人（首次攻击 +50%，STEALTH 隐身舰 +150%）
                     local firstStrike = 1.0
                     if not ship.hasAttacked then
                         ship.hasAttacked = true
-                        firstStrike = 1.5
+                        if ship.stype == "STEALTH" and ship.stealthFirstStrike then
+                            firstStrike = STEALTH_FIRST_STRIKE
+                        else
+                            firstStrike = 1.5
+                        end
                     end
 
                     -- EXPLORER 标记加成 (+30%)
@@ -822,12 +895,18 @@ function BattleAI.UpdatePlayerFleet(dt)
 
                     -- Berserk 变异 (血量 <30% 时 ×2)
                     local berserkMult = 1.0
-                    if ship.affixSet and ship.affixSet.berserk and ship.health < ship.maxHealth * 0.3 then
+                    if ship.affixes and ship.affixes.berserk and ship.health < ship.maxHealth * 0.3 then
                         berserkMult = 2.0
                     end
 
+                    -- V2.6 A1: SUPPORT 支援舰攻击力光环加成
+                    local supportMult = 1.0
+                    if ship.supportDmgStack and ship.supportDmgStack > 0 then
+                        supportMult = 1.0 + (ship.supportDmgStack * SUPPORT_DMG_BONUS)
+                    end
+
                     -- 最终伤害
-                    dmg = math.floor(dmg * focusMult * cmdMult * firstStrike * markMult * berserkMult)
+                    dmg = math.floor(dmg * focusMult * cmdMult * firstStrike * markMult * berserkMult * supportMult)
 
                     -- DESTROYER 穿甲弹（每 DESTROYER_PIERCE_COUNT 次射击）
                     local isPierce = false
@@ -858,11 +937,11 @@ function BattleAI.UpdatePlayerFleet(dt)
                     battleStats_.dmgDealt = battleStats_.dmgDealt + dmg
 
                     -- shock 变异溅射（30% 伤害，半径 40）
-                    if ship.affixSet and ship.affixSet.shock then
+                    if ship.affixes and ship.affixes.shock then
                         local splashDmg = math.floor(dmg * 0.3)
                         for _, es in ipairs(enemyFleet_) do
                             if es ~= target then
-                                local sd = dist2(target.x, target.y, es.x, es.y)
+                                local sd = dist(target.x, target.y, es.x, es.y)
                                 if sd <= 40 then
                                     es.health = es.health - splashDmg
                                     es.hitFlash = 0.5
@@ -882,7 +961,7 @@ function BattleAI.UpdatePlayerFleet(dt)
                         local aoeDmg = math.floor(dmg * 0.5)
                         for _, es in ipairs(enemyFleet_) do
                             if es ~= target then
-                                local ad = dist2(target.x, target.y, es.x, es.y)
+                                local ad = dist(target.x, target.y, es.x, es.y)
                                 if ad <= ship.aoeRadius then
                                     es.health = es.health - aoeDmg
                                     es.hitFlash = 0.6
@@ -961,6 +1040,240 @@ function BattleAI.UpdateEnemyFleet(dt)
         ship.target = target
         if not target then goto continue_enemy end
 
+        -- V2.6 A3: Boss阶段转换检查
+        if ship.isBoss and ship.bossPhases then
+            local hpRatio = ship.maxHealth > 0 and (ship.health / ship.maxHealth) or 1.0
+            local phases = ship.bossPhases
+            local currentPhaseIdx = ship.bossPhaseIndex
+            local prevPhase = phases[currentPhaseIdx]
+            -- 检查是否需要进入下一个阶段
+            for i = #phases, 1, -1 do
+                if hpRatio <= phases[i].hpThreshold and i > currentPhaseIdx then
+                    -- 进入新阶段
+                    local newPhase = phases[i]
+                    ship.bossPhaseIndex = i
+                    ship.bossPhaseName = newPhase.name
+                    ship.bossPhaseChanged = true
+                    ship.bossPhaseTimer = 0
+
+                    -- 应用阶段属性修改（统一公式：先撤销前一阶段修饰，再应用新阶段；缺失修饰符视为1.0）
+                    if newPhase.dmgMult or (prevPhase and prevPhase.dmgMult) then
+                        local baseDmg = ship.dmg / (prevPhase and prevPhase.dmgMult or 1.0)
+                        ship.dmg = baseDmg * (newPhase.dmgMult or 1.0)
+                    end
+                    if (newPhase.aoeRadiusMult or (prevPhase and prevPhase.aoeRadiusMult)) and ship.aoeRadius then
+                        local baseAoe = ship.aoeRadius / (prevPhase and prevPhase.aoeRadiusMult or 1.0)
+                        ship.aoeRadius = baseAoe * (newPhase.aoeRadiusMult or 1.0)
+                    end
+                    if newPhase.speedMult or (prevPhase and prevPhase.speedMult) then
+                        local baseSpeed = ship.speed / (prevPhase and prevPhase.speedMult or 1.0)
+                        ship.speed = baseSpeed * (newPhase.speedMult or 1.0)
+                    end
+                    if newPhase.shieldMult or (prevPhase and prevPhase.shieldMult) then
+                        local baseShield = ship.maxShield / (prevPhase and prevPhase.shieldMult or 1.0)
+                        ship.shield = baseShield * (newPhase.shieldMult or 1.0)
+                        ship.maxShield = baseShield * (newPhase.shieldMult or 1.0)
+                    end
+
+                    -- 虚空Boss阶段特效
+                    if newPhase.stealthPhase then
+                        ship.stealthTimer = 5.0
+                        ship.isVoidStealth = true
+                    end
+                    if newPhase.special == "DARK_ENERGY" then
+                        -- 暗能腐蚀：显示特效
+                        floatTexts_[#floatTexts_ + 1] = {
+                            x = screenW * 0.5, y = screenH * 0.3,
+                            text = "⚠ 暗能腐蚀！",
+                            life = 2.0, maxLife = 2.0, vy = -20, team = "boss_phase"
+                        }
+                    end
+
+                    -- 阶段切换时短暂无敌
+                    ship.invulnTimer = 1.0
+                    print(string.format("[Boss] 进入阶段%d: %s", i, newPhase.name))
+
+                    -- P0-3: 触发阶段转换全屏横幅
+                    BS.bossPhaseBannerTimer = BS.BOSS_BANNER_DUR or 2.5
+                    BS.bossPhaseBannerTotal = BS.BOSS_BANNER_DUR or 2.5
+                    BS.bossPhaseBannerText  = "⚡ 阶段 " .. i .. "：" .. (newPhase.name or "未知形态")
+
+                    -- 全屏警告
+                    vars_.bossPhaseWarning = true
+                    vars_.bossPhaseName = newPhase.name
+                    break
+                end
+            end
+            ship.bossPhaseTimer = ship.bossPhaseTimer + dt
+        end
+
+        -- V2.6 A3: 虚空Boss自爆倒计时
+        if ship.isBoss and ship.bossPhaseName == "自爆倒计时" then
+            -- 自爆机制：玩家需要在倒计时内击杀Boss
+            local phase = ship.bossPhases[ship.bossPhaseIndex]
+            if phase and phase.special == "SELF_DESTRUCT" then
+                ship.countdownTimer = (ship.countdownTimer or phase.countdown) - dt
+                if ship.countdownTimer <= 0 then
+                    -- 全屏AOE
+                    for _, ps in ipairs(playerFleet_) do
+                        ps.health = ps.health - 200
+                        ps.hitFlash = 1.0
+                    end
+                    floatTexts_[#floatTexts_ + 1] = {
+                        x = screenW * 0.5, y = screenH * 0.4,
+                        text = "💥 自爆！",
+                        life = 2.0, maxLife = 2.0, vy = -20, team = "boss_phase"
+                    }
+                    -- 清除倒计时
+                    ship.countdownTimer = phase.countdown
+                end
+            end
+        end
+
+        -- P1-4/5: Boss 专属技能（基于 ship.shipType 类型 + 阶段 special 字段）
+        if ship.isBoss and ship.bossPhases and ship.bossPhaseIndex then
+            local phase = ship.bossPhases[ship.bossPhaseIndex]
+            ship.skillTimers = ship.skillTimers or {}
+
+            -- 要塞炮击（战列Boss狂怒形态）：对 HP 最高友舰范围炮击
+            if phase and phase.special == "BARRAGE" then
+                ship.skillTimers.barrage = (ship.skillTimers.barrage or BOSS_SKILL_INTERVAL.BARRAGE) - dt
+                if ship.skillTimers.barrage <= 0 then
+                    ship.skillTimers.barrage = BOSS_SKILL_INTERVAL.BARRAGE
+                    local target = nil
+                    local maxHp = 0
+                    for _, ally in ipairs(playerFleet_) do
+                        if ally.health > maxHp then
+                            maxHp = ally.health
+                            target = ally
+                        end
+                    end
+                    if target then
+                        for _, ally in ipairs(playerFleet_) do
+                            local dx, dy = ally.x - target.x, ally.y - target.y
+                            local dist2 = math.sqrt(dx * dx + dy * dy)
+                            if dist2 <= 60 then
+                                local falloff = 1.0 - (dist2 / 60) * 0.5
+                                ally.health = ally.health - BOSS_BARRAGE_DMG * falloff * (ship.dmgMult or 1)
+                            end
+                        end
+                        -- 屏幕震动 + 飘字
+                        SK_.strength = math.max(SK_.strength, 8)
+                        SK_.dur = math.max(SK_.dur, 0.3)
+                        SK_.timer = math.max(SK_.timer, 0.3)
+                        floatTexts_[#floatTexts_ + 1] = {
+                            x = target.x, y = target.y - 20,
+                            text = "💥 炮击!", life = 1.2, maxLife = 1.2,
+                            vy = -20, team = "enemy"
+                        }
+                    end
+                end
+            end
+
+            -- 无人机群（母舰Boss舰载机形态 / 护盾强化形态）：非自爆阶段释放
+            if ship.shipType == "CARRIER" and (not phase or phase.special ~= "SELF_DESTRUCT") then
+                ship.skillTimers.drones = (ship.skillTimers.drones or BOSS_SKILL_INTERVAL.DRONE_SWARM) - dt
+                if ship.skillTimers.drones <= 0 then
+                    ship.skillTimers.drones = BOSS_SKILL_INTERVAL.DRONE_SWARM
+                    for i = 1, BOSS_DRONE_COUNT do
+                        local angle = (i / BOSS_DRONE_COUNT) * math.pi * 2
+                        local dx, dy = math.cos(angle) * 40, math.sin(angle) * 40
+                        local drone = makeShip_("INTERCEPTOR", ship.x + dx, ship.y + dy, "enemy")
+                        drone.health = 20
+                        drone.maxHealth = 20
+                        drone.dmg = BOSS_DRONE_DMG
+                        drone.isDrone = true
+                        drone.droneExplodeRange = 35
+                        enemyFleet_[#enemyFleet_ + 1] = drone
+                    end
+                    floatTexts_[#floatTexts_ + 1] = {
+                        x = ship.x, y = ship.y - 30,
+                        text = "🛩 无人机群!", life = 1.0, maxLife = 1.0,
+                        vy = -15, team = "enemy"
+                    }
+                end
+            end
+
+            -- 虚空吞噬（虚空Boss阶段4）：对最近友舰高伤
+            if phase and phase.special == "VOID_CONSUME" then
+                ship.skillTimers.consume = (ship.skillTimers.consume or BOSS_SKILL_INTERVAL.VOID_CONSUME) - dt
+                if ship.skillTimers.consume <= 0 then
+                    ship.skillTimers.consume = BOSS_SKILL_INTERVAL.VOID_CONSUME
+                    local target, minDist = nil, math.huge
+                    for _, ally in ipairs(playerFleet_) do
+                        local dx, dy = ally.x - ship.x, ally.y - ship.y
+                        local dist2 = math.sqrt(dx * dx + dy * dy)
+                        if dist2 < minDist then
+                            minDist = dist2
+                            target = ally
+                        end
+                    end
+                    if target then
+                        target.health = target.health - BOSS_VOID_DMG * (ship.dmgMult or 1)
+                        floatTexts_[#floatTexts_ + 1] = {
+                            x = target.x, y = target.y - 15,
+                            text = "🌀 吞噬!", life = 1.0, maxLife = 1.0,
+                            vy = -20, team = "enemy"
+                        }
+                    end
+                end
+            end
+
+            -- 幻影分身（虚空Boss阶段2）：生成幻影分身
+            if phase and phase.special == "PHANTOM_SPLIT" then
+                ship.skillTimers.phantom = (ship.skillTimers.phantom or BOSS_SKILL_INTERVAL.PHANTOM_SPLIT) - dt
+                if ship.skillTimers.phantom <= 0 then
+                    ship.skillTimers.phantom = BOSS_SKILL_INTERVAL.PHANTOM_SPLIT
+                    for i = 1, BOSS_PHANTOM_COUNT do
+                        local angle = (i / BOSS_PHANTOM_COUNT) * math.pi * 2
+                        local dx, dy = math.cos(angle) * 60, math.sin(angle) * 60
+                        local phantom = makeShip_("DESTROYER", ship.x + dx, ship.y + dy, "enemy")
+                        phantom.health = 50
+                        phantom.maxHealth = 50
+                        phantom.dmg = (ship.dmg or 20) * 0.3
+                        phantom.isPhantom = true
+                        phantom.lifetime = 8.0
+                        phantom.color = { 180, 80, 220 }
+                        enemyFleet_[#enemyFleet_ + 1] = phantom
+                    end
+                    floatTexts_[#floatTexts_ + 1] = {
+                        x = ship.x, y = ship.y - 35,
+                        text = "👥 幻影分身!", life = 1.0, maxLife = 1.0,
+                        vy = -18, team = "enemy"
+                    }
+                end
+            end
+
+            -- 母舰自爆倒计时（阶段3）
+            if phase and phase.special == "SELF_DESTRUCT" then
+                ship.selfDestructTimer = (ship.selfDestructTimer or BOSS_SKILL_INTERVAL.SELF_DESTRUCT) - dt
+                if ship.selfDestructTimer <= 0 then
+                    for _, ally in ipairs(playerFleet_) do
+                        local dx, dy = ally.x - ship.x, ally.y - ship.y
+                        local dist2 = math.sqrt(dx * dx + dy * dy)
+                        if dist2 <= 150 then
+                            local falloff = 1.0 - (dist2 / 150) * 0.5
+                            ally.health = ally.health - 100 * falloff
+                        end
+                    end
+                    SK_.strength = math.max(SK_.strength, 25)
+                    SK_.dur = math.max(SK_.dur, 1.5)
+                    SK_.timer = math.max(SK_.timer, 1.5)
+                    ship.health = 0
+                else
+                    ship.selfDestructCountdown = math.floor(ship.selfDestructTimer)
+                end
+            end
+
+            -- 幻影分身寿命递减
+            if ship.isPhantom then
+                ship.lifetime = (ship.lifetime or 8.0) - dt
+                if ship.lifetime <= 0 then
+                    ship.health = 0
+                end
+            end
+        end
+
         -- 移动（受 EMP / slow 影响）
         local moveSpd = ship.speed
         if ship.slowTimer and ship.slowTimer > 0 then moveSpd = moveSpd * 0.5 end
@@ -1002,7 +1315,7 @@ function BattleAI.UpdateEnemyFleet(dt)
         -- 射击
         if tDist <= range then
             ship.lastShot = (ship.lastShot or 0) + dt
-            if ship.lastShot >= (1.0 / ship.shotRate) then
+            if ship.lastShot >= (1.0 / (ship.shotRate or 1.0)) then
                 ship.lastShot = 0
                 local dmg = ship.dmg
                 -- 联赛攻击力修正
@@ -1012,7 +1325,7 @@ function BattleAI.UpdateEnemyFleet(dt)
                 local guardianReduction = 1.0
                 for _, ally in ipairs(enemyFleet_) do
                     if ally ~= ship and ally.affixes and ally.affixes.guardian then
-                        if dist2(ship.x, ship.y, ally.x, ally.y) <= 80 then
+                        if dist(ship.x, ship.y, ally.x, ally.y) <= 80 then
                             guardianReduction = 0.85
                             goto guardian_applied
                         end
@@ -1110,7 +1423,7 @@ function BattleAI.UpdateEnemyFleet(dt)
                     local aoeDmg = math.floor(dmg * 0.4 * aoeMult)
                     for _, ps in ipairs(playerFleet_) do
                         if ps ~= target then
-                            local ad = dist2(target.x, target.y, ps.x, ps.y)
+                            local ad = dist(target.x, target.y, ps.x, ps.y)
                             if ad <= ship.aoeRadius then
                                 ps.health = ps.health - aoeDmg
                                 ps.hitFlash = 0.5
@@ -1164,9 +1477,9 @@ function BattleAI.ProcessDeaths(dt)
                 stype = ship.stype, wave = vars_.waveNum
             })
             -- 战斗日志
-            logBattleEvent((SHIP_TYPES_[ship.stype] and SHIP_TYPES_[ship.stype].name or ship.stype) .. " 被击毁")
+            logBattleEvent(shipTypeName(ship.stype) .. " 被击毁")
             -- fission 变异：分裂为 2 个小型克隆
-            if ship.affixSet and ship.affixSet.fission and not ship.isFissionClone then
+            if ship.affixes and ship.affixes.fission and not ship.isFissionClone then
                 for ci = 1, 2 do
                     local clone = makeShip_(ship.stype, ship.x + (ci == 1 and -15 or 15), ship.y, "player")
                     clone.health = math.floor(ship.maxHealth * 0.4)
@@ -1238,7 +1551,7 @@ function BattleAI.ProcessDeaths(dt)
                     ship.lastHitter.health = math.min(ship.lastHitter.maxHealth, ship.lastHitter.health + heal)
                 end
                 -- vampiric 词缀：击杀回复 5% maxHP
-                if ship.lastHitter.affixSet and ship.lastHitter.affixSet.vampiric then
+                if ship.lastHitter.affixes and ship.lastHitter.affixes.vampiric then
                     local heal = math.floor(ship.lastHitter.maxHealth * 0.05)
                     ship.lastHitter.health = math.min(ship.lastHitter.maxHealth, ship.lastHitter.health + heal)
                 end
@@ -1285,7 +1598,7 @@ function BattleAI.ProcessDeaths(dt)
                 SK_.dur = 0.5
                 SK_.timer = 0.5
                 -- 日志
-                logBattleEvent("⚔️ BOSS " .. (SHIP_TYPES_[ship.stype] and SHIP_TYPES_[ship.stype].name or ship.stype) .. " 击败！")
+                logBattleEvent("⚔️ BOSS " .. shipTypeName(ship.stype) .. " 击败！")
                 -- 全屏闪光
                 vars_.bossFlashAlpha = 220
                 vars_.bossFlashTimer = BOSS_BANNER_DUR
@@ -1369,7 +1682,7 @@ function BattleAI.ProcessDeaths(dt)
 
             -- INTERCEPTOR 超音速穿越
             if ship.lastHitter and ship.lastHitter.stype == "INTERCEPTOR" and math.random() < 0.20 then
-                ship.lastHitter.lastShot = 1.0 / ship.lastHitter.shotRate
+                ship.lastHitter.lastShot = 1.0 / (ship.lastHitter.shotRate or 1.0)
                 floatTexts_[#floatTexts_ + 1] = {
                     x = ship.lastHitter.x, y = ship.lastHitter.y - 18,
                     text = "超音速！", life = 0.8, maxLife = 0.8, vy = -26, team = "intercept"
@@ -1474,6 +1787,56 @@ function BattleAI.UpdatePassives(dt)
         end
     end
 
+    -- V2.6 A1: SUPPORT 支援舰治疗光环
+    local hasSupport = false
+    for _, ps in ipairs(playerFleet_) do
+        if ps.stype == "SUPPORT" then hasSupport = true; break end
+    end
+    if hasSupport then
+        vars_.supportHealTimer = (vars_.supportHealTimer or 0) + dt
+        if vars_.supportHealTimer >= SUPPORT_HEAL_INTERVAL then
+            vars_.supportHealTimer = 0
+            -- 找到所有支援舰并计算治疗目标
+            for _, support in ipairs(playerFleet_) do
+                if support.stype == "SUPPORT" then
+                    local weakest, minHP = nil, math.huge
+                    for _, ps in ipairs(playerFleet_) do
+                        if ps ~= support and ps.stype ~= "SUPPORT" then
+                            local d = dist(support.x, support.y, ps.x, ps.y)
+                            if d <= SUPPORT_HEAL_RADIUS and ps.health < minHP then
+                                weakest = ps; minHP = ps.health
+                            end
+                        end
+                    end
+                    if weakest and weakest.health < weakest.maxHealth then
+                        weakest.health = math.min(weakest.maxHealth, weakest.health + SUPPORT_HEAL_AMOUNT)
+                        weakest.hitFlash = -0.5
+                        floatTexts_[#floatTexts_ + 1] = {
+                            x = weakest.x, y = weakest.y - 18,
+                            text = "支援+" .. SUPPORT_HEAL_AMOUNT,
+                            life = 1.0, maxLife = 1.0, vy = -28, team = "heal"
+                        }
+                    end
+                end
+            end
+        end
+        -- SUPPORT 攻击力光环（被动，每帧计算）
+        for _, ps in ipairs(playerFleet_) do
+            if ps.stype ~= "SUPPORT" then
+                local stackCount = 0
+                for _, support in ipairs(playerFleet_) do
+                    if support.stype == "SUPPORT" then
+                        local d = dist(support.x, support.y, ps.x, ps.y)
+                        if d <= SUPPORT_DMG_RADIUS then
+                            stackCount = stackCount + 1
+                        end
+                    end
+                end
+                ps.supportDmgStack = math.min(stackCount, SUPPORT_DMG_MAX_STACK)
+            end
+        end
+    end
+
     -- CARRIER 战斗机过期
     for i = #playerFleet_, 1, -1 do
         local ps = playerFleet_[i]
@@ -1498,5 +1861,186 @@ BattleAI.ENGINEER_HEAL_INTERVAL = ENGINEER_HEAL_INTERVAL
 BattleAI.COMBO_RESET_TIME      = COMBO_RESET_TIME
 BattleAI.BOSS_BANNER_DUR       = BOSS_BANNER_DUR
 BattleAI.MILESTONE_BANNER_DUR  = MILESTONE_BANNER_DUR
+-- V2.6 A1: 新舰种常量导出
+BattleAI.SUPPORT_HEAL_INTERVAL  = SUPPORT_HEAL_INTERVAL
+BattleAI.SUPPORT_HEAL_RADIUS   = SUPPORT_HEAL_RADIUS
+BattleAI.SUPPORT_HEAL_AMOUNT   = SUPPORT_HEAL_AMOUNT
+BattleAI.SUPPORT_DMG_BONUS     = SUPPORT_DMG_BONUS
+BattleAI.SUPPORT_DMG_RADIUS    = SUPPORT_DMG_RADIUS
+BattleAI.SUPPORT_DMG_MAX_STACK = SUPPORT_DMG_MAX_STACK
+BattleAI.STEALTH_DURATION      = STEALTH_DURATION
+BattleAI.STEALTH_SPEED_MULT   = STEALTH_SPEED_MULT
+BattleAI.STEALTH_FIRST_STRIKE = STEALTH_FIRST_STRIKE
+BattleAI.DREAD_COUNTER_CHANCE = DREAD_COUNTER_CHANCE
+BattleAI.DREAD_COUNTER_DMG    = DREAD_COUNTER_DMG
+-- V2.6 A3: Boss阶段常量
+BattleAI.BOSS_PHASES = Systems.BOSS_PHASES
+
+-- P1-4/5: Boss 专属技能常量（GameConstants.lua 全局加载，此处导出供外部引用）
+BattleAI.BOSS_SKILL_INTERVAL  = BOSS_SKILL_INTERVAL
+BattleAI.BOSS_BARRAGE_DMG     = BOSS_BARRAGE_DMG
+BattleAI.BOSS_DRONE_COUNT     = BOSS_DRONE_COUNT
+BattleAI.BOSS_DRONE_DMG       = BOSS_DRONE_DMG
+BattleAI.BOSS_VOID_DMG        = BOSS_VOID_DMG
+BattleAI.BOSS_PHANTOM_COUNT   = BOSS_PHANTOM_COUNT
+
+-- P0-1: 超级 Boss AI 特殊行为
+function BattleAI.UpdateSuperBoss(ship, dt, ctx)
+    if not ship.isSuperBoss then return end
+
+    local bossDef = SUPER_BOSSES[ship.superBossType]
+    if not bossDef then return end
+
+    local phase = ship.currentPhase
+    if not phase then return end
+
+    -- 超级 Boss 基础移动（比普通 Boss 更慢，更具压迫感）
+    if not ship.isStatic then
+        ship.x = ship.x + math.cos(ship.moveAngle or 0) * (ship.speed or 15) * dt
+        ship.y = ship.y + math.sin(ship.moveAngle or 0) * (ship.speed or 15) * dt
+        ship.moveAngle = (ship.moveAngle or 0) + 0.2 * dt
+    end
+
+    -- 阶段特殊行为
+    if phase.special == "BOMBARDMENT" then
+        -- 毁灭轰炸：每 N 秒对随机位置发射范围炸弹
+        ship.bombardTimer = (ship.bombardTimer or phase.skillInterval) - dt
+        if ship.bombardTimer <= 0 then
+            ship.bombardTimer = phase.skillInterval
+            local targetX, targetY
+            if ctx.playerFleet and #ctx.playerFleet > 0 then
+                local target = ctx.playerFleet[math.random(#ctx.playerFleet)]
+                targetX, targetY = target.x, target.y
+            else
+                targetX = (ctx.screenW and ctx.screenW/2) or 400
+                targetY = (ctx.screenH and ctx.screenH/2) or 300
+            end
+            -- 创建炸弹区域效果（给 RenderHUD 使用）
+            if ctx.bombardZones then
+                ctx.bombardZones[#ctx.bombardZones + 1] = {
+                    x = targetX, y = targetY,
+                    radius = phase.aoeRadius,
+                    timer = 0.8,
+                    maxTimer = 0.8,
+                    damage = phase.skillDmg,
+                }
+            end
+            if ctx.SK then
+                ctx.SK.strength = math.max(ctx.SK.strength, 6)
+                ctx.SK.dur = math.max(ctx.SK.dur, 0.2)
+                ctx.SK.timer = math.max(ctx.SK.timer, 0.2)
+            end
+            if ctx.floatTexts then
+                ctx.floatTexts[#ctx.floatTexts + 1] = {
+                    x = targetX, y = targetY,
+                    text = "💣 轰炸!", life = 1.0, maxLife = 1.0,
+                    vy = -25, team = "enemy"
+                }
+            end
+        end
+    end
+
+    if phase.special == "VOID_FIELD" then
+        -- 虚空领域：全场持续伤害，越靠近 Boss 伤害越高
+        if ctx.playerFleet then
+            for _, ally in ipairs(ctx.playerFleet) do
+                local dx, dy = ally.x - ship.x, ally.y - ship.y
+                local dist = math.sqrt(dx*dx + dy*dy)
+                local dmgMult = 1.0 + math.max(0, 1.0 - dist / 500)
+                ally.health = ally.health - phase.fieldDmgPerSec * dmgMult * dt
+            end
+        end
+        ship.voidFieldRadius = (ship.voidFieldRadius or 400) - phase.shrinkRate * dt
+    end
+
+    if phase.special == "TIME_WARP" then
+        -- 时间扭曲：所有友军减速 50%
+        if ctx.playerFleet then
+            for _, ally in ipairs(ctx.playerFleet) do
+                ally.speedMult = (ally.speedMult or 1.0) * (1.0 - phase.slowAllies)
+                ally.timeWarpTimer = phase.duration
+            end
+        end
+    end
+
+    if phase.special == "ANNIHILATION" then
+        -- 湮灭：召唤 N 个从属
+        ship.annihilTimer = (ship.annihilTimer or 8.0) - dt
+        if ship.annihilTimer <= 0 then
+            ship.annihilTimer = 8.0
+            for i = 1, phase.minionCount do
+                local angle = (i / phase.minionCount) * math.pi * 2
+                local dist = 80
+                if ctx.enemyFleet and makeShip_ then
+                    local minion = makeShip_("DESTROYER",
+                        ship.x + math.cos(angle) * dist,
+                        ship.y + math.sin(angle) * dist,
+                        "enemy")
+                    minion.health = 100
+                    minion.maxHealth = 100
+                    minion.dmg = 15
+                    minion.isMinion = true
+                    ctx.enemyFleet[#ctx.enemyFleet + 1] = minion
+                end
+            end
+            if ctx.floatTexts then
+                ctx.floatTexts[#ctx.floatTexts + 1] = {
+                    x = ship.x, y = ship.y - 40,
+                    text = "👹 湮灭召唤!", life = 1.0, maxLife = 1.0,
+                    vy = -20, team = "enemy"
+                }
+            end
+        end
+    end
+
+    if phase.special == "INFECTION" then
+        -- 感染蔓延：持续召唤小型敌舰
+        ship.infectionTimer = (ship.infectionTimer or 5.0) - dt
+        if ship.infectionTimer <= 0 and (ctx.enemyFleet and #ctx.enemyFleet < 20) then
+            ship.infectionTimer = 5.0 / phase.enemySpawnRate
+            if ctx.enemyFleet and makeShip_ then
+                local minion = makeShip_("INTERCEPTOR",
+                    ship.x + math.random(-100, 100),
+                    ship.y + math.random(-100, 100),
+                    "enemy")
+                minion.health = 30
+                minion.isInfected = true
+                ctx.enemyFleet[#ctx.enemyFleet + 1] = minion
+            end
+        end
+    end
+
+    if phase.special == "FINAL_BURST" then
+        -- 最终爆发：每 N 秒全队伤害
+        ship.burstTimer = (ship.burstTimer or 3.0) - dt
+        if ship.burstTimer <= 0 then
+            ship.burstTimer = 3.0
+            if ctx.playerFleet then
+                for _, ally in ipairs(ctx.playerFleet) do
+                    ally.health = ally.health - phase.dmg
+                end
+            end
+            if ctx.SK then
+                ctx.SK.strength = math.max(ctx.SK.strength, 15)
+                ctx.SK.dur = math.max(ctx.SK.dur, 0.5)
+                ctx.SK.timer = math.max(ctx.SK.timer, 0.5)
+            end
+            if ctx.floatTexts then
+                ctx.floatTexts[#ctx.floatTexts + 1] = {
+                    x = (ctx.screenW or 800) / 2,
+                    y = (ctx.screenH or 600) / 2,
+                    text = "💥 最终爆发!", life = 1.5, maxLife = 1.5,
+                    vy = -30, team = "enemy"
+                }
+            end
+        end
+    end
+
+    -- FRENZY 阶段：加速 + 增伤
+    if phase.special == "FRENZY" then
+        ship.speedMult = (ship.speedMult or 1.0) * phase.speedMult
+        ship.dmgMult = (ship.dmgMult or 1.0) * phase.dmgMult
+    end
+end
 
 return BattleAI

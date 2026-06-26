@@ -1,4 +1,3 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 local DebugConsoleSystem = {}
 
 local SYSTEM_VERSION = "3.2.0"

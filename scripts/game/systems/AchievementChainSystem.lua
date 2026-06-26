@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
+---@diagnostic disable: assign-type-mismatch, return-type-mismatch
 -----------------------------------------------------------
 -- AchievementChainSystem 成就解锁链系统
 -----------------------------------------------------------

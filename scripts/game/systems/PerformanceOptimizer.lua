@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found, undefined-doc-param, missing-parameter, access-invisible
+---@diagnostic disable: assign-type-mismatch, return-type-mismatch
 -- ============================================================================
 -- game/systems/PerformanceOptimizer.lua
 -- V3.0 P3-3: 性能优化系统

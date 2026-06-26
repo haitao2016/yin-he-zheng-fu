@@ -1,4 +1,3 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch
 -- ============================================================================
 -- game/i18n/zh-CN.lua -- 中文（简体）资源文件
 -- ============================================================================

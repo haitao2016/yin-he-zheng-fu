@@ -1,4 +1,3 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 --[[
 BattleReplayPlayer.lua - 战斗回放播放器（V3.2 P0-1）
 

@@ -1,4 +1,3 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
 --[[
 ChallengeShopPanel.lua - 挑战积分商店面板
 V2.7 P2-2

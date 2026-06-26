@@ -7,18 +7,37 @@ require("game.GameConstants")
 local ResearchSystem = {}
 ResearchSystem.__index = ResearchSystem
 
+---@param rm table  ResourceManager 实例
+---@param bs table  BuildingSystem 实例
+---@return ResearchSystem
 function ResearchSystem.new(rm, bs)
     local self = setmetatable({ rm=rm, bs=bs, planetGetter=nil }, ResearchSystem)
     self.unlocked = {}
     self.active   = nil
+    self.onCompleteCallback = nil  -- P2-P1-1: 研究完成动画回调
     return self
 end
 
+--- P2-P1-1: 设置研究完成动画回调
+---@param fn function
+function ResearchSystem:setOnCompleteCallback(fn)
+    self.onCompleteCallback = fn
+end
+
+--- P2-6: 记录当前基地核心等级（用于 Tier5 科技解锁校验）
+---@param lv number
+function ResearchSystem:setCoreLevel(lv)
+    if self.rm then self.rm.coreLevel = lv end
+end
+
 --- 设置动态行星列表获取函数（每次科技完成时调用，确保包含新殖民的行星）
+---@param fn function
 function ResearchSystem:setPlanetGetter(fn)
     self.planetGetter = fn
 end
 
+---@param id string  科技 ID
+---@return boolean, string  可研究? 以及原因
 function ResearchSystem:canResearch(id)
     local t = TECHS[id]
     if not t then return false, "未知科技" end
@@ -34,6 +53,13 @@ function ResearchSystem:canResearch(id)
                and self.unlocked[otherId] then
                 return false, "与 " .. otherT.name .. " 互斥（只能选一）"
             end
+        end
+    end
+    -- P2-6: Tier5 科技基地核心等级前置检查
+    if t.coreLevelReq then
+        local lv = (self.rm and self.rm.coreLevel) or 1
+        if lv < t.coreLevelReq then
+            return false, "需要基地核心Lv." .. t.coreLevelReq
         end
     end
     if not self.rm:canAfford(t.cost) then return false, "资源不足" end
@@ -57,6 +83,8 @@ function ResearchSystem:isExcluded(id)
 end
 
 -- 前置科技是否全部完成（不检查资源）
+---@param id string
+---@return boolean
 function ResearchSystem:prereqsMet(id)
     local t = TECHS[id]
     if not t then return false end
@@ -68,6 +96,8 @@ function ResearchSystem:prereqsMet(id)
     return true
 end
 
+---@param id string  科技 ID
+---@return boolean, string
 function ResearchSystem:start(id)
     local ok, reason = self:canResearch(id)
     if not ok then return false, reason end
@@ -81,11 +111,18 @@ function ResearchSystem:start(id)
     return true, ""
 end
 
+---@param dt number  距上次更新的时间（秒）
+---@return string|nil  完成的科技 ID 或 nil
 function ResearchSystem:update(dt)
     if not self.active then return nil end
     -- S1 QUANTUM_CORE: researchSpeedMult 与科研中心的 researchMult 叠乘
     local speedMult = ((self.rm.baseBonus and self.rm.baseBonus.researchMult) or 1.0)
                     * ((self.rm.baseBonus and self.rm.baseBonus.researchSpeedMult) or 1.0)
+    -- P2-4: 行星科研站加成（由 BuildingSystem 聚合）
+    if self.planetGetter and self.bs and self.bs.aggregatePlanetEffects then
+        local pe = self.bs:aggregatePlanetEffects(self.planetGetter())
+        speedMult = speedMult * (1 + (pe.researchSpeedBonus or 0))
+    end
     self.active.remaining = self.active.remaining - dt * speedMult
     self.active.progress  = 1.0 - math.max(0, self.active.remaining) / self.active.totalTime
     if self.active.remaining <= 0 then
@@ -149,6 +186,95 @@ function ResearchSystem:update(dt)
                 self.rm.baseBonus.globalProdMult = (self.rm.baseBonus.globalProdMult or 1.0) * bonus.globalProdMult
                 print("[Research] 星际同步激活：全局产出×" .. tostring(self.rm.baseBonus.globalProdMult))
             end
+            -- P2-6: QUANTUM_FACTORY 舰船建造速度 ×
+            if bonus.shipyardSpeedMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.shipyardMult = (self.rm.baseBonus.shipyardMult or 1.0) * bonus.shipyardSpeedMult
+                print("[Research] 量子工厂激活：舰船建造速度×" .. tostring(self.rm.baseBonus.shipyardMult))
+            end
+            -- P2-6: QUANTUM_FACTORY 升级费用 -25%
+            if bonus.upgradeCostMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.upgradeCostMult = (self.rm.baseBonus.upgradeCostMult or 1.0) * bonus.upgradeCostMult
+                print("[Research] 量子工厂激活：升级费用×" .. tostring(self.rm.baseBonus.upgradeCostMult))
+            end
+            -- P2-6: GALACTIC_ASCEND 全局伤害倍率
+            if bonus.globalDmgMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.globalDmgMult = (self.rm.baseBonus.globalDmgMult or 1.0) * bonus.globalDmgMult
+                print("[Research] 文明飞跃激活：全局伤害×" .. tostring(self.rm.baseBonus.globalDmgMult))
+            end
+            -- P2-6: GALACTIC_ASCEND 舰队上限 +3
+            if bonus.fleetCapBonus then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.fleetCapBonus = (self.rm.baseBonus.fleetCapBonus or 0) + bonus.fleetCapBonus
+                print("[Research] 文明飞跃激活：舰队上限+" .. tostring(self.rm.baseBonus.fleetCapBonus))
+            end
+            -- P2-6: GALACTIC_ASCEND 每波技能点 +1
+            if bonus.skillPointBonus then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.skillPointBonus = (self.rm.baseBonus.skillPointBonus or 0) + bonus.skillPointBonus
+                print("[Research] 文明飞跃激活：每波技能点+" .. tostring(bonus.skillPointBonus))
+            end
+            -- P0-1: PHASE_DRIVE 隐形能力
+            if bonus.stealthEnabled then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.stealthEnabled = true
+                print("[Research] 相位驱动激活：舰队获得隐形能力")
+            end
+            -- P0-1: STELLAR_ENGINE 战斗开局加速
+            if bonus.battleStartSpeedBoost then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.battleStartSpeedBoost = (self.rm.baseBonus.battleStartSpeedBoost or 0) + bonus.battleStartSpeedBoost
+                print("[Research] 恒星引擎激活：战斗开局速度+" .. tostring(bonus.battleStartSpeedBoost))
+            end
+            -- P0-1: VOID_FLEET 敌舰生成减少
+            if bonus.enemySpawnMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.enemySpawnMult = (self.rm.baseBonus.enemySpawnMult or 1.0) * bonus.enemySpawnMult
+                print("[Research] 虚空舰队激活：敌舰生成×" .. tostring(bonus.enemySpawnMult))
+            end
+            -- P0-1: CHRONO_RESEARCH 事件频率
+            if bonus.eventFrequencyMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.eventFrequencyMult = (self.rm.baseBonus.eventFrequencyMult or 1.0) * bonus.eventFrequencyMult
+                print("[Research] 时序研究激活：事件频率×" .. tostring(bonus.eventFrequencyMult))
+            end
+            -- P0-1: GALACTIC_ASCEND 奖励翻倍
+            if bonus.rewardMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.rewardMult = (self.rm.baseBonus.rewardMult or 1.0) * bonus.rewardMult
+                print("[Research] 银河飞升激活：奖励×" .. tostring(bonus.rewardMult))
+            end
+            -- P0-1: FORTRESS_PROTOCOL_II 反击护盾
+            if bonus.counterShield then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.counterShield = true
+                print("[Research] 要塞协议II激活：反击护盾已解锁")
+            end
+            -- P0-1: 基地护盾恢复
+            if bonus.shieldFlat then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.shieldFlat = (self.rm.baseBonus.shieldFlat or 0) + bonus.shieldFlat
+            end
+            -- P0-1: 殖民速度 + 资源上限 (COLONY_BIOTECH)
+            if bonus.colonySpeedMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.colonySpeedMult = (self.rm.baseBonus.colonySpeedMult or 1.0) * bonus.colonySpeedMult
+            end
+            if bonus.resourceCapMult then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.resourceCapMult = (self.rm.baseBonus.resourceCapMult or 1.0) * bonus.resourceCapMult
+            end
+            -- P0-1: 战斗中生命恢复 (NANO_REPAIR)
+            if bonus.battleRegenPct then
+                self.rm.baseBonus = self.rm.baseBonus or {}
+                self.rm.baseBonus.battleRegenPct = (self.rm.baseBonus.battleRegenPct or 0) + bonus.battleRegenPct
+            end
+        end
+        -- P2-P1-1: 研究完成动画回调
+        if self.onCompleteCallback then
+            self:onCompleteCallback(id, TECHS[id])
         end
         print("[Research] 完成: " .. TECHS[id].name)
         return id
@@ -157,6 +283,7 @@ function ResearchSystem:update(dt)
 end
 
 -- 序列化 / 反序列化
+---@return table
 function ResearchSystem:serialize()
     local unlockedList = {}
     for id, _ in pairs(self.unlocked) do unlockedList[#unlockedList+1] = id end
@@ -165,6 +292,7 @@ function ResearchSystem:serialize()
     return { unlocked = unlockedList, active = active }
 end
 
+---@param data table
 function ResearchSystem:deserialize(data)
     if not data then return end
     self.unlocked = {}

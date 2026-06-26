@@ -293,6 +293,68 @@ local PLANET_RANGES = {
     RING     = {3, 5},
 }
 
+-- P2-P2-2: 随机星图可玩变体参数
+-- 变体类型：紧凑（COMPACT）、标准（STANDARD）、松散（SPARSE）
+M.MAP_VARIANTS = {
+    COMPACT = {
+        name = "紧凑星域",
+        desc = "星系密集，战斗频繁，资源丰富但危险",
+        -- 星系间距缩小
+        systemSpacingMult = 0.6,
+        -- 星系内行星数量增加
+        planetCountMult = 1.3,
+        -- 稀有资源点概率提升
+        rareNodeChance = 0.25,
+        -- 特殊事件（海盗、探索点）频率提升
+        eventFrequencyMult = 1.4,
+        -- 初始敌人数量
+        initialEnemyCount = 3,
+        -- 星系数
+        systemCountRange = {6, 10},
+    },
+    STANDARD = {
+        name = "标准星域",
+        desc = "平衡的星系布局，适合大多数玩家",
+        systemSpacingMult = 1.0,
+        planetCountMult = 1.0,
+        rareNodeChance = 0.15,
+        eventFrequencyMult = 1.0,
+        initialEnemyCount = 2,
+        systemCountRange = {8, 12},
+    },
+    SPARSE = {
+        name = "松散星域",
+        desc = "星系稀疏，节奏缓慢，适合探索型玩家",
+        systemSpacingMult = 1.5,
+        planetCountMult = 0.8,
+        rareNodeChance = 0.20,
+        eventFrequencyMult = 0.7,
+        initialEnemyCount = 1,
+        systemCountRange = {5, 8},
+    },
+}
+
+-- 变体列表（用于 UI 显示）
+M.MAP_VARIANT_KEYS = { "COMPACT", "STANDARD", "SPARSE" }
+
+---根据变体类型和种子获取变体参数
+---@param variantKey string
+---@return table
+function GalaxyGenerator.GetVariantParams(variantKey)
+    return M.MAP_VARIANTS[variantKey] or M.MAP_VARIANTS.STANDARD
+end
+
+---获取变体列表（用于 UI 显示）
+---@return table
+function GalaxyGenerator.GetVariantList()
+    local list = {}
+    for _, key in ipairs(M.MAP_VARIANT_KEYS) do
+        local v = M.MAP_VARIANTS[key]
+        list[#list + 1] = { key = key, name = v.name, desc = v.desc }
+    end
+    return list
+end
+
 -- ============================================================================
 -- 公开 API
 -- ============================================================================
@@ -351,10 +413,12 @@ end
 
 ---主生成函数
 ---@param seedStr string         6 字符种子
----@param opts table|nil         可选参数（暂未使用，预留扩展）
+---@param opts table|nil         可选参数（variantKey: string, 使用变体参数）
 ---@return table  { starSystems, deepSpaceSystems, allPlanets, shape, specialPlanets }
 function GalaxyGenerator.Generate(seedStr, opts)
     opts = opts or {}
+    local variantKey = opts.variantKey or "STANDARD"
+    local variant = M.MAP_VARIANTS[variantKey] or M.MAP_VARIANTS.STANDARD
 
     -- 1. 种子转数值并播种 RNG
     local seedNum = GalaxyGenerator.SeedToNumber(seedStr)
@@ -366,10 +430,18 @@ function GalaxyGenerator.Generate(seedStr, opts)
     local coordFn  = SHAPE_BUILDERS[shape]
     local coords   = coordFn()
     local pRange   = PLANET_RANGES[shape]
+
+    -- P2-P2-2: 使用变体参数调整星系数量
+    local sysCountRange = variant.systemCountRange or {8, 12}
+    local sysCount = sysCountRange[1] + math.random(0, sysCountRange[2] - sysCountRange[1])
     local starSystems = {}
 
     for i, coord in ipairs(coords) do
-        local pCount = pRange[1] + math.random(0, pRange[2] - pRange[1])
+        if i > sysCount then break end  -- 限制星系数量
+        -- P2-P2-2: 使用变体参数调整行星数量
+        local basePCount = pRange[1] + math.random(0, pRange[2] - pRange[1])
+        local pCount = math.floor(basePCount * variant.planetCountMult + 0.5)
+        pCount = math.max(1, pCount)
         local name   = PREFIXES[math.random(1, #PREFIXES)] .. " "
                      .. SUFFIXES[math.random(1, #SUFFIXES)]
                      .. "-" .. i
@@ -378,10 +450,18 @@ function GalaxyGenerator.Generate(seedStr, opts)
 
     -- 3. 生成深空星系（外环，radius 2200+）
     local deepSpaceSystems = {}
-    local dsCount = 4 + math.random(0, 4)  -- 4-8 个
+    -- P2-P2-2: 使用变体参数调整深空星系数量
+    local dsCountBase = variant.eventFrequencyMult >= 1.0 and 4 or 3
+    local dsCount = dsCountBase + math.random(0, 3)
     for i = 1, dsCount do
         local ang  = ((i - 1) / dsCount) * math.pi * 2 + (math.random() - 0.5) * 0.4
+        -- P2-P2-2: 使用变体参数调整深空星系间距
         local dist = 2200 + math.random() * 600
+        if variantKey == "COMPACT" then
+            dist = 2000 + math.random() * 400
+        elseif variantKey == "SPARSE" then
+            dist = 2600 + math.random() * 800
+        end
         local x    = math.cos(ang) * dist
         local y    = math.sin(ang) * dist
         local dsName = DS_NAMES[i] or ("深渊-" .. i)

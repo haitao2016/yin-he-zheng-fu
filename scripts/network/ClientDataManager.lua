@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
+---@diagnostic disable: local-limit, assign-type-mismatch, param-type-mismatch
 -----------------------------------------------------------------------
 -- ClientDataManager.lua — 存档 / 读档 / 生涯战绩 / 跨版本兼容
 -- 职责:

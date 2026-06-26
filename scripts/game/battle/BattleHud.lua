@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
+---@diagnostic disable: assign-type-mismatch, need-check-nil
 -- ============================================================================
 -- BattleHud.lua — HUD 点击处理 & 按钮区域管理
 -- 负责：技能升级卡片点击 / 战败画面按钮 / 战斗指令按钮 / 集火取消 /

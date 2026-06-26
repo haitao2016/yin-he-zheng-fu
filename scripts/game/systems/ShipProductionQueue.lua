@@ -7,7 +7,11 @@ local ShipProductionQueue = {}
 ShipProductionQueue.__index = ShipProductionQueue
 
 function ShipProductionQueue.new(rm)
-    return setmetatable({ rm=rm, items={}, timer=0 }, ShipProductionQueue)
+    return setmetatable({
+        rm=rm, items={}, timer=0,
+        techUnlocked = {},      -- P0-1: 外部设置已解锁科技表（rs.unlocked）
+        dreadBuiltThisWave = false, -- P0-1: 本波次是否已建造DREADNOUGHT
+    }, ShipProductionQueue)
 end
 
 function ShipProductionQueue:canQueue(shipType, planet)
@@ -27,6 +31,23 @@ function ShipProductionQueue:canQueue(shipType, planet)
     end
     if not hasShipyard then return false, "需建造造船厂" end
     if not self.rm:canAfford(SHIP_COSTS[shipType]) then return false, "资源不足" end
+    -- P0-1: V2.6 新舰种解锁条件检查
+    local unlockReq = SHIP_UNLOCK_REQUIREMENTS and SHIP_UNLOCK_REQUIREMENTS[shipType]
+    if unlockReq then
+        -- 核心等级检查
+        local coreLv = planet.coreLevel or (planet.isBase and (planet.coreLevel or 1)) or 1
+        if unlockReq.coreLevel and coreLv < unlockReq.coreLevel then
+            return false, "需基地核心Lv." .. unlockReq.coreLevel
+        end
+        -- 科技解锁检查（需传入 techUnlocked 表，若未传入则跳过）
+        if unlockReq.tech and self.techUnlocked and not self.techUnlocked[unlockReq.tech] then
+            return false, "需科技: " .. unlockReq.tech
+        end
+        -- DREADNOUGHT: 每波次1艘限制（仅当波次跟踪器可用时检查）
+        if shipType == "DREADNOUGHT" and self.dreadBuiltThisWave then
+            return false, "每波次仅可建造1艘"
+        end
+    end
     return true, ""
 end
 
@@ -42,6 +63,9 @@ function ShipProductionQueue:queue(shipType, planet)
         totalTime = buildTime,
         progress  = 0,
     }
+    if shipType == "DREADNOUGHT" then
+        self.dreadBuiltThisWave = true
+    end
     return true, ""
 end
 

@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global, assign-type-mismatch, return-type-mismatch, param-type-mismatch, type-not-found
+---@diagnostic disable: assign-type-mismatch
 -- ============================================================================
 -- BattleAssets.lua — 战斗资源 & 对象池
 -- 负责：舰船纹理（NanoVG 图像句柄）加载/卸载/按类型查询，
